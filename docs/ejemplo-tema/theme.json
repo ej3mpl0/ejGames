@@ -1,0 +1,25 @@
+{
+  "id": "ejemplo",
+  "name": "Mi primer tema",
+  "version": "1.0.0",
+  "author": "Tu nombre",
+  "description": "Rejilla de carátulas con ficha de juego (el tema de la guía)",
+  "sdk": 1,
+  "entry": "index.html",
+  "modes": ["desktop", "tv"],
+  "palette": ["#12141b", "#1c1f29", "#7c5cff", "#eceef4"],
+  "host": { "accent": "#7c5cff", "surface": "#161922", "radius": "10px", "dark": true },
+  "sounds": { "preset": "soft" },
+  "windowControls": "host",
+  "settings": [
+    { "key": "accent", "type": "color", "label": "Color de acento", "default": "#7c5cff" },
+    { "key": "wallpaper", "type": "image", "label": "Imagen de fondo" },
+    { "key": "cardSize", "type": "range", "label": "Tamaño de las carátulas", "min": 120, "max": 260, "step": 10, "unit": "px", "default": 160, "group": "Rejilla" },
+    { "key": "showTitles", "type": "toggle", "label": "Nombre bajo la carátula", "default": true, "group": "Rejilla" },
+    { "key": "order", "type": "select", "label": "Orden", "default": "title", "group": "Rejilla", "options": [
+      { "value": "title", "label": "Nombre" },
+      { "value": "recent", "label": "Jugado recientemente" },
+      { "value": "playtime", "label": "Horas jugadas" }
+    ] }
+  ]
+}

@@ -4,7 +4,7 @@ import type { Profile } from "./api/types";
 import { ActivityPill, Toasts, WindowControls } from "./components/Chrome";
 import { ThemeFrame } from "./host/ThemeFrame";
 import { playSound } from "./host/sounds";
-import { globalKey, setBigPicture } from "./host/window";
+import { globalKey, reloadTheme, setBigPicture } from "./host/window";
 import { padTypeOf, startGamepad } from "./input/gamepad";
 import { dispatchNav } from "./input/nav";
 import { playtime } from "./lib/format";
@@ -94,8 +94,10 @@ export default function App() {
       on("scan:progress", (s) => set({ scan: s })),
       on("app:toast", (t) => useApp.getState().toast(t.kind, t.message)),
       on("theme:changed", (t) => {
+        // El elegido, no el que se ve: con su theme.json roto se ve Steam y,
+        // al arreglarlo, tiene que volver.
         const st = useApp.getState();
-        if (activeTheme(st)?.id === t.id) st.set({ themeReload: st.themeReload + 1 });
+        if ((st.themeOverride ?? st.profile?.themeId) === t.id) void reloadTheme();
       }),
       on("game:state", async (e) => {
         set({ running: await api.runningGames() });

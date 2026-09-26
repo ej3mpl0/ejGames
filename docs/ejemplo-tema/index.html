@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mi primer tema</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="main.js"></script>
+  </head>
+  <body>
+    <header class="barra" data-ejg-drag>
+      <h1>Mis juegos <span id="total" class="total"></span></h1>
+      <nav class="acciones" data-ejg-nodrag>
+        <button data-focus data-ui="search">Buscar</button>
+        <button data-focus data-ui="settings">Ajustes</button>
+      </nav>
+    </header>
+
+    <main id="rejilla" class="rejilla" data-focus-group="rejilla"></main>
+
+    <section id="ficha" class="ficha" hidden data-focus-trap></section>
+
+    <footer id="pistas" class="pistas"></footer>
+  </body>
+</html>

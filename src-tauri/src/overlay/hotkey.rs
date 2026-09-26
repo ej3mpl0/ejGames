@@ -110,7 +110,8 @@ fn update(hwnd: isize) {
             return;
         }
         ctx.last_hwnd = hwnd;
-        let want = hwnd != 0 && (ctx.is_target)(super::win::window_pid(hwnd), hwnd);
+        let pid = super::win::window_pid(hwnd);
+        let want = hwnd != 0 && (ctx.is_target)(pid, hwnd);
         if want == ctx.active {
             return;
         }
@@ -119,7 +120,13 @@ fn update(hwnd: isize) {
             if want {
                 ctx.registered = RegisterHotKey(None, 1, HOT_KEY_MODIFIERS(ctx.mods) | MOD_NOREPEAT, ctx.vk).is_ok();
                 // Aunque falle (otro programa lo tiene), la lectura de teclas sigue valiendo.
-                tracing::info!("overlay: juego en primer plano, atajo registrado: {}", ctx.registered);
+                // Con el juego como administrador no vale ninguno de los dos (UIPI).
+                let admin = crate::launcher::admin::above_us(pid);
+                tracing::info!(
+                    "overlay: juego en primer plano, atajo registrado: {}{}",
+                    ctx.registered,
+                    if admin { " (el juego corre como administrador: Windows no deja leer el teclado)" } else { "" }
+                );
             } else {
                 if ctx.registered {
                     let _ = UnregisterHotKey(None, 1);

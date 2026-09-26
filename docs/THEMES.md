@@ -12,9 +12,13 @@ y Retro) están hechos exactamente con lo que se explica aquí: úsalos de ejemp
 3. Activa **Modo desarrollador** (misma pantalla) y pulsa **Abrir carpeta del tema**.
 4. Edita `style.css` o `main.js` con tu editor: al guardar, el tema se recarga solo.
 
-`F5` recarga el tema a mano. Si algo se rompe y el tema no arranca en 6 segundos,
-ejGames vuelve al tema Steam automáticamente. Mantén **Shift** al abrir ejGames
-para arrancar en modo seguro.
+`F5` recarga el tema a mano. Si el tema se cuelga (no responde en unos
+segundos), ejGames vuelve al tema Steam automáticamente. Un error de JavaScript
+no lo cambia: deja el tema en blanco y, con el modo desarrollador, sale como
+aviso. Mantén **Shift** al abrir ejGames para arrancar en modo seguro.
+
+La galería vuelve a leer la carpeta de temas al entrar en Apariencia, y los
+cambios de `theme.json` se aplican al recargar el tema: no hace falta reiniciar.
 
 ## Estructura
 
@@ -291,7 +295,8 @@ Los temas se ejecutan en un **iframe aislado** (origen `null`, sin
 `allow-same-origin`) y con una política de seguridad estricta:
 
 * ✅ Todo el HTML/CSS/JS que quieras, animaciones, canvas, WebGL, vídeo.
-* ✅ Imágenes y vídeos de la biblioteca (`http://ejg-media.localhost`) y los ficheros del propio tema.
+* ✅ Imágenes y vídeos de la biblioteca (`http://ejg-media.localhost`) y los ficheros del propio tema en sus etiquetas (`<img>`, `<link>`, `<script>`, fuentes, audio, vídeo) o con `import` de módulos JS.
+* ❌ `fetch()` de los ficheros del tema: `fetch` solo llega a `ejg-media`. Para datos, un módulo JS (`export default {…}`).
 * ❌ Internet (fetch, fuentes o imágenes externas): mete lo que necesites en la carpeta del tema.
 * ❌ Acceso a disco, a otros programas o a Tauri: solo lo que ofrece `window.ejg`.
 * ❌ `localStorage`/`IndexedDB`: usa `ejg.storage`.

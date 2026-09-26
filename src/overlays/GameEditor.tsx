@@ -186,7 +186,18 @@ function GeneralTab({ data, reload, onClose }: { data: GameFull; reload: () => v
         <Field label="Argumentos">
           <TextInput value={args} placeholder="-windowed -skipintro" onChange={(e) => setArgs(e.target.value)} onBlur={() => args !== g.args && save({ args })} />
         </Field>
-        <Toggle label="Ejecutar como administrador" checked={g.runAsAdmin} onChange={(v) => save({ runAsAdmin: v }).then(reload)} />
+        <Toggle
+          label="Ejecutar como administrador"
+          hint={
+            g.runAsAdmin || data.elevation === "manifest"
+              ? `${g.runAsAdmin ? "Así" : "El propio juego lo exige, y así"} Windows no deja que ejGames lea el teclado durante la partida: el overlay solo se abre con el mando.`
+              : data.elevation === "windows"
+                ? "Windows lo tiene marcado como «Ejecutar como administrador», pero ejGames lo abre sin permisos para que no salga el aviso de UAC y funcione el atajo del overlay. Actívalo si el juego lo necesita."
+                : undefined
+          }
+          checked={g.runAsAdmin}
+          onChange={(v) => save({ runAsAdmin: v }).then(reload)}
+        />
         <Field label="Procesos del juego (para contar horas)" hint="Nombres de exe separados por comas, por si el juego se lanza a través de otro programa.">
           <TextInput
             value={hints}

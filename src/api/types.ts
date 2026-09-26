@@ -165,6 +165,8 @@ export interface GameFull {
   game: Game;
   exeCandidates: [string, number][];
   media: MediaItem[];
+  /** Por qué se abriría como administrador sin pedirlo en ejGames. */
+  elevation: "manifest" | "windows" | null;
 }
 
 export interface GamePatch {

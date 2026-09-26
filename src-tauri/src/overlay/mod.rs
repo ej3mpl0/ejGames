@@ -629,6 +629,8 @@ pub fn session_started(st: &Arc<AppState>, game: &Game, profile_id: i64, started
         // ventana activa, que puede ser otro).
         let st = st.clone();
         let game_id = game.id;
+        let keyboard = hotkey_label.is_some();
+        let admin_in_ejgames = game.run_as_admin;
         let _ = std::thread::Builder::new().name("ejg-overlay-hint".into()).spawn(move || {
             for _ in 0..180 {
                 std::thread::sleep(Duration::from_millis(500));
@@ -637,9 +639,21 @@ pub fn session_started(st: &Arc<AppState>, game: &Game, profile_id: i64, started
                     return;
                 }
                 #[cfg(windows)]
-                if game_window(&st).is_some() {
+                if let Some(hwnd) = game_window(&st) {
                     // Margen para que el juego pase a pantalla completa.
                     std::thread::sleep(Duration::from_millis(2500));
+                    let mut hint = hint;
+                    // Juego como administrador: Windows (UIPI) no deja que ejGames
+                    // lea el teclado mientras está delante, así que el atajo no llega.
+                    if keyboard && crate::launcher::admin::above_us(win::window_pid(hwnd)) {
+                        let how = if pad {
+                            "usa el botón Guía del mando (o Select + Start)."
+                        } else {
+                            "el atajo de teclado no funcionará."
+                        };
+                        let fix = if admin_in_ejgames { " Puedes quitarlo en Editar juego." } else { "" };
+                        hint.body = Some(format!("Este juego se abre como administrador y Windows no deja que ejGames lea el teclado: {how}{fix}"));
+                    }
                     notify(&st, hint);
                     return;
                 }

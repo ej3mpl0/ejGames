@@ -228,6 +228,7 @@ pub fn run() {
                     if let Ok(p) = st.db.with(|c| db::repo::get_profile(c, pid)) {
                         if !p.has_pin {
                             *st.profile.write() = Some(pid);
+                            commands::watch_active_theme(&st);
                         }
                     }
                 }

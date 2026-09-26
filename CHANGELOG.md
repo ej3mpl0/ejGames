@@ -5,11 +5,23 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_x64-setup.exe
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.2.1
+
+**Overlay**
+- El atajo de teclado (Mayús+Tab) ya funciona en los juegos que Windows tiene marcados como «Ejecutar como administrador», algo que hacen muchos instaladores. Con un juego elevado delante, Windows no deja que ejGames lea el teclado, así que ahora ejGames los abre sin elevar. De paso, ya no sale el aviso de UAC al jugar.
+- Si un juego necesita de verdad ser administrador, actívalo en *Editar juego → Ejecutar como administrador*. El editor avisa cuando Windows tiene esa marca o cuando el propio juego la exige.
+- Si el juego se abre como administrador de todos modos, el aviso del principio de la partida lo explica y propone el botón Guía del mando. También queda anotado en el registro.
+
+**Temas**
+- Guía paso a paso para crear un tema desde cero ([`docs/GUIA-TEMAS.md`](docs/GUIA-TEMAS.md)), con el tema de ejemplo terminado en `docs/ejemplo-tema/`.
+- La recarga en vivo del modo desarrollador ya funciona también al volver a abrir ejGames. Antes había que apagar y encender el modo desarrollador.
+- Los temas nuevos y los cambios de `theme.json` se ven sin reiniciar: la galería vuelve a leer la carpeta al abrir Apariencia, y `theme.json` se aplica al recargar el tema. Un `theme.json` a medio escribir ya no hace saltar al tema Steam.
+
 ## 0.2.0
 
 **Logros**
 - Lee los logros de Steam desde tu PC, sin cuenta ni clave.
-- Lee los de los juegos que solo tienen el `.exe` si traen un emulador de Steam (CODEX, RUNE, OnlineFix, Goldberg, GSE, EMPRESS, SKIDROW…). El appid sale de la configuración del emulador, aunque esté muy dentro de la carpeta.
+- Lee los de los juegos que solo tienen el `.exe` si traen un emulador de la API de Steam (Goldberg, GSE y similares). El appid sale de la configuración del emulador, aunque esté muy dentro de la carpeta.
 - Nombres en español, iconos y rareza vienen de Steam.
 - El tema Steam muestra los logros en la ficha del juego; los demás temas, un resumen.
 - Los temas pueden leerlos con `ejg.game.achievements(id)`.

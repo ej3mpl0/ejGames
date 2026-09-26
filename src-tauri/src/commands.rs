@@ -305,15 +305,23 @@ pub struct GameFull {
     game: Game,
     exe_candidates: Vec<(String, f64)>,
     media: Vec<MediaItem>,
+    /// Por qué se abriría como administrador sin pedirlo en ejGames:
+    /// "manifest" (el exe lo exige) o "windows" (marca de compatibilidad).
+    elevation: Option<&'static str>,
 }
 
 #[tauri::command]
 pub async fn get_game_full(st: St<'_>, id: i64) -> CmdResult<GameFull> {
     let s = st.inner().clone();
     blocking(move || {
-        s.db.with(|c| {
-            Ok(GameFull { game: repo::get_game(c, id)?, exe_candidates: repo::exe_candidates(c, id)?, media: repo::list_media(c, id, None)? })
-        })
+        let (game, exe_candidates, media) =
+            s.db.with(|c| Ok((repo::get_game(c, id)?, repo::exe_candidates(c, id)?, repo::list_media(c, id, None)?)))?;
+        let elevation = game
+            .exe_path
+            .as_deref()
+            .filter(|_| game.launch_uri.as_deref().unwrap_or("").is_empty())
+            .and_then(|p| crate::launcher::admin::elevation_reason(std::path::Path::new(p)));
+        Ok(GameFull { game, exe_candidates, media, elevation })
     })
     .await
 }
@@ -679,7 +687,8 @@ pub async fn set_in_collection(st: St<'_>, collection_id: i64, game_id: i64, mem
 
 // ───────────────────────────── temas ─────────────────────────────
 
-fn watch_active_theme(st: &Arc<AppState>) {
+/// Recarga en vivo del tema del perfil activo (solo en modo desarrollador).
+pub(crate) fn watch_active_theme(st: &Arc<AppState>) {
     if !st.settings.get().dev_mode {
         st.theme_dev.stop();
         return;

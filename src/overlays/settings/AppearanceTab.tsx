@@ -7,6 +7,7 @@ import { Button, ColorInput, Cycle, Section, Slider, TextInput, Toggle } from ".
 import { ThemeCard } from "../../components/ThemeCard";
 import { mergedSettings } from "../../host/ThemeFrame";
 import { SOUND_PRESETS } from "../../host/sounds";
+import { refreshThemes, reloadTheme } from "../../host/window";
 import { activeTheme, useApp } from "../../store/app";
 
 const FONTS = [
@@ -213,6 +214,11 @@ export function AppearanceTab() {
     set({ themes: await api.listThemes() });
   }
 
+  // Temas creados a mano o con theme.json cambiado, sin reiniciar ejGames.
+  useEffect(() => {
+    void refreshThemes();
+  }, []);
+
   async function select(id: string) {
     const p = await api.updateProfile(profile.id, { themeId: id });
     upsert(p);
@@ -291,7 +297,7 @@ export function AppearanceTab() {
             >
               Exportar .ejtheme
             </Button>
-            <Button icon={<RefreshCw size={15} />} onClick={() => set({ themeReload: useApp.getState().themeReload + 1 })}>
+            <Button icon={<RefreshCw size={15} />} onClick={() => void reloadTheme()}>
               Recargar tema
             </Button>
             {!current.builtin &&

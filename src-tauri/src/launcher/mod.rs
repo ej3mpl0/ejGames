@@ -1,5 +1,6 @@
 //! Partidas: lanzar, seguir procesos, registrar sesiones, Discord y modo ahorro.
 
+pub mod admin;
 pub mod gamepad_home;
 pub mod launch;
 pub mod tracker;

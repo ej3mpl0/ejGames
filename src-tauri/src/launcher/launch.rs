@@ -1,5 +1,7 @@
 //! Lanzar juegos: URI de tienda o exe vía ShellExecuteExW (maneja UAC/"runas";
-//! CreateProcess falla con el error 740 en juegos que piden admin).
+//! CreateProcess falla con el error 740 en juegos que piden admin). Los exes que
+//! solo son administrador por la marca de compatibilidad de Windows se lanzan
+//! sin elevar (ver `admin`).
 
 use crate::db::models::Game;
 use std::path::Path;
@@ -52,6 +54,23 @@ fn shell_execute(verb: &str, file: &str, params: &str, dir: Option<&str>) -> any
     Ok(None)
 }
 
+/// CreateProcess con `__COMPAT_LAYER` en el entorno (ShellExecuteEx no deja
+/// pasarle un entorno propio). Los argumentos van tal cual los escribió el usuario.
+#[cfg(windows)]
+fn spawn_as_invoker(exe: &str, args: &str, dir: Option<&str>, layers: &str) -> std::io::Result<u32> {
+    use std::os::windows::process::CommandExt;
+    use std::process::{Command, Stdio};
+    let mut cmd = Command::new(exe);
+    if !args.trim().is_empty() {
+        cmd.raw_arg(args.trim());
+    }
+    if let Some(d) = dir {
+        cmd.current_dir(d);
+    }
+    cmd.env("__COMPAT_LAYER", layers).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+    Ok(cmd.spawn()?.id())
+}
+
 pub fn launch(g: &Game) -> anyhow::Result<Launched> {
     // Las tiendas con URI (Steam, Epic, Ubisoft, EA) se lanzan por su cliente.
     if let Some(uri) = g.launch_uri.as_deref().filter(|u| !u.is_empty()) {
@@ -70,6 +89,19 @@ pub fn launch(g: &Game) -> anyhow::Result<Launched> {
         .or_else(|| Path::new(exe).parent().map(|p| p.to_string_lossy().to_string()));
     #[cfg(windows)]
     {
+        // Windows lo tiene como «Ejecutar como administrador» pero en ejGames no
+        // se pidió: sin elevar (sin UAC y con el atajo del overlay funcionando).
+        if !g.run_as_admin {
+            if let Some(layers) = super::admin::invoker_layers(Path::new(exe)) {
+                match spawn_as_invoker(exe, &g.args, dir.as_deref(), &layers) {
+                    Ok(pid) => {
+                        tracing::info!("lanzado sin elevar (__COMPAT_LAYER={layers}): {exe}");
+                        return Ok(Launched { pid: Some(pid), via_uri: false });
+                    }
+                    Err(e) => tracing::warn!("no se pudo lanzar sin elevar ({e}); se usa ShellExecute"),
+                }
+            }
+        }
         let verb = if g.run_as_admin { "runas" } else { "open" };
         let pid = shell_execute(verb, exe, &g.args, dir.as_deref())?;
         Ok(Launched { pid, via_uri: false })

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cinema</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="main.js"></script>
+  </head>
+  <body>
+    <header class="nav" data-ejg-drag>
+      <span class="logo">EJ<b>GAMES</b></span>
+      <nav class="links" data-ejg-nodrag>
+        <button data-focus data-go="top">Inicio</button>
+        <button data-focus data-go="row-fav">Mi lista</button>
+        <button data-focus data-action="collections">Colecciones</button>
+        <button data-focus data-action="stats">Estadísticas</button>
+      </nav>
+      <div class="tools" data-ejg-nodrag>
+        <button class="ib" data-focus data-action="search" title="Buscar"><svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" /></svg></button>
+        <button class="ib" data-focus data-action="settings" title="Ajustes"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9l2.1 2.1m10 10 2.1 2.1m0-14.2-2.1 2.1m-10 10-2.1 2.1" /></svg></button>
+        <button class="avatar" data-focus data-action="profiles" id="avatar" title="Perfiles"></button>
+      </div>
+    </header>
+    <main id="main">
+      <section class="hero" id="hero">
+        <div class="hero-media" id="hero-media"></div>
+        <div class="hero-fade"></div>
+        <div class="hero-info" id="hero-info"></div>
+      </section>
+      <div id="rows"></div>
+    </main>
+    <div id="hints" class="hints"></div>
+    <div id="modal" hidden></div>
+  </body>
+</html>

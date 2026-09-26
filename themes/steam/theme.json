@@ -1,0 +1,33 @@
+{
+  "id": "steam",
+  "name": "Steam",
+  "version": "1.0.0",
+  "author": "ejGames",
+  "description": "Biblioteca clásica con barra lateral y página de juego",
+  "sdk": 1,
+  "entry": "index.html",
+  "modes": ["desktop", "tv"],
+  "palette": ["#1b2838", "#2a3f5a", "#1a9fff", "#dcdedf"],
+  "host": { "accent": "#1a9fff", "surface": "#171d25", "radius": "6px" },
+  "sounds": { "preset": "soft" },
+  "windowControls": "theme",
+  "settings": [
+    { "key": "accent", "type": "color", "label": "Color de acento", "default": "#1a9fff" },
+    { "key": "play", "type": "color", "label": "Botón Jugar", "default": "#59bf40" },
+    { "key": "bg", "type": "color", "label": "Fondo", "default": "#1b2838" },
+    { "key": "panel", "type": "color", "label": "Barra lateral", "default": "#171d25" },
+    { "key": "text", "type": "color", "label": "Texto", "default": "#dcdedf" },
+    { "key": "wallpaper", "type": "image", "label": "Fondo personalizado (imagen o vídeo)" },
+    { "key": "font", "type": "font", "label": "Tipografía", "default": "Segoe UI" },
+    { "key": "coverSize", "type": "range", "label": "Tamaño de las portadas", "min": 110, "max": 280, "step": 5, "unit": "px", "default": 168, "group": "Biblioteca" },
+    { "key": "radius", "type": "range", "label": "Redondeo de esquinas", "min": 0, "max": 18, "unit": "px", "default": 4, "group": "Biblioteca" },
+    { "key": "showSidebar", "type": "toggle", "label": "Barra lateral", "default": true, "group": "Biblioteca" },
+    { "key": "sidebarWidth", "type": "range", "label": "Ancho de la barra lateral", "min": 200, "max": 420, "step": 5, "unit": "px", "default": 272, "group": "Biblioteca" },
+    { "key": "showRecent", "type": "toggle", "label": "Estantería «Recientes»", "default": true, "group": "Biblioteca" },
+    { "key": "coverTitles", "type": "toggle", "label": "Título bajo cada portada", "default": false, "group": "Biblioteca" },
+    { "key": "hoverZoom", "type": "toggle", "label": "Zoom al pasar por encima", "default": true, "group": "Biblioteca" },
+    { "key": "heroHeight", "type": "range", "label": "Altura del banner", "min": 220, "max": 560, "step": 10, "unit": "px", "default": 360, "group": "Página de juego" },
+    { "key": "blurHero", "type": "toggle", "label": "Fondo difuminado con el arte del juego", "default": true, "group": "Página de juego" },
+    { "key": "autoTrailer", "type": "toggle", "label": "Reproducir el tráiler al abrir un juego", "default": false, "group": "Página de juego" }
+  ]
+}

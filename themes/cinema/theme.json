@@ -1,0 +1,32 @@
+{
+  "id": "cinema",
+  "name": "Cinema",
+  "version": "1.0.0",
+  "author": "ejGames",
+  "description": "Portada con tráiler a lo grande y filas horizontales, como una plataforma de series",
+  "sdk": 1,
+  "entry": "index.html",
+  "modes": ["tv", "desktop"],
+  "palette": ["#141414", "#232323", "#e50914", "#ffffff"],
+  "host": { "accent": "#e50914", "surface": "#181818", "radius": "6px" },
+  "sounds": { "preset": "soft" },
+  "windowControls": "host",
+  "settings": [
+    { "key": "accent", "type": "color", "label": "Color de acento", "default": "#e50914" },
+    { "key": "bg", "type": "color", "label": "Fondo", "default": "#141414" },
+    { "key": "cardStyle", "type": "select", "label": "Tarjetas", "default": "landscape", "options": [
+      { "value": "landscape", "label": "Horizontales (16:9)" },
+      { "value": "portrait", "label": "Verticales (carátula)" }
+    ] },
+    { "key": "cardSize", "type": "range", "label": "Tamaño de las tarjetas", "min": 180, "max": 380, "step": 10, "unit": "px", "default": 270 },
+    { "key": "heroTrailer", "type": "toggle", "label": "Tráiler en la portada", "default": true },
+    { "key": "heroSound", "type": "toggle", "label": "Tráiler de la portada con sonido", "default": false },
+    { "key": "featured", "type": "select", "label": "Juego destacado", "default": "recent", "options": [
+      { "value": "recent", "label": "El último que jugaste" },
+      { "value": "random", "label": "Uno al azar" },
+      { "value": "favorite", "label": "Un favorito" }
+    ] },
+    { "key": "genreRows", "type": "toggle", "label": "Filas por género", "default": true },
+    { "key": "font", "type": "font", "label": "Tipografía", "default": "Segoe UI Variable Display" }
+  ]
+}

@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+/* Tokens del host: los rellena el tema activo (theme.json → "host"). */
+:root {
+  --h-accent: #4f8cff;
+  --h-accent-contrast: #ffffff;
+  --h-surface: #11151d;
+  --h-surface-2: #181e29;
+  --h-surface-3: #222a38;
+  --h-text: #e8edf6;
+  --h-muted: #8d99ad;
+  --h-border: rgba(255, 255, 255, 0.08);
+  --h-radius: 14px;
+  --h-font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+:root[data-host-light="true"] {
+  --h-surface: #f5f6fa;
+  --h-surface-2: #ffffff;
+  --h-surface-3: #e8ebf2;
+  --h-text: #161a22;
+  --h-muted: #5f6878;
+  --h-border: rgba(0, 0, 0, 0.1);
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-accent: var(--h-accent);
+  --color-accent-contrast: var(--h-accent-contrast);
+  --color-surface: var(--h-surface);
+  --color-surface-2: var(--h-surface-2);
+  --color-surface-3: var(--h-surface-3);
+  --color-fg: var(--h-text);
+  --color-muted: var(--h-muted);
+  --color-line: var(--h-border);
+  --radius-host: var(--h-radius);
+  --font-host: var(--h-font);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #090c12;
+}
+
+body {
+  font-family: var(--h-font);
+  color: var(--h-text);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+body[data-input="gamepad"] {
+  cursor: none;
+}
+
+input,
+textarea {
+  user-select: text;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--h-text) 18%, transparent);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Foco visible y consistente para mando y teclado. */
+[data-nav] {
+  outline: none;
+  transition:
+    box-shadow 0.12s ease,
+    background-color 0.12s ease,
+    transform 0.12s ease;
+}
+[data-nav].is-focused,
+[data-nav]:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--h-accent),
+    0 0 0 5px color-mix(in srgb, var(--h-accent) 25%, transparent);
+}
+/* Con ratón, el anillo de foco (pensado para mando/teclado) no se pinta: basta
+   con el fondo de :hover de cada control. */
+body[data-input="mouse"] [data-nav].is-focused:not(input):not(textarea),
+body[data-input="mouse"] [data-nav]:focus-visible:not(input):not(textarea) {
+  box-shadow: none;
+}
+
+.overlay-enter {
+  animation: overlay-in 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.panel-enter {
+  animation: panel-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.glass {
+  background: color-mix(in srgb, var(--h-surface) 88%, transparent);
+  backdrop-filter: blur(24px) saturate(1.3);
+  border: 1px solid var(--h-border);
+}
+
+.theme-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}

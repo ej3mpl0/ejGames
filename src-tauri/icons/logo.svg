@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="0.55" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="48" y="48" width="928" height="928" rx="220" fill="url(#bg)"/>
+  <rect x="48" y="48" width="928" height="928" rx="220" fill="url(#shine)"/>
+  <!-- Mando estilizado (centrado verticalmente) -->
+  <g transform="translate(0 -84)">
+  <path d="M300 380h424c88 0 150 62 168 150l30 150c14 70-36 132-104 132-40 0-74-22-94-56l-40-66H340l-40 66c-20 34-54 56-94 56-68 0-118-62-104-132l30-150c18-88 80-150 168-150z" fill="#0b1020" opacity="0.92"/>
+  <rect x="322" y="482" width="44" height="140" rx="14" fill="#e0e7ff"/>
+  <rect x="274" y="530" width="140" height="44" rx="14" fill="#e0e7ff"/>
+  <circle cx="680" cy="490" r="30" fill="#22d3ee"/>
+  <circle cx="752" cy="552" r="30" fill="#a78bfa"/>
+  <circle cx="608" cy="552" r="30" fill="#f472b6"/>
+  <circle cx="680" cy="614" r="30" fill="#34d399"/>
+  </g>
+</svg>

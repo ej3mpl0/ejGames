@@ -1,0 +1,10 @@
+node_modules
+dist
+src-tauri/target
+src-tauri/gen
+sdk/vendor/*.js
+themes/retro/fonts
+themes/switch/fonts
+*.log
+.DS_Store
+installer/

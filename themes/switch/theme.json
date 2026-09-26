@@ -1,0 +1,24 @@
+{
+  "id": "switch",
+  "name": "Switch",
+  "version": "1.0.0",
+  "author": "ejGames",
+  "description": "Claro y limpio, iconos grandes y botones redondos (con modo oscuro)",
+  "sdk": 1,
+  "entry": "index.html",
+  "modes": ["tv", "desktop"],
+  "palette": ["#ebebeb", "#ffffff", "#00c3e3", "#2d2d2d"],
+  "host": { "accent": "#00b4d8", "surface": "#f4f4f4", "text": "#222222", "radius": "12px", "dark": false, "font": "Nunito, \"Segoe UI\", sans-serif" },
+  "sounds": { "preset": "switch" },
+  "windowControls": "host",
+  "settings": [
+    { "key": "dark", "type": "toggle", "label": "Tema oscuro", "default": false },
+    { "key": "accent", "type": "color", "label": "Color de selección", "default": "#00c3e3" },
+    { "key": "tile", "type": "range", "label": "Tamaño de los iconos", "min": 160, "max": 320, "step": 8, "unit": "px", "default": 248 },
+    { "key": "round", "type": "range", "label": "Redondeo de los iconos", "min": 0, "max": 40, "unit": "px", "default": 6 },
+    { "key": "font", "type": "font", "label": "Tipografía", "default": "Nunito", "options": [{ "value": "Nunito", "label": "Nunito (incluida)" }] },
+    { "key": "pulse", "type": "toggle", "label": "Borde animado en la selección", "default": true },
+    { "key": "showClock", "type": "toggle", "label": "Reloj", "default": true },
+    { "key": "wallpaper", "type": "image", "label": "Fondo personalizado" }
+  ]
+}

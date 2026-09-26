@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Retro</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="main.js"></script>
+  </head>
+  <body>
+    <div class="screen">
+      <header class="hud" data-ejg-drag>
+        <span class="p1" id="p1">1UP</span>
+        <h1 class="title"><span class="blink">▶</span> SELECT GAME <span class="blink">◀</span></h1>
+        <span class="clock"><span id="credits"></span> <span id="clock"></span></span>
+      </header>
+      <div class="tabs" id="tabs"></div>
+      <div class="body">
+        <ol class="list" id="list" data-focus-group="list"></ol>
+        <div class="card" id="card">
+          <div class="art"><canvas id="art" width="120" height="180"></canvas><img id="art-img" alt="" /></div>
+          <div class="info" id="info"></div>
+        </div>
+      </div>
+      <footer class="foot">
+        <div class="press" id="press"></div>
+        <div class="ticker"><span id="ticker"></span></div>
+      </footer>
+      <div id="detail" hidden></div>
+    </div>
+    <div class="crt"></div>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "id": "xbox",
+  "name": "Xbox",
+  "version": "1.0.0",
+  "author": "ejGames",
+  "description": "Panel de mosaicos con filas, acento verde y ficha de juego",
+  "sdk": 1,
+  "entry": "index.html",
+  "modes": ["tv", "desktop"],
+  "palette": ["#0e1014", "#23262d", "#107c10", "#f3f3f3"],
+  "host": { "accent": "#1e9e1e", "surface": "#16181d", "radius": "6px", "font": "\"Segoe UI Variable Text\", \"Segoe UI\", sans-serif" },
+  "sounds": { "preset": "xbox" },
+  "windowControls": "host",
+  "settings": [
+    { "key": "accent", "type": "color", "label": "Color de acento", "default": "#107c10" },
+    { "key": "tile", "type": "range", "label": "Tamaño de los mosaicos", "min": 140, "max": 280, "step": 5, "unit": "px", "default": 196 },
+    { "key": "font", "type": "font", "label": "Tipografía", "default": "Segoe UI Variable Text", "options": [{ "value": "Bahnschrift", "label": "Bahnschrift (estilo consola)" }] },
+    { "key": "wallpaper", "type": "image", "label": "Fondo personalizado" },
+    { "key": "dynamicBg", "type": "toggle", "label": "El fondo cambia con el juego enfocado", "default": true },
+    { "key": "acrylic", "type": "toggle", "label": "Paneles translúcidos (acrílico)", "default": true },
+    { "key": "glow", "type": "toggle", "label": "Brillo al enfocar", "default": true },
+    { "key": "genreRows", "type": "toggle", "label": "Filas por género", "default": true },
+    { "key": "radius", "type": "range", "label": "Redondeo", "min": 0, "max": 20, "unit": "px", "default": 6 }
+  ]
+}

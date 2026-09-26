@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Switch</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="main.js"></script>
+  </head>
+  <body>
+    <header class="top" data-ejg-drag>
+      <button class="user" data-focus data-action="profiles" id="user" data-ejg-nodrag></button>
+      <div class="status"><span class="clock" id="clock"></span></div>
+    </header>
+    <section id="home">
+      <div class="title-bar"><span id="sel-title"></span></div>
+      <div class="rail" id="rail" data-focus-group="rail"></div>
+      <nav class="circles" data-focus-group="circles">
+        <button class="circle" data-focus data-action="stats"><i style="--c:#e60012"><svg viewBox="0 0 24 24"><path d="M5 19V9m7 10V5m7 14v-7" /></svg></i><span>Estadísticas</span></button>
+        <button class="circle" data-focus data-action="search"><i style="--c:#ff8a00"><svg viewBox="0 0 24 24"><path d="m20 20-4-4m-5 2a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z" /></svg></i><span>Buscar</span></button>
+        <button class="circle" data-focus data-action="collections"><i style="--c:#1e88e5"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2" /><path d="m4 15 5-4 4 3 3-2 4 3" /></svg></i><span>Colecciones</span></button>
+        <button class="circle" data-focus data-action="add-folder"><i style="--c:#43a047"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg></i><span>Añadir juegos</span></button>
+        <button class="circle" data-focus data-action="settings"><i style="--c:#757575"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9l2.1 2.1m10 10 2.1 2.1m0-14.2-2.1 2.1m-10 10-2.1 2.1" /></svg></i><span>Ajustes</span></button>
+        <button class="circle" data-focus data-action="menu"><i style="--c:#424242"><svg viewBox="0 0 24 24"><path d="M12 3v8m6.4-4.4a8 8 0 1 1-12.8 0" /></svg></i><span>Menú</span></button>
+      </nav>
+    </section>
+    <section id="all" hidden>
+      <div class="all-head"><h1>Todos los programas</h1><span id="all-count"></span></div>
+      <div class="all-grid" id="all-grid" data-focus-group="all"></div>
+    </section>
+    <footer class="bar" id="bar"></footer>
+    <aside id="options" hidden></aside>
+  </body>
+</html>

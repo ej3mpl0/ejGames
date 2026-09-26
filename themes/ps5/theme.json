@@ -1,0 +1,31 @@
+{
+  "id": "ps5",
+  "name": "PS5",
+  "version": "1.0.0",
+  "author": "ejGames",
+  "description": "Fila de juegos, fondo a pantalla completa y tráiler al detenerte",
+  "sdk": 1,
+  "entry": "index.html",
+  "modes": ["tv", "desktop"],
+  "palette": ["#05070d", "#1b2130", "#ffffff", "#e6e9f0"],
+  "host": { "accent": "#3b82f6", "surface": "#10141d", "radius": "18px", "font": "\"Segoe UI Variable Display\", \"Segoe UI\", sans-serif" },
+  "sounds": { "preset": "ps" },
+  "windowControls": "host",
+  "settings": [
+    { "key": "accent", "type": "color", "label": "Color de acento", "default": "#3b82f6" },
+    { "key": "tileSize", "type": "range", "label": "Tamaño de los iconos", "min": 80, "max": 150, "step": 2, "unit": "px", "default": 110 },
+    { "key": "dim", "type": "range", "label": "Oscurecer el fondo", "min": 0, "max": 90, "step": 5, "unit": "%", "default": 45 },
+    { "key": "wallpaper", "type": "image", "label": "Fondo cuando el juego no tiene arte" },
+    { "key": "font", "type": "font", "label": "Tipografía", "default": "Segoe UI Variable Display" },
+    { "key": "showClock", "type": "toggle", "label": "Reloj", "default": true },
+    { "key": "rowOrder", "type": "select", "label": "Orden de la fila", "default": "recent", "options": [
+      { "value": "recent", "label": "Jugados recientemente" },
+      { "value": "added", "label": "Añadidos recientemente" },
+      { "value": "title", "label": "Alfabético" },
+      { "value": "favorites", "label": "Favoritos primero" }
+    ] },
+    { "key": "autoTrailer", "type": "toggle", "label": "Tráiler de fondo al detenerte en un juego", "default": true, "group": "Tráileres" },
+    { "key": "trailerDelay", "type": "range", "label": "Espera antes del tráiler", "min": 1, "max": 10, "step": 0.5, "unit": "s", "default": 3, "group": "Tráileres" },
+    { "key": "trailerSound", "type": "toggle", "label": "Tráiler de fondo con sonido", "default": false, "group": "Tráileres" }
+  ]
+}

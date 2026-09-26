@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "Ventana del host y overlay del juego. Los temas (iframes con origen null) no reciben permisos.",
+  "windows": ["main", "overlay"],
+  "webviews": ["main", "overlay"],
+  "local": true,
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-message",
+    "dialog:allow-ask"
+  ]
+}

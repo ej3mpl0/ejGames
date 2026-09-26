@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Steam</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="main.js"></script>
+  </head>
+  <body>
+    <div id="wallpaper"></div>
+    <header class="topbar" data-ejg-drag>
+      <div class="brand">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" class="brand-ico"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="16" rx="1"/><path d="m17 5.5 3.5-1 3 14.5-3.5 1Z" transform="translate(-2 0)"/></svg>
+        <span>BIBLIOTECA</span>
+      </div>
+      <nav class="tabs" data-ejg-nodrag>
+        <button class="tab" data-focus data-tab="home">Inicio</button>
+        <button class="tab" data-focus data-tab="collections">Colecciones</button>
+      </nav>
+      <div class="top-actions" data-ejg-nodrag>
+        <button class="icon-btn" data-focus data-action="search" title="Buscar (Ctrl+F)"><svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg></button>
+        <button class="icon-btn" data-focus data-action="stats" title="Estadísticas"><svg viewBox="0 0 24 24"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg></button>
+        <button class="icon-btn" data-focus data-action="settings" title="Ajustes (Ctrl+,)"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
+        <button class="profile-btn" data-focus data-action="profiles" title="Cambiar de perfil"><span class="avatar" id="avatar"></span><span id="profile-name"></span></button>
+        <div class="win">
+          <button data-win="min" title="Minimizar"><svg viewBox="0 0 12 12"><path d="M2 6h8"/></svg></button>
+          <button data-win="max" title="Maximizar"><svg viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8"/></svg></button>
+          <button data-win="close" class="close" title="Cerrar"><svg viewBox="0 0 12 12"><path d="m2 2 8 8M10 2l-8 8"/></svg></button>
+        </div>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="side-tools">
+          <label class="filter">
+            <svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>
+            <input id="filter" placeholder="Buscar por nombre" spellcheck="false" />
+          </label>
+          <div class="chips" id="chips"></div>
+        </div>
+        <div class="side-list" id="side-list" data-focus-group="side"></div>
+        <button class="add-game" data-focus data-action="add">+ Añadir juegos</button>
+      </aside>
+      <main id="main"></main>
+    </div>
+    <div id="hints" class="hints"></div>
+    <div id="lightbox" hidden></div>
+  </body>
+</html>

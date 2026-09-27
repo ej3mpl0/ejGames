@@ -1,7 +1,7 @@
 // Carga el tema activo en un iframe aislado y hace de puente con él.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api, errMsg } from "../api/tauri";
+import { api, errMsg, on } from "../api/tauri";
 import type { LibGame, ThemeInfo } from "../api/types";
 import { setThemeSink } from "../input/nav";
 import { activeTheme, useApp } from "../store/app";
@@ -241,6 +241,12 @@ export function ThemeFrame() {
   useEffect(() => () => void (dlTimer.current.t != null && clearTimeout(dlTimer.current.t)), []);
   const exploreOn = useApp((s) => s.settings?.exploreEnabled !== false);
   useEffect(() => void (beats.current.ready && event("explore", { enabled: exploreOn })), [exploreOn]);
+
+  // Llegó arte de Steam para la tienda: el tema vuelve a pedir la portada.
+  useEffect(() => {
+    const un = on("explore:art", () => beats.current.ready && event("explore-art", null));
+    return () => void un.then((f) => f());
+  }, []);
 
   // Eventos de partida reenviados al tema.
   useEffect(() => {

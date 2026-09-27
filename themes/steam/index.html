@@ -11,14 +11,15 @@
     <div id="wallpaper"></div>
     <header class="topbar" data-ejg-drag>
       <div class="brand">
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" class="brand-ico"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="16" rx="1"/><path d="m17 5.5 3.5-1 3 14.5-3.5 1Z" transform="translate(-2 0)"/></svg>
-        <span>BIBLIOTECA</span>
+        <svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true" class="brand-ico"><rect x="1" y="1" width="30" height="30" rx="8" fill="url(#bg)"/><path d="M10.2 11.5h11.6c2.7 0 4.6 2.3 4.2 5l-.7 4.3c-.3 1.9-2.6 2.7-4 1.4l-2.2-2.1a2 2 0 0 0-1.4-.6h-3.4a2 2 0 0 0-1.4.6l-2.2 2.1c-1.4 1.3-3.7.5-4-1.4l-.7-4.3c-.4-2.7 1.5-5 4.2-5Z" fill="#0e1a33"/><path d="M11.4 14.3v3.2M9.8 15.9H13" stroke="#dbe4ff" stroke-width="1.4" stroke-linecap="round"/><circle cx="20.6" cy="14.9" r="1" fill="#5eead4"/><circle cx="22.4" cy="16.7" r="1" fill="#f472b6"/><circle cx="18.8" cy="16.7" r="1" fill="#a78bfa"/><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset=".55" stop-color="#2563eb"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs></svg>
+        <span>ejGames</span>
+      </div>
+      <div class="history" data-ejg-nodrag>
+        <button class="hist" data-focus id="nav-back" title="Atrás" aria-label="Atrás"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
       </div>
       <nav class="tabs" data-ejg-nodrag>
-        <button class="tab" data-focus data-tab="home">Inicio</button>
-        <button class="tab" data-focus data-tab="collections">Colecciones</button>
         <button class="tab" data-focus data-tab="store" id="tab-store">Tienda</button>
-        <button class="tab" data-focus data-tab="downloads">Descargas<span class="tab-badge" id="dl-badge" hidden></span></button>
+        <button class="tab" data-focus data-tab="library">Biblioteca</button>
       </nav>
       <div class="top-actions" data-ejg-nodrag>
         <button class="icon-btn" data-focus data-action="search" title="Buscar (Ctrl+F)"><svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg></button>
@@ -34,19 +35,28 @@
     </header>
     <div class="layout">
       <aside class="sidebar">
-        <div class="side-tools">
-          <label class="filter">
-            <svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>
-            <input id="filter" placeholder="Buscar por nombre" spellcheck="false" />
-          </label>
-          <div class="chips" id="chips"></div>
+        <div class="side-top">
+          <button class="side-home" data-focus id="side-home"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5"/></svg><span>Inicio</span></button>
+          <button class="side-grid" data-focus id="side-cols" title="Colecciones"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg></button>
         </div>
+        <div class="side-filter">
+          <button class="side-drop" data-focus id="side-drop"></button>
+          <button class="side-ico" data-focus id="side-recent" title="Ordenar por actividad reciente"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></button>
+          <button class="side-ico" data-focus id="side-ready" title="Solo los que se pueden jugar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m10 8.5 5 3.5-5 3.5Z"/></svg></button>
+        </div>
+        <label class="filter">
+          <svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>
+          <input id="filter" placeholder="Buscar" spellcheck="false" />
+        </label>
         <div class="side-list" id="side-list" data-focus-group="side"></div>
-        <button class="add-game" data-focus data-action="add">+ Añadir juegos</button>
       </aside>
       <main id="main"></main>
     </div>
-    <button id="dl-footer" class="dl-footer" data-focus hidden></button>
+    <footer class="bottombar" data-ejg-drag>
+      <button class="bb-add" data-focus data-action="add" data-ejg-nodrag><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Añadir un juego</button>
+      <button class="bb-dl" data-focus id="dl-footer" data-ejg-nodrag></button>
+      <div class="bb-right"></div>
+    </footer>
     <div id="hints" class="hints"></div>
     <div id="lightbox" hidden></div>
   </body>

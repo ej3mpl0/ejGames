@@ -14,6 +14,7 @@ import { DownloadsOverlay } from "./overlays/explore/Downloads";
 import { ExploreOverlay } from "./overlays/explore/Explore";
 import { KeyboardOverlay } from "./overlays/Keyboard";
 import { UpdateAvailable } from "./overlays/UpdateAvailable";
+import { UninstallDialog } from "./overlays/Uninstall";
 import { checkOnLaunch } from "./host/update";
 import { GameEditor } from "./overlays/GameEditor";
 import { Onboarding } from "./overlays/Onboarding";
@@ -219,6 +220,8 @@ export default function App() {
             return <KeyboardOverlay key={key} args={o.args} onClose={close} />;
           case "update":
             return <UpdateAvailable key={key} onClose={onClose} />;
+          case "uninstall":
+            return <UninstallDialog key={key} id={Number(o.args?.id)} onClose={onClose} />;
           case "profiles":
             return (
               <ProfilePicker

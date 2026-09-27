@@ -40,6 +40,18 @@ miniatura), `coverFull`, `hero` (captura grande; puede faltar), `genres`,
 `queued`, `downloading`, `paused`, `seeding`, `completed`, `installing`,
 `installed` o `error`). Las imágenes ya vienen como URLs de `ejg-media`.
 
+Si el juego está en la tienda de Steam, también trae su arte: `capsule` (la cápsula
+horizontal de 460×215), `capsuleBig` (la grande del carrusel, 616×353) y `library` (la
+vertical de 600×900). La primera vez ejGames lo busca en segundo plano y, al tenerlo, avisa
+con el evento `explore-art`. `createExplore` del kit ya vuelve a pedir la portada y la
+búsqueda; si no lo usas:
+
+```js
+ejg.on("explore-art", () => recargarLaTienda());
+```
+
+Mientras no llega (o si el juego no está en Steam), usa `cover` y `hero`.
+
 ```js
 ejg.downloads.all                // lista en memoria, al día (como mucho 1 vez/s)
 ejg.downloads.onChange((list) => …)

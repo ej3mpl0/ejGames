@@ -12,6 +12,7 @@ ejg.game.hide(id, true)
 ejg.game.rate(id, 80)
 ejg.game.edit(id)                      // abre el editor del host
 ejg.game.openFolder(id)
+ejg.game.uninstall(id)                 // abre el diálogo «Desinstalar» del host
 ejg.game.isRunning(id)
 ejg.game.onState(({ gameId, state }) => …)   // "launching" | "running" | "stopped"
 ```
@@ -22,3 +23,23 @@ nodos DOM seguros.
 
 Los tráilers (`d.trailers[i].url`) son HLS (`.m3u8`): usa `attachStream()` del kit,
 que usa HLS nativo o hls.js según haga falta.
+
+## Desinstalar
+
+`ejg.game.uninstall(id)` no desinstala nada por sí solo: abre un diálogo del host que
+explica qué va a pasar y pide confirmación.
+
+- **Si el juego tiene desinstalador**, se abre (el de su entrada en «Aplicaciones
+  instaladas» de Windows, o un `unins000.exe` / `uninstall.exe` de su carpeta). Cuando el
+  juego desaparece del disco, sale de la biblioteca.
+- **Los de Steam** se desinstalan con Steam.
+- **Si no tiene nada**, su carpeta va a la papelera de reciclaje. Nunca se borra una carpeta
+  de la biblioteca, de descargas o del sistema, ni una que tenga dentro otros juegos.
+
+Sirve para los juegos de carpeta, los de repack y los de Steam instalados. Para saber si
+enseñar la opción, usa `canUninstall(juego)` del kit (`/_sdk/kit/library.js`). Epic, GOG,
+Ubisoft y EA se desinstalan desde sus propias aplicaciones.
+
+<Note>
+Al desinstalar, el juego sale de la biblioteca junto con sus horas y su actividad.
+</Note>

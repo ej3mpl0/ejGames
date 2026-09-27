@@ -12,8 +12,8 @@ use std::sync::{Arc, LazyLock};
 
 const MAX_IMAGE: usize = 10 * 1024 * 1024;
 const EXTS: [&str; 4] = ["jpg", "png", "webp", "gif"];
-/// Hosts de los que salen las imágenes de las fichas.
-const HOSTS: [&str; 5] = ["imageban.ru", "riotpixels.net", "riotpixels.com", "wp.com", "fitgirl-repacks.site"];
+/// Hosts de los que salen las imágenes de las fichas (y el arte de Steam).
+const HOSTS: [&str; 6] = ["imageban.ru", "riotpixels.net", "riotpixels.com", "wp.com", "fitgirl-repacks.site", "steamstatic.com"];
 
 static MAP: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(Default::default);
 
@@ -203,6 +203,7 @@ mod tests {
         assert!(proxy("https://i5.imageban.ru/out/a.jpg").is_some());
         assert!(proxy("http://s01.riotpixels.net/data/a.jpg.240p.jpg").is_some());
         assert!(proxy("https://i0.wp.com/i3.imageban.ru/a.jpg?w=320").is_some());
+        assert!(proxy("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1/h/header.jpg").is_some());
         assert!(proxy("https://evil.com/a.jpg").is_none());
         assert!(proxy("https://imageban.ru.evil.com/a.jpg").is_none());
         assert!(proxy("https://public-api.wordpress.wp.com/x").is_none());

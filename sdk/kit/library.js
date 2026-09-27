@@ -58,6 +58,11 @@ export function visible(games, { hidden = false, missing = false, installed = "a
 
 export const isInstalled = (g) => g.installed !== false;
 
+/** Si `ejg.game.uninstall(id)` sirve para este juego: los de carpeta, los de
+ *  repack y los de Steam que estén instalados. */
+export const canUninstall = (g) =>
+  ["folder", "manual", "repack", "steam"].includes(g.source) && !g.missing && g.installed !== false;
+
 export const SORTS = {
   title: { label: "Nombre", fn: (a, b) => (a.sortTitle < b.sortTitle ? -1 : a.sortTitle > b.sortTitle ? 1 : 0) },
   recent: { label: "Jugado recientemente", fn: (a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0) || SORTS.title.fn(a, b) },

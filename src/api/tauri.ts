@@ -27,6 +27,7 @@ import type {
   Stats,
   StoreSummary,
   ThemeInfo,
+  UninstallPlan,
   UpdateCheck,
 } from "./types";
 
@@ -55,6 +56,8 @@ export const api = {
   getGameFull: (id: number) => invoke<GameFull>("get_game_full", { id }),
   updateGame: (id: number, patch: GamePatch) => invoke<void>("update_game", { id, patch }),
   deleteGame: (id: number) => invoke<void>("delete_game", { id }),
+  uninstallPlan: (id: number) => invoke<UninstallPlan>("uninstall_plan", { id }),
+  uninstallGame: (id: number) => invoke<"started" | "removed">("uninstall_game", { id }),
   purgeMissing: () => invoke<number>("purge_missing"),
   setFavorite: (id: number, value: boolean) => invoke<void>("set_favorite", { id, value }),
   setHidden: (id: number, value: boolean) => invoke<void>("set_hidden", { id, value }),
@@ -156,6 +159,7 @@ export type Events = {
   "downloads:changed": DownloadItem[];
   "downloads:progress": DownloadItem[];
   "downloads:finished": { id: number; title: string };
+  "explore:art": null;
   "downloads:install": { id: number; phase: "running" | "done" | "cancelled" | "error" | "needs-folder"; message?: string | null; gameId?: number | null };
 };
 

@@ -8,6 +8,7 @@
 pub mod fitgirl;
 pub mod images;
 pub mod parse;
+pub mod steamart;
 
 use crate::db::repo;
 use crate::library::names;
@@ -68,6 +69,14 @@ pub struct Repack {
     pub repack_bytes: Option<u64>,
     pub selective: bool,
     pub adult: bool,
+    /// Arte de la tienda de Steam, si el juego está allí (ver `steamart`):
+    /// cápsula horizontal 460×215, la grande 616×353 y la vertical 600×900.
+    #[serde(default)]
+    pub capsule: Option<String>,
+    #[serde(default)]
+    pub capsule_big: Option<String>,
+    #[serde(default)]
+    pub library: Option<String>,
     #[serde(default)]
     pub status: RepackStatus,
 }
@@ -150,6 +159,9 @@ fn to_details(raw: &fitgirl::RawPost) -> RepackDetails {
             repack_bytes: p.repack_bytes,
             selective: p.selective,
             adult,
+            capsule: None,
+            capsule_big: None,
+            library: None,
             status: RepackStatus::default(),
         },
         screenshots,
@@ -281,23 +293,36 @@ impl StatusIndex {
 
 // ───────────────────────────── salida ─────────────────────────────
 
-fn publish(r: &mut Repack, idx: &StatusIndex) {
+fn publish(st: &AppState, r: &mut Repack, idx: &StatusIndex) -> bool {
     r.cover = r.cover.as_deref().and_then(images::proxy);
     r.cover_full = r.cover_full.as_deref().and_then(images::proxy);
     r.hero = r.hero.as_deref().and_then(images::proxy);
     r.status = idx.of(r);
+    match steamart::cached(st, &r.title) {
+        Some(art) => {
+            (r.capsule, r.capsule_big, r.library) = steamart::proxied(&art);
+            true
+        }
+        None => false,
+    }
 }
 
-fn publish_list(st: &AppState, idx: &StatusIndex, items: Vec<Repack>) -> Vec<Repack> {
+/// Publica una lista y busca en segundo plano el arte de Steam que falte.
+fn publish_list(st: &Arc<AppState>, idx: &StatusIndex, items: Vec<Repack>) -> Vec<Repack> {
     let hide_adult = st.settings.get().explore_hide_adult;
-    items
+    let mut missing = Vec::new();
+    let out = items
         .into_iter()
         .filter(|r| !(hide_adult && r.adult))
         .map(|mut r| {
-            publish(&mut r, idx);
+            if !publish(st, &mut r, idx) {
+                missing.push(r.title.clone());
+            }
             r
         })
-        .collect()
+        .collect();
+    steamart::resolve_later(st, missing);
+    out
 }
 
 /// Portada de la tienda: populares del mes y de la semana, y novedades.
@@ -404,7 +429,9 @@ pub async fn details_raw(st: &Arc<AppState>, slug: &str, fresh: bool) -> anyhow:
 pub async fn details(st: &Arc<AppState>, slug: &str) -> anyhow::Result<RepackDetails> {
     let mut d = details_raw(st, slug, false).await?;
     let idx = status_index(st);
-    publish(&mut d.repack, &idx);
+    if !publish(st, &mut d.repack, &idx) {
+        steamart::resolve_later(st, vec![d.repack.title.clone()]);
+    }
     d.screenshots = d
         .screenshots
         .iter()

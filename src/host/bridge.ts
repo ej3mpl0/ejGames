@@ -82,6 +82,14 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
       return api.setUserRating(num(params?.id), params?.value == null ? null : Math.max(0, Math.min(100, num(params.value))));
     case "game.folder":
       return api.openGameFolder(num(params?.id));
+    case "game.uninstall": {
+      // Solo abre el diálogo del host: desinstalar lo confirma siempre el usuario.
+      const id = num(params?.id);
+      if (!st.games.some((g) => g.id === id)) throw new Error("juego desconocido");
+      playSound("open");
+      st.open("uninstall", { id });
+      return;
+    }
     case "stats.get":
       return api.getStats(params?.days ? num(params.days) : undefined);
     case "stats.recent":

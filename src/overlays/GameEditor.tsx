@@ -8,6 +8,10 @@ import { useOverlayNav } from "../input/nav";
 import { playtime, SOURCE_LABEL } from "../lib/format";
 import { useApp } from "../store/app";
 
+/** Juegos que ejGames sabe desinstalar (los de carpeta, los de repack y los de Steam). */
+const canUninstall = (g: { source: string; missing?: boolean; installed?: boolean }) =>
+  ["folder", "manual", "repack", "steam"].includes(g.source) && !g.missing && g.installed !== false;
+
 type Tab = "general" | "match" | "art" | "info";
 const ART_KINDS = [
   { kind: "cover", label: "Portada", aspect: "aspect-[2/3]" },
@@ -255,6 +259,11 @@ function GeneralTab({ data, reload, onClose }: { data: GameFull; reload: () => v
           <Button icon={<EyeOff size={15} />} onClick={() => api.setHidden(g.id, true).then(onClose)}>
             Ocultar
           </Button>
+          {canUninstall(g) && (
+            <Button variant="danger" icon={<Trash2 size={15} />} onClick={() => useApp.getState().open("uninstall", { id: g.id })}>
+              Desinstalar…
+            </Button>
+          )}
           {confirm ? (
             <Button variant="danger" icon={<Trash2 size={15} />} onClick={() => api.deleteGame(g.id).then(onClose)}>
               Quitar de la biblioteca (no borra archivos)

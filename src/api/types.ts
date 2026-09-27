@@ -533,6 +533,8 @@ export interface DownloadItem {
   version?: string | null;
   cover?: string | null;
   hero?: string | null;
+  /** Cápsula de la tienda de Steam (460×215), si el juego está allí. */
+  capsule?: string | null;
   pageUrl?: string | null;
   state: DownloadState;
   /** user | queue | playing | install | needs-folder */
@@ -568,6 +570,16 @@ export interface DownloadDefaults {
 }
 
 // ───────────────────────────── actualizaciones ─────────────────────────────
+
+/** Qué hará «Desinstalar» (lo decide el núcleo). */
+export interface UninstallPlan {
+  gameId: number;
+  title: string;
+  method: "uninstaller" | "steam" | "folder";
+  dir: string | null;
+  program: string | null;
+  sizeBytes: number | null;
+}
 
 export interface UpdateCheck {
   current: string;

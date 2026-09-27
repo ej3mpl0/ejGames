@@ -86,6 +86,8 @@ pub struct DownloadItem {
     pub version: Option<String>,
     pub cover: Option<String>,
     pub hero: Option<String>,
+    /// Cápsula de la tienda de Steam (460×215), si el juego está allí.
+    pub capsule: Option<String>,
     pub page_url: Option<String>,
     pub state: String,
     pub pause_reason: Option<String>,
@@ -144,7 +146,7 @@ pub struct Defaults {
     pub configured: bool,
 }
 
-fn item(row: &DownloadRow, live: Option<&Live>) -> DownloadItem {
+fn item(row: &DownloadRow, live: Option<&Live>, capsule: Option<String>) -> DownloadItem {
     let (mut done, mut total) = (row.done_bytes.max(0) as u64, row.total_bytes.max(0) as u64);
     let mut uploaded = row.uploaded_bytes.max(0) as u64;
     let active = matches!(row.state.as_str(), "downloading" | "seeding");
@@ -168,6 +170,7 @@ fn item(row: &DownloadRow, live: Option<&Live>) -> DownloadItem {
         version: row.version.clone(),
         cover: explore::proxied(row.cover_url.as_deref()),
         hero: explore::proxied(row.hero_url.as_deref()),
+        capsule,
         page_url: row.page_url.clone(),
         state: row.state.clone(),
         pause_reason: row.pause_reason.clone(),
@@ -198,14 +201,17 @@ fn item(row: &DownloadRow, live: Option<&Live>) -> DownloadItem {
 
 pub fn list(st: &AppState) -> anyhow::Result<Vec<DownloadItem>> {
     let rows = st.db.with(repo::list_downloads)?;
+    // El arte antes de bloquear el motor (puede leer la BD).
+    let caps: Vec<Option<String>> = rows.iter().map(|r| explore::steamart::capsule(st, &r.title)).collect();
     let live = st.downloads.live.lock();
-    Ok(rows.iter().map(|r| item(r, live.get(&r.id))).collect())
+    Ok(rows.iter().zip(caps).map(|(r, c)| item(r, live.get(&r.id), c)).collect())
 }
 
 pub fn get_item(st: &AppState, id: i64) -> anyhow::Result<DownloadItem> {
     let row = st.db.with(|c| repo::get_download(c, id))?.ok_or_else(|| anyhow::anyhow!("Esa descarga ya no existe"))?;
+    let cap = explore::steamart::capsule(st, &row.title);
     let live = st.downloads.live.lock();
-    Ok(item(&row, live.get(&id)))
+    Ok(item(&row, live.get(&id), cap))
 }
 
 /// Avisa a la interfaz de que la lista cambió (estado, altas, bajas).
@@ -305,6 +311,9 @@ pub async fn prepare_magnet(st: &Arc<AppState>, magnet: &str, title: &str) -> an
             repack_bytes: None,
             selective: false,
             adult: false,
+            capsule: None,
+            capsule_big: None,
+            library: None,
             status: Default::default(),
         },
         screenshots: vec![],

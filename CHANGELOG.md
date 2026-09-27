@@ -5,6 +5,22 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.3.1
+
+**Tema Steam, más fiel al cliente**
+- Arriba, como en Steam: **Tienda** y **Biblioteca**. Las descargas se abren desde la barra de abajo («Administrar descargas»), que mientras descargas enseña el juego, su progreso y la velocidad.
+- La biblioteca es la de Steam: lista a la izquierda con Inicio, Colecciones, filtro, buscador y grupos plegables; en el inicio, «Juegos recientes» agrupados por fecha, tus favoritos y cada colección como estantería, y «Todos los juegos» con «Ordenar por». Nueva vista de colecciones con sus portadas en abanico.
+- Página de juego como la de Steam: botón Jugar, última sesión, tiempo de juego y logros, el menú del engranaje (favoritos, colecciones, archivos locales, ocultar, desinstalar, propiedades), la actividad por días y el panel de logros.
+- La tienda usa el arte de la tienda de Steam (cápsulas y carrusel) cuando el juego está allí. Portada con el carrusel de destacados y sus capturas, una fila por páginas y la lista con pestañas y vista previa; ficha de producto y resultados de búsqueda como los de Steam.
+- El buscador de la tienda ya deja escribir: antes perdía el foco con cada letra.
+
+**Desinstalar juegos**
+- Nuevo «Desinstalar» en la página de juego del tema Steam y en *Editar juego*. Abre el desinstalador del juego (el de Windows o el `unins000.exe` de su carpeta) o, si no tiene, manda su carpeta a la papelera; los de Steam se desinstalan con Steam. Siempre pide confirmación y el juego sale de la biblioteca cuando desaparece del disco.
+- Para temas: `ejg.game.uninstall(id)` abre ese diálogo y `canUninstall(juego)` del kit dice si se puede.
+
+**Arreglos**
+- En los diálogos «Instalar» de los temas Steam y Cine podía salir el texto «null».
+
 ## 0.3.0
 
 **Explorar**

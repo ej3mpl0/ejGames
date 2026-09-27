@@ -1,11 +1,12 @@
-// Tema "Steam": barra lateral + estanterías + página de juego.
+// Tema "Steam": la biblioteca del cliente de Steam (barra lateral, inicio con
+// estanterías, colecciones y página de juego), su tienda y sus descargas.
 // Es el tema de referencia: úsalo como ejemplo para crear el tuyo.
 
 import { h, img, initials, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { attachStream, trailerPlayer } from "/_sdk/kit/media.js";
 import { playtime, relative, date, description, SOURCE_LABEL } from "/_sdk/kit/format.js";
-import { visible, sort, recent, search, inCollection, SORTS } from "/_sdk/kit/library.js";
+import { visible, sort, search, inCollection, canUninstall, SORTS } from "/_sdk/kit/library.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { downloadLabel, percent, speed } from "/_sdk/kit/store.js";
@@ -16,30 +17,34 @@ const $ = (s) => document.querySelector(s);
 const main = $("#main");
 const sideList = $("#side-list");
 const filterInput = $("#filter");
-const chipsEl = $("#chips");
 const lightbox = $("#lightbox");
 
 const saved = (await ejg.storage.getAll().catch(() => null)) || {};
 const state = {
-  tab: "home",
+  tab: "library", // library | store | downloads
+  view: "home", // (biblioteca) home | collections | collection | game
   gameId: null,
-  prevTab: "home",
+  collection: null, // id de colección o "fav"
+  prev: [], // vistas anteriores de la biblioteca, para «Atrás»
   filter: "",
   chip: saved.chip || "all",
   sort: saved.sort || "title",
-  collection: null,
-  scroll: 0,
+  sideSort: saved.sideSort || "title",
+  collapsed: new Set(saved.collapsed || []),
 };
 
 const ICON = {
   play: '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>',
   star: '<svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>',
   gear: '<svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2Z"/></svg>',
-  folder: '<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>',
-  back: '<svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>',
+  info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>',
   download: '<svg viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>',
-  sort: '<svg viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M10 18h4"/></svg>',
+  caret: '<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>',
+  left: '<svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>',
+  right: '<svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>',
   trophy: '<svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0Z"/><path d="M8 6H5a3 3 0 0 0 3 4m8-4h3a3 3 0 0 1-3 4m-4 3v4m-4 3h8"/></svg>',
+  spark: '<svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></svg>',
+  plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
 };
 const svg = (name) => {
   const t = document.createElement("template");
@@ -51,29 +56,23 @@ const svg = (name) => {
 const focus = createFocus({ root: document.body });
 const isShop = () => state.tab === "store" || state.tab === "downloads";
 bindNav(focus, {
-  back: () => {
-    if (!lightbox.hidden) return closeLightbox(), true;
-    if (shop.back()) return true;
-    if (state.tab === "game") return goBack(), true;
-    if (state.collection) return (state.collection = null), render(), true;
-    return false;
-  },
+  back: () => back(),
   y: () => {
     if (state.tab === "store") return shop.search(), true;
-    const id = focusedGameId();
-    if (id) ejg.game.favorite(id);
+    const id = focusedGameId() ?? (state.view === "game" ? state.gameId : null);
+    if (id && !isShop()) ejg.game.favorite(id);
     return !!id;
   },
   x: () => {
     if (isShop()) return false;
-    const id = focusedGameId() ?? state.gameId;
+    const id = focusedGameId() ?? (state.view === "game" ? state.gameId : null);
     if (id) ejg.game.edit(id);
     return !!id;
   },
   menu: () => (ejg.ui.open("menu"), true),
   view: () => (ejg.ui.open("search"), true),
-  lb: () => (shop.hasDialog() || switchTab(-1), true),
-  rb: () => (shop.hasDialog() || switchTab(1), true),
+  lb: () => (menu || shop.hasDialog() || switchTab(-1), true),
+  rb: () => (menu || shop.hasDialog() || switchTab(1), true),
   left: () => (!lightbox.hidden ? (stepLightbox(-1), true) : false),
   right: () => (!lightbox.hidden ? (stepLightbox(1), true) : false),
 });
@@ -87,6 +86,7 @@ const shop = createStore({
   openGame: (id) => openGame(id),
   goTab: (t) => goTab(t),
   onChange: () => updateDownloadsUi(),
+  onNavigate: () => updateHistory(),
 });
 shop.bindTab(() => state.tab);
 
@@ -95,221 +95,421 @@ function focusedGameId() {
   return id ? Number(id) : null;
 }
 
-// "/" enfoca el filtro de la barra lateral (E y F son atajos de editar/favorito).
+// "/" enfoca el buscador de la barra lateral (E y F son atajos de editar/favorito).
 window.addEventListener("keydown", (e) => {
-  if (e.key !== "/" || document.activeElement === filterInput) return;
+  if (e.key !== "/" || document.activeElement?.tagName === "INPUT" || state.tab !== "library") return;
   e.preventDefault();
   filterInput.focus();
 });
 
+// ─────────────── menús desplegables (como los de Steam) ───────────────
+let menu = null;
+/** items: [{ label, run, danger?, on? } | "-"] */
+function openMenu(anchor, items) {
+  closeMenu(true);
+  const prev = focus.current;
+  const box = h(
+    "div",
+    { class: "menu", "data-focus-trap": "" },
+    ...items.map((it) =>
+      it === "-"
+        ? h("div", { class: "menu-sep" })
+        : h(
+            "button",
+            {
+              class: "menu-item" + (it.danger ? " danger" : "") + (it.on ? " on" : ""),
+              "data-focus": "",
+              onclick: () => {
+                closeMenu();
+                it.run();
+              },
+            },
+            it.label,
+          ),
+    ),
+  );
+  document.body.append(box);
+  const r = anchor.getBoundingClientRect();
+  const w = box.offsetWidth;
+  const hgt = box.offsetHeight;
+  box.style.left = `${Math.max(8, Math.min(r.left, innerWidth - w - 8))}px`;
+  box.style.top = `${r.bottom + hgt + 8 > innerHeight ? Math.max(8, r.top - hgt - 4) : r.bottom + 4}px`;
+  menu = { box, prev };
+  ejg.sound.play("open");
+  focus.focus(box.querySelector(".menu-item.on") || box.querySelector("[data-focus]"), { instant: true, silent: true });
+}
+function closeMenu(silent) {
+  if (!menu) return false;
+  const { box, prev } = menu;
+  menu = null;
+  box.remove();
+  if (!silent) ejg.sound.play("back");
+  if (prev?.isConnected) focus.focus(prev, { silent: true, noScroll: true });
+  return true;
+}
+window.addEventListener("mousedown", (e) => menu && !menu.box.contains(e.target) && closeMenu(true), true);
+window.addEventListener("resize", () => closeMenu(true));
+
 // ─────────────── datos ───────────────
 const games = () => visible(ejg.library.all);
-function filtered() {
-  let list = games();
-  if (state.collection) list = inCollection(list, ejg.library.collections.find((c) => c.id === state.collection));
-  if (state.chip === "fav") list = list.filter((g) => g.favorite);
-  if (state.chip === "installed") list = list.filter((g) => g.installed !== false);
-  if (state.chip === "uninstalled") list = list.filter((g) => g.installed === false);
+const CHIPS = { all: "Juegos", installed: "Listos para jugar", uninstalled: "Sin instalar", fav: "Favoritos" };
+function chipped(list) {
+  if (state.chip === "fav") return list.filter((g) => g.favorite);
+  if (state.chip === "installed") return list.filter((g) => g.installed !== false && !g.missing);
+  if (state.chip === "uninstalled") return list.filter((g) => g.installed === false);
+  return list;
+}
+function filtered(sortKey = state.sort) {
+  const list = chipped(games());
   if (state.filter) return search(list, state.filter, 500);
-  return sort(list, state.sort);
+  return sort(list, sortKey);
 }
 const isRunning = (id) => ejg.game.isRunning(id);
+const collectionById = (id) => (id === "fav" ? { id: "fav", name: "Favoritos", kind: "fav" } : ejg.library.collections.find((c) => c.id === id));
+const members = (c) => (c.kind === "fav" ? games().filter((g) => g.favorite) : inCollection(games(), c));
+
+function saveState() {
+  ejg.storage.set("chip", state.chip);
+  ejg.storage.set("sort", state.sort);
+  ejg.storage.set("sideSort", state.sideSort);
+  ejg.storage.set("collapsed", [...state.collapsed]);
+}
 
 // ─────────────── piezas ───────────────
-function placeholder(g, small) {
+function placeholder(g) {
   const hue = hueOf(g.title);
-  const el = h("div", { class: small ? "ph" : "ph", style: { background: `linear-gradient(160deg, hsl(${hue} 45% 34%), hsl(${(hue + 40) % 360} 50% 16%))` } });
-  if (small) el.textContent = initials(g.title);
-  else el.append(h("b", null, initials(g.title)), h("span", null, g.title));
+  const el = h("div", { class: "ph", style: { background: `linear-gradient(160deg, hsl(${hue} 45% 34%), hsl(${(hue + 40) % 360} 50% 16%))` } });
+  el.textContent = initials(g.title);
   return el;
 }
 
 function sideItem(g, prev) {
-  const key = `${g.id}:${g.title}:${g.media.icon}:${isRunning(g.id)}:${g.missing}:${g.installed}:${state.gameId === g.id}`;
+  const running = isRunning(g.id);
+  const key = `${g.id}:${g.title}:${g.media.icon}:${running}:${g.missing}:${g.installed}:${state.gameId === g.id && state.view === "game"}`;
   if (prev && prev.__sig === key) return prev;
   const icon = g.media.icon || g.media.coverThumb;
   const el = h(
     "button",
     {
-      class: "side-item" + (g.missing ? " missing" : "") + (g.installed === false ? " uninstalled" : ""),
+      class: "side-item" + (g.missing ? " missing" : "") + (g.installed === false ? " uninstalled" : "") + (running ? " running" : ""),
       "data-focus": "",
       "data-game-id": g.id,
-      "aria-current": state.gameId === g.id ? "true" : null,
+      "aria-current": state.gameId === g.id && state.view === "game" ? "true" : null,
       onclick: () => openGame(g.id),
       ondblclick: () => ejg.game.launch(g.id),
       title: g.title,
     },
-    icon ? img(icon, { loading: "lazy" }) : placeholder(g, true),
-    h("span", { class: "t" }, g.title),
-    isRunning(g.id) ? h("span", { class: "run" }, "EN MARCHA") : null,
+    icon ? img(icon, { loading: "lazy" }) : placeholder(g),
+    h("span", { class: "t" }, g.title, running ? h("span", { class: "run" }, " - En marcha") : null),
   );
   el.__sig = key;
   return el;
 }
 
-function coverCard(g, prev) {
-  const key = `${g.id}:${g.title}:${g.media.coverThumb}:${g.media.heroThumb}:${g.favorite}:${isRunning(g.id)}:${g.playtime}:${g.missing}:${g.installed}`;
+/** Cápsula vertical de la biblioteca (600×900 en Steam). */
+function capsule(g, prev) {
+  const running = isRunning(g.id);
+  const key = `${g.id}:${g.title}:${g.media.coverThumb}:${g.media.heroThumb}:${running}:${g.playtime}:${g.missing}:${g.installed}`;
   if (prev && prev.__sig === key) return prev;
-  const art = h("div", { class: "art" }, artFor(g, "portrait"));
-  const badges = h(
+  const el = h(
+    "button",
+    {
+      class: "cap" + (g.missing ? " missing" : "") + (g.installed === false ? " uninstalled" : ""),
+      "data-focus": "",
+      "data-game-id": g.id,
+      onclick: () => openGame(g.id),
+      ondblclick: () => ejg.game.launch(g.id),
+      title: g.title,
+    },
+    h("div", { class: "cap-art" }, artFor(g, "portrait"), running ? h("span", { class: "cap-run" }, "EN MARCHA") : null),
+    h(
+      "div",
+      { class: "cap-hover" },
+      h("b", null, g.title),
+      h("span", null, g.installed === false ? "Sin instalar" : g.playtime ? `${playtime(g.playtime)} jugadas` : "Sin jugar"),
+    ),
+    h("div", { class: "cap-title" }, g.title),
+  );
+  el.__sig = key;
+  return el;
+}
+
+/** Estantería horizontal con flechas, como las del inicio de la biblioteca. */
+function shelf(id, title, count, list, render = capsule, extra = null) {
+  const row = h("div", { class: "shelf-row", "data-focus-group": `shelf-${id}` });
+  keyed(row, list, (g) => `${id}-${g.id}`, render);
+  const scrollBy = (d) => row.scrollBy({ left: d * row.clientWidth * 0.8, behavior: "smooth" });
+  return h(
+    "section",
+    { class: "shelf" },
+    h(
+      "div",
+      { class: "shelf-head" },
+      h("h2", null, title, count != null ? h("span", { class: "n" }, ` (${count})`) : null),
+      extra,
+      h("div", { class: "shelf-arrows" }, h("button", { class: "arr", onclick: () => scrollBy(-1), "aria-label": "Anterior" }, svg("left")), h("button", { class: "arr", onclick: () => scrollBy(1), "aria-label": "Siguiente" }, svg("right"))),
+    ),
+    row,
+  );
+}
+
+function sortDrop() {
+  return h(
     "div",
-    { class: "badges" },
-    isRunning(g.id) ? h("span", { class: "badge run" }, "EN MARCHA") : null,
-    g.installed === false ? h("span", { class: "badge dl", title: "Sin instalar", html: ICON.download }) : null,
-    g.favorite ? h("span", { class: "badge fav" }, "★") : null,
+    { class: "sortby" },
+    h("span", null, "Ordenar por"),
+    h(
+      "button",
+      {
+        class: "drop",
+        "data-focus": "",
+        onclick: (e) =>
+          openMenu(
+            e.currentTarget,
+            Object.entries(SORTS).map(([k, s]) => ({
+              label: s.label,
+              on: state.sort === k,
+              run: () => {
+                state.sort = k;
+                saveState();
+                render();
+              },
+            })),
+          ),
+      },
+      h("span", null, SORTS[state.sort].label),
+      svg("caret"),
+    ),
   );
-  const el = h(
-    "button",
-    { class: "cover" + (g.missing ? " missing" : "") + (g.installed === false ? " uninstalled" : ""), "data-focus": "", "data-game-id": g.id, onclick: () => openGame(g.id), title: g.title },
-    art,
-    badges,
-    h("div", { class: "hover" }, h("b", null, g.title), h("span", null, g.installed === false ? "Sin instalar" : g.playtime ? playtime(g.playtime) : "Sin jugar")),
-    h("div", { class: "title" }, g.title),
-  );
-  el.__sig = key;
-  return el;
 }
 
-function recentCard(g, prev) {
-  const key = `${g.id}:${g.media.heroThumb}:${g.media.logo}:${g.lastPlayed}`;
-  if (prev && prev.__sig === key) return prev;
-  const el = h(
-    "button",
-    { class: "recent-card", "data-focus": "", "data-game-id": g.id, onclick: () => openGame(g.id), title: g.title },
-    artFor(g, "landscape"),
-    h("div", { class: "info" }, h("span", null, `${relative(g.lastPlayed)} · ${playtime(g.playtime)}`)),
-  );
-  el.__sig = key;
+function grid(list, group = "grid") {
+  const el = h("div", { class: "grid", "data-focus-group": group });
+  keyed(el, list, (g) => g.id, capsule);
+  if (!list.length) el.append(h("div", { class: "empty small" }, state.filter ? "Ningún juego coincide con la búsqueda." : "No hay juegos aquí."));
   return el;
 }
 
 // ─────────────── barra lateral ───────────────
-const CHIPS = [
-  ["all", "Todos"],
-  ["installed", "Instalados"],
-  ["uninstalled", "Sin instalar"],
-  ["fav", "Favoritos"],
-];
-function renderChips() {
-  chipsEl.replaceChildren(
-    ...CHIPS.map(([k, label]) =>
-      h("button", {
-        class: "chip",
-        "data-focus": "",
-        "aria-pressed": String(state.chip === k),
-        onclick: () => {
-          state.chip = k;
-          ejg.storage.set("chip", k);
-          renderChips();
-          render();
-        },
-      }, label),
-    ),
-  );
+const sideDrop = $("#side-drop");
+const sideRecent = $("#side-recent");
+const sideReady = $("#side-ready");
+$("#side-home").addEventListener("click", () => goLibrary("home"));
+$("#side-cols").addEventListener("click", () => goLibrary("collections"));
+sideDrop.addEventListener("click", () =>
+  openMenu(
+    sideDrop,
+    Object.entries(CHIPS).map(([k, label]) => ({
+      label,
+      on: state.chip === k,
+      run: () => {
+        state.chip = k;
+        saveState();
+        render();
+      },
+    })),
+  ),
+);
+sideRecent.addEventListener("click", () => {
+  state.sideSort = state.sideSort === "recent" ? "title" : "recent";
+  saveState();
+  renderSidebar();
+});
+sideReady.addEventListener("click", () => {
+  state.chip = state.chip === "installed" ? "all" : "installed";
+  saveState();
+  render();
+});
+
+const groupBoxes = new Map();
+function sideGroup(id, label, list) {
+  let g = groupBoxes.get(id);
+  if (!g) {
+    const head = h("button", { class: "side-group", "data-focus": "", onclick: () => toggleGroup(id) });
+    const box = h("div", { class: "side-items" });
+    g = { head, box, wrap: h("div", null, head, box) };
+    groupBoxes.set(id, g);
+  }
+  const open = !state.collapsed.has(id);
+  g.head.replaceChildren(h("span", { class: "tri" + (open ? " open" : ""), html: ICON.caret }), h("span", null, label), h("span", { class: "n" }, `(${list.length})`));
+  g.box.hidden = !open;
+  if (open) keyed(g.box, list, (x) => `${id}${x.id}`, sideItem);
+  else g.box.replaceChildren();
+  return g.wrap;
+}
+function toggleGroup(id) {
+  state.collapsed.has(id) ? state.collapsed.delete(id) : state.collapsed.add(id);
+  saveState();
+  renderSidebar();
 }
 
-let favBox, allBox, allHead;
 function renderSidebar() {
-  if (!favBox) {
-    favBox = h("div");
-    allBox = h("div");
-    allHead = h("div", { class: "side-group" });
-    sideList.append(favBox, allHead, allBox);
-  }
-  const list = filtered();
+  const list = filtered(state.sideSort);
+  sideDrop.replaceChildren(h("span", null, CHIPS[state.chip]), h("small", null, `(${list.length})`), svg("caret"));
+  sideRecent.classList.toggle("on", state.sideSort === "recent");
+  sideReady.classList.toggle("on", state.chip === "installed");
+  $("#side-home").classList.toggle("on", state.view === "home");
+  $("#side-cols").classList.toggle("on", state.view === "collections" || state.view === "collection");
   const favs = !state.filter && state.chip === "all" ? list.filter((g) => g.favorite) : [];
-  favBox.replaceChildren(...(favs.length ? [h("div", { class: "side-group" }, h("span", null, "Favoritos"), h("span", null, favs.length))] : []));
-  const favItems = h("div");
-  keyed(favItems, favs, (g) => `f${g.id}`, sideItem);
-  if (favs.length) favBox.append(favItems);
-  allHead.replaceChildren(h("span", null, state.filter ? "Resultados" : "Todos"), h("span", null, list.length));
-  keyed(allBox, list, (g) => g.id, sideItem);
+  const groups = [];
+  if (favs.length) groups.push(sideGroup("fav", "Favoritos", favs));
+  groups.push(sideGroup("all", state.filter ? "Resultados" : favs.length ? "Sin categoría" : "Todos", favs.length ? list.filter((g) => !g.favorite) : list));
+  if (sideList.children.length !== groups.length || [...sideList.children].some((c, i) => c !== groups[i])) sideList.replaceChildren(...groups);
 }
 
-// ─────────────── vistas ───────────────
-function renderHome() {
-  const list = filtered();
-  const all = games();
-  if (!all.length) {
-    main.replaceChildren(
-      h(
-        "div",
-        { class: "empty" },
-        h("h2", null, "Tu biblioteca está vacía"),
-        h("p", null, "Añade la carpeta donde tienes tus juegos o importa los de tus tiendas."),
-        h("button", { class: "pill", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, "+ Añadir juegos"),
-      ),
-    );
-    return;
+// ─────────────── inicio de la biblioteca ───────────────
+const cap1 = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+function bucket(ts) {
+  const d = new Date(ts * 1000);
+  const now = new Date();
+  const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(now) - day(d)) / 864e5);
+  if (diff <= 0) return "Hoy";
+  if (diff === 1) return "Ayer";
+  if (diff < 7) return "Esta semana";
+  if (diff < 14) return "La semana pasada";
+  if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) return "Este mes";
+  const m = cap1(d.toLocaleDateString("es-ES", { month: "long" }));
+  return d.getFullYear() === now.getFullYear() ? m : `${m} de ${d.getFullYear()}`;
+}
+
+function recentShelf(all) {
+  const rec = all.filter((g) => g.lastPlayed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 14);
+  if (!rec.length) return null;
+  const row = h("div", { class: "shelf-row recent-row", "data-focus-group": "shelf-recent" });
+  let cur = null;
+  let box = null;
+  for (const g of rec) {
+    const b = bucket(g.lastPlayed);
+    if (b !== cur) {
+      cur = b;
+      box = h("div", { class: "rg-cards" });
+      row.append(h("div", { class: "rg" }, h("div", { class: "rg-label" }, b), box));
+    }
+    box.append(capsule(g));
   }
-  const wrap = h("div", { class: "home" });
-  const rec = recent(all, 10);
-  if (ejg.settings.showRecent !== false && rec.length && !state.filter && state.chip === "all" && !state.collection) {
-    wrap.append(h("div", { class: "shelf-head" }, h("h2", null, "Recientes")));
-    const shelf = h("div", { class: "recent", "data-focus-group": "recent" });
-    keyed(shelf, rec, (g) => g.id, recentCard);
-    wrap.append(shelf);
-  }
-  const col = state.collection && ejg.library.collections.find((c) => c.id === state.collection);
-  const sortKeys = Object.keys(SORTS);
-  wrap.append(
+  const scrollBy = (d) => row.scrollBy({ left: d * row.clientWidth * 0.8, behavior: "smooth" });
+  return h(
+    "section",
+    { class: "shelf" },
     h(
       "div",
       { class: "shelf-head" },
-      h("h2", null, col ? `Colección · ${col.name}` : state.filter ? "Resultados" : "Todos los juegos"),
-      h("span", { class: "count" }, `(${list.length})`),
-      h(
-        "div",
-        { class: "tools" },
-        col ? h("button", { class: "pill", "data-focus": "", onclick: () => ((state.collection = null), render()) }, "✕ Quitar colección") : null,
-        h(
-          "button",
-          {
-            class: "pill",
-            "data-focus": "",
-            title: "Cambiar orden",
-            onclick: () => {
-              state.sort = sortKeys[(sortKeys.indexOf(state.sort) + 1) % sortKeys.length];
-              ejg.storage.set("sort", state.sort);
-              render();
-            },
-          },
-          svg("sort"),
-          SORTS[state.sort].label,
-        ),
-      ),
+      h("h2", null, "Juegos recientes"),
+      h("div", { class: "shelf-arrows" }, h("button", { class: "arr", onclick: () => scrollBy(-1) }, svg("left")), h("button", { class: "arr", onclick: () => scrollBy(1) }, svg("right"))),
     ),
+    row,
   );
-  const grid = h("div", { class: "grid", "data-focus-group": "grid" });
-  keyed(grid, list, (g) => g.id, coverCard);
-  if (!list.length) grid.append(h("div", { class: "empty" }, "Nada coincide con el filtro."));
-  wrap.append(grid);
-  main.replaceChildren(wrap);
-  main.scrollTop = state.scroll;
 }
 
-function renderCollections() {
-  const cols = ejg.library.collections;
+function emptyLibrary() {
+  return h(
+    "div",
+    { class: "empty" },
+    h("h2", null, "Tu biblioteca está vacía"),
+    h("p", null, "Añade la carpeta donde tienes tus juegos o importa los de tus tiendas."),
+    h("button", { class: "btn-steam", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, "Añadir un juego"),
+  );
+}
+
+function renderHome() {
   const all = games();
-  const wrap = h("div", { class: "cols" });
-  for (const c of cols) {
-    const members = inCollection(all, c);
-    const mosaic = h("div", { class: "mosaic" }, ...members.slice(0, 4).map((g) => (g.media.coverThumb ? img(g.media.coverThumb) : h("div"))));
-    wrap.append(
+  if (!all.length) return main.replaceChildren(emptyLibrary());
+  // Con búsqueda o filtro, Steam enseña directamente la rejilla.
+  if (state.filter || state.chip !== "all") {
+    const list = filtered();
+    return main.replaceChildren(
       h(
-        "button",
-        { class: "col-card", "data-focus": "", onclick: () => ((state.collection = c.id), (state.tab = "home"), render()) },
-        mosaic,
-        h("div", { class: "label" }, h("b", null, c.name), h("span", null, `${members.length} juegos${c.kind === "smart" ? " · inteligente" : ""}`)),
+        "div",
+        { class: "lib-home" },
+        h(
+          "section",
+          { class: "all" },
+          h("div", { class: "all-head" }, h("h2", null, state.filter ? "Resultados" : CHIPS[state.chip], h("span", { class: "n" }, ` (${list.length})`)), sortDrop()),
+          grid(list),
+        ),
       ),
     );
   }
+  const wrap = h("div", { class: "lib-home" });
+  if (ejg.settings.showRecent !== false) {
+    const r = recentShelf(all);
+    if (r) wrap.append(r);
+  }
+  const favs = all.filter((g) => g.favorite);
+  if (favs.length) wrap.append(shelf("fav", "Favoritos", favs.length, sort(favs, state.sort)));
+  for (const c of ejg.library.collections) {
+    const list = inCollection(all, c);
+    if (list.length) wrap.append(shelf(`c${c.id}`, c.name, list.length, sort(list, state.sort)));
+  }
+  const list = sort(all, state.sort);
   wrap.append(
-    h("button", { class: "col-card", "data-focus": "", onclick: () => ejg.ui.open("collections") }, h("div", { class: "label" }, h("b", null, "+ Nueva colección"), h("span", null, "Manual o inteligente"))),
+    h(
+      "section",
+      { class: "all" },
+      h("div", { class: "all-head" }, h("h2", null, "Todos los juegos", h("span", { class: "n" }, ` (${list.length})`)), sortDrop()),
+      grid(list),
+    ),
   );
   main.replaceChildren(wrap);
 }
 
+// ─────────────── colecciones ───────────────
+function renderCollections() {
+  const all = games();
+  const tiles = [];
+  const favs = all.filter((g) => g.favorite);
+  if (favs.length) tiles.push({ id: "fav", name: "Favoritos", smart: false, list: favs });
+  for (const c of ejg.library.collections) tiles.push({ id: c.id, name: c.name, smart: c.kind === "smart", list: inCollection(all, c) });
+  const tile = (t) =>
+    h(
+      "button",
+      { class: "col-tile", "data-focus": "", onclick: () => openCollection(t.id) },
+      h("div", { class: "col-stack" }, ...t.list.slice(0, 3).map((g, i) => h("div", { class: `col-card c${i}` }, artFor(g, "portrait")))),
+      h("div", { class: "col-name" }, t.smart ? h("span", { class: "col-smart", html: ICON.spark, title: "Colección dinámica" }) : null, h("b", null, t.name), h("span", null, ` (${t.list.length})`)),
+    );
+  main.replaceChildren(
+    h(
+      "div",
+      { class: "cols-page" },
+      h(
+        "div",
+        { class: "cols-head" },
+        h("h2", null, "Colecciones"),
+        h("button", { class: "btn-steam", "data-focus": "", onclick: () => ejg.ui.open("collections") }, svg("plus"), "Crear una colección"),
+      ),
+      tiles.length
+        ? h("div", { class: "cols-grid", "data-focus-group": "cols" }, ...tiles.map(tile))
+        : h("div", { class: "empty small" }, "Todavía no tienes colecciones. Agrupa tus juegos como quieras: a mano o con reglas (colecciones dinámicas)."),
+    ),
+  );
+}
+
+function renderCollection() {
+  const c = collectionById(state.collection);
+  if (!c) return goLibrary("collections");
+  const list = sort(members(c), state.sort);
+  main.replaceChildren(
+    h(
+      "div",
+      { class: "lib-home" },
+      h(
+        "section",
+        { class: "all" },
+        h(
+          "div",
+          { class: "all-head" },
+          h("h2", null, c.kind === "smart" ? h("span", { class: "col-smart", html: ICON.spark }) : null, c.name, h("span", { class: "n" }, ` (${list.length})`)),
+          c.kind !== "fav" ? h("button", { class: "btn-text", "data-focus": "", onclick: () => ejg.ui.open("collections") }, "Editar colección") : null,
+          sortDrop(),
+        ),
+        grid(list),
+      ),
+    ),
+  );
+}
+
+// ─────────────── página de juego ───────────────
 let heroRelease = () => {};
 let trailer = null;
 let detailsToken = 0;
@@ -360,13 +560,28 @@ let achSlot = null;
 let activitySlot = null;
 
 function gameStats(g) {
-  const stat = (label, value) => h("div", { class: "stat" }, h("small", null, label), h("span", null, value));
+  const stat = (label, value, extra) => h("div", { class: "stat" }, h("small", null, label), h("span", null, value), extra || null);
+  const a = g.achievements;
   return [
     g.installed === false ? stat("Estado", `Sin instalar · ${SOURCE_LABEL[g.source] || g.source}`) : null,
-    stat("Última sesión", relative(g.lastPlayed)),
+    stat("Última sesión", g.lastPlayed ? relative(g.lastPlayed) : "Nunca"),
     stat("Tiempo de juego", playtime(g.playtime)),
-    g.achievements ? stat("Logros", `${g.achievements.unlocked} / ${g.achievements.total}`) : null,
+    a ? stat("Logros", `${a.unlocked}/${a.total}`, h("div", { class: "stat-bar" }, h("i", { style: { width: `${a.total ? (a.unlocked / a.total) * 100 : 0}%` } }))) : null,
   ].filter(Boolean);
+}
+
+/** Menú del engranaje: el «Administrar» de Steam. */
+function manageMenu(anchor, g) {
+  const items = [
+    { label: g.favorite ? "Quitar de favoritos" : "Añadir a favoritos", run: () => ejg.game.favorite(g.id) },
+    { label: "Añadir a una colección…", run: () => ejg.game.edit(g.id) },
+    "-",
+    { label: "Explorar archivos locales", run: () => ejg.game.openFolder(g.id) },
+    { label: g.hidden ? "Mostrar este juego" : "Ocultar este juego", run: () => ejg.game.hide(g.id, !g.hidden) },
+  ];
+  if (canUninstall(g)) items.push({ label: "Desinstalar", danger: true, run: () => ejg.game.uninstall(g.id) });
+  items.push("-", { label: "Propiedades…", run: () => ejg.game.edit(g.id) });
+  openMenu(anchor, items);
 }
 
 // Logros (llegan aparte: la primera vez pueden descargar el esquema).
@@ -380,18 +595,32 @@ function loadAchievements(id, token) {
     .catch(() => {});
 }
 
+/** «Actividad»: las últimas sesiones agrupadas por día, como el muro de Steam. */
 function renderActivity(d) {
-  activitySlot?.replaceChildren(
-    ...(d.recentSessions.length
-      ? [
-          h(
-            "div",
-            { class: "card" },
-            h("h3", null, "Actividad"),
-            ...d.recentSessions.slice(0, 8).map((s) => h("div", { class: "session" }, h("span", null, relative(s.startedAt)), h("span", null, playtime(s.duration)))),
-          ),
-        ]
-      : []),
+  if (!activitySlot) return;
+  const sessions = d.recentSessions || [];
+  if (!sessions.length) return activitySlot.replaceChildren();
+  const byDay = [];
+  for (const s of sessions.slice(0, 12)) {
+    const label = date(new Date(s.startedAt * 1000).toISOString());
+    const last = byDay[byDay.length - 1];
+    if (last && last.label === label) last.items.push(s);
+    else byDay.push({ label, items: [s] });
+  }
+  activitySlot.replaceChildren(
+    h(
+      "div",
+      { class: "card activity" },
+      h("h3", null, "Actividad"),
+      ...byDay.map((day) =>
+        h(
+          "div",
+          { class: "act-day" },
+          h("div", { class: "act-date" }, day.label),
+          ...day.items.map((s) => h("div", { class: "act-item" }, h("span", { class: "act-dot" }), h("span", null, `Has jugado ${playtime(s.duration)}`), h("small", null, relative(s.startedAt)))),
+        ),
+      ),
+    ),
   );
 }
 
@@ -407,7 +636,7 @@ async function refreshGameStats(g) {
 let renderedArt = "";
 async function renderGame(id) {
   const g = ejg.library.byId(id);
-  if (!g) return goBack();
+  if (!g) return back();
   renderedArt = `${g.id}|${g.media.hero}|${g.media.logo}`;
   renderedStats = statsKey(g);
   heroRelease();
@@ -416,35 +645,38 @@ async function renderGame(id) {
   const token = ++detailsToken;
   const heroUrl = g.media.hero || g.media.heroThumb || g.media.header;
   const hero = h("div", { class: "hero", style: heroUrl ? { backgroundImage: `url("${heroUrl}")` } : {} });
-  const back = h("button", { class: "back", "data-focus": "", onclick: goBack }, svg("back"), "Biblioteca");
-  hero.append(back);
   if (g.media.logo) {
     const logo = img(g.media.logo, { class: "logo", loading: "eager" });
     logo.addEventListener("error", () => logo.replaceWith(h("div", { class: "htitle" }, g.title)));
     hero.append(logo);
   } else hero.append(h("div", { class: "htitle" }, g.title));
 
-  const favBtn = h("button", { class: "round" + (g.favorite ? " on" : ""), "data-focus": "", title: "Favorito (Y)", onclick: () => ejg.game.favorite(g.id) }, svg("star"));
+  const gear = h("button", { class: "round", "data-focus": "", title: "Administrar", onclick: (e) => manageMenu(e.currentTarget, ejg.library.byId(g.id) || g) }, svg("gear"));
+  const info = h("button", { class: "round", "data-focus": "", title: "Información del juego", onclick: () => main.querySelector(".info-card")?.scrollIntoView({ behavior: "smooth", block: "center" }) }, svg("info"));
+  const favBtn = h("button", { class: "round fav" + (g.favorite ? " on" : ""), "data-focus": "", title: "Favorito (Y)", onclick: () => ejg.game.favorite(g.id) }, svg("star"));
   const playbar = h(
     "div",
     { class: "playbar", "data-focus-group": "playbar" },
     playButton(g),
     h("div", { class: "stats" }, ...gameStats(g)),
-    h(
-      "div",
-      { class: "actions" },
-      favBtn,
-      h("button", { class: "round", "data-focus": "", title: "Editar juego (X)", onclick: () => ejg.game.edit(g.id) }, svg("gear")),
-      h("button", { class: "round", "data-focus": "", title: "Abrir carpeta", onclick: () => ejg.game.openFolder(g.id) }, svg("folder")),
-    ),
+    h("div", { class: "actions" }, gear, info, favBtn),
   );
-  const left = h("div", null, h("div", { class: "card" }, h("h3", null, "Acerca del juego"), h("div", { class: "skel" }), h("div", { class: "skel" }), h("div", { class: "skel", style: { width: "60%" } })));
+  const link = (label, fn) => h("button", { class: "gnav-link", "data-focus": "", onclick: fn }, label);
+  const gnav = h(
+    "div",
+    { class: "game-nav", "data-focus-group": "gnav" },
+    link("Explorar archivos locales", () => ejg.game.openFolder(g.id)),
+    link("Propiedades", () => ejg.game.edit(g.id)),
+    link("Estadísticas", () => ejg.ui.open("stats")),
+    canUninstall(g) ? link("Desinstalar", () => ejg.game.uninstall(g.id)) : null,
+  );
+  const left = h("div", { class: "g-left" }, h("div", { class: "card" }, h("h3", null, "Acerca del juego"), h("div", { class: "skel" }), h("div", { class: "skel" }), h("div", { class: "skel", style: { width: "60%" } })));
   achSlot = h("div");
   activitySlot = h("div");
-  const right = h("div", null, achSlot);
+  const right = h("div", { class: "g-right" }, achSlot);
   const body = h("div", { class: "game-body" }, left, right);
   const bg = h("div", { class: "game-bg", style: heroUrl ? { backgroundImage: `url("${g.media.heroThumb || heroUrl}")` } : {} });
-  main.replaceChildren(h("div", { class: "game" }, bg, hero, playbar, body));
+  main.replaceChildren(h("div", { class: "game" }, bg, hero, playbar, gnav, body));
   main.scrollTop = 0;
   focus.focus($("#play"), { instant: true, silent: true });
 
@@ -471,7 +703,7 @@ async function renderGame(id) {
   }
   if (token !== detailsToken) return;
 
-  // Columna principal: descripción, tráiler, capturas.
+  // Columna principal: actividad, descripción, tráileres, capturas.
   left.replaceChildren();
   if (d.metaStatus === "review" || d.metaStatus === "failed") {
     left.append(
@@ -483,6 +715,8 @@ async function renderGame(id) {
       ),
     );
   }
+  left.append(activitySlot);
+  renderActivity(d);
   if (d.description || d.shortDescription) {
     const desc = h("div", { class: "desc" });
     desc.append(description(d.description || d.shortDescription));
@@ -517,25 +751,23 @@ async function renderGame(id) {
   if (d.screenshots.length) {
     const shots = h("div", { class: "shots", "data-focus-group": "shots" });
     d.screenshots.forEach((s, i) => shots.append(h("button", { class: "shot", "data-focus": "", onclick: () => openLightbox(d.screenshots, i) }, img(s.thumb || s.url))));
-    left.append(h("div", { class: "card" }, h("h3", null, `Capturas (${d.screenshots.length})`), shots));
+    left.append(h("div", { class: "card" }, h("h3", null, "Capturas", h("span", { class: "n" }, ` ${d.screenshots.length}`)), shots));
   }
 
   loadAchievements(id, token);
 
-  // Columna lateral: información y actividad.
+  // Columna lateral: información y etiquetas.
   const rows = [
     ["Desarrollador", d.developer],
     ["Editor", d.publisher],
-    ["Lanzamiento", date(d.releaseDate)],
-    ["Tienda", SOURCE_LABEL[d.source] || d.source],
+    ["Fecha de lanzamiento", date(d.releaseDate)],
+    ["Origen", SOURCE_LABEL[d.source] || d.source],
     ["Valoración", d.rating ? `${d.rating} %` : null],
     ["Veces jugado", d.launchCount || null],
   ].filter((r) => r[1]);
-  right.append(h("div", { class: "card" }, h("h3", null, "Información"), ...rows.map(([k, v]) => h("div", { class: "info-row" }, h("span", null, k), h("span", null, String(v))))));
+  right.append(h("div", { class: "card info-card" }, h("h3", null, "Información"), ...rows.map(([k, v]) => h("div", { class: "info-row" }, h("span", null, k), h("span", null, String(v))))));
   const tags = [...new Set([...(d.genres || []), ...(d.tags || [])])].slice(0, 14);
   if (tags.length) right.append(h("div", { class: "card" }, h("h3", null, "Etiquetas"), h("div", { class: "tags" }, ...tags.map((t) => h("span", { class: "tag" }, t)))));
-  right.append(activitySlot);
-  renderActivity(d);
 }
 
 // ─────────────── logros ───────────────
@@ -565,26 +797,32 @@ function achievementsCard(list) {
   const done = list.items.filter((a) => a.unlockedAt).sort((a, b) => b.unlockedAt - a.unlockedAt);
   const locked = list.items.filter((a) => !a.unlockedAt).sort((a, b) => (b.globalPct ?? -1) - (a.globalPct ?? -1));
   const all = h("div", { class: "ach-list", hidden: true, "data-focus-group": "achievements" }, ...[...done, ...locked].map(achRow));
+  const tiles = (arr, max) => {
+    const out = arr.slice(0, max).map(achTile);
+    if (arr.length > max) out.push(h("div", { class: "ach-tile more-n" }, `+${arr.length - max}`));
+    return out;
+  };
   const more = h(
     "button",
     {
-      class: "more",
+      class: "btn-steam wide",
       "data-focus": "",
       onclick: () => {
         all.hidden = !all.hidden;
-        more.textContent = all.hidden ? `Ver todos (${list.total})` : "Ver menos";
+        more.textContent = all.hidden ? "Ver mis logros" : "Ocultar la lista";
       },
     },
-    `Ver todos (${list.total})`,
+    "Ver mis logros",
   );
   return h(
     "div",
     { class: "card ach" },
     h("h3", null, "Logros"),
-    h("div", { class: "ach-head" }, h("span", null, `Has desbloqueado ${list.unlocked} de ${list.total}`), h("b", null, `${pct} %`)),
+    h("div", { class: "ach-head" }, h("span", null, `Has desbloqueado ${list.unlocked}/${list.total} `, h("span", { class: "muted" }, `(${pct} %)`))),
     h("div", { class: "ach-bar" }, h("i", { style: { width: `${pct}%` } })),
-    done.length ? h("div", { class: "ach-icons" }, ...done.slice(0, 12).map(achTile)) : null,
-    locked.length ? h("div", { class: "ach-icons" }, ...locked.slice(0, done.length ? 6 : 12).map(achTile)) : null,
+    done.length ? h("div", { class: "ach-icons" }, ...tiles(done, 7)) : null,
+    locked.length ? h("div", { class: "ach-sub" }, "Logros bloqueados") : null,
+    locked.length ? h("div", { class: "ach-icons" }, ...tiles(locked, 7)) : null,
     all,
     more,
   );
@@ -615,66 +853,117 @@ function closeLightbox() {
 }
 lightbox.addEventListener("click", closeLightbox);
 
-// ─────────────── navegación entre vistas ───────────────
+// ─────────────── navegación ───────────────
+function stopMedia() {
+  heroRelease();
+  heroRelease = () => {};
+  trailer?.destroy();
+  trailer = null;
+}
+
+/** Entra en una vista de la biblioteca recordando la actual para «Atrás». */
+function pushView(view, extra = {}) {
+  if (state.tab === "library") state.prev.push({ view: state.view, gameId: state.gameId, collection: state.collection, scroll: main.scrollTop });
+  if (state.prev.length > 30) state.prev.shift();
+  stopMedia();
+  state.tab = "library";
+  state.view = view;
+  Object.assign(state, extra);
+}
+
 function openGame(id) {
-  if (state.tab !== "game") {
-    state.prevTab = state.tab;
-    state.scroll = main.scrollTop;
-  }
-  state.tab = "game";
-  state.gameId = id;
+  if (state.tab === "library" && state.view === "game" && state.gameId === id) return;
+  pushView("game", { gameId: id });
   ejg.storage.set("last", id);
   render();
 }
-function goBack() {
-  heroRelease();
-  trailer?.destroy();
-  trailer = null;
-  const last = state.gameId;
-  state.tab = state.prevTab || "home";
-  state.gameId = null;
+function openCollection(id) {
+  pushView("collection", { collection: id, gameId: null });
   render();
-  const el = main.querySelector(`[data-game-id="${last}"]`) || sideList.querySelector(`[data-game-id="${last}"]`);
+  focus.first(main);
+}
+/** Inicio o Colecciones desde la barra lateral: empiezan un historial nuevo. */
+function goLibrary(view) {
+  stopMedia();
+  state.prev = [];
+  state.tab = "library";
+  state.view = view;
+  state.gameId = null;
+  state.collection = null;
+  render();
+  main.scrollTop = 0;
+  focus.first(main);
+}
+
+function back() {
+  if (!lightbox.hidden) return closeLightbox(), true;
+  if (closeMenu()) return true;
+  if (shop.back()) return true;
+  if (state.tab !== "library") return false;
+  const p = state.prev.pop();
+  if (!p) {
+    if (state.view === "home") return false;
+    goLibrary("home");
+    return true;
+  }
+  const last = state.gameId;
+  stopMedia();
+  Object.assign(state, { view: p.view, gameId: p.gameId, collection: p.collection });
+  render();
+  main.scrollTop = p.scroll || 0;
+  const el = (last && (main.querySelector(`[data-game-id="${last}"]`) || sideList.querySelector(`[data-game-id="${last}"]`))) || null;
   if (el) focus.focus(el, { silent: true });
   else focus.first(main);
+  ejg.sound.play("back");
+  return true;
 }
+
+/** Pestañas de la barra superior, como en Steam. Descargas se abre desde la barra inferior. */
 function tabList() {
-  return ["home", "collections", ...(ejg.explore.enabled ? ["store"] : []), "downloads"];
+  return [...(ejg.explore.enabled ? ["store"] : []), "library"];
 }
 function goTab(t) {
-  heroRelease();
-  trailer?.destroy();
-  trailer = null;
+  stopMedia();
+  closeMenu(true);
   state.tab = t;
-  state.gameId = null;
-  state.scroll = 0;
   render();
+  if (t === "library") main.scrollTop = 0;
   focus.first(main);
 }
 function switchTab(d) {
   const tabs = tabList();
-  const cur = tabs.indexOf(state.tab === "game" ? state.prevTab : state.tab);
-  state.tab = tabs[(cur + d + tabs.length) % tabs.length];
-  state.gameId = null;
-  state.scroll = 0;
-  render();
-  focus.first(main);
+  const cur = tabs.indexOf(state.tab === "downloads" ? "library" : state.tab);
+  goTab(tabs[(cur + d + tabs.length) % tabs.length]);
+}
+
+const navBack = $("#nav-back");
+navBack.addEventListener("click", () => back());
+function updateHistory() {
+  const can = state.tab === "library" ? state.view !== "home" : state.tab === "store" && shop.canBack();
+  navBack.disabled = !can;
 }
 
 function renderTabs() {
-  document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === (state.tab === "game" ? state.prevTab : state.tab))));
+  // Las descargas son parte de la biblioteca (en Steam también).
+  const on = state.tab === "downloads" ? "library" : state.tab;
+  document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === on)));
 }
 
 function render() {
   renderTabs();
   document.documentElement.dataset.view = isShop() ? state.tab : "library";
-  if (typeof updateHints === "function") updateHints();
+  updateHints();
   updateDownloadsUi();
-  if (isShop()) return shop.render();
+  if (isShop()) {
+    shop.render();
+    return updateHistory();
+  }
   renderSidebar();
-  if (state.tab === "game") renderGame(state.gameId);
-  else if (state.tab === "collections") renderCollections();
+  if (state.view === "game") renderGame(state.gameId);
+  else if (state.view === "collections") renderCollections();
+  else if (state.view === "collection") renderCollection();
   else renderHome();
+  updateHistory();
   // Si el elemento enfocado desapareció, recuperar el foco en su sustituto.
   if (focus.current && !focus.current.isConnected) {
     const id = focus.current.dataset?.gameId;
@@ -684,45 +973,66 @@ function render() {
   }
 }
 
-// ─────────────── cabecera, perfil, fondo ───────────────
 document.querySelectorAll(".tab").forEach((t) =>
   t.addEventListener("click", () => {
-    heroRelease();
-    trailer?.destroy();
-    trailer = null;
-    state.tab = t.dataset.tab;
-    state.gameId = null;
-    render();
+    // Otra vez en Biblioteca: vuelve a su inicio, como en Steam.
+    if (t.dataset.tab === "library" && state.tab === "library") return goLibrary("home");
+    goTab(t.dataset.tab);
   }),
 );
 
-// ─────────────── descargas: pestaña, contador y barra inferior ───────────────
-const dlBadge = $("#dl-badge");
+// ─────────────── descargas: la barra inferior ───────────────
+// Como en Steam: en el centro, «Administrar descargas» o el juego que se está
+// bajando (su imagen, el nombre y el progreso). Es la entrada al gestor.
 const dlFooter = $("#dl-footer");
 dlFooter.addEventListener("click", () => goTab("downloads"));
+let dlfSig = "";
 function updateDownloadsUi() {
   const all = ejg.downloads.all;
-  const pending = all.filter((d) => ["queued", "downloading", "paused", "seeding", "completed", "installing", "error"].includes(d.state));
-  dlBadge.hidden = !pending.length;
-  dlBadge.textContent = String(pending.length);
   $("#tab-store").hidden = !ejg.explore.enabled;
-  // Barra de la biblioteca, como la de Steam: lo que se está bajando ahora.
   const now = all.filter((d) => d.state === "downloading" || d.state === "installing");
-  const show = now.length > 0 && !isShop();
-  dlFooter.hidden = !show;
-  if (!show) return;
-  const done = pending.filter((d) => ["seeding", "completed"].includes(d.state)).length;
+  const queued = all.filter((d) => d.state === "queued" || d.state === "paused").length;
+  const ready = all.filter((d) => ["seeding", "completed"].includes(d.state)).length;
+  dlFooter.classList.toggle("on", state.tab === "downloads");
+  if (!now.length) {
+    const sig = `idle|${ready}|${queued}`;
+    if (sig === dlfSig) return;
+    dlfSig = sig;
+    dlFooter.classList.remove("active");
+    const extra = ready ? `${ready} ${ready === 1 ? "lista" : "listas"} para instalar` : queued ? `${queued} en cola` : "";
+    dlFooter.replaceChildren(
+      h("span", { class: "dlf-ico", html: ICON.download }),
+      h("span", { class: "dlf-label" }, "Administrar descargas"),
+      ...(extra ? [h("span", { class: "dlf-extra" }, extra)] : []),
+    );
+    return;
+  }
   const cur = now[0];
   const total = now.reduce((a, d) => ({ d: a.d + d.doneBytes, t: a.t + d.totalBytes, s: a.s + d.downBps }), { d: 0, t: 0, s: 0 });
-  dlFooter.replaceChildren(
-    h("span", { class: "dlf-label" }, "DESCARGAS"),
-    h("span", { class: "dlf-title" }, cur.state === "installing" ? `Instalando ${cur.title}` : cur.title),
-    h("span", { class: "dlf-bar" }, h("i", { style: { width: `${total.t ? (total.d / total.t) * 100 : 0}%` } })),
-    h("span", { class: "dlf-meta" }, cur.state === "installing" ? downloadLabel(cur) : `${percent(total.t ? total.d / total.t : 0)} · ${speed(total.s)}${done ? ` · ${done} listo${done === 1 ? "" : "s"} para instalar` : ""}`),
-  );
+  const pct = total.t ? total.d / total.t : 0;
+  // La estructura solo se rehace si cambia el juego; el progreso se actualiza en su sitio.
+  const sig = `busy|${cur.id}|${cur.state}|${queued + now.length - 1}`;
+  if (sig !== dlfSig) {
+    dlfSig = sig;
+    dlFooter.classList.add("active");
+    const art = cur.capsule || cur.cover;
+    const others = queued + now.length - 1;
+    dlFooter.replaceChildren(
+      art ? h("span", { class: "dlf-art" }, img(art)) : h("span", { class: "dlf-ico", html: ICON.download }),
+      h(
+        "span",
+        { class: "dlf-main" },
+        h("span", { class: "dlf-top" }, h("b", null, cur.state === "installing" ? "Instalando" : "Descargando"), h("span", { class: "dlf-title" }, cur.title), others ? h("small", null, `+${others} en cola`) : null),
+        h("span", { class: "dlf-bar" }, h("i")),
+      ),
+      h("span", { class: "dlf-meta" }),
+    );
+  }
+  dlFooter.querySelector(".dlf-bar i").style.width = `${pct * 100}%`;
+  dlFooter.querySelector(".dlf-meta").textContent = cur.state === "installing" ? downloadLabel(cur) : `${percent(pct)} · ${speed(total.s)}`;
 }
 ejg.explore.onEnabled(() => {
-  if (!ejg.explore.enabled && state.tab === "store") goTab("home");
+  if (!ejg.explore.enabled && state.tab === "store") goTab("library");
   else updateDownloadsUi();
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
@@ -743,6 +1053,7 @@ document.querySelector('[data-win="min"]').onclick = () => ejg.window.minimize()
 document.querySelector('[data-win="max"]').onclick = () => ejg.window.maximize();
 document.querySelector('[data-win="close"]').onclick = () => ejg.window.close();
 
+// ─────────────── perfil y fondo ───────────────
 function renderProfile() {
   const p = ejg.profile;
   const av = $("#avatar");
@@ -764,13 +1075,16 @@ function renderWallpaper() {
   }
 }
 
+// ─────────────── buscador de la barra lateral ───────────────
 filterInput.setAttribute("data-focus", "");
 filterInput.addEventListener(
   "input",
   debounce(() => {
     state.filter = filterInput.value.trim();
-    if (state.tab !== "home") {
-      state.tab = "home";
+    if (state.view !== "home") {
+      stopMedia();
+      state.prev = [];
+      state.view = "home";
       state.gameId = null;
     }
     render();
@@ -792,21 +1106,25 @@ filterInput.addEventListener("keydown", (e) => {
 // ─────────────── eventos del host ───────────────
 const rerender = debounce(() => {
   if (isShop()) return updateDownloadsUi();
-  if (state.tab === "game") {
+  if (state.view === "game") {
     // En la página de juego solo refrescamos lo que cambia (evita recargar el tráiler).
     renderSidebar();
     updatePlayButton();
     const g = ejg.library.byId(state.gameId);
-    if (g && `${g.id}|${g.media.hero}|${g.media.logo}` !== renderedArt) {
+    if (!g) return back(); // desinstalado o quitado
+    if (`${g.id}|${g.media.hero}|${g.media.logo}` !== renderedArt) {
       const top = main.scrollTop;
       renderGame(g.id).then(() => (main.scrollTop = top));
       return;
     }
-    const fav = document.querySelector(".playbar .round");
-    if (g && fav) fav.classList.toggle("on", g.favorite);
+    main.querySelector(".playbar .fav")?.classList.toggle("on", g.favorite);
     // Al cerrar el juego: horas, logros y actividad al día.
-    if (g && statsKey(g) !== renderedStats) refreshGameStats(g);
-  } else render();
+    if (statsKey(g) !== renderedStats) refreshGameStats(g);
+  } else {
+    const top = main.scrollTop;
+    render();
+    main.scrollTop = top;
+  }
 }, 60);
 ejg.library.onChange(rerender);
 ejg.on("collections", rerender);
@@ -825,15 +1143,14 @@ function updateHints() {
       ? [["accept", "Abrir"], ["y", "Buscar"], ["back", "Volver"], ["lb", "Pestañas"], ["menu", "Menú"]]
       : state.tab === "downloads"
         ? [["accept", "Elegir"], ["lb", "Pestañas"], ["menu", "Menú"]]
-        : state.tab === "game"
-          ? [["accept", "Elegir"], ["back", "Biblioteca"], ["y", "Favorito"], ["x", "Editar"]]
-          : [["accept", "Abrir"], ["y", "Favorito"], ["x", "Editar"], ["lb", "Pestañas"], ["menu", "Menú"]],
+        : state.view === "game"
+          ? [["accept", "Elegir"], ["back", "Atrás"], ["y", "Favorito"], ["x", "Propiedades"]]
+          : [["accept", "Abrir"], ["y", "Favorito"], ["x", "Propiedades"], ["lb", "Pestañas"], ["menu", "Menú"]],
   );
 }
 
 renderProfile();
 renderWallpaper();
-renderChips();
 render();
 if (saved.last && ejg.library.byId(saved.last) && ejg.mode === "tv") openGame(saved.last);
 focus.first(main) || focus.first();

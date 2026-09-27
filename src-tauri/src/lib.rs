@@ -125,6 +125,8 @@ pub fn run() {
             commands::get_game_full,
             commands::update_game,
             commands::delete_game,
+            commands::uninstall_plan,
+            commands::uninstall_game,
             commands::purge_missing,
             commands::set_favorite,
             commands::set_hidden,

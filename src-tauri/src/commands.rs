@@ -344,6 +344,20 @@ pub async fn delete_game(st: St<'_>, id: i64) -> CmdResult<()> {
     Ok(())
 }
 
+/// Qué hará «Desinstalar» con este juego (para el diálogo de confirmación).
+#[tauri::command]
+pub async fn uninstall_plan(st: St<'_>, id: i64) -> CmdResult<crate::library::uninstall::Plan> {
+    let s = st.inner().clone();
+    blocking(move || crate::library::uninstall::plan(&s, id)).await
+}
+
+/// Desinstala el juego: `started` (abierto su desinstalador o Steam) o `removed`.
+#[tauri::command]
+pub async fn uninstall_game(st: St<'_>, id: i64) -> CmdResult<String> {
+    let s = st.inner().clone();
+    blocking(move || crate::library::uninstall::run(s, id).map(String::from)).await
+}
+
 #[tauri::command]
 pub async fn purge_missing(st: St<'_>) -> CmdResult<usize> {
     let s = st.inner().clone();

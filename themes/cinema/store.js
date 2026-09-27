@@ -654,10 +654,12 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
         ),
       ),
       ...groups.map(([title, list]) => h("div", { class: "dlg-group" }, h("h4", null, title), h("div", { class: "chks", "data-focus-group": "chk-" + title }, ...list.map(check)))),
-      groups.length ? h("p", { class: "dlg-warn" }, "En el instalador, desmarca lo que no hayas descargado.") : null,
-      prep.installSize
-        ? h("p", { class: "s-muted small" }, `El juego instalado ocupará ${sizeText(prep.installSize)}${prep.installFreeBytes != null ? ` (quedan ${bytes(prep.installFreeBytes)} en ${prep.installDir})` : ""}.`)
-        : null,
+      ...[
+        groups.length ? h("p", { class: "dlg-warn" }, "En el instalador, desmarca lo que no hayas descargado.") : null,
+        prep.installSize
+          ? h("p", { class: "s-muted small" }, `El juego instalado ocupará ${sizeText(prep.installSize)}${prep.installFreeBytes != null ? ` (quedan ${bytes(prep.installFreeBytes)} en ${prep.installDir})` : ""}.`)
+          : null,
+      ].filter(Boolean),
       err,
     );
     go.onclick = async () => {

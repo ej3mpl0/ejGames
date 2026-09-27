@@ -134,6 +134,11 @@ export interface Repack {
   coverFull?: string | null;
   /** Captura grande para fondos y cabeceras. */
   hero?: string | null;
+  /** Arte de la tienda de Steam, si el juego está allí: cápsula 460×215, la grande 616×353 y la vertical 600×900.
+   *  Puede llegar después: el SDK avisa con el evento `explore-art` (`ejg.on("explore-art", …)`). */
+  capsule?: string | null;
+  capsuleBig?: string | null;
+  library?: string | null;
   genres: string[];
   companies?: string | null;
   languages?: string | null;
@@ -193,6 +198,8 @@ export interface Download {
   version?: string | null;
   cover?: string | null;
   hero?: string | null;
+  /** Cápsula de la tienda de Steam (460×215), si el juego está allí. */
+  capsule?: string | null;
   pageUrl?: string | null;
   state: DownloadState;
   /** Por qué espera o está parada: user | queue | playing | install | needs-folder */
@@ -266,6 +273,12 @@ export interface Ejg {
     rate(id: number, value: number | null): Promise<void>;
     edit(id: number): Promise<void>;
     openFolder(id: number): Promise<void>;
+    /**
+     * Abre el diálogo «Desinstalar» del host, que enseña qué pasará (desinstalador
+     * del juego, Steam o carpeta a la papelera) y pide confirmación. Vale para los
+     * juegos de carpeta, de repack y de Steam instalados.
+     */
+    uninstall(id: number): Promise<void>;
     isRunning(id: number): boolean;
     onState(fn: (e: { gameId: number; state: "launching" | "running" | "stopped"; value?: number }) => void): () => void;
   };

@@ -32,22 +32,33 @@ const I = {
   down: '<svg viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>',
   ext: '<svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>',
   disk: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15h.01M11 15h6"/></svg>',
+  win: '<svg viewBox="0 0 24 24" class="win-ico"><path d="M3 5.5 10.5 4.5v7H3Zm8.5-1.1L21 3v8.5h-9.5ZM3 12.5h7.5v7L3 18.5Zm8.5 0H21V21l-9.5-1.4Z"/></svg>',
+  check: '<svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+  globe: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9S9.5 5.5 12 3Z"/></svg>',
 };
 const icon = (n) => h("span", { class: "ico", html: I[n] });
 
-export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
+export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNavigate = () => {} }) {
   const store = createExplore(ejg, () => {
-    if (active() === "store" && view.name !== "detail") paint();
+    if (active() === "store" && view.name !== "detail") paint(true);
   });
   const view = { name: "front", slug: null, detail: null, detailError: "", scroll: 0 };
-  let tabRef = () => "home";
+  let tabRef = () => "library";
   let carousel = { i: 0, timer: 0 };
   let dialog = null;
   const active = () => tabRef();
 
   // ─────────────── piezas ───────────────
-  const cover = (r, cls = "") =>
-    h("div", { class: "cap-art " + cls }, r.cover ? img(r.cover, { loading: "lazy" }) : h("div", { class: "cap-ph" }, r.title));
+  const cover = (r, cls = "") => h("div", { class: "st-art " + cls }, r.cover ? img(r.cover, { loading: "lazy" }) : h("div", { class: "st-ph" }, r.title));
+  /** Cápsula horizontal, la «header» de Steam. Si el juego no está en Steam (o aún
+   *  no ha llegado su arte), la carátula sobre un fondo hecho con ella misma. */
+  const wide = (r, cls = "", big = false) => {
+    const art = big ? r.capsuleBig || r.capsule : r.capsule;
+    if (art) return h("div", { class: "st-art wide " + cls }, img(art, { loading: "lazy" }));
+    if (r.cover) return h("div", { class: "st-art wide cov " + cls, style: { backgroundImage: `url("${r.cover}")` } }, img(r.cover, { loading: "lazy", class: "cov-img" }));
+    return h("div", { class: "st-art wide " + cls }, h("div", { class: "st-ph" }, r.title));
+  };
+  const genres = (r, n = 4) => r.genres.slice(0, n).map(genreLabel).join(", ");
 
   function badge(r) {
     const s = r.status?.state;
@@ -65,93 +76,132 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
     }[s];
     return text ? h("span", { class: "owned" + (s === "installed" || s === "library" ? "" : " dl") }, text) : null;
   }
+  /** Lo que en Steam es el precio: el tamaño de la descarga. */
+  const price = (r) => h("span", { class: "price" }, sizeText(r.repackSize) || "—");
 
-  function capsule(r) {
-    return h(
-      "button",
-      { class: "capsule", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), title: r.title },
-      cover(r),
-      h("div", { class: "cap-info" }, h("b", null, r.title), h("span", null, sizeText(r.repackSize) || "—"), badge(r)),
-    );
+  // Capturas de una ficha (para el carrusel y la vista previa), sin pedirlas dos veces.
+  const shots = new Map();
+  function withShots(r, fn) {
+    if (shots.has(r.slug)) return fn(shots.get(r.slug));
+    store
+      .details(r.slug)
+      .then((d) => {
+        shots.set(r.slug, d.screenshots || []);
+        fn(d.screenshots || []);
+      })
+      .catch(() => fn([]));
   }
 
-  function listRow(r) {
-    return h(
-      "button",
-      { class: "srow", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug) },
-      cover(r, "small"),
-      h("div", { class: "srow-main" }, h("b", null, r.title), h("span", null, [r.version, r.genres.slice(0, 4).map(genreLabel).join(", ")].filter(Boolean).join(" · "))),
-      h("span", { class: "srow-date" }, date(r.date)),
-      h("span", { class: "srow-size" }, badge(r) || sizeText(r.repackSize)),
-    );
-  }
-
-  // ─────────────── portada ───────────────
-  function storeNav() {
-    const input = h("input", {
-      placeholder: "buscar en la tienda",
-      value: store.state.query,
-      spellcheck: "false",
-      "data-focus": "",
-      oninput: debounce((e) => {
-        view.name = e.target.value.trim() ? "search" : "front";
-        store.search(e.target.value);
-      }, 50),
-      onkeydown: (e) => {
-        if (e.key === "Escape") {
-          e.target.value = "";
-          view.name = "front";
-          store.search("");
-          e.target.blur();
-        }
-      },
-    });
-    return h(
-      "div",
-      { class: "store-nav" },
-      h(
+  // ─────────────── barra de la tienda (se crea una vez: el buscador no pierde el foco) ───────────────
+  let shell = null;
+  let content = null;
+  let navInput = null;
+  const links = {};
+  function ensureShell() {
+    if (!shell) {
+      navInput = h("input", {
+        placeholder: "buscar",
+        spellcheck: "false",
+        "data-focus": "",
+        oninput: debounce((e) => {
+          view.name = e.target.value.trim() ? "search" : "front";
+          store.search(e.target.value);
+          if (view.name === "front") paint();
+        }, 50),
+        onkeydown: (e) => {
+          if (e.key === "Enter") {
+            view.name = e.target.value.trim() ? "search" : "front";
+            store.search(e.target.value, 0);
+            paint();
+          }
+          if (e.key === "Escape") {
+            e.target.value = "";
+            view.name = "front";
+            store.search("");
+            e.target.blur();
+            paint();
+          }
+        },
+      });
+      const link = (id, label, fn) => (links[id] = h("button", { class: "sn-link", "data-focus": "", onclick: fn }, label));
+      const nav = h(
         "div",
-        { class: "sn-links" },
-        h("button", { class: "sn-link" + (view.name === "front" ? " on" : ""), "data-focus": "", onclick: () => ((view.name = "front"), store.search(""), paint()) }, "Destacados"),
-        h("button", { class: "sn-link" + (view.name === "latest" ? " on" : ""), "data-focus": "", onclick: () => browseLatest() }, "Novedades"),
-        h("button", { class: "sn-link", "data-focus": "", onclick: () => goTab("downloads") }, "Descargas"),
-      ),
-      h("label", { class: "sn-search" }, input, icon("search")),
-    );
+        { class: "store-nav" },
+        h(
+          "div",
+          { class: "sn-links" },
+          link("front", "Tu tienda", () => goFront()),
+          link("latest", "Novedades", () => browse("latest")),
+          link("week", "Populares", () => browse("week")),
+          link("month", "Top del mes", () => browse("month")),
+        ),
+        h("label", { class: "sn-search" }, navInput, h("span", { class: "sn-go", html: I.search, onclick: () => (view.name = navInput.value.trim() ? "search" : "front", store.search(navInput.value, 0), paint()) })),
+      );
+      content = h("div", { class: "store-content" });
+      shell = h("div", { class: "store" }, h("div", { class: "store-top" }, nav), content);
+    }
+    if (main.firstChild !== shell || main.childNodes.length !== 1) main.replaceChildren(shell);
+    const on = view.name === "detail" ? view.prev : view.name === "list" ? view.list : view.name;
+    for (const [id, el] of Object.entries(links)) el.classList.toggle("on", id === on);
+    if (document.activeElement !== navInput) navInput.value = view.name === "search" ? store.state.query : "";
   }
 
-  // «Novedades»: la búsqueda sin texto devuelve lo último publicado.
-  let latestPage = null;
-  async function browseLatest(page = 1) {
-    view.name = "latest";
+  function goFront() {
+    view.name = "front";
+    navInput.value = "";
+    store.search("");
     paint();
+    main.scrollTop = 0;
+  }
+
+  // «Novedades» (la búsqueda sin texto) y las listas completas de populares.
+  let latestPage = null;
+  async function browse(list, page = 1) {
+    view.name = "list";
+    view.list = list;
+    paint();
+    main.scrollTop = 0;
+    if (list !== "latest") return;
     try {
       const r = await ejg.explore.search("", page);
       latestPage = page > 1 && latestPage ? { ...r, items: latestPage.items.concat(r.items) } : r;
     } catch (e) {
       latestPage = { items: [], page: 1, pages: 1, error: e.message || String(e) };
     }
-    if (view.name === "latest") paint();
+    if (view.name === "list" && view.list === "latest") paint(true);
   }
 
+  // ─────────────── portada ───────────────
   function heroCarousel(items) {
-    const list = items.filter((r) => r.hero).slice(0, 10);
+    const list = items.filter((r) => r.capsuleBig || r.hero).slice(0, 10);
     if (!list.length) return null;
     const i = carousel.i % list.length;
     const r = list[i];
-    const main = h(
+    const mainArt = r.capsuleBig || r.hero;
+    const bigImg = img(mainArt, { loading: "eager" });
+    const grid = h("div", { class: "car-shots" }, ...[0, 1, 2, 3].map(() => h("div", { class: "car-shot empty" })));
+    withShots(r, (list) => {
+      grid.replaceChildren(
+        ...list.slice(0, 4).map((s) => {
+          const el = h("div", { class: "car-shot" }, img(s.thumb, { loading: "eager" }));
+          el.addEventListener("mouseenter", () => (bigImg.src = s.full || s.thumb));
+          el.addEventListener("mouseleave", () => (bigImg.src = mainArt));
+          return el;
+        }),
+      );
+    });
+    const card = h(
       "button",
       { class: "car-main", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug) },
-      h("div", { class: "car-img" }, img(r.hero, { loading: "eager" })),
+      h("div", { class: "car-img" }, bigImg),
       h(
         "div",
         { class: "car-side" },
         h("h3", null, r.title),
-        r.version ? h("div", { class: "car-ver" }, r.version) : null,
-        h("div", { class: "car-cover" }, r.coverFull || r.cover ? img(r.coverFull || r.cover) : null),
-        h("div", { class: "car-status" }, "Popular hoy"),
+        grid,
+        h("div", { class: "car-reason" }, h("b", null, "Ya disponible"), h("span", null, "Popular hoy")),
         h("div", { class: "car-tags" }, ...r.genres.slice(0, 4).map((g) => h("span", null, genreLabel(g)))),
-        h("div", { class: "car-price" }, badge(r) || h("span", null, sizeText(r.repackSize) || "")),
+        h("div", { class: "car-foot" }, h("span", { class: "plat", html: I.win }), badge(r) || price(r)),
       ),
     );
     const step = (d) => {
@@ -161,28 +211,138 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
     };
     return h(
       "section",
-      { class: "carousel", "data-focus-group": "carousel" },
+      { class: "carousel st-sec", "data-focus-group": "carousel" },
       h("h2", { class: "store-h" }, "Destacados y recomendados"),
       h(
         "div",
         { class: "car-wrap" },
         h("button", { class: "car-arrow", "data-focus": "", onclick: () => step(-1), "aria-label": "Anterior" }, icon("left")),
-        main,
+        card,
         h("button", { class: "car-arrow", "data-focus": "", onclick: () => step(1), "aria-label": "Siguiente" }, icon("right")),
       ),
-      h("div", { class: "car-dots" }, ...list.map((_, k) => h("i", { class: k === i ? "on" : "" }))),
+      h("div", { class: "car-dots" }, ...list.map((_, k) => h("i", { class: k === i ? "on" : "", onclick: () => step(k - i) }))),
     );
   }
 
   function restartCarousel() {
     clearInterval(carousel.timer);
     carousel.timer = setInterval(() => {
-      // Solo si se ve la portada y no se está usando el carrusel.
+      // Solo si se ve la portada y no se está usando el carrusel ni escribiendo.
       if (active() !== "store" || view.name !== "front" || document.hidden) return;
-      if (focus.current?.closest(".carousel")) return;
+      if (focus.current?.closest(".carousel") || document.activeElement === navInput || dialog) return;
       carousel.i++;
       paint(true);
     }, 8000);
+  }
+
+  /** Fila de cápsulas grandes por páginas, con flechas y puntos (como «Ofertas especiales»). */
+  const pages = new Map();
+  function bigCap(r) {
+    return h(
+      "button",
+      { class: "bigcap", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), title: r.title },
+      wide(r),
+      h("div", { class: "bigcap-info" }, h("b", null, r.title), h("div", { class: "bigcap-foot" }, h("span", { class: "bigcap-tags" }, genres(r, 2)), badge(r) || price(r))),
+    );
+  }
+  function pagedRow(id, title, items, per = 4) {
+    const total = Math.max(1, Math.ceil(items.length / per));
+    let p = Math.min(pages.get(id) || 0, total - 1);
+    const box = h("div", { class: "pg-items", "data-focus-group": `pg-${id}` });
+    const dots = h("div", { class: "car-dots" });
+    const show = () => {
+      box.replaceChildren(...items.slice(p * per, p * per + per).map(bigCap));
+      dots.replaceChildren(...Array.from({ length: total }, (_, k) => h("i", { class: k === p ? "on" : "", onclick: () => go(k - p) })));
+    };
+    const go = (d) => {
+      const inside = box.contains(focus.current);
+      p = (p + d + total) % total;
+      pages.set(id, p);
+      show();
+      if (inside) focus.focus(box.querySelector("[data-focus]"), { silent: true, noScroll: true });
+      ejg.sound.play("move");
+    };
+    show();
+    return h(
+      "section",
+      { class: "st-sec" },
+      h("div", { class: "store-h-row" }, h("h2", { class: "store-h" }, title), h("button", { class: "btn-more", "data-focus": "", onclick: () => browse(id) }, "Ver más")),
+      h(
+        "div",
+        { class: "car-wrap pg-wrap" },
+        h("button", { class: "car-arrow", "data-focus": "", onclick: () => go(-1), "aria-label": "Anterior" }, icon("left")),
+        box,
+        h("button", { class: "car-arrow", "data-focus": "", onclick: () => go(1), "aria-label": "Siguiente" }, icon("right")),
+      ),
+      dots,
+    );
+  }
+
+  /** Lista con pestañas y vista previa a la derecha («Novedades populares», «Más vendidos»…). */
+  let tabSel = "month";
+  function tabbed(byId) {
+    const tabs = [
+      ["month", "Populares del mes"],
+      ["latest", "Novedades"],
+      ["today", "Populares hoy"],
+    ].filter(([id]) => byId[id]?.items.length);
+    if (!tabs.length) return null;
+    if (!byId[tabSel]) tabSel = tabs[0][0];
+    const items = byId[tabSel].items.slice(0, 10);
+    const preview = h("div", { class: "tab-preview" });
+    const showPreview = (r) => {
+      if (!r || preview.dataset.slug === r.slug) return;
+      preview.dataset.slug = r.slug;
+      const box = h("div", { class: "tp-shots" });
+      preview.replaceChildren(
+        h("h4", null, r.title),
+        h("div", { class: "tp-meta" }, r.version ? h("span", null, r.version) : null, h("span", null, `Descarga: ${sizeText(r.repackSize) || "—"}`)),
+        h("div", { class: "tp-tags" }, ...r.genres.slice(0, 5).map((g) => h("span", null, genreLabel(g)))),
+        box,
+      );
+      withShots(r, (list) => {
+        if (preview.dataset.slug !== r.slug) return;
+        const src = list.length ? list.slice(0, 4).map((s) => s.full || s.thumb) : [r.hero].filter(Boolean);
+        box.replaceChildren(...src.map((u) => h("div", { class: "tp-shot" }, img(u, { loading: "lazy" }))));
+      });
+    };
+    const rows = h("div", { class: "tab-rows", "data-focus-group": "tab-rows" });
+    for (const r of items) {
+      const el = h(
+        "button",
+        { class: "trow", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), onmouseenter: () => showPreview(r) },
+        wide(r, "trow-cap"),
+        h("div", { class: "trow-main" }, h("b", null, r.title), h("span", { class: "trow-plat", html: I.win }), h("span", { class: "trow-tags" }, genres(r))),
+        h("div", { class: "trow-price" }, badge(r) || price(r)),
+      );
+      el.addEventListener("ejg-focus", () => showPreview(r));
+      rows.append(el);
+    }
+    showPreview(items[0]);
+    return h(
+      "section",
+      { class: "st-sec tabbed" },
+      h(
+        "div",
+        { class: "tab-heads", "data-focus-group": "tab-heads" },
+        ...tabs.map(([id, label]) =>
+          h(
+            "button",
+            {
+              class: "tab-head" + (id === tabSel ? " on" : ""),
+              "data-focus": "",
+              onclick: () => {
+                tabSel = id;
+                paint(true);
+              },
+            },
+            label,
+          ),
+        ),
+        h("button", { class: "btn-more", "data-focus": "", onclick: () => browse(tabSel) }, "Ver más"),
+      ),
+      h("div", { class: "tab-body" }, rows, preview),
+    );
   }
 
   function front() {
@@ -201,45 +361,48 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
     const out = [];
     const today = byId.today || byId.week;
     if (today) out.push(heroCarousel(today.items));
-    for (const id of ["week", "month"]) {
-      const sec = byId[id];
-      if (!sec) continue;
-      const row = h("div", { class: "cap-row", "data-focus-group": `row-${id}` });
-      keyed(row, sec.items, (r) => r.slug, (r) => capsule(r));
-      out.push(h("section", null, h("h2", { class: "store-h" }, sec.title), row));
-    }
-    if (byId.latest) {
-      const list = h("div", { class: "srows", "data-focus-group": "latest" });
-      keyed(list, byId.latest.items.slice(0, 12), (r) => r.slug, (r) => listRow(r));
-      out.push(
-        h(
-          "section",
-          null,
-          h("div", { class: "store-h-row" }, h("h2", { class: "store-h" }, "Novedades"), h("button", { class: "btn-text", "data-focus": "", onclick: () => browseLatest() }, "Ver más")),
-          list,
-        ),
-      );
-    }
+    if (byId.week) out.push(pagedRow("week", "Populares de la semana", byId.week.items));
+    out.push(tabbed(byId));
     return h("div", { class: "store-front" }, ...out.filter(Boolean));
   }
 
+  // ─────────────── resultados y listas completas ───────────────
+  function resultRow(r) {
+    return h(
+      "button",
+      { class: "srow", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug) },
+      wide(r, "srow-cap"),
+      h("div", { class: "srow-main" }, h("b", null, r.title), h("span", { class: "trow-plat", html: I.win })),
+      h("span", { class: "srow-date" }, date(r.date)),
+      h("span", { class: "srow-size" }, badge(r) || price(r)),
+    );
+  }
+
   function results() {
-    const s = view.name === "latest" ? { ...(latestPage || { items: [] }), searching: !latestPage, query: "" } : store.state;
-    const title = view.name === "latest" ? "Novedades" : s.query ? `Resultados de «${s.query}»` : "Buscar";
-    const list = h("div", { class: "srows", "data-focus-group": "results" });
-    keyed(list, s.results ?? s.items ?? [], (r) => r.slug, (r) => listRow(r));
+    const home = store.state.home;
+    const sec = view.name === "list" && view.list !== "latest" ? home?.sections.find((x) => x.id === view.list) : null;
+    const s =
+      view.name === "list"
+        ? sec
+          ? { items: sec.items, page: 1, pages: 1, total: sec.items.length }
+          : { ...(latestPage || { items: [] }), searching: !latestPage, query: "" }
+        : store.state;
+    const title = view.name === "list" ? (sec ? sec.title : "Novedades") : s.query ? `Resultados de «${s.query}»` : "Buscar";
     const items = s.results ?? s.items ?? [];
+    const list = h("div", { class: "srows", "data-focus-group": "results" });
+    keyed(list, items, (r) => r.slug, (r) => resultRow(r));
     const more = s.page < s.pages;
     return h(
       "div",
       { class: "store-results" },
       h("div", { class: "store-h-row" }, h("h2", { class: "store-h" }, title), s.total ? h("span", { class: "muted" }, `${s.total} resultados`) : null),
+      h("div", { class: "srow-head" }, h("span", null, "Nombre"), h("span", null, "Publicado"), h("span", null, "Descarga")),
       s.searchError || s.error ? h("p", { class: "err" }, s.searchError || s.error) : null,
-      !items.length && !(s.searching) && !(s.searchError || s.error) ? h("p", { class: "muted pad" }, "No hay nada con ese nombre.") : null,
+      !items.length && !s.searching && !(s.searchError || s.error) ? h("p", { class: "muted pad" }, "No hay nada con ese nombre.") : null,
       list,
       s.searching ? h("div", { class: "spinner" }) : null,
       more && !s.searching
-        ? h("button", { class: "btn-blue more-btn", "data-focus": "", onclick: () => (view.name === "latest" ? browseLatest(s.page + 1) : store.more()) }, "Ver más resultados")
+        ? h("button", { class: "btn-blue more-btn", "data-focus": "", onclick: () => (view.name === "list" ? browse("latest", s.page + 1) : store.more()) }, "Ver más resultados")
         : null,
     );
   }
@@ -253,6 +416,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
     view.detail = null;
     view.detailError = "";
     paint();
+    main.scrollTop = 0;
     try {
       view.detail = await store.details(slug);
     } catch (e) {
@@ -291,19 +455,22 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
       ),
     );
     const act = repackAction(d);
-    const info = [
-      ["Géneros", d.genres.map(genreLabel).join(", ")],
-      ["Compañías", d.companies],
-      ["Idiomas", d.languages],
-      ["Publicado", date(d.date)],
-      ["Repack", d.number ? `#${d.number}` : null],
-    ].filter((r) => r[1]);
+    const short = (d.description || "").replace(/\s+/g, " ").trim();
     const doAction = () => {
       if (act.id === "download") return openDialog(d);
       if (act.id === "install" && d.status.downloadId) return ejg.downloads.install(d.status.downloadId).catch((e) => ejg.ui.toast(e.message, "error"));
       if (act.id === "play" && d.status.gameId) return ejg.game.launch(d.status.gameId).catch((e) => ejg.ui.toast(e.message, "error"));
       goTab("downloads");
     };
+    const glance = [
+      ["Publicado", date(d.date)],
+      ["Compañías", d.companies],
+      ["Repack", d.number ? `#${d.number}` : null],
+    ].filter((r) => r[1]);
+    const langs = (d.languages || "")
+      .split(/[,/]/)
+      .map((x) => x.trim())
+      .filter(Boolean);
     return h(
       "div",
       { class: "app-page" },
@@ -314,13 +481,13 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
         h(
           "div",
           { class: "crumbs" },
-          h("button", { class: "btn-text", "data-focus": "", onclick: back }, "Tienda"),
-          h("span", null, " › "),
+          h("button", { class: "crumb", "data-focus": "", onclick: back }, "Todos los juegos"),
+          h("span", null, " > "),
           h("span", null, d.genres[0] ? genreLabel(d.genres[0]) : "Juegos"),
-          h("span", null, " › "),
+          h("span", null, " > "),
           h("span", null, d.title),
         ),
-        h("h1", { class: "app-title" }, d.title),
+        h("div", { class: "app-head" }, h("h1", { class: "app-title" }, d.title), d.url ? h("button", { class: "btn-steam-sm", "data-focus": "", onclick: () => ejg.explore.openPage(d.slug) }, "Ver la ficha en FitGirl") : null),
         h(
           "div",
           { class: "app-top" },
@@ -328,14 +495,11 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
           h(
             "div",
             { class: "app-side" },
-            h("div", { class: "app-cap" }, d.coverFull || d.cover ? img(d.coverFull || d.cover) : null),
-            h("p", { class: "app-short" }, d.version ? `Versión ${d.version}` : "", d.selective ? h("span", { class: "sel" }, "Descarga selectiva") : null),
-            ...info.map(([k, v]) => h("div", { class: "app-row" }, h("span", null, k + ":"), h("span", null, v))),
-            h(
-              "div",
-              { class: "app-tags" },
-              ...d.genres.slice(0, 6).map((g) => h("span", null, genreLabel(g))),
-            ),
+            wide(d, "app-cap"),
+            short ? h("p", { class: "app-short" }, short.length > 260 ? short.slice(0, 257).trimEnd() + "…" : short) : null,
+            ...glance.map(([k, v]) => h("div", { class: "app-row" }, h("span", null, k + ":"), h("span", null, v))),
+            h("div", { class: "app-tags-h" }, "Etiquetas populares de este producto:"),
+            h("div", { class: "app-tags" }, ...d.genres.slice(0, 8).map((g) => h("span", null, genreLabel(g)))),
           ),
         ),
         h(
@@ -347,27 +511,29 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
             h(
               "div",
               { class: "buy" },
+              h("span", { class: "buy-plat", html: I.win }),
               h("h2", null, act.id === "play" ? `Jugar a ${d.title}` : `Descargar ${d.title}`),
+              h("div", { class: "buy-meta" }, [d.version && `Versión ${d.version}`, d.selective ? "Descarga selectiva" : null].filter(Boolean).join(" · ")),
               h(
                 "div",
-                { class: "buy-line" },
-                h("span", { class: "buy-meta" }, [sizeText(d.repackSize) && `Descarga ${sizeText(d.repackSize)}`, d.installSize && `Instalado ${sizeText(d.installSize)}`].filter(Boolean).join(" · ")),
-                h(
-                  "div",
-                  { class: "buy-box" },
-                  act.hint ? h("span", { class: "buy-hint" }, act.hint) : null,
-                  h("button", { class: "buy-btn" + (act.id === "downloads" ? " blue" : ""), "data-focus": "", onclick: doAction }, act.label),
-                ),
+                { class: "buy-box" },
+                h("span", { class: "buy-price" }, act.hint || sizeText(d.repackSize) || ""),
+                h("button", { class: "buy-btn" + (act.id === "downloads" ? " blue" : ""), "data-focus": "", onclick: doAction }, act.label),
               ),
             ),
             d.description ? h("div", { class: "app-sec" }, h("h3", null, "Acerca de este juego"), h("div", { class: "app-desc" }, d.description)) : null,
-            d.features.length
-              ? h("div", { class: "app-sec" }, h("h3", null, "Características del repack"), h("ul", { class: "feat" }, ...d.features.map((f) => h("li", null, f))))
-              : null,
+            d.features.length ? h("div", { class: "app-sec" }, h("h3", null, "Características del repack"), h("ul", { class: "feat" }, ...d.features.map((f) => h("li", null, f)))) : null,
           ),
           h(
             "div",
-            null,
+            { class: "app-right" },
+            h(
+              "div",
+              { class: "side-box cats" },
+              h("div", { class: "cat" }, icon("win"), h("span", null, "Windows")),
+              d.selective ? h("div", { class: "cat" }, icon("check"), h("span", null, "Descarga selectiva")) : null,
+              h("div", { class: "cat" }, icon("down"), h("span", null, "Torrent integrado")),
+            ),
             h(
               "div",
               { class: "side-box" },
@@ -376,8 +542,8 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
               h("div", { class: "app-row" }, h("span", null, "Descarga:"), h("span", null, sizeText(d.repackSize) || "—")),
               h("div", { class: "app-row" }, h("span", null, "En disco:"), h("span", null, sizeText(d.installSize) || "—")),
             ),
-            d.url
-              ? h("button", { class: "side-link", "data-focus": "", onclick: () => ejg.explore.openPage(d.slug) }, icon("ext"), "Ver la ficha en FitGirl")
+            langs.length
+              ? h("div", { class: "side-box" }, h("h4", null, "Idiomas"), h("div", { class: "langs" }, ...langs.slice(0, 16).map((l) => h("div", { class: "lang" }, icon("globe"), h("span", null, l)))))
               : null,
           ),
         ),
@@ -467,8 +633,10 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
         ),
       ),
       ...groups.map(([title, list]) => h("div", { class: "dlg-group" }, h("h4", null, title), h("div", { class: "chks", "data-focus-group": "chk-" + title }, ...list.map(check)))),
-      groups.length ? h("p", { class: "muted small" }, "En el instalador, desmarca lo que no hayas descargado.") : null,
-      prep.installSize ? h("p", { class: "muted small" }, `El juego instalado ocupará ${sizeText(prep.installSize)}${prep.installFreeBytes != null ? ` (quedan ${bytes(prep.installFreeBytes)} en ${prep.installDir})` : ""}.`) : null,
+      ...[
+        groups.length ? h("p", { class: "muted small" }, "En el instalador, desmarca lo que no hayas descargado.") : null,
+        prep.installSize ? h("p", { class: "muted small" }, `El juego instalado ocupará ${sizeText(prep.installSize)}${prep.installFreeBytes != null ? ` (quedan ${bytes(prep.installFreeBytes)} en ${prep.installDir})` : ""}.`) : null,
+      ].filter(Boolean),
       err,
     );
     next.onclick = async () => {
@@ -582,7 +750,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
     const el = h(
       "div",
       { class: "dl-row", "data-dl": d.id },
-      h("div", { class: "dl-cap" }, d.hero || d.cover ? img(d.hero || d.cover, { loading: "lazy" }) : null),
+      wide(d, "dl-cap"),
       h("div", { class: "dl-main" }, title, sub, h("div", { class: "dl-bar" }, bar), pct),
       btns,
     );
@@ -646,7 +814,8 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
         ? h(
             "div",
             { class: "dl-now" },
-            h("div", { class: "dl-now-img", style: current.hero ? { backgroundImage: `url("${current.hero}")` } : {} }),
+            h("div", { class: "dl-now-img", style: current.capsule || current.cover ? { backgroundImage: `url("${current.capsule || current.cover}")` } : {} }),
+            h("div", { class: "dl-now-cap" }, wide(current)),
             h(
               "div",
               { class: "dl-now-info" },
@@ -749,8 +918,8 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
       dlSig = listSig();
       main.replaceChildren(downloadsPage());
     } else {
-      const content = view.name === "detail" ? detailPage() : view.name === "front" ? front() : results();
-      main.replaceChildren(h("div", { class: "store" }, view.name === "detail" ? null : storeNav(), content));
+      ensureShell();
+      content.replaceChildren(view.name === "detail" ? detailPage() : view.name === "front" ? front() : results());
     }
     if (keepFocus && prevFocus && !prevFocus.isConnected) {
       const again =
@@ -758,6 +927,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
       if (again) focus.focus(again, { silent: true, noScroll: true });
       else focus.first(main);
     }
+    onNavigate();
   }
 
   function back() {
@@ -773,9 +943,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
       return true;
     }
     if (active() === "store" && view.name !== "front") {
-      view.name = "front";
-      store.search("");
-      paint();
+      goFront();
       focus.first(main);
       return true;
     }
@@ -795,12 +963,15 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange }) {
     },
     openRepack,
     back,
+    /** Hay algo a lo que volver (para la flecha «Atrás» de la barra superior). */
+    canBack: () => active() === "store" && (!!dialog || !!askOpen || view.name !== "front"),
     /** Y en la tienda: buscar (teclado en pantalla con mando). */
     async search() {
       const q = await askQuery(ejg, store.state.query);
       if (q == null) {
-        const input = main.querySelector(".sn-search input");
-        if (input) (focus.focus(input), input.focus());
+        ensureShell();
+        focus.focus(navInput);
+        navInput.focus();
         return;
       }
       view.name = q.trim() ? "search" : "front";

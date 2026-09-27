@@ -235,6 +235,13 @@ export function createExplore(ejg, onChange = () => {}) {
     return d;
   }
 
+  // Llegó arte de Steam (cápsulas): se vuelve a pedir lo que se está viendo.
+  ejg.on?.("explore-art", () => {
+    details.clear();
+    if (state.home) loadHome(true);
+    if (state.query) run(state.query, 1);
+  });
+
   /** Olvida las fichas guardadas (su estado cambia al descargar/instalar). */
   function refresh() {
     details.clear();

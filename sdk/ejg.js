@@ -267,6 +267,8 @@
       rate: function (id, value) { return call("game.rate", { id: id, value: value }); },
       edit: function (id) { return call("ui.open", { name: "game", args: { id: id } }); },
       openFolder: function (id) { return call("game.folder", { id: id }); },
+      /** Abre el diálogo «Desinstalar» del host (el usuario confirma). */
+      uninstall: function (id) { return call("game.uninstall", { id: id }); },
       isRunning: function (id) { return state.running.some(function (r) { return r.gameId === id; }); },
       onState: function (fn) { return on("game-state", fn); },
     },

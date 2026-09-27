@@ -86,6 +86,15 @@ fn shell_execute(verb: &str, file: &str, params: &str, dir: Option<&str>) -> any
     Ok(shell_execute_process(verb, file, params, dir)?.map(|p| p.pid()).filter(|pid| *pid != 0))
 }
 
+/// Abre una URI (`steam://…`) con su programa.
+pub fn open_uri(uri: &str) -> anyhow::Result<()> {
+    #[cfg(windows)]
+    shell_execute("open", uri, "", None)?;
+    #[cfg(not(windows))]
+    let _ = uri;
+    Ok(())
+}
+
 pub enum InstallerError {
     /// El usuario dijo que no al permiso de administrador.
     Cancelled,

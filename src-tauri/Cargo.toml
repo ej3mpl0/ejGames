@@ -1,6 +1,6 @@
 [package]
 name = "ejgames"
-version = "0.3.2"
+version = "0.3.3"
 description = "ejGames — launcher de juegos personalizable"
 authors = ["ej"]
 license = "MIT"
@@ -43,6 +43,7 @@ regex = "1.11"
 parking_lot = "0.12"
 blake3 = "1.8"
 sha2 = "0.10"
+hmac = "0.12"
 url = "2.5"
 percent-encoding = "2.3"
 zip = { version = "2", default-features = false, features = ["deflate"] }

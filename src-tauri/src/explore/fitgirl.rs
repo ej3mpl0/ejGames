@@ -1,17 +1,27 @@
 //! Cliente de fitgirl-repacks.site: la API REST de WordPress (búsqueda y fichas
 //! completas en JSON) y la página de populares. La web está detrás de
 //! DDoS-Guard: UA de navegador, cookies y un ritmo tranquilo.
+//!
+//! Si la web no responde directa (lo normal: el proveedor de internet la
+//! bloquea), se pide al relay de ejGames (`relay/worker.js`), que la reenvía
+//! desde Cloudflare. La vía que funcionó se recuerda hasta cerrar la app.
 
 use super::parse::{self, PopularItem};
 use crate::metadata::ratelimit::RateLimiter;
 use serde::Deserialize;
 use std::net::IpAddr;
+use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 use std::time::Duration;
 use tokio::task::JoinHandle;
 
 pub const ID: &str = "fitgirl";
 const HOST: &str = "fitgirl-repacks.site";
 const BASE: &str = "https://fitgirl-repacks.site";
+/// URL del relay (el Worker de `relay/`) y la clave con que se firman las
+/// peticiones. Vienen de `relay/.dev.vars`, fuera de git (ver build.rs): sin
+/// ellos no hay relay.
+const RELAY_URL: Option<&str> = option_env!("EJG_RELAY_URL");
+const RELAY_KEY: Option<&str> = option_env!("EJG_RELAY_KEY");
 /// Categoría «Lossless Repack» (deja fuera los resúmenes de actualizaciones).
 const CATEGORY: u32 = 5;
 const FIELDS: &str = "id,slug,link,date,title,content";
@@ -64,6 +74,11 @@ pub struct Page {
 pub struct FitGirl {
     http: reqwest::Client,
     limiter: RateLimiter,
+    /// La última vez solo se llegó por el relay: se prueba primero.
+    via_relay: AtomicBool,
+    /// Segundos que hay que sumar al reloj del PC para que el relay acepte la
+    /// firma (si va mal, lo dice el relay).
+    relay_skew: AtomicI64,
 }
 
 impl Default for FitGirl {
@@ -80,6 +95,8 @@ impl Default for FitGirl {
         FitGirl {
             http,
             limiter: RateLimiter::new(Duration::from_millis(700)),
+            via_relay: AtomicBool::new(false),
+            relay_skew: AtomicI64::new(0),
         }
     }
 }
@@ -133,6 +150,41 @@ async fn net_error(e: &reqwest::Error, dns: Option<JoinHandle<Dns>>) -> anyhow::
         }
     };
     anyhow::anyhow!(msg)
+}
+
+/// Lo que falló por la vía directa, aún sin explicar: el diagnóstico de red
+/// puede tardar y no hace falta si el relay llega.
+enum Failed {
+    Site(anyhow::Error),
+    Net(reqwest::Error, Option<JoinHandle<Dns>>),
+}
+
+impl Failed {
+    async fn explain(self) -> anyhow::Error {
+        match self {
+            Failed::Site(e) => e,
+            Failed::Net(e, dns) => net_error(&e, dns).await,
+        }
+    }
+}
+
+/// (URL sin barra final, clave).
+fn relay() -> Option<(&'static str, &'static str)> {
+    let url = RELAY_URL?.trim_end_matches('/');
+    let key = RELAY_KEY?;
+    (!url.is_empty() && !key.is_empty()).then_some((url, key))
+}
+
+/// Firma de una petición al relay: HMAC-SHA256 en hex de «hora\nruta?consulta».
+fn relay_signature(key: &str, time: i64, path_and_query: &str) -> String {
+    use hmac::Mac;
+    let mut mac = hmac::Hmac::<sha2::Sha256>::new_from_slice(key.as_bytes()).expect("HMAC admite claves de cualquier largo");
+    mac.update(format!("{time}\n{path_and_query}").as_bytes());
+    mac.finalize().into_bytes().iter().map(|b| format!("{b:02x}")).collect()
+}
+
+fn unix_now() -> i64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0)
 }
 
 /// Todos los mensajes de la cadena de un error, sin repetir.
@@ -210,31 +262,112 @@ impl FitGirl {
         &self.http
     }
 
-    /// GET con turno y un reintento rápido (quien espera es el usuario, no una cola).
-    async fn get(&self, url: &str, accept: &str) -> anyhow::Result<reqwest::Response> {
+    /// GET de una ruta de la web (`/wp-json/…`): directa o por el relay,
+    /// empezando por la que funcionó la última vez.
+    async fn get(&self, path: &str, accept: &str) -> anyhow::Result<reqwest::Response> {
+        let Some(relay) = relay() else {
+            return match self.direct(path, accept, true).await {
+                Ok(r) => Ok(r),
+                Err(f) => Err(f.explain().await),
+            };
+        };
+        if self.via_relay.load(Ordering::Relaxed) {
+            let relay_err = match self.relayed(relay, path, accept).await {
+                Ok(r) => return Ok(r),
+                Err(e) => e,
+            };
+            match self.direct(path, accept, true).await {
+                Ok(r) => {
+                    self.via_relay.store(false, Ordering::Relaxed);
+                    Ok(r)
+                }
+                Err(f) => Err(anyhow::anyhow!("{} {relay_err}", f.explain().await)),
+            }
+        } else {
+            // Sin reintento: el relay ya es el segundo intento.
+            let failed = match self.direct(path, accept, false).await {
+                Ok(r) => return Ok(r),
+                Err(f) => f,
+            };
+            match self.relayed(relay, path, accept).await {
+                Ok(r) => {
+                    tracing::info!("fitgirl: la web no responde directa; la tienda va por el relay");
+                    self.via_relay.store(true, Ordering::Relaxed);
+                    Ok(r)
+                }
+                Err(relay_err) => Err(anyhow::anyhow!("{} {relay_err}", failed.explain().await)),
+            }
+        }
+    }
+
+    /// GET directo con turno y, si `retry`, un reintento rápido (quien espera
+    /// es el usuario, no una cola).
+    async fn direct(&self, path: &str, accept: &str, retry: bool) -> Result<reqwest::Response, Failed> {
+        let url = format!("{BASE}{path}");
         let mut last = None;
         let mut dns = None;
-        for attempt in 0..2 {
+        for attempt in 0..if retry { 2 } else { 1 } {
             if attempt > 0 {
                 tokio::time::sleep(Duration::from_millis(1500)).await;
             }
             self.limiter.acquire().await;
-            match self.http.get(url).header("Accept", accept).send().await {
+            match self.http.get(&url).header("Accept", accept).send().await {
                 Ok(r) if r.status().is_server_error() || r.status().as_u16() == 429 => last = Some(Ok(r)),
-                Ok(r) => return self.check(r).await,
+                Ok(r) => return self.check(r).await.map_err(Failed::Site),
                 Err(e) if e.is_timeout() || e.is_connect() => {
                     // Por si vuelve a fallar: el diagnóstico va a la par que el reintento.
                     dns.get_or_insert_with(|| tokio::spawn(lookup()));
                     last = Some(Err(e));
                 }
-                Err(e) => return Err(net_error(&e, None).await),
+                Err(e) => return Err(Failed::Net(e, None)),
             }
         }
         match last {
-            Some(Ok(r)) => self.check(r).await,
-            Some(Err(e)) => Err(net_error(&e, dns).await),
+            Some(Ok(r)) => self.check(r).await.map_err(Failed::Site),
+            Some(Err(e)) => Err(Failed::Net(e, dns)),
             None => unreachable!(),
         }
+    }
+
+    /// GET firmado por el relay: un intento, más otro si el relay dice que el
+    /// reloj del PC va mal. El error completa el de la vía directa.
+    async fn relayed(&self, (base, key): (&str, &str), path: &str, accept: &str) -> anyhow::Result<reqwest::Response> {
+        let url = reqwest::Url::parse(&format!("{base}{path}"))?;
+        // Lo que firma, tal cual lo verá el Worker (`pathname + search`).
+        let signed = &url[url::Position::BeforePath..];
+        let mut clock_fixed = false;
+        let why = loop {
+            self.limiter.acquire().await;
+            let time = unix_now() + self.relay_skew.load(Ordering::Relaxed);
+            let req = self
+                .http
+                .get(url.clone())
+                .header("Accept", accept)
+                .header("X-Ejg-Time", time)
+                .header("X-Ejg-Sig", relay_signature(key, time, signed));
+            match req.send().await {
+                Ok(r) if r.status().is_success() => return Ok(r),
+                Ok(r) => {
+                    let relay_now = r.headers().get("X-Ejg-Now").and_then(|v| v.to_str().ok()).and_then(|v| v.parse::<i64>().ok());
+                    match relay_now {
+                        Some(now) if r.status().as_u16() == 401 && !clock_fixed && (now - time).abs() > 60 => {
+                            tracing::info!("fitgirl (relay): el reloj del PC va {} s desfasado; se corrige", time - now);
+                            self.relay_skew.store(now - unix_now(), Ordering::Relaxed);
+                            clock_fixed = true;
+                        }
+                        _ => {
+                            tracing::warn!("fitgirl (relay): {}", r.status());
+                            break format!("error {}", r.status().as_u16());
+                        }
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("fitgirl (relay): {}", chain(&e));
+                    break if e.is_timeout() { "no responde a tiempo".into() } else { root_cause(&e) };
+                }
+            }
+        };
+        Err(anyhow::anyhow!("Tampoco se pudo por el servidor de respaldo de ejGames ({why})."))
     }
 
     async fn check(&self, r: reqwest::Response) -> anyhow::Result<reqwest::Response> {
@@ -246,8 +379,8 @@ impl FitGirl {
         Ok(r)
     }
 
-    async fn posts(&self, url: &str) -> anyhow::Result<Page> {
-        let r = self.get(url, "application/json").await?;
+    async fn posts(&self, path: &str) -> anyhow::Result<Page> {
+        let r = self.get(path, "application/json").await?;
         let header = |name: &str| r.headers().get(name).and_then(|v| v.to_str().ok()).and_then(|v| v.parse::<u32>().ok()).unwrap_or(0);
         let (total, pages) = (header("x-wp-total"), header("x-wp-totalpages"));
         let body = match r.text().await {
@@ -267,14 +400,14 @@ impl FitGirl {
     pub async fn search(&self, query: &str, page: u32, per_page: u32) -> anyhow::Result<Page> {
         let q = percent_encoding::utf8_percent_encode(query, percent_encoding::NON_ALPHANUMERIC);
         self.posts(&format!(
-            "{BASE}/wp-json/wp/v2/posts?search={q}&search_columns=post_title&categories={CATEGORY}&per_page={per_page}&page={page}&_fields={FIELDS}"
+            "/wp-json/wp/v2/posts?search={q}&search_columns=post_title&categories={CATEGORY}&per_page={per_page}&page={page}&_fields={FIELDS}"
         ))
         .await
     }
 
     /// Últimos repacks publicados.
     pub async fn latest(&self, page: u32, per_page: u32) -> anyhow::Result<Page> {
-        self.posts(&format!("{BASE}/wp-json/wp/v2/posts?categories={CATEGORY}&per_page={per_page}&page={page}&_fields={FIELDS}"))
+        self.posts(&format!("/wp-json/wp/v2/posts?categories={CATEGORY}&per_page={per_page}&page={page}&_fields={FIELDS}"))
             .await
     }
 
@@ -288,7 +421,7 @@ impl FitGirl {
         for chunk in valid.chunks(50) {
             let list = chunk.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(",");
             let page = self
-                .posts(&format!("{BASE}/wp-json/wp/v2/posts?slug={list}&per_page=100&_fields={FIELDS}"))
+                .posts(&format!("/wp-json/wp/v2/posts?slug={list}&per_page=100&_fields={FIELDS}"))
                 .await?;
             out.extend(page.posts);
         }
@@ -298,7 +431,7 @@ impl FitGirl {
 
     /// Listas de populares (mes y semana).
     pub async fn popular(&self) -> anyhow::Result<Vec<(String, Vec<PopularItem>)>> {
-        let html = match self.get(&format!("{BASE}/popular-repacks/"), "text/html").await?.text().await {
+        let html = match self.get("/popular-repacks/", "text/html").await?.text().await {
             Ok(h) => h,
             Err(e) => return Err(net_error(&e, None).await),
         };
@@ -317,6 +450,16 @@ pub fn valid_slug(s: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// La misma que calcula el Worker (hecha con el crypto de Node).
+    #[test]
+    fn relay_signature_matches_the_worker() {
+        let url = reqwest::Url::parse("https://relay.example/wp-json/wp/v2/posts?slug=a,b&_fields=id,slug").unwrap();
+        assert_eq!(
+            relay_signature("clave-de-prueba", 1_790_000_000, &url[url::Position::BeforePath..]),
+            "1222ffbd68f67b302beaf5b050a306cfbeaacd4bfde2ed401e19d077990b716c"
+        );
+    }
 
     #[test]
     fn sinkhole_addresses() {

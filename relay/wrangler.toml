@@ -1,0 +1,15 @@
+# Relay de Explorar en Cloudflare Workers. Desde la raíz del proyecto:
+#   npx wrangler login
+#   npx wrangler secret put RELAY_KEY -c relay/wrangler.toml   (la de relay/.dev.vars)
+#   npx wrangler deploy -c relay/wrangler.toml
+# relay/.dev.vars (fuera de git) guarda RELAY_URL (la que imprime el deploy) y
+# RELAY_KEY; build.rs los mete en la app al compilar. Sin él, no hay relay.
+name = "ejgames-relay"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+# Peticiones firmadas por IP y minuto (abrir la tienda son unas 5).
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "1001"
+simple = { limit = 40, period = 60 }

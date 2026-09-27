@@ -5,6 +5,11 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.3.3
+
+**Tienda**
+- Si tu proveedor de internet bloquea la web de FitGirl, la tienda ya no se queda sin cargar: pasa sola por un servidor de respaldo de ejGames y lo sigue usando hasta cerrar la app. Vale para todo lo que lee de la web: portada, búsqueda, fichas y el enlace de descarga que se pide antes de bajar un juego.
+
 ## 0.3.2
 
 **Tienda**

@@ -1,8 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 //! Instalador de ejGames: una ventana propia (HTML/CSS en ../ui) que instala en
-//! silencio el paquete NSIS de siempre, que lleva dentro. El NSIS sigue siendo
-//! el de las actualizaciones automáticas y el desinstalador; esto es solo la
-//! cara de la primera instalación.
+//! silencio el paquete NSIS de siempre, que lleva dentro (y que deja el
+//! desinstalador). Es el único instalador que se publica: las actualizaciones
+//! automáticas lo abren con los argumentos del NSIS (`/P /R /UPDATE`) y entonces
+//! actualiza sin preguntar y vuelve a abrir ejGames.
 
 use serde::Serialize;
 use std::path::{Path, PathBuf};
@@ -24,6 +25,15 @@ struct Info {
     required_bytes: u64,
     free_bytes: Option<u64>,
     has_payload: bool,
+    /// Abierto por el actualizador: instalar ya, sin pantalla de bienvenida.
+    auto: bool,
+    /// Volver a abrir ejGames al terminar (`/R`).
+    relaunch: bool,
+}
+
+/// Argumentos del NSIS que se respetan: `/UPDATE`, `/P` (pasivo) y `/R`.
+fn flag(name: &str) -> bool {
+    std::env::args().skip(1).any(|a| a.eq_ignore_ascii_case(name))
 }
 
 fn required_bytes() -> u64 {
@@ -76,6 +86,9 @@ fn info() -> Info {
         .map(|(_, d)| d.clone())
         .filter(|d| !d.is_empty())
         .unwrap_or_else(|| default_dir().to_string_lossy().into_owned());
+    // Pruebas: instalar en otra carpeta sin tocar la instalación de verdad.
+    #[cfg(debug_assertions)]
+    let dir = std::env::var("EJG_INSTALL_DIR").unwrap_or(dir);
     Info {
         version: VERSION.into(),
         installed_version: old.map(|(v, _)| v),
@@ -83,6 +96,8 @@ fn info() -> Info {
         install_dir: dir,
         required_bytes: required_bytes(),
         has_payload: !PAYLOAD.is_empty(),
+        auto: flag("/UPDATE") || flag("/P"),
+        relaunch: flag("/R"),
     }
 }
 
@@ -118,12 +133,12 @@ async fn install(app: tauri::AppHandle, dir: String, desktop: bool) -> Result<()
     if !target.is_absolute() || dir.contains('"') || target.parent().is_none() {
         return Err("Elige otra carpeta.".into());
     }
-    tauri::async_runtime::spawn_blocking(move || run(app, target, desktop))
+    tauri::async_runtime::spawn_blocking(move || run(app, target, desktop, flag("/UPDATE")))
         .await
         .map_err(|e| e.to_string())?
 }
 
-fn run(app: tauri::AppHandle, target: PathBuf, desktop: bool) -> Result<(), String> {
+fn run(app: tauri::AppHandle, target: PathBuf, desktop: bool, update: bool) -> Result<(), String> {
     let tmp = std::env::temp_dir().join("ejgames-installer");
     std::fs::create_dir_all(&tmp).map_err(|e| format!("No se pudo preparar la instalación: {e}"))?;
     let setup = tmp.join(format!("ejGames_{VERSION}_setup.exe"));
@@ -134,11 +149,13 @@ fn run(app: tauri::AppHandle, target: PathBuf, desktop: bool) -> Result<(), Stri
     let base = if target.exists() { dir_size(&target) } else { 0 };
 
     // NSIS en silencio: /D va la última y sin comillas aunque tenga espacios.
+    // /UPDATE no toca los accesos directos que ya hubiera.
     let mut cmd = std::process::Command::new(&setup);
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
-        cmd.raw_arg(format!("/S /D={}", target.display()));
+        let update = if update { "/UPDATE " } else { "" };
+        cmd.raw_arg(format!("/S {update}/D={}", target.display()));
         cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
     }
     let mut child = cmd.spawn().map_err(|e| format!("No se pudo abrir el instalador: {e}"))?;
@@ -170,7 +187,7 @@ fn run(app: tauri::AppHandle, target: PathBuf, desktop: bool) -> Result<(), Stri
         return Err("No se encuentra ejGames en la carpeta de instalación.".into());
     }
     // El NSIS en silencio siempre crea el acceso del escritorio.
-    if !desktop && !had_shortcut {
+    if !desktop && !had_shortcut && !update {
         if let Some(s) = shortcut {
             let _ = std::fs::remove_file(s);
         }
@@ -203,7 +220,8 @@ fn fallback() -> bool {
     }
     let setup = std::env::temp_dir().join(format!("ejGames_{VERSION}_setup.exe"));
     if std::fs::write(&setup, PAYLOAD).is_ok() {
-        let _ = std::process::Command::new(&setup).spawn();
+        // Con los mismos argumentos: una actualización sigue siéndolo.
+        let _ = std::process::Command::new(&setup).args(std::env::args().skip(1)).spawn();
     }
     true
 }

@@ -1,11 +1,12 @@
 // Instalador propio (installer-app/): mete dentro el paquete NSIS de la versión
-// y deja installer/ejGames_<versión>_Instalar.exe. Lo llama release.mjs; también
-// se puede lanzar solo:
+// y deja installer/ejGames_<versión>_Setup.exe, que es lo que se publica (también
+// para las actualizaciones automáticas). Lo llama release.mjs; también se puede
+// lanzar solo:
 //
 //   node scripts/build-installer.mjs            → versión de package.json
 //
-// El NSIS (…_x64-setup.exe) se publica igualmente: es el que usan las
-// actualizaciones automáticas y el que abre el propio instalador si falta WebView2.
+// El NSIS (…_x64-setup.exe) no se publica: va dentro, y el instalador lo abre tal
+// cual si al PC le falta WebView2.
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -43,7 +44,7 @@ execFileSync(process.execPath, [p("node_modules", "@tauri-apps", "cli", "tauri.j
 });
 
 const built = p("installer-app", "src-tauri", "target", "release", "ejgames-installer.exe");
-const out = p("installer", `ejGames_${version}_Instalar.exe`);
+const out = p("installer", `ejGames_${version}_Setup.exe`);
 mkdirSync(p("installer"), { recursive: true });
 copyFileSync(built, out);
 console.log(`✓ ${out}`);

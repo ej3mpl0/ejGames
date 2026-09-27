@@ -6,8 +6,8 @@
 //
 // Actualiza package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml y
 // Cargo.lock, compila (`pnpm tauri build`) y copia el instalador a
-// installer/ejGames_<versión>_x64-setup.exe; después compila el instalador
-// propio (installer/ejGames_<versión>_Instalar.exe, ver build-installer.mjs).
+// installer/ejGames_<versión>_x64-setup.exe (el NSIS); después compila el
+// instalador que se publica, installer/ejGames_<versión>_Setup.exe (build-installer.mjs).
 // Nunca sobrescribe un instalador que ya exista: cada versión se queda con el suyo.
 import { execSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";

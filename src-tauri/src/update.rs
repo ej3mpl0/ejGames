@@ -1,5 +1,5 @@
 //! Actualizaciones desde GitHub Releases (como en ejFlix): consulta la última
-//! versión publicada, descarga su instalador `*-setup.exe` (comprobando el
+//! versión publicada, descarga su instalador `*_Setup.exe` (comprobando el
 //! SHA-256 que publica GitHub) y lo abre en modo pasivo (`/P /R /UPDATE`), que
 //! cierra ejGames, instala encima conservando los datos y lo vuelve a abrir.
 
@@ -325,5 +325,8 @@ mod tests {
         let (name, url, size) = pick_asset(list).unwrap();
         assert_eq!((name.as_str(), url.as_str(), size), ("ejGames_0.3.0_x64-setup.exe", "https://github.com/b", 9));
         assert_eq!(asset_digest(list, &name).unwrap(), "ac178a4f7e8bd2edd3281111465d6806ba9a2ce6a0b60fbdb2833311b436130b");
+        // El que se publica desde la 0.3.0: el instalador propio (installer-app/).
+        let own = serde_json::json!([{ "name": "ejGames_0.3.1_Setup.exe", "browser_download_url": "https://github.com/c", "size": 5 }]);
+        assert_eq!(pick_asset(own.as_array().unwrap()).unwrap().0, "ejGames_0.3.1_Setup.exe");
     }
 }

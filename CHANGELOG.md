@@ -1,6 +1,6 @@
 # Cambios
 
-Cada versión tiene su instalador en `installer/ejGames_<versión>_x64-setup.exe`
+Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 (se genera con `pnpm release patch|minor|major`, que nunca sobrescribe uno
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
@@ -42,8 +42,8 @@ biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 - Ya no se puede poner otro Application ID: se usa siempre la aplicación de ejGames.
 
 **Instalador nuevo**
-- `ejGames_0.3.0_Instalar.exe`: instalador propio con la cara de ejGames. Eliges carpeta, acceso directo y si se abre al terminar, ves el progreso real y, si ya tenías ejGames, sabe que es una actualización. Si al PC le falta WebView2, abre el instalador clásico.
-- El instalador clásico (`…_x64-setup.exe`) se sigue publicando: es el que usan las actualizaciones automáticas.
+- `ejGames_0.3.0_Setup.exe`: instalador propio con la cara de ejGames. Eliges carpeta, acceso directo y si se abre al terminar, ves el progreso real y, si ya tenías ejGames, sabe que es una actualización. Si al PC le falta WebView2, abre el instalador clásico que lleva dentro.
+- Es el único que se publica: las actualizaciones automáticas también lo usan, y entonces actualiza sin preguntar y vuelve a abrir ejGames.
 
 **Además**
 - Teclado en pantalla para escribir con el mando (búsquedas).

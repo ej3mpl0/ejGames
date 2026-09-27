@@ -1,4 +1,5 @@
-// Instalador de ejGames: instalar (o actualizar), progreso, listo.
+// Instalador de ejGames: instalar (o actualizar), progreso, listo. Si lo abre
+// el actualizador de ejGames (info.auto), instala sin preguntar y lo reabre.
 
 const T = window.__TAURI__;
 const invoke = T.core.invoke;
@@ -23,7 +24,8 @@ function cmp(a, b) {
 function view(id) {
   document.body.dataset.view = id;
   for (const v of document.querySelectorAll(".view")) v.hidden = v.id !== id;
-  $("#crumb").textContent = { welcome: $("#crumb").dataset.welcome || "Instalación", installing: "Instalando", done: "Terminado", error: "Error" }[id];
+  const working = state.info?.auto ? "Actualizando" : "Instalando";
+  $("#crumb").textContent = { welcome: $("#crumb").dataset.welcome || "Instalación", installing: working, done: "Terminado", error: "Error" }[id];
 }
 
 function fill(p) {
@@ -114,11 +116,16 @@ function finished() {
   const d = new Date();
   const dd = (n) => String(n).padStart(2, "0");
   $("#stamp-meta").textContent = `${state.info.version} · ${dd(d.getDate())}.${dd(d.getMonth() + 1)}.${String(d.getFullYear()).slice(2)}`;
-  $("#d-sub").innerHTML = `ejGames <b>${state.info.version}</b> ya está en el menú Inicio${$("#opt-desktop").checked ? " y en el escritorio" : ""}.`;
+  $("#d-sub").innerHTML = state.info.auto
+    ? `ejGames <b>${state.info.version}</b> está listo. Tu biblioteca, horas y ajustes siguen como estaban.`
+    : `ejGames <b>${state.info.version}</b> ya está en el menú Inicio${$("#opt-desktop").checked ? " y en el escritorio" : ""}.`;
   fill(1);
   view("done");
   $("#btn-launch").focus();
-  if ($("#opt-launch").checked) {
+  if (state.info.auto && state.info.relaunch) {
+    $("#countdown").textContent = "Abriendo ejGames…";
+    setTimeout(launch, 1400);
+  } else if ($("#opt-launch").checked && !state.info.auto) {
     let n = 5;
     const tick = () => {
       $("#countdown").textContent = `Se abre solo en ${n} s`;
@@ -164,4 +171,5 @@ document.addEventListener("contextmenu", (e) => e.preventDefault());
   state.dir = state.info.installDir;
   render();
   await win.show();
+  if (state.info.auto && state.info.hasPayload) install();
 })();

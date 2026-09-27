@@ -52,7 +52,7 @@ el tema que más se parezca a lo que buscas, y *Abrir carpeta del tema*.
 
 ## Instalar
 
-Descarga `ejGames_<versión>_Instalar.exe` de la [última release](https://github.com/ej3mpl0/ejGames/releases/latest)
+Descarga `ejGames_<versión>_Setup.exe` de la [última release](https://github.com/ej3mpl0/ejGames/releases/latest)
 y ábrelo: eliges la carpeta y si quieres acceso directo, y en unos segundos está. Si ya tienes ejGames, el mismo
 instalador lo actualiza sin tocar tu biblioteca. Una vez instalado, las versiones nuevas llegan solas.
 
@@ -68,8 +68,7 @@ pnpm install          # también copia hls.js y las fuentes de los temas (script
 pnpm tauri dev        # app con recarga en caliente
 pnpm tauri build      # instalador NSIS en target/release/bundle/nsis
 pnpm release patch    # sube la versión (patch|minor|major|x.y.z), compila y deja
-                      # installer/ejGames_<versión>_x64-setup.exe (sin pisar anteriores)
-                      # y el instalador propio ejGames_<versión>_Instalar.exe (installer-app/)
+                      # installer/ejGames_<versión>_Setup.exe (sin pisar anteriores)
 pnpm publish-release  # publica esa versión en GitHub (notas del CHANGELOG): las copias
                       # instaladas la ofrecen al abrirse. Necesita `gh auth login`
 cd src-tauri && cargo test --lib
@@ -121,7 +120,7 @@ src-tauri/src/     núcleo en Rust
 src/               host en React: ajustes, editor de juego, perfiles, estadísticas, puente con los temas
 sdk/               SDK de temas (window.ejg) y kit de utilidades
 themes/            temas de serie
-installer-app/     instalador propio (Tauri) que lleva dentro el NSIS y lo ejecuta en silencio
+installer-app/     instalador que se publica (Tauri): lleva dentro el NSIS y lo ejecuta en silencio
 ```
 
 **Seguridad de los temas.** Cada tema corre en un iframe aislado con origen

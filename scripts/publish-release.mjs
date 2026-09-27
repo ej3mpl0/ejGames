@@ -1,8 +1,8 @@
 // Publica en GitHub la versión actual (etiqueta vX.Y.Z con el instalador) para
 // que las copias instaladas de ejGames la ofrezcan al abrirse.
 //
-//   pnpm release minor            → compila y deja installer/ejGames_<v>_x64-setup.exe y _Instalar.exe
-//   pnpm publish-release          → crea la release en GitHub con los dos instaladores
+//   pnpm release minor            → compila y deja installer/ejGames_<v>_Setup.exe
+//   pnpm publish-release          → crea la release en GitHub con ese instalador
 //   pnpm publish-release --draft  → como borrador
 //
 // Las notas salen de la sección de esa versión en CHANGELOG.md. Hace falta el
@@ -17,9 +17,9 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const draft = process.argv.includes("--draft");
 const version = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version;
 const tag = `v${version}`;
-const installer = join(root, "installer", `ejGames_${version}_x64-setup.exe`);
-// El instalador propio (el que se descarga a mano). El NSIS es el de las actualizaciones.
-const pretty = join(root, "installer", `ejGames_${version}_Instalar.exe`);
+// El instalador propio (installer-app/). Sirve para instalar a mano y para las
+// actualizaciones automáticas, que buscan un .exe con «setup» en el nombre.
+const installer = join(root, "installer", `ejGames_${version}_Setup.exe`);
 const REPO = "ej3mpl0/ejGames";
 
 if (!existsSync(installer)) {
@@ -40,12 +40,9 @@ if (!notes) {
   console.error(`CHANGELOG.md no tiene la sección «## ${version}».`);
   process.exit(1);
 }
-const head = existsSync(pretty)
-  ? `**Para instalar, descarga \`ejGames_${version}_Instalar.exe\`.** Si ya tienes ejGames, se actualiza solo al abrirlo.\n\n`
-  : "";
+const head = `**Para instalar, descarga \`ejGames_${version}_Setup.exe\`.** Si ya tienes ejGames, se actualiza solo al abrirlo.\n\n`;
 const notesFile = join(mkdtempSync(join(tmpdir(), "ejgames-release-")), "notas.md");
 writeFileSync(notesFile, head + notes);
-const assets = [installer, ...(existsSync(pretty) ? [pretty] : [])];
 
 const gh = (args, opts = {}) => execFileSync("gh", args, { stdio: "inherit", ...opts });
 let exists = true;
@@ -57,10 +54,10 @@ try {
 
 if (exists) {
   console.log(`La release ${tag} ya existe: se sustituyen el instalador y las notas.`);
-  gh(["release", "upload", tag, ...assets, "--clobber", "-R", REPO]);
+  gh(["release", "upload", tag, installer, "--clobber", "-R", REPO]);
   gh(["release", "edit", tag, "--notes-file", notesFile, "-R", REPO]);
 } else {
-  const args = ["release", "create", tag, ...assets, "--title", `ejGames ${version}`, "--notes-file", notesFile, "-R", REPO];
+  const args = ["release", "create", tag, installer, "--title", `ejGames ${version}`, "--notes-file", notesFile, "-R", REPO];
   if (draft) args.push("--draft");
   gh(args);
 }

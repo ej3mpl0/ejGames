@@ -9,8 +9,8 @@
 
 <p align="center">
   <a href="https://github.com/ej3mpl0/ejGames/releases/latest"><b>Descargar</b></a> ·
-  <a href="https://ejgames.mintlify.app">Documentación</a> ·
-  <a href="https://ejgames.mintlify.app/temas">Crear temas</a> ·
+  <a href="https://ej3mplo.mintlify.site">Documentación</a> ·
+  <a href="https://ej3mplo.mintlify.site/temas">Crear temas</a> ·
   <a href="CHANGELOG.md">Novedades</a>
 </p>
 
@@ -26,7 +26,7 @@
 * **Mando y Big Picture**, perfiles, estadísticas, Discord Rich Presence y actualizaciones automáticas.
 * **Ligero**: al jugar puede quedarse en la bandeja con unos 5 MB.
 
-Todo con detalle en la [documentación](https://ejgames.mintlify.app/funciones).
+Todo con detalle en la [documentación](https://ej3mplo.mintlify.site/funciones).
 
 ## Instalar
 
@@ -37,9 +37,9 @@ llegan solas. Necesita Windows 10/11 de 64 bits.
 ## Crear temas
 
 Un tema es una página web normal que dibuja tu biblioteca como quieras, con recarga en vivo. Empieza por la
-[guía paso a paso](https://ejgames.mintlify.app/guia) (el tema terminado está en
+[guía paso a paso](https://ej3mplo.mintlify.site/guia) (el tema terminado está en
 [`examples/ejemplo-tema/`](examples/ejemplo-tema/)) y consulta la
-[referencia del SDK](https://ejgames.mintlify.app/referencia/sdk).
+[referencia del SDK](https://ej3mplo.mintlify.site/referencia/sdk).
 
 ## Desarrollo
 
@@ -49,7 +49,7 @@ pnpm tauri dev
 cd src-tauri && cargo test --lib
 ```
 
-Compilar, publicar versiones y la arquitectura: [Desarrollo](https://ejgames.mintlify.app/desarrollo/compilar). La
+Compilar, publicar versiones y la arquitectura: [Desarrollo](https://ej3mplo.mintlify.site/desarrollo/compilar). La
 documentación sale de [`docs/`](docs/) (Mintlify: `npx mint dev` dentro de esa carpeta).
 
 ## Licencia

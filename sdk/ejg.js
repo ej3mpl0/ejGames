@@ -3,7 +3,7 @@
  *
  * El tema corre en un iframe aislado (origen null, sin red). Todo lo que
  * necesita lo pide al host a través de `window.ejg`, que habla por postMessage.
- * Documentación: https://ejgames.mintlify.app/referencia/sdk · Tipos: /_sdk/ejg.d.ts
+ * Documentación: https://ej3mplo.mintlify.site/referencia/sdk · Tipos: /_sdk/ejg.d.ts
  */
 (function () {
   "use strict";

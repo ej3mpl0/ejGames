@@ -77,7 +77,7 @@ biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 - Si el juego se abre como administrador de todos modos, el aviso del principio de la partida lo explica y propone el botón Guía del mando. También queda anotado en el registro.
 
 **Temas**
-- Guía paso a paso para crear un tema desde cero ([en la documentación](https://ejgames.mintlify.app/guia)), con el tema de ejemplo terminado en `examples/ejemplo-tema/`.
+- Guía paso a paso para crear un tema desde cero ([en la documentación](https://ej3mplo.mintlify.site/guia)), con el tema de ejemplo terminado en `examples/ejemplo-tema/`.
 - La recarga en vivo del modo desarrollador ya funciona también al volver a abrir ejGames. Antes había que apagar y encender el modo desarrollador.
 - Los temas nuevos y los cambios de `theme.json` se ven sin reiniciar: la galería vuelve a leer la carpeta al abrir Apariencia, y `theme.json` se aplica al recargar el tema. Un `theme.json` a medio escribir ya no hace saltar al tema Steam.
 

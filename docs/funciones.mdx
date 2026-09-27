@@ -1,0 +1,100 @@
+---
+title: "Qué hace"
+description: "Todo lo que trae ejGames: biblioteca, tiendas, descargas, logros, overlay, temas y más."
+icon: "gamepad"
+---
+
+## Tu biblioteca
+
+- **Añade carpetas** y ejGames detecta cada juego y su `.exe` bueno. Descarta instaladores, redistribuibles y crash
+  handlers, y reconoce Unity, Unreal, Godot, GameMaker, RPG Maker, Ren'Py, EasyAntiCheat y BattlEye.
+- **Importa lo instalado** en Steam (con tus horas y la fecha de la última partida), Epic, GOG, Ubisoft Connect y EA
+  app. Cada juego se lanza con su propia tienda.
+- **También lo que no tienes instalado** (Steam, Epic y GOG): toda tu biblioteca con filtros *Instalados / Sin
+  instalar* y un botón **Instalar** que abre la tienda. Ubisoft y EA no guardan tu biblioteca en local, así que de
+  ellas solo salen los instalados.
+- **Perfiles locales** estilo consola, con avatar, PIN opcional, tema propio, favoritos, colecciones (manuales e
+  inteligentes) y horas.
+- **Horas y estadísticas**: sesiones, horas por día, semana y hora del día, rachas, más jugados y géneros.
+
+## Arte y datos
+
+ejGames descarga portada, fondo, logo, icono, capturas, tráilers, microtráileres, descripción, géneros,
+desarrolladora y valoración. En mosaicos cuadrados o panorámicos compone el fondo del juego con su logo en vez de
+recortar la carátula.
+
+Steam no necesita clave. Para los juegos que no están en Steam hay dos fuentes opcionales (**Ajustes**):
+
+| Fuente | Para qué | Dónde se saca la clave |
+|---|---|---|
+| **SteamGridDB** | Arte alternativo y arte de juegos que no están en Steam | steamgriddb.com → Preferencias → API |
+| **IGDB** (Twitch) | Datos de juegos que no están en Steam | dev.twitch.tv → Console (Client ID y Secret) |
+
+## Explorar y Descargas
+
+Una tienda de repacks dentro del launcher (populares, novedades, búsqueda y fichas con capturas) y un **torrent
+integrado** para descargarlos:
+
+- Eliges qué idiomas y extras opcionales bajas, dónde se guardan y ves el espacio que hace falta.
+- Una descarga a la vez a toda velocidad (el resto espera en cola), puerto abierto con UPnP, trackers públicos extra
+  y reanudación sin volver a comprobar nada. El motor solo existe mientras hay algo que bajar o compartir.
+- Se pausa sola mientras juegas (desactivable) y mientras instalas otro juego, evita que el PC se suspenda y sigue en
+  la bandeja si cierras la ventana.
+- Al terminar, **Instalar** abre el instalador del repack; cuando acaba, el juego entra en tu biblioteca con su arte
+  y se borra el repack (también desactivable).
+- Cada tema de serie tiene su propia tienda y su cola con el aspecto de su plataforma.
+
+Se abre desde el menú rápido, con **Ctrl+E** (Explorar) y **Ctrl+J** (Descargas). Los ajustes están en
+**Ajustes → Descargas**: límites de velocidad, compartir (nunca, hasta instalar o hasta un ratio), proxy SOCKS5…
+
+## Logros
+
+También de los juegos que solo tienen el `.exe`:
+
+- **Steam:** se leen de las estadísticas que Steam guarda en tu PC, sin cuenta ni clave.
+- **Juegos sueltos:** si traen un emulador de la API de Steam (Goldberg, GSE y similares), se leen sus
+  `achievements.ini` / `achievements.json`. El appid sale de `steam_appid.txt` o de la configuración del emulador.
+- En los dos casos, los nombres en español, los iconos y la rareza vienen de Steam.
+
+## Overlay dentro del juego
+
+Sin inyectar nada en el juego:
+
+- Al desbloquear un logro sale un aviso con el aspecto, la posición y el sonido de la plataforma de tu tema: el de
+  Steam abajo a la derecha, el de PlayStation arriba con su copa de bronce, plata, oro o platino, el de Xbox abajo en
+  el centro con sus puntos… Se puede elegir otro en **Ajustes → Overlay**, con vista previa.
+- Con **Mayús + Tab** o el botón Guía se abre un panel con tus logros, el tiempo de sesión y la hora.
+- Sale en el monitor donde está el juego, aunque la ventana activa esté en otro.
+- Funciona en ventana, en ventana sin bordes y en la pantalla completa «optimizada» de Windows 10/11. En una pantalla
+  completa exclusiva no se ve nada encima; al cerrar el juego sale un resumen de lo desbloqueado.
+- La ventana del overlay solo existe mientras se ve algo, así que no gasta memoria durante la partida.
+
+<Note>
+Con un juego abierto como administrador, Windows no deja que otros programas lean el teclado. Por eso, si Windows
+tiene el `.exe` marcado como «Ejecutar como administrador» (muchos instaladores lo hacen), ejGames lo abre sin elevar.
+Así tampoco sale el aviso de UAC. Si un juego lo necesita de verdad, actívalo en **Editar juego**; entonces el overlay
+se abre con el mando.
+</Note>
+
+## Temas
+
+Seis temas de serie: **Steam, PS5, Xbox, Switch, Cinema y Retro**. Cada uno se puede **tunear sin código** (colores,
+tamaños, fondos, fuentes, sonidos, CSS extra), **duplicar y reescribir entero**, o puedes **crear el tuyo desde
+cero** con HTML, CSS y JavaScript y recarga en vivo. Todo empieza en [Crear temas](/temas).
+
+## Mando y Big Picture
+
+Todo se maneja con mando, con navegación espacial y sonidos. Las pistas de botones cambian solas: ✕○△□ con un mando
+PlayStation, A/B/X/Y con uno de Xbox o Nintendo, y teclas con teclado. Durante la partida, el botón Guía (o
+Select + Start durante 1 s) abre el panel del overlay. Para escribir con el mando hay teclado en pantalla.
+
+## Discord
+
+«Jugando a *juego*» con su portada y «Jugando desde ejGames». Viene activado de serie y se desactiva en
+**Ajustes → Sistema** (o solo en un perfil o en un juego).
+
+## Ligero
+
+- **Modo ahorro:** al jugar se cierra la interfaz y solo queda el núcleo en la bandeja (**~5 MB**). Cuando cierras el
+  juego, la ventana vuelve sola.
+- Aunque no uses el modo ahorro, tras 30 s sin foco WebView2 libera memoria (de ~440 MB a ~160 MB).

@@ -1,0 +1,90 @@
+---
+title: "Sonidos y colores del launcher"
+description: "Sonidos, colores de las pantallas del host, avisos de logros y botones de ventana."
+sidebarTitle: "8. Sonidos y colores del launcher"
+---
+
+## Sonidos
+
+Muchos suenan sin que hagas nada:
+
+| Sonido | Cuándo |
+|---|---|
+| `move` | al mover el foco con `createFocus` (no al pasar el ratón) |
+| `select` | al pulsar `accept` con `bindNav` |
+| `launch` / `error` | al lanzar un juego con `ejg.game.launch()` / si falla |
+| `open` | al abrir una pantalla del launcher con `ejg.ui.open()` |
+
+Los demás los pones tú con **`ejg.sound.play(nombre)`**: en el ejemplo, `"open"`
+al abrir la ficha y `"back"` al cerrarla (cuando tu tema gestiona el `back`,
+ejGames no suena por su cuenta).
+
+Qué sonidos se oyen lo decide `sounds` en `theme.json`:
+
+```json
+"sounds": { "preset": "soft" }
+```
+
+Los juegos de sonidos de serie son `soft`, `ps`, `xbox`, `switch`, `retro` y
+`none`. También puedes poner **tus propios ficheros** (wav, ogg o mp3, con
+rutas relativas a la carpeta del tema); los que falten se toman del `preset`:
+
+```json
+"sounds": { "preset": "soft", "move": "sounds/move.wav", "select": "sounds/select.wav" }
+```
+
+Las claves son `move`, `select`, `back`, `launch`, `error` y `open`. Ten en
+cuenta que el usuario manda: si en **Apariencia → Sonidos de navegación** elige
+otro juego de sonidos (o «Sin sonidos»), se usa ese y no tus ficheros. El volumen
+es un ajuste de cada perfil (**Ajustes → Perfil**).
+
+## Colores de las pantallas del launcher
+
+Las pantallas de ejGames que se abren encima de tu tema (ajustes, buscador,
+editor…) pueden llevar tus colores con **`host`**:
+
+```json
+"host": { "accent": "#7c5cff", "surface": "#161922", "radius": "10px", "dark": true }
+```
+
+| Clave | Qué cambia |
+|---|---|
+| `accent` | color de acento (botones, interruptores, foco). Sin él, el color del perfil. Los textos sobre el acento son blancos: elige un color con contraste. |
+| `surface` | fondo de los paneles |
+| `text` | color del texto |
+| `radius` | redondeo de las esquinas (`"10px"`) |
+| `font` | tipografía (`"Consolas, monospace"`) |
+| `dark` | `false` para pantallas claras |
+
+Y para la galería:
+
+- **`palette`**: cuatro colores **en este orden: fondo, superficie, acento y
+  texto**. Si no hay imagen de vista previa, la galería dibuja un boceto con
+  ellos.
+- **`preview`**: una imagen de tu tema (`"preview": "preview.jpg"`), en la
+  carpeta del tema. La tarjeta es de 16:10.
+
+## Avisos de logros dentro del juego
+
+Mientras juegas, los logros salen en una capa encima del juego. Tu tema elige
+su aspecto con **`overlay`**:
+
+```json
+"overlay": { "style": "xbox" }
+```
+
+Los estilos son `steam`, `playstation`, `xbox`, `switch`, `cinema`, `retro` y
+`ejgames`. Cada uno sale donde lo pone su plataforma (Xbox abajo en el centro,
+PlayStation arriba a la derecha…) y con su sonido. `ejgames` es el sobrio: usa
+los colores de tu `host` (acento, fondo, texto, redondeo y tipografía), y es el
+que se usa si no pones nada. Si tu tema tiene un ajuste `accent` (o `dark`, o
+`palette` en el estilo `retro`), el aviso lo respeta. El usuario puede cambiar
+el estilo y la posición en **Ajustes → Overlay**.
+
+## Botones de ventana
+
+Con **`"windowControls": "host"`** (lo del ejemplo) ejGames dibuja minimizar,
+maximizar y cerrar en la esquina superior derecha, visibles al pasar el ratón.
+Si prefieres pintarlos tú, pon `"theme"` y usa **`ejg.window.minimize()`**,
+**`ejg.window.maximize()`** (alterna) y **`ejg.window.close()`**. Para arrastrar
+la ventana, `data-ejg-drag` como en el [paso 3](/guia/primer-main).

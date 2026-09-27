@@ -1,0 +1,59 @@
+---
+title: "El kit"
+description: "Módulos opcionales sin dependencias en /_sdk/kit/."
+icon: "toolbox"
+---
+
+Módulos sin dependencias en `/_sdk/kit/`. Importa solo lo que uses:
+
+```js
+import { h, img, keyed, debounce, initials, hueOf } from "/_sdk/kit/dom.js";
+import { createFocus, bindNav } from "/_sdk/kit/focus.js";
+import { createBackdrop, attachStream, trailerPlayer, idle } from "/_sdk/kit/media.js";
+import { playtime, relative, date, year, description, SOURCE_LABEL } from "/_sdk/kit/format.js";
+import { visible, sort, recent, favorites, byGenre, search, inCollection, SORTS } from "/_sdk/kit/library.js";
+import { clock } from "/_sdk/kit/clock.js";
+import { artFor } from "/_sdk/kit/art.js";
+import { hints, glyph } from "/_sdk/kit/hints.js";
+```
+
+* **`createFocus` + `bindNav`**: navegación espacial con mando. Marca lo navegable
+  con `data-focus`, agrupa filas con `data-focus-group` (recuerda el último foco de
+  cada grupo) y encierra diálogos con `data-focus-trap`. El elemento enfocado
+  recibe la clase `is-focused`.
+  * **Con ratón:** pasar por encima enfoca, y al salir se quita la clase para
+    que no se quede marcado. Con mando, el cursor se oculta y `:hover` no se
+    aplica.
+  * **`onChange(el, prev, { pointer })`:** si `pointer` es `true`, el foco vino
+    del ratón. En ese caso no desplaces ni selecciones nada, porque el elemento
+    se movería de debajo del cursor.
+* **`artFor(juego, "portrait" | "square" | "landscape")`**: arte que encaja en el
+  marco sin recortar logos. En cuadrado y panorámico compone el fondo del juego con
+  su logo encima; si falta algo, recurre a la carátula centrada, a la cabecera o
+  al nombre. Devuelve un elemento que ocupa todo su contenedor.
+* **`hints(contenedor, [[acción, texto], …])`**: barra de pistas de controles (ver arriba).
+* **`keyed(contenedor, lista, clave, render)`**: reutiliza nodos al redibujar,
+  así el foco no salta y va rápido con cientos de juegos.
+* **`createBackdrop`**: fondo con fundido entre imágenes y vídeo encima.
+
+Esqueleto mínimo:
+
+```js
+import { h, img, keyed } from "/_sdk/kit/dom.js";
+import { createFocus, bindNav } from "/_sdk/kit/focus.js";
+import { visible, sort } from "/_sdk/kit/library.js";
+
+const ejg = await window.ejg.ready();
+const grid = document.querySelector("#grid");
+const focus = createFocus();
+bindNav(focus, { y: () => ejg.game.favorite(Number(focus.current?.dataset.id)) });
+
+function render() {
+  keyed(grid, sort(visible(ejg.library.all)), (g) => g.id, (g, prev) =>
+    prev ?? h("button", { class: "card", "data-focus": "", "data-id": g.id, onclick: () => ejg.game.launch(g.id) },
+      img(g.media.coverThumb), h("span", null, g.title)));
+}
+ejg.library.onChange(render);
+render();
+focus.first(grid);
+```

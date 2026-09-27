@@ -1,0 +1,129 @@
+---
+title: "Opciones sin código y modo Big Picture"
+description: "Ajustes editables desde Apariencia y el modo tele."
+sidebarTitle: "7. Opciones sin código y modo Big Picture"
+---
+
+## Opciones en Ajustes → Apariencia
+
+Cualquier usuario puede personalizar tu tema sin abrir un fichero si declaras
+**`settings`** en `theme.json`. Este es el `theme.json` completo del ejemplo:
+
+```json
+{
+  "id": "ejemplo",
+  "name": "Mi primer tema",
+  "version": "1.0.0",
+  "author": "Tu nombre",
+  "description": "Rejilla de carátulas con ficha de juego (el tema de la guía)",
+  "sdk": 1,
+  "entry": "index.html",
+  "modes": ["desktop", "tv"],
+  "palette": ["#12141b", "#1c1f29", "#7c5cff", "#eceef4"],
+  "host": { "accent": "#7c5cff", "surface": "#161922", "radius": "10px", "dark": true },
+  "sounds": { "preset": "soft" },
+  "windowControls": "host",
+  "settings": [
+    { "key": "accent", "type": "color", "label": "Color de acento", "default": "#7c5cff" },
+    { "key": "wallpaper", "type": "image", "label": "Imagen de fondo" },
+    { "key": "cardSize", "type": "range", "label": "Tamaño de las carátulas", "min": 120, "max": 260, "step": 10, "unit": "px", "default": 160, "group": "Rejilla" },
+    { "key": "showTitles", "type": "toggle", "label": "Nombre bajo la carátula", "default": true, "group": "Rejilla" },
+    { "key": "order", "type": "select", "label": "Orden", "default": "title", "group": "Rejilla", "options": [
+      { "value": "title", "label": "Nombre" },
+      { "value": "recent", "label": "Jugado recientemente" },
+      { "value": "playtime", "label": "Horas jugadas" }
+    ] }
+  ]
+}
+```
+
+(Con el modo desarrollador, los cambios de `theme.json` se aplican al guardar; si
+no, pulsa F5.)
+
+En **Ajustes → Apariencia** aparecerán dos bloques, «Mi primer tema · General»
+y «Mi primer tema · Rejilla» (sale del campo `group`), con un botón
+**Restablecer**. ejGames añade por su cuenta el selector de **Sonidos de
+navegación** ([paso 8](/guia/sonidos-colores)) y un cuadro de **CSS extra** con el que cada perfil puede
+retocar tu tema.
+
+Cada opción llega a tu página **sola**, de dos formas:
+
+1. Una **variable CSS** en `<html>`: `--ejg-` + la clave en minúsculas con
+   guiones (`cardSize` → `--ejg-card-size`).
+2. Para `toggle` y `select`, además, un **atributo** `data-…` en `<html>`.
+
+| `type` | Control | Variable CSS | Atributo |
+|---|---|---|---|
+| `color` | selector de color | `--ejg-accent: #7c5cff` | — |
+| `range` / `number` | deslizador (`min`, `max`, `step`, `unit`) | `--ejg-card-size: 160px` (con su `unit`) | — |
+| `toggle` | interruptor | `--ejg-show-titles: 1` o `0` | `data-show-titles="on"` / `"off"` |
+| `select` | lista (`options`) | `--ejg-order: title` | `data-order="title"` |
+| `font` | tipografías de Windows | `--ejg-…: "Segoe UI", system-ui, sans-serif` | — |
+| `image` | imagen o vídeo del usuario | `--ejg-wallpaper: url("…")` | — |
+| `text` | cuadro de texto | el texto tal cual | — |
+
+Una opción sin valor (como `wallpaper` mientras no se elija nada) **no** crea la
+variable, así que usa siempre un valor de reserva en `var()`. En el CSS del
+ejemplo:
+
+```css
+:root {
+  --acento: var(--ejg-accent, #7c5cff);
+  --carta: var(--ejg-card-size, 160px);
+}
+.rejilla { grid-template-columns: repeat(auto-fill, minmax(var(--carta), 1fr)); }
+html[data-show-titles="off"] .nombre { display: none; }
+
+/* Imagen de fondo: detrás de todo y atenuada. */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1;
+  background: var(--ejg-wallpaper, none) center / cover no-repeat;
+  opacity: 0.3;
+}
+```
+
+(Si has seguido la guía, cambia `--acento: #7c5cff;` por la línea de arriba y
+pon `var(--carta)` donde tenías `160px` en la rejilla.)
+
+Cuando la opción la tienes que leer **desde JavaScript** (aquí, el orden), está
+en **`ejg.settings`**, y **`ejg.on("settings", …)`** avisa cuando el usuario la
+cambia:
+
+```js
+function juegos() {
+  // visible(): sin ocultos ni desaparecidos. El orden es una opción del tema.
+  return sort(visible(ejg.library.all), ejg.settings.order);
+}
+
+ejg.on("settings", repintar); // "Orden" se aplica en JavaScript
+```
+
+<Note>
+El tipo `image` también admite **vídeos** mp4/webm. Un vídeo no sirve como
+`background` de CSS: si quieres admitirlo, compruébalo en `ejg.settings` y
+pinta un `<video muted loop autoplay>` (el tema Steam lo hace así).
+</Note>
+
+## Modo Big Picture
+
+Big Picture es el modo «tele»: pantalla completa y pensado para el mando. Se
+entra desde el menú rápido (**Ctrl + K** o el botón Guía del mando → **Big
+Picture**) o desde **Ajustes → Sistema**. Al entrar, ejGames:
+
+- pone **`data-mode="tv"`** en el `<html>` de tu tema (`ejg.mode` vale `"tv"` y
+  `ejg.on("mode", …)` avisa del cambio);
+- oculta sus botones de ventana;
+- y, si pulsas **Atrás** sin nada abierto (tu `back` devolvió `false`), abre el
+  menú rápido.
+
+Con CSS basta para adaptarse: letra y carátulas más grandes, y fuera lo que no
+se usa con mando.
+
+```css
+html[data-mode="tv"] { --carta: calc(var(--ejg-card-size, 160px) * 1.3); }
+html[data-mode="tv"] body { font-size: 19px; }
+html[data-mode="tv"] .acciones { display: none; }
+```
+
+El campo `"modes": ["desktop", "tv"]` de `theme.json` es informativo: todos los
+temas reciben `data-mode="tv"` en Big Picture, así que diséñalo para los dos.

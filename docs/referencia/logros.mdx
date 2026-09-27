@@ -1,0 +1,24 @@
+---
+title: "Logros"
+description: "ejg.game.achievements: lista, iconos y rareza."
+icon: "trophy"
+---
+
+```js
+const list = await ejg.game.achievements(id)
+// { total, unlocked, items: [{ apiName, name, description, icon, iconGray,
+//                              hidden, globalPct, unlockedAt }] }
+```
+
+Salen de las estadísticas locales de Steam o de los ficheros de los emuladores
+de los juegos sueltos. La primera vez puede tardar un momento, porque descarga
+el esquema de Steam; después se cachea una semana. Para pintar un resumen sin
+esperar, usa `game.achievements` de la biblioteca.
+
+- `items` va en el orden del juego. Sin `unlockedAt`, el logro está bloqueado.
+- `icon` y `iconGray` se sirven por `ejg-media`, así que cargan en el tema sin
+  red.
+- `globalPct` es el % de jugadores de Steam que lo tienen; sirve para marcar la
+  rareza.
+- Un logro oculto sin desbloquear llega como «Logro oculto», sin icono ni
+  descripción.

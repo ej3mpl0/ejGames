@@ -1,0 +1,38 @@
+---
+title: "Mando y teclado"
+description: "ejg.input: acciones de navegación y pistas de controles."
+icon: "gamepad"
+---
+
+```js
+ejg.input.on("nav", (e) => {
+  // e.action: up down left right accept back x y lb rb lt rt menu view
+  // e.source: "keyboard" | "gamepad"; e.repeat: al mantener pulsado
+  if (e.action === "back" && algoAbierto) { cerrar(); e.preventDefault(); }
+});
+```
+
+Teclado: flechas, Enter/Espacio (accept), Esc/Retroceso (back), **E** (x),
+**F** (y), RePág/AvPág (lb/rb), Tab (rb). **Ctrl+E** (Explorar) y **Ctrl+J**
+(Descargas) los gestiona el host.
+
+Si no marcas un `back` como gestionado, lo usa el host: cierra lo que tenga
+abierto y, en Big Picture sin nada abierto, abre el menú rápido. El botón Guía
+del mando abre siempre el menú rápido del host.
+
+## Pistas de controles (mando o teclado)
+
+`ejg.input.source` dice qué se usó por última vez (`"gamepad"`, `"keyboard"` o
+`"mouse"`) y `ejg.input.pad` qué mando es (`"xbox"`, `"playstation"`,
+`"nintendo"` o `"generic"`). El `<html>` lleva `data-input` y `data-pad`, y
+`ejg.on("input", …)` avisa de los cambios. Lo más fácil es usar el kit:
+
+```js
+import { hints } from "/_sdk/kit/hints.js";
+const bar = hints(document.querySelector("#hints"), [["accept", "Jugar"], ["back", "Atrás"], ["y", "Favorito"]]);
+bar.set([["accept", "Instalar"]]);   // cambia los textos cuando haga falta
+```
+
+Con un mando de PlayStation se ven ✕ ○ △ □; con uno de Xbox, A B X Y en sus
+colores; con teclado, Enter, Esc, E y F. Se actualiza solo. Truco CSS:
+`html[data-input="mouse"] .hints { display: none; }`.

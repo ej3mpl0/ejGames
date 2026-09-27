@@ -1,0 +1,132 @@
+---
+title: "Mando y teclado"
+description: "Navegación espacial con el kit y la barra de pistas."
+sidebarTitle: "5. Mando y teclado"
+---
+
+ejGames traduce el teclado y el mando a **acciones**, iguales para los dos:
+
+| Acción | Teclado | Mando |
+|---|---|---|
+| `up` `down` `left` `right` | flechas | cruceta o stick izquierdo |
+| `accept` | Enter, Espacio | A (✕ en PlayStation) |
+| `back` | Esc, Retroceso | B (○) |
+| `x` / `y` | E / F | X / Y (□ / △) |
+| `lb` / `rb` | RePág / AvPág (y Mayús+Tab / Tab) | LB / RB |
+| `lt` / `rt` | Inicio / Fin | LT / RT |
+| `menu` | tecla de menú contextual | Start / Menú |
+| `view` | — | Back / Vista |
+
+El botón Guía del mando abre siempre el menú rápido de ejGames. F5, F11,
+Ctrl + F, Ctrl + , , Ctrl + P y Ctrl + K son atajos del launcher y no llegan a
+tu tema como acciones.
+
+No tienes que calcular tú qué hay arriba o a la derecha: el kit trae una
+**navegación espacial** en `focus.js`.
+
+1. Marca con **`data-focus`** todo lo que se pueda elegir. Los dos botones de la
+   barra ya lo llevan en el HTML. Añádelo a la tarjeta y al botón de la
+   biblioteca vacía:
+
+   ```js
+   { class: "tarjeta", "data-focus": "", "data-id": g.id, "data-firma": firma, title: g.title, onclick: () => jugar(g.id) },
+   // …
+   h("button", { class: "boton", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, "Añadir juegos")
+   ```
+
+2. Crea el foco y conéctalo a las acciones. Añade al principio de `main.js`:
+
+   ```js
+   import { createFocus, bindNav } from "/_sdk/kit/focus.js";
+   import { hints } from "/_sdk/kit/hints.js";
+   ```
+
+   y, después de `ready()`:
+
+   ```js
+   const foco = createFocus();
+
+   bindNav(foco, {
+     y: () => {
+       const id = Number(foco.current?.dataset.id);
+       if (!id) return false;
+       ejg.game.favorite(id);
+     },
+     menu: () => {
+       ejg.ui.open("menu");
+     },
+   });
+
+   // Al cerrar una pantalla del launcher (ajustes, buscador…), recuperar el foco.
+   ejg.on("focus-return", () => foco.restore());
+
+   // Los botones de la barra abren pantallas del launcher.
+   for (const b of document.querySelectorAll("[data-ui]")) {
+     b.addEventListener("click", () => ejg.ui.open(b.dataset.ui));
+   }
+   ```
+
+3. Enseña el foco en CSS. El elemento enfocado lleva la clase **`is-focused`**:
+
+   ```css
+   button:focus { outline: none; } /* el foco se dibuja con .is-focused */
+   .acciones button.is-focused { color: var(--texto); background: color-mix(in srgb, var(--texto) 12%, transparent); }
+   .tarjeta.is-focused .caratula { transform: scale(1.03); box-shadow: 0 0 0 3px var(--acento); }
+   .tarjeta.is-focused .nombre { color: var(--texto); }
+   ```
+
+4. Que siempre haya algo enfocado. Al final de `pintar()`, después de `keyed(…)`:
+
+   ```js
+   // Si el elemento enfocado ya no está (al arrancar, o porque su tarjeta se ha
+   // rehecho al llegar la carátula), el foco pasa a su sustituta o a la primera.
+   if (!foco.current?.isConnected) {
+     const otra = (idEnfocado && rejilla.querySelector(`[data-id="${idEnfocado}"]`)) || rejilla.querySelector("[data-focus]");
+     if (otra) foco.focus(otra, { noScroll: true, silent: true });
+   }
+   ```
+
+   con `const idEnfocado = foco.current?.dataset.id;` al principio de `pintar()`.
+
+Cómo funciona:
+
+- **`bindNav(foco, { acción: función })`**: las flechas mueven el foco y
+  `accept` hace clic en el elemento enfocado (con su sonido). Tus funciones se
+  ejecutan antes. Si una devuelve **`false`**, la acción **no** se da por
+  gestionada; con `back`, eso significa que la gestiona ejGames (cierra lo que
+  tenga abierto y, en Big Picture, abre el menú rápido).
+- **`foco.current`** es el elemento enfocado; `foco.focus(el)` enfoca uno
+  concreto y `foco.first(contenedor)` el primero de un contenedor. Con
+  `{ silent: true }` no suena y con `{ noScroll: true }` no desplaza.
+- **`ejg.game.favorite(id)`** alterna el favorito (o lo fija si le pasas
+  `true`/`false`). No hace falta repintar a mano: el cambio llega por
+  `library.onChange` y la tarjeta se actualiza sola.
+- **`data-focus-group`** (lo lleva `#rejilla`) recuerda el último elemento
+  enfocado del grupo: si subes a la barra y vuelves a bajar, regresas a la misma
+  carátula.
+- **Con ratón**, pasar por encima enfoca y al salir se quita la marca, para que
+  no se quede «pegada». Con mando se oculta el cursor.
+
+## La barra de pistas
+
+`hints()` pinta los controles con los símbolos del dispositivo que se esté
+usando: A B X Y con un mando de Xbox, ✕ ○ □ △ con uno de PlayStation, Enter, Esc,
+E, F con teclado. Cambia sola cuando cambias de dispositivo:
+
+```js
+const pistas = hints(document.querySelector("#pistas"), [["accept", "Jugar"], ["y", "Favorito"], ["menu", "Menú"]]);
+```
+
+Luego puedes cambiar los textos con `pistas.set([...])`. El `<html>` lleva
+`data-input="mouse|keyboard|gamepad"`, así que ocultarla con ratón es CSS puro:
+
+```css
+.pistas {
+  position: fixed; right: 20px; bottom: 16px; z-index: 20;
+  display: flex; gap: 18px; padding: 8px 14px; border-radius: 99px;
+  background: rgb(0 0 0 / 0.55); backdrop-filter: blur(8px); font-size: 13px;
+}
+.pistas:empty, html[data-input="mouse"] .pistas { display: none; }
+```
+
+Prueba ya con las flechas, Enter y F (favorito).

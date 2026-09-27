@@ -1,0 +1,18 @@
+---
+title: "Rendimiento y compartir"
+description: "Consejos para que el tema vaya fluido y cómo exportarlo."
+icon: "gauge-high"
+---
+
+## Rendimiento
+
+* Usa `coverThumb`/`heroThumb` en rejillas y filas; `img()` del kit ya pone `loading="lazy"`.
+* En rejillas largas: `content-visibility: auto; contain-intrinsic-size: auto 240px;`.
+* Nada de `setInterval` rápidos. El reloj del kit se actualiza una vez por minuto.
+* Pausa vídeos con `ejg.on("visibility")` y cuando no se vean.
+
+## Compartir
+
+**Exportar .ejtheme** (Ajustes → Apariencia) crea un zip con tu tema. Para
+instalarlo en otro PC: **Importar**. Un tema de usuario no puede usar el `id` de
+uno de serie.

@@ -1,0 +1,47 @@
+---
+title: "El SDK: window.ejg"
+description: "Cómo habla un tema con ejGames: datos, acciones y eventos."
+sidebarTitle: "Visión general"
+icon: "code"
+---
+
+ejGames inyecta el SDK en tu `index.html` antes que tus scripts. Espera a que el host mande los datos:
+
+```js
+const ejg = await window.ejg.ready();
+```
+
+A partir de ahí todo es síncrono cuando los datos ya están en memoria (`ejg.library.all`, `ejg.settings`,
+`ejg.profile`…) y asíncrono cuando hay que pedirle algo al launcher (`ejg.game.details()`, `ejg.explore.search()`…).
+
+<CardGroup cols={2}>
+  <Card title="Biblioteca" icon="layer-group" href="/referencia/biblioteca">`ejg.library`: juegos, colecciones y arte.</Card>
+  <Card title="Juegos" icon="play" href="/referencia/juegos">`ejg.game`: ficha, lanzar, favorito, estado.</Card>
+  <Card title="Logros" icon="trophy" href="/referencia/logros">`ejg.game.achievements`: lista, iconos y rareza.</Card>
+  <Card title="Explorar y descargas" icon="cloud-arrow-down" href="/referencia/explorar">`ejg.explore` y `ejg.downloads`.</Card>
+  <Card title="Mando y teclado" icon="gamepad" href="/referencia/mando">`ejg.input` y las pistas de controles.</Card>
+  <Card title="Host y ventana" icon="window-maximize" href="/referencia/host">`ejg.ui`, `ejg.sound`, `ejg.window`, `ejg.storage`.</Card>
+</CardGroup>
+
+## Eventos
+
+`ejg.on(nombre, fn)` escucha los avisos del host:
+
+| Evento | Cuándo |
+|---|---|
+| `settings` | el usuario cambió una opción del tema en Apariencia |
+| `input` | cambió el tipo de control (mando, teclado o ratón) |
+| `focus-return` | se cerró una pantalla del host: recupera el foco |
+| `visibility` | el tema deja de verse o vuelve (`{ visible }`) |
+
+Además, cada parte tiene sus propios `onChange` / `onState` (biblioteca, juegos, descargas…).
+
+## Tipos
+
+Los tipos completos están en `/_sdk/ejg.d.ts` (también dentro de la instalación, en `sdk\ejg.d.ts`). Con
+`// @ts-check` y una referencia a ese fichero, tu editor autocompleta todo el SDK.
+
+<Note>
+Dentro del iframe no funcionan `confirm()`, `alert()` ni `window.open()`, y no hay red ni `localStorage`. Mira
+[qué puede hacer un tema](/referencia/limites).
+</Note>

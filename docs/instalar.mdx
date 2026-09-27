@@ -1,0 +1,67 @@
+---
+title: "Instalar y actualizar"
+description: "El instalador, las actualizaciones automáticas y dónde guarda ejGames tus datos."
+icon: "download"
+---
+
+## Instalar
+
+<Steps>
+  <Step title="Descarga el instalador">
+    Baja `ejGames_<versión>_Setup.exe` de la [última release en GitHub](https://github.com/ej3mpl0/ejGames/releases/latest).
+  </Step>
+  <Step title="Ábrelo">
+    Elige la carpeta (por defecto `%LOCALAPPDATA%\ejGames`), si quieres acceso directo en el escritorio y si se abre
+    al terminar. No pide permisos de administrador.
+  </Step>
+  <Step title="Primer arranque">
+    Un asistente de cuatro pasos te pide tu perfil, tu tema, dónde tienes juegos (carpetas y tiendas que importar) y
+    la carpeta de descargas. Todo se puede cambiar después en **Ajustes**.
+  </Step>
+</Steps>
+
+Si ya tenías ejGames, el mismo instalador lo detecta y ofrece **Actualizar**: tu biblioteca, tus horas y tus ajustes
+se quedan como están.
+
+## Requisitos
+
+- Windows 10 u 11 de 64 bits.
+- WebView2, que ya viene con Windows 11 y con los Windows 10 al día. Si falta, el instalador abre el instalador
+  clásico, que lo descarga.
+
+## Actualizaciones
+
+Al abrirse, ejGames mira si hay una versión nueva en GitHub. Si la hay, te enseña qué trae y con un botón:
+
+1. la descarga y comprueba que el instalador es el publicado (SHA-256),
+2. cierra ejGames y la instala sin tocar tus datos,
+3. y lo vuelve a abrir.
+
+Puedes saltarte una versión o dejarlo para más tarde. En **Ajustes → Sistema → Actualizaciones** se desactiva la
+comprobación al abrir y está **Buscar ahora**.
+
+<Note>
+Las actualizaciones automáticas llegaron en la 0.3.0. Si tienes una versión anterior, instala la 0.3.0 a mano una vez.
+</Note>
+
+## Dónde guarda tus datos
+
+Todo está en `%APPDATA%\ejGames\`:
+
+| Qué | Dónde |
+|---|---|
+| Biblioteca, horas, perfiles y colecciones | `library.db` (SQLite) |
+| Ajustes | `settings.json` |
+| Registro | `logs\ejgames.log` |
+| Arte de los juegos | `cache\media` |
+| Tráileres | `cache\trailers` (con tamaño máximo configurable) |
+| Tus temas | `themes\` |
+
+**Versión portable:** con un fichero `portable.txt` junto a `ejgames.exe`, todo va a `.\data` en esa misma carpeta.
+
+## Si algo va mal
+
+- **Modo seguro:** mantén **Shift** al abrir ejGames para arrancar con el tema de serie.
+- **Registro:** `%APPDATA%\ejGames\logs\ejgames.log` cuenta qué ha pasado.
+- **Desinstalar:** desde **Configuración de Windows → Aplicaciones → Aplicaciones instaladas → ejGames**. Tus datos
+  siguen en `%APPDATA%\ejGames` por si vuelves; bórrala si no.

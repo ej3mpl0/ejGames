@@ -1,0 +1,198 @@
+---
+title: "La ficha del juego"
+description: "Descripción, Jugar o Instalar, favorito y volver."
+sidebarTitle: "6. La ficha del juego"
+---
+
+Ahora, en vez de lanzar el juego al pulsar una carátula, abriremos una ficha
+con su descripción y sus botones. La ficha es la `<section id="ficha" hidden
+data-focus-trap>` del HTML:
+
+- **`hidden`**: empieza oculta.
+- **`data-focus-trap`**: mientras se vea, el foco no sale de ella (las flechas
+  no se escapan a la rejilla que queda detrás).
+
+Cambia el `onclick` de la tarjeta por `onclick: () => abrirFicha(g.id)` y añade
+esto a `main.js` (añade también `description`, `playtime` y `year` a los
+imports: `import { description, playtime, year } from "/_sdk/kit/format.js";`):
+
+```js
+let fichaId = null;
+let turno = 0; // para descartar respuestas de una ficha que ya se cerró
+
+const datos = (g) => [g.developer, year(g.releaseDate), playtime(g.playtime)].filter(Boolean).join(" · ");
+
+async function abrirFicha(id) {
+  const g = ejg.library.byId(id);
+  if (!g) return;
+  fichaId = id;
+  const miTurno = ++turno;
+
+  const fondo = g.media.hero || g.media.heroThumb;
+  const texto = h("div", { class: "descripcion" }, h("p", null, "Cargando…"));
+  const botones = h("div", { class: "botones" });
+  ficha.replaceChildren(
+    h("div", { class: "ficha-fondo", style: fondo ? `background-image: url("${fondo}")` : null }),
+    h(
+      "div",
+      { class: "ficha-contenido" },
+      h("div", { class: "ficha-caratula" }, img(g.media.cover || g.media.coverThumb)),
+      h(
+        "div",
+        { class: "ficha-info" },
+        h("h2", null, g.title),
+        h("p", { class: "datos" }, datos(g)),
+        botones,
+        texto,
+      ),
+    ),
+  );
+  pintarBotones(g);
+  ficha.hidden = false;
+  ejg.sound.play("open");
+  foco.first(botones);
+  pistasFicha();
+
+  // La descripción larga no viene en la biblioteca: se pide aparte.
+  try {
+    const d = await ejg.game.details(id);
+    if (miTurno !== turno) return;
+    texto.replaceChildren(description(d.description || d.shortDescription || "Sin descripción."));
+  } catch {
+    if (miTurno === turno) texto.replaceChildren(h("p", null, "No se ha podido cargar la descripción."));
+  }
+}
+```
+
+(y `const ficha = document.querySelector("#ficha");` junto a las demás constantes).
+
+- **`ejg.library.byId(id)`** da el juego al instante, sin esperar.
+- **`ejg.game.details(id)`** pide lo que no viene en la biblioteca: la
+  descripción, capturas (`screenshots`), tráileres (`trailers`) y últimas
+  sesiones (`recentSessions`). Es asíncrono, así que primero pintamos la ficha y
+  luego rellenamos el texto. El `turno` evita que, si el usuario abre y cierra
+  fichas deprisa, la descripción de un juego acabe en la ficha de otro.
+- **`description(texto)`** convierte el formato de las descripciones (`## título`,
+  `- viñeta` y párrafos separados por una línea en blanco) en elementos HTML
+  seguros. No uses `innerHTML` con textos que vienen de fuera.
+- **`playtime(segundos)`** → «12 h 34 min» o «Sin jugar»; **`year(fecha)`** → «2017».
+- Aquí sí usamos las imágenes grandes (`cover`, `hero`): en una ficha solo hay una.
+
+Los botones van aparte porque se repintan cuando cambia algo (favorito, partida
+en marcha):
+
+```js
+function pintarBotones(g) {
+  const caja = ficha.querySelector(".botones");
+  if (!caja) return;
+  const enMarcha = ejg.game.isRunning(g.id);
+  const antes = foco.current?.dataset.accion;
+  caja.replaceChildren(
+    h(
+      "button",
+      { class: "boton principal", "data-focus": "", "data-accion": "jugar", onclick: () => jugar(g.id) },
+      enMarcha ? "En marcha" : g.installed === false ? "Instalar" : "Jugar",
+    ),
+    h("button", { class: "boton", "data-focus": "", "data-accion": "fav", onclick: () => ejg.game.favorite(g.id) }, g.favorite ? "★ Favorito" : "☆ Favorito"),
+    h("button", { class: "boton", "data-focus": "", "data-accion": "editar", onclick: () => ejg.game.edit(g.id) }, "Editar"),
+    h("button", { class: "boton", "data-focus": "", "data-accion": "volver", onclick: cerrarFicha }, "Volver"),
+  );
+  // Tras repintar, el foco vuelve al mismo botón.
+  const b = antes && caja.querySelector(`[data-accion="${antes}"]`);
+  if (b) foco.focus(b, { noScroll: true, silent: true });
+}
+
+async function jugar(id) {
+  if (ejg.game.isRunning(id)) return;
+  const b = ficha.querySelector('[data-accion="jugar"]');
+  if (b) b.textContent = "Iniciando…";
+  try {
+    await ejg.game.launch(id); // el sonido de lanzar lo pone ejGames
+  } catch (e) {
+    ejg.ui.toast(String(e.message || e), "error");
+  }
+  const g = ejg.library.byId(id);
+  if (g && fichaId === id) pintarBotones(g);
+}
+
+function cerrarFicha() {
+  if (ficha.hidden) return;
+  const id = fichaId;
+  fichaId = null;
+  turno++;
+  ficha.hidden = true;
+  ficha.replaceChildren();
+  ejg.sound.play("back");
+  pistasRejilla();
+  const t = rejilla.querySelector(`[data-id="${id}"]`);
+  if (t) foco.focus(t, { silent: true });
+  else foco.first(rejilla);
+}
+```
+
+- **Jugar o Instalar** según `installed`; **En marcha** si
+  `ejg.game.isRunning(id)`.
+- **`ejg.game.edit(id)`** abre el editor de juegos de ejGames (nombre, arte,
+  ejecutable…). Al cerrarlo llega `focus-return` y el foco vuelve al botón.
+
+Queda enseñar a `bindNav` que **Atrás** cierra la ficha y que el favorito
+también funciona dentro de ella, cambiar las pistas según dónde estemos y
+repintar cuando algo cambie:
+
+```js
+bindNav(foco, {
+  // Sin ficha abierta devolvemos false: así "Atrás" lo gestiona ejGames.
+  back: () => {
+    if (ficha.hidden) return false;
+    cerrarFicha();
+  },
+  y: () => {
+    const id = fichaId ?? Number(foco.current?.dataset.id);
+    if (!id) return false;
+    ejg.game.favorite(id);
+  },
+  menu: () => {
+    ejg.ui.open("menu");
+  },
+});
+
+const pistas = hints(document.querySelector("#pistas"), []);
+const pistasRejilla = () => pistas.set([["accept", "Abrir"], ["y", "Favorito"], ["menu", "Menú"]]);
+const pistasFicha = () => pistas.set([["accept", "Elegir"], ["back", "Volver"], ["y", "Favorito"]]);
+
+const repintar = debounce(() => {
+  pintar();
+  if (fichaId) {
+    const g = ejg.library.byId(fichaId);
+    if (!g) return cerrarFicha();
+    pintarBotones(g);
+    ficha.querySelector(".datos").textContent = datos(g); // las horas, al cerrar el juego
+  }
+}, 50);
+ejg.library.onChange(repintar); // juegos nuevos, favoritos, carátulas…
+ejg.on("running", repintar); // un juego empieza o termina
+
+pintar();
+pistasRejilla();
+```
+
+Sustituye con esto el `bindNav`, la barra de pistas y las dos últimas líneas
+que tenías, y añade `debounce` al `import` de `dom.js`: agrupa varios avisos
+seguidos en un solo repintado. Al cerrar un juego, sus horas nuevas llegan por
+el mismo aviso: por eso `repintar` también pone al día los datos de la ficha
+abierta. El CSS de la ficha, resumido (el completo está en
+[`examples/ejemplo-tema/style.css`](https://github.com/ej3mpl0/ejGames/blob/main/examples/ejemplo-tema/style.css)):
+
+```css
+.ficha { position: fixed; inset: 0; z-index: 10; overflow-y: auto; background: var(--fondo); }
+.ficha-fondo { position: absolute; inset: 0 0 auto; height: 75vh; background: center / cover no-repeat; opacity: 0.35;
+               mask-image: linear-gradient(#000 35%, transparent); }
+.ficha-contenido { position: relative; display: flex; align-items: flex-start; gap: 40px; padding: 90px 64px 64px; max-width: 1200px; }
+.ficha-caratula { flex: none; width: 240px; aspect-ratio: 2 / 3; border-radius: 12px; overflow: hidden; background: var(--panel); }
+.ficha-caratula img { width: 100%; height: 100%; object-fit: cover; }
+.ficha-caratula img.img-empty, .ficha-caratula img.img-error { display: none; }
+.botones { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 26px; }
+.boton { padding: 10px 18px; border-radius: 8px; background: color-mix(in srgb, var(--texto) 10%, transparent); }
+.boton.principal { padding-inline: 30px; background: var(--acento); color: #fff; font-weight: 600; }
+.boton.is-focused { box-shadow: 0 0 0 3px var(--texto); }
+```

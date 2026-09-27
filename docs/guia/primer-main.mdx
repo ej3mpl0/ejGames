@@ -1,0 +1,139 @@
+---
+title: "index.html y el primer main.js"
+description: "La página, un poco de estilo y los primeros datos del SDK."
+sidebarTitle: "3. index.html y el primer main.js"
+---
+
+## La página
+
+Este es el `index.html` completo del tema. No cambiará en el resto de la guía,
+así que lo ponemos ya entero:
+
+```html
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mi primer tema</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="main.js"></script>
+  </head>
+  <body>
+    <header class="barra" data-ejg-drag>
+      <h1>Mis juegos <span id="total" class="total"></span></h1>
+      <nav class="acciones" data-ejg-nodrag>
+        <button data-focus data-ui="search">Buscar</button>
+        <button data-focus data-ui="settings">Ajustes</button>
+      </nav>
+    </header>
+
+    <main id="rejilla" class="rejilla" data-focus-group="rejilla"></main>
+
+    <section id="ficha" class="ficha" hidden data-focus-trap></section>
+
+    <footer id="pistas" class="pistas"></footer>
+  </body>
+</html>
+```
+
+Lo importante:
+
+- **Deja la etiqueta `<head>` tal cual**, sin atributos. ejGames mete el SDK
+  (`<script src="/_sdk/ejg.js">`) justo detrás de `<head>`, antes que tus
+  scripts. Si no la encuentra, lo pone al principio de todo, por delante del
+  `<!doctype>`, y la página pasa a modo *quirks*.
+- **`type="module"`** en tu script: así puedes usar `import` y `await` fuera de
+  funciones.
+- **`data-ejg-drag`** convierte la barra en el asa para arrastrar la ventana
+  (doble clic maximiza). Lo que no deba arrastrar, como los botones, lleva
+  **`data-ejg-nodrag`**.
+- `#rejilla` tendrá las carátulas, `#ficha` será la ficha del juego ([paso 6](/guia/ficha)) y
+  `#pistas` la barra de controles ([paso 5](/guia/mando)). Los atributos `data-focus…` los
+  explicamos en el [paso 5](/guia/mando).
+
+## Un poco de estilo
+
+Empieza `style.css` con la base: colores en variables, la página a pantalla
+completa y la barra superior.
+
+```css
+:root {
+  --fondo: #12141b;
+  --panel: #1c1f29;
+  --texto: #eceef4;
+  --tenue: #9aa0ae;
+  --acento: #7c5cff;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { height: 100%; background: var(--fondo); }
+body {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--texto);
+  font: 15px/1.45 "Segoe UI", system-ui, sans-serif;
+  user-select: none;
+}
+
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+
+/* Arriba se deja una franja libre: ahí aparecen los botones de ventana del launcher. */
+.barra { display: flex; align-items: center; gap: 16px; padding: 40px 32px 14px; }
+.barra h1 { margin: 0; font-size: 1.6em; font-weight: 600; }
+.total { margin-left: 6px; font-size: 0.6em; font-weight: 400; color: var(--tenue); }
+.acciones { margin-left: auto; display: flex; gap: 6px; }
+.acciones button { padding: 6px 14px; border-radius: 8px; color: var(--tenue); }
+```
+
+Esa franja libre de arriba es porque ejGames dibuja **minimizar, maximizar y
+cerrar** en la esquina superior derecha (aparecen al pasar el ratón) y esa zona
+recibe los clics. En el [paso 8](/guia/sonidos-colores) verás cómo pintarlos tú si lo prefieres.
+
+## El primer `main.js`
+
+```js
+const ejg = await window.ejg.ready();
+const rejilla = document.querySelector("#rejilla");
+
+function pintar() {
+  document.querySelector("#total").textContent = ejg.library.all.length;
+  rejilla.replaceChildren(
+    ...ejg.library.all.map((g) => {
+      const p = document.createElement("p");
+      p.textContent = g.title;
+      return p;
+    }),
+  );
+}
+
+ejg.library.onChange(pintar);
+pintar();
+```
+
+- **`await window.ejg.ready()`** espera a que ejGames mande los datos
+  (biblioteca, perfil, opciones). Empieza siempre así.
+- **`ejg.library.all`** es la lista de juegos, ya ordenada por nombre. Es una
+  copia en memoria: leerla no cuesta nada.
+- **`ejg.library.onChange(fn)`** te avisa cuando algo cambia: juegos nuevos,
+  un favorito, la carátula que acaba de descargarse… Aquí volvemos a pintarlo
+  todo; en el paso siguiente lo haremos sin rehacer lo que no cambia.
+
+Guarda, elige el tema y deberías ver los nombres de tus juegos. Cada juego
+(`Game`) trae, entre otros:
+
+| Campo | Qué es |
+|---|---|
+| `id`, `title` | identificador y nombre |
+| `installed` | `false` si lo tienes en Steam, Epic o GOG pero no está instalado |
+| `favorite`, `hidden` | favorito / oculto por el usuario |
+| `playtime`, `lastPlayed` | segundos jugados y última partida (fecha Unix, en segundos) |
+| `developer`, `releaseDate`, `genres` | datos de la ficha |
+| `media` | URLs del arte: `coverThumb`/`cover` (carátula 2:3), `heroThumb`/`hero` (fondo panorámico), `logo`, `header`, `icon`… |
+
+La lista completa está en la [referencia](/referencia/biblioteca).

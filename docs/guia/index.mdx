@@ -1,0 +1,45 @@
+---
+title: "Tu primer tema, paso a paso"
+description: "Un tema pequeño pero completo desde cero: rejilla, mando, ficha y opciones."
+sidebarTitle: "Introducción"
+---
+
+Esta guía es para ti si sabes algo de HTML, CSS y JavaScript y quieres hacer un
+tema **desde cero**, sin partir de uno de los de serie. Vamos a construir entre
+los dos un tema pequeño pero completo:
+
+- una rejilla con las carátulas de tus juegos,
+- que se maneja con ratón, teclado o mando,
+- con una ficha para cada juego (descripción, Jugar/Instalar, favorito),
+- con opciones que cualquiera puede cambiar en **Ajustes → Apariencia** sin tocar código,
+- y que se adapta al modo **Big Picture**.
+
+El resultado final está en [`examples/ejemplo-tema/`](https://github.com/ej3mpl0/ejGames/tree/main/examples/ejemplo-tema): son cuatro ficheros que puedes copiar tal cual. Esta guía es práctica; para ver **todo** lo que ofrece el SDK tienes la [referencia](/referencia/sdk).
+
+## Antes de empezar: qué es un tema
+
+Un tema es una **página web normal** que ejGames abre a pantalla completa. Se
+ejecuta en una caja cerrada (un *iframe* aislado): no tiene internet ni acceso
+al disco. Todo lo que necesita se lo pide a ejGames a través de un objeto que
+aparece solo en tu página, **`window.ejg`** (el SDK): la lista de juegos, avisos
+cuando algo cambia, lanzar un juego, abrir los ajustes…
+
+Las pantallas del propio launcher (ajustes, buscador, editor de juegos, menú
+rápido, perfiles) las dibuja ejGames **por encima** de tu tema. Tú solo te
+ocupas de enseñar la biblioteca a tu manera.
+
+## Capítulos
+
+<CardGroup cols={2}>
+  <Card title="1. Dónde va el tema y cómo activarlo" href="/guia/carpeta">La carpeta del tema, la galería y el modo desarrollador.</Card>
+  <Card title="2. El theme.json mínimo" href="/guia/theme-json">El manifiesto que hace que ejGames reconozca tu tema.</Card>
+  <Card title="3. index.html y el primer main.js" href="/guia/primer-main">La página, un poco de estilo y los primeros datos del SDK.</Card>
+  <Card title="4. Rejilla de carátulas" href="/guia/rejilla">Pintar la biblioteca rápido, también con miles de juegos.</Card>
+  <Card title="5. Mando y teclado" href="/guia/mando">Navegación espacial con el kit y la barra de pistas.</Card>
+  <Card title="6. La ficha del juego" href="/guia/ficha">Descripción, Jugar o Instalar, favorito y volver.</Card>
+  <Card title="7. Opciones sin código y modo Big Picture" href="/guia/opciones">Ajustes editables desde Apariencia y el modo tele.</Card>
+  <Card title="8. Sonidos y colores del launcher" href="/guia/sonidos-colores">Sonidos, colores de las pantallas del host, avisos de logros y botones de ventana.</Card>
+  <Card title="9. Explorar y descargas" href="/guia/explorar">Abrir la tienda, enseñar lo que se descarga o pintar tu propia tienda.</Card>
+  <Card title="10. Depurar y errores típicos" href="/guia/depurar">Ver los errores, los límites del tema y los fallos más comunes.</Card>
+  <Card title="11. Exportar y compartir" href="/guia/compartir">Empaquetar el tema en un .ejtheme y qué hacer después.</Card>
+</CardGroup>

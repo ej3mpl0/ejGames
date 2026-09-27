@@ -1,0 +1,156 @@
+---
+title: "Rejilla de carátulas"
+description: "Pintar la biblioteca rápido, también con miles de juegos."
+sidebarTitle: "4. Rejilla de carátulas"
+---
+
+ejGames trae un **kit** de utilidades opcionales en `/_sdk/kit/`. Se importan
+con rutas que empiezan por `/_sdk/…`; tus propios ficheros, con rutas relativas
+(`./util.js`). Para la rejilla usaremos estas piezas de `dom.js` y `library.js`:
+
+- **`h(etiqueta, propiedades, ...hijos)`** crea elementos sin escribir
+  `createElement` cada vez. `class` pone la clase, `onclick` añade el evento y
+  lo demás (`title`, `data-…`) se pone como atributo. El `style` puede ser un
+  texto (`"--tono: 120"`) o un objeto (`{ opacity: "0.5" }`); para variables CSS
+  usa el texto.
+- **`img(url)`** crea una `<img>` con carga perezosa (`loading="lazy"`). Le pone
+  la clase `img-loaded` cuando carga, `img-error` si falla e `img-empty` si no
+  había URL, así que el CSS decide qué enseñar en cada caso.
+- **`keyed(contenedor, lista, clave, pintarUno)`** redibuja reutilizando los
+  nodos que ya existían. `pintarUno(juego, anterior)` recibe el nodo anterior de
+  ese juego (o nada) y devuelve el que toca. Con cientos de juegos va rápido y
+  el foco no salta.
+- **`visible(juegos)`** quita los ocultos y los desaparecidos (que `library.all`
+  sí incluye) y **`sort(juegos, "title")`** ordena (`"title"`, `"recent"`,
+  `"playtime"`, `"added"`, `"release"` o `"rating"`).
+
+Sustituye `main.js` por esto:
+
+```js
+import { h, img, keyed, initials, hueOf } from "/_sdk/kit/dom.js";
+import { visible, sort } from "/_sdk/kit/library.js";
+
+const ejg = await window.ejg.ready();
+const rejilla = document.querySelector("#rejilla");
+const total = document.querySelector("#total");
+
+function juegos() {
+  return sort(visible(ejg.library.all), "title");
+}
+
+function nuevaTarjeta(g, firma) {
+  return h(
+    "button",
+    { class: "tarjeta", "data-id": g.id, "data-firma": firma, title: g.title, onclick: () => jugar(g.id) },
+    h(
+      "div",
+      { class: "caratula", style: `--tono: ${hueOf(g.title)}` },
+      h("span", { class: "iniciales" }, initials(g.title)),
+      img(g.media.coverThumb),
+    ),
+    h("span", { class: "nombre" }, g.title),
+  );
+}
+
+function tarjeta(g, prev) {
+  // Solo se crea una tarjeta nueva si cambia lo que se ve (nombre o carátula).
+  const firma = `${g.title}|${g.media.coverThumb ?? ""}`;
+  const el = prev && prev.dataset.firma === firma ? prev : nuevaTarjeta(g, firma);
+  el.classList.toggle("fav", g.favorite);
+  el.classList.toggle("sin-instalar", g.installed === false);
+  return el;
+}
+
+function pintar() {
+  const lista = juegos();
+  total.textContent = lista.length;
+  if (!lista.length) {
+    rejilla.replaceChildren(
+      h("div", { class: "vacia" },
+        h("p", null, "Tu biblioteca está vacía."),
+        h("button", { class: "boton", onclick: () => ejg.ui.open("add-folder") }, "Añadir juegos")),
+    );
+    return;
+  }
+  keyed(rejilla, lista, (g) => g.id, tarjeta);
+}
+
+async function jugar(id) {
+  try {
+    await ejg.game.launch(id);
+  } catch (e) {
+    ejg.ui.toast(String(e.message || e), "error");
+  }
+}
+
+ejg.library.onChange(pintar);
+pintar();
+```
+
+Unas cuantas ideas de este código:
+
+- **Miniaturas en la rejilla.** `coverThumb` pesa unos 40 KB; `cover` es la
+  imagen grande. En listas y rejillas, siempre miniaturas.
+- **La «firma»** es el truco para no rehacer tarjetas: si el nombre y la
+  carátula son los mismos, se reutiliza la anterior y solo se cambian las clases
+  (favorito, sin instalar). Cuando llega la carátula de un juego recién añadido,
+  la firma cambia y se crea una tarjeta nueva.
+- **Sin carátula** se ven las iniciales (`initials("Hollow Knight")` → `HK`)
+  sobre un degradado cuyo color sale del nombre (`hueOf()`), y la imagen se
+  queda invisible hasta que carga.
+- **`ejg.game.launch(id)`** lanza el juego (el sonido de lanzar lo pone
+  ejGames). Con un juego sin instalar abre su tienda para instalarlo. Si falla,
+  la promesa se rechaza y lo enseñamos con **`ejg.ui.toast(texto, "error")`**.
+- **`ejg.ui.open("add-folder")`** abre la pantalla del launcher para añadir
+  carpetas de juegos. Hay más: `"settings"`, `"search"`, `"menu"`, `"stats"`,
+  `"profiles"`, `"collections"`, `"theme"`…
+
+Y el CSS de la rejilla (añádelo a `style.css`):
+
+```css
+.rejilla {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 24px 90px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  align-content: start;
+}
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  /* Con cientos de juegos, el navegador no dibuja las que no se ven. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 270px;
+}
+.caratula {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(160deg, hsl(var(--tono) 45% 32%), hsl(var(--tono) 50% 14%));
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.iniciales { position: absolute; inset: 0; display: grid; place-items: center; font-size: 2.2em; font-weight: 700; opacity: 0.75; }
+.caratula img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.25s; }
+.caratula img.img-loaded { opacity: 1; }
+.nombre { font-size: 0.9em; color: var(--tenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.tarjeta.fav .caratula::after { content: "★"; position: absolute; top: 6px; right: 9px; color: #ffd166; text-shadow: 0 1px 4px #000; }
+.tarjeta.sin-instalar .caratula img { filter: grayscale(1) brightness(0.7); }
+.vacia { grid-column: 1 / -1; padding: 60px 0; text-align: center; color: var(--tenue); }
+```
+
+<Warning>
+**`content-visibility: auto`** ahorra mucho con bibliotecas grandes, pero
+**recorta todo lo que se salga de la tarjeta** (sombras, anillos de foco,
+zooms). Por eso la tarjeta lleva `padding: 8px`: deja sitio para el efecto de
+foco del paso siguiente.
+</Warning>
+
+Guarda: ya tienes una rejilla de carátulas y un clic lanza el juego.

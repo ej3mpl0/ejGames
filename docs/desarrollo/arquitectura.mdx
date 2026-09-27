@@ -1,0 +1,47 @@
+---
+title: "Arquitectura"
+description: "Cómo se reparte el código entre el núcleo en Rust, el host en React y los temas."
+icon: "sitemap"
+---
+
+ejGames es una app de [Tauri 2](https://tauri.app): un núcleo en Rust y una interfaz web en WebView2. La interfaz
+tiene dos capas: el **host** (React), que pinta ajustes, editores y menús, y el **tema**, que pinta la biblioteca
+dentro de un iframe aislado.
+
+```
+src-tauri/src/     núcleo en Rust
+  library/         escaneo de carpetas, detección de exes (PE), vigilancia de carpetas
+  import/          Steam (VDF), Epic, GOG, Ubisoft, EA
+  metadata/        Steam GetItems, SteamGridDB, IGDB, matcher, cola con rate limit
+  media/           almacén de imágenes + miniaturas, proxy/caché de tráileres HLS
+  launcher/        ShellExecuteEx, «ejecutar como administrador», tracker de procesos, sesiones, botón Guía
+  achievements/    esquema de Steam, estadísticas locales (KeyValues binario), ficheros de emuladores
+  overlay/         ventana transparente encima del juego, atajo global, avisos y panel
+  explore/         fuente de repacks (API de WordPress), lectura de fichas, caché e imágenes por ejg-media
+  downloads/       motor torrent (librqbit) perezoso, cola, progreso, instalación y registro del juego
+  protocols.rs     ejg-media (Range) y ejg-theme / ejg-safe (CSP + sandbox)
+  lifecycle.rs     ventana, bandeja, modo ahorro (EcoQoS + recorte de memoria)
+  update.rs        versiones nuevas desde GitHub Releases (descarga + SHA-256 + instalador pasivo)
+src/               host en React: ajustes, editor de juego, perfiles, estadísticas, puente con los temas
+sdk/               SDK de temas (window.ejg) y kit de utilidades
+themes/            temas de serie
+installer-app/     instalador que se publica (Tauri): lleva dentro el NSIS y lo ejecuta en silencio
+docs/              esta documentación (Mintlify)
+examples/          el tema de ejemplo de la guía
+```
+
+## Seguridad de los temas
+
+Cada tema corre en un iframe aislado con origen `null`, sin `allow-same-origin` y con una CSP que corta la red.
+Aunque WebView2 inyecta el IPC de Tauri en todos los frames, Tauri rechaza las llamadas de orígenes `null` y la CSP
+bloquea `ipc.localhost`. El tema solo habla con el host por `postMessage`, y el host valida cada llamada
+(`src/host/bridge.ts`).
+
+Si un tema se cuelga, un watchdog lo sustituye por el tema Steam servido desde otro origen (`ejg-safe`), es decir, en
+otro proceso.
+
+## Datos
+
+`%APPDATA%\ejGames\` guarda `library.db` (SQLite), `settings.json`, `logs\ejgames.log`, `cache\media` (arte,
+direccionado por contenido), `cache\trailers` (LRU con tamaño configurable) y `themes\` (temas de usuario). Con un
+fichero `portable.txt` junto al exe, todo va a `.\data`.

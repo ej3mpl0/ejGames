@@ -1,0 +1,107 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "maple",
+  "name": "ejGames",
+  "description": "Launcher de juegos para Windows, ligero y personalizable al 100 %. Documentación y guía para crear temas.",
+  "colors": {
+    "primary": "#5B6CF0",
+    "light": "#8C9BFF",
+    "dark": "#3F4FD8"
+  },
+  "logo": {
+    "light": "/images/logo-light.png",
+    "dark": "/images/logo-dark.png"
+  },
+  "favicon": "/images/favicon.png",
+  "appearance": {
+    "default": "system"
+  },
+  "search": {
+    "prompt": "Buscar en la documentación…"
+  },
+  "navbar": {
+    "links": [
+      { "type": "github", "href": "https://github.com/ej3mpl0/ejGames" }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Descargar",
+      "href": "https://github.com/ej3mpl0/ejGames/releases/latest"
+    }
+  },
+  "navigation": {
+    "languages": [
+      {
+        "language": "es",
+        "default": true,
+        "tabs": [
+          {
+            "tab": "Empezar",
+            "groups": [
+              { "group": "Empezar", "pages": ["index", "instalar", "funciones"] }
+            ]
+          },
+          {
+            "tab": "Crear temas",
+            "groups": [
+              { "group": "Temas", "pages": ["temas"] },
+              {
+                "group": "Guía paso a paso",
+                "pages": [
+                  "guia/index",
+                  "guia/carpeta",
+                  "guia/theme-json",
+                  "guia/primer-main",
+                  "guia/rejilla",
+                  "guia/mando",
+                  "guia/ficha",
+                  "guia/opciones",
+                  "guia/sonidos-colores",
+                  "guia/explorar",
+                  "guia/depurar",
+                  "guia/compartir"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "Referencia",
+            "groups": [
+              { "group": "Manifiesto", "pages": ["referencia/theme-json"] },
+              {
+                "group": "SDK",
+                "pages": [
+                  "referencia/sdk",
+                  "referencia/biblioteca",
+                  "referencia/juegos",
+                  "referencia/logros",
+                  "referencia/explorar",
+                  "referencia/mando",
+                  "referencia/host"
+                ]
+              },
+              {
+                "group": "Kit y buenas prácticas",
+                "pages": ["referencia/kit", "referencia/limites", "referencia/rendimiento"]
+              }
+            ]
+          },
+          {
+            "tab": "Desarrollo",
+            "groups": [
+              { "group": "Desarrollo", "pages": ["desarrollo/compilar", "desarrollo/arquitectura"] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/ej3mpl0/ejGames"
+    }
+  },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude"]
+  }
+}

@@ -1,0 +1,35 @@
+---
+title: "Biblioteca"
+description: "ejg.library: los juegos del perfil, sus datos y su arte."
+icon: "layer-group"
+---
+
+```js
+ejg.library.all              // Game[] ya ordenados (copia local, sin llamadas)
+ejg.library.byId(id)
+ejg.library.collections      // colecciones del perfil
+ejg.library.onChange(({ full, changed, removed }) => render())
+```
+
+Cada `Game` trae: `id, title, sortTitle, source, developer, publisher,
+releaseDate, genres[], tags[], rating, favorite, hidden, missing, installed,
+playtime` (segundos)`, lastPlayed` (Unix)`, launchCount, userRating, collections[],
+running`, `media` y, si el juego tiene logros, `achievements: { unlocked, total }`.
+
+`installed: false` son juegos que tienes en Steam, Epic o GOG pero no están
+instalados. `ejg.game.launch(id)` con ellos abre su tienda para instalarlos, así
+que muestra **Instalar** en vez de **Jugar**. Para filtrar:
+`visible(games, { installed: "installed" | "uninstalled" | "all" })`.
+
+`media` contiene:
+
+| `media.` | Qué es |
+|---|---|
+| `cover` / `coverThumb` | carátula 2:3 (la miniatura pesa ~40 KB) |
+| `hero` / `heroThumb` | fondo panorámico |
+| `logo` | logo con transparencia |
+| `header` | cápsula horizontal 460×215 |
+| `icon` | icono pequeño |
+| `microtrailer` | vídeo corto sin sonido (mp4) |
+
+Usa las miniaturas en listas y rejillas; las grandes, solo en fondos y fichas.

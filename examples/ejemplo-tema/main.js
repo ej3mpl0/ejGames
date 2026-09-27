@@ -1,5 +1,5 @@
 // Mi primer tema: rejilla de carátulas + ficha de juego.
-// Es el tema que se construye paso a paso en docs/GUIA-TEMAS.md.
+// Es el tema que se construye paso a paso en la guía: https://ejgames.mintlify.app/guia
 
 import { h, img, keyed, debounce, initials, hueOf } from "/_sdk/kit/dom.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";

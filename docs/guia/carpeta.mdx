@@ -1,0 +1,67 @@
+---
+title: "Dónde va el tema y cómo activarlo"
+description: "La carpeta del tema, la galería y el modo desarrollador."
+sidebarTitle: "1. Dónde va el tema y cómo activarlo"
+---
+
+## La carpeta
+
+Cada tema es una carpeta dentro de:
+
+```
+%APPDATA%\ejGames\themes\
+```
+
+Pega esa ruta en **Win + R** o en la barra del Explorador. También puedes llegar
+desde ejGames: **Ajustes → Apariencia → Carpeta de temas**. (Si usas la versión
+portable, es la carpeta `data\themes` que hay junto a `ejgames.exe`.)
+
+Crea dentro una carpeta llamada `ejemplo`. Al terminar la guía tendrá esto:
+
+```
+ejemplo/
+  theme.json    el manifiesto: nombre, opciones, colores…
+  index.html    la página
+  style.css
+  main.js
+```
+
+<Warning>
+**Ojo con Windows:** si tienes ocultas las extensiones, es fácil acabar con un
+`theme.json.txt`. Actívalas en el Explorador (Vista → Mostrar → Extensiones de
+nombre de archivo) y guarda los ficheros en UTF-8.
+</Warning>
+
+¿Prisa por verlo funcionar? Copia los cuatro ficheros de [`examples/ejemplo-tema/`](https://github.com/ej3mpl0/ejGames/tree/main/examples/ejemplo-tema) a
+esa carpeta y sigue leyendo para entender cada parte.
+
+## Que aparezca en la galería y activarlo
+
+Abre **Ajustes** (**Ctrl + ,**) → **Apariencia**: la galería vuelve a leer la
+carpeta de temas cada vez que entras, así que tu tema aparece sin reiniciar
+ejGames. Pulsa la tarjeta **Mi primer tema**. Los temas tuyos llevan la etiqueta
+«PROPIO». El tema elegido se guarda en tu perfil.
+
+## Modo desarrollador y recargas
+
+En esa misma pantalla, en el bloque **Hazlo tuyo**, activa **Modo desarrollador**.
+Con él:
+
+- el tema se **recarga solo cada vez que guardas** cualquiera de sus ficheros,
+  también `theme.json` (nombre, opciones, colores, sonidos);
+- los errores de JavaScript de tu tema salen como avisos («Tema: …»).
+
+**F5** recarga el tema a mano en cualquier momento (también tienes el botón
+**Recargar tema**). Si guardas un `theme.json` con un error, el tema sigue con
+la versión anterior hasta que lo arregles.
+
+## Si algo sale mal
+
+- **Un error en tu JavaScript** deja el tema en blanco o a medias. Con el modo
+  desarrollador verás el aviso con el error; arréglalo, guarda y listo.
+- **Si el tema se cuelga** (por ejemplo, un bucle infinito), a los pocos
+  segundos ejGames carga el tema Steam y te avisa: «El tema «Mi primer tema» no
+  responde. Se ha cargado el tema Steam.». Arregla el fallo y vuelve a elegir tu
+  tema en Apariencia.
+- **Modo seguro:** mantén pulsada **Mayús** mientras abres ejGames y arrancará
+  con el tema Steam, por si el tuyo no te deja ni llegar a los ajustes.

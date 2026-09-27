@@ -1,0 +1,23 @@
+---
+title: "Host y ventana"
+description: "ejg.ui, ejg.sound, ejg.window, ejg.storage y los eventos del host."
+icon: "window-maximize"
+---
+
+```js
+ejg.ui.open("settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads", args)
+ejg.ui.toast("Hecho", "ok")
+ejg.sound.play("move" | "select" | "back" | "launch" | "error" | "open")
+ejg.window.minimize(); ejg.window.maximize(); ejg.window.close(); ejg.window.fullscreen()
+ejg.stats.get(30)        // estadísticas del perfil
+ejg.storage.set("clave", valor); await ejg.storage.get("clave")   // 512 KB por tema y perfil
+ejg.profile              // { id, name, avatar, color }
+ejg.mode                 // "desktop" | "tv"
+ejg.on("focus-return", () => …)   // se cerró un overlay del host: recupera el foco
+ejg.on("visibility", ({ visible }) => …)   // pausa vídeos si no se ve
+```
+
+Arrastrar la ventana: pon `data-ejg-drag` en tu barra superior (y
+`data-ejg-nodrag` en los botones que tenga dentro). Doble clic maximiza.
+
+Tipos completos: `/_sdk/ejg.d.ts`.

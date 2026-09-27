@@ -1,0 +1,39 @@
+---
+title: "Exportar y compartir"
+description: "Empaquetar el tema en un .ejtheme y qué hacer después."
+sidebarTitle: "11. Exportar y compartir"
+---
+
+Cuando tu tema esté listo:
+
+1. Cambia en `theme.json` el `id` (si lo has copiado de aquí, que no sea
+   `ejemplo`), el `name`, el `author` y la `version`. Si puedes, añade una
+   `preview`.
+2. Quita de la carpeta lo que no haga falta: **se exporta todo lo que haya
+   dentro**.
+3. Elige tu tema en **Ajustes → Apariencia** y pulsa **Exportar .ejtheme**
+   (exporta el tema activo y te pregunta dónde guardarlo). Un `.ejtheme` no es
+   más que un zip con la carpeta del tema.
+
+Para instalarlo en otro PC: **Ajustes → Apariencia → Importar**, elige el
+`.ejtheme` y queda instalado y seleccionado. Detalles útiles:
+
+- También acepta un `.zip` hecho a mano, con `theme.json` en la raíz o dentro
+  de una única carpeta.
+- Se instala en `themes\<id>`. **Si ya había un tema con ese `id`, lo
+  sustituye.**
+- No se puede importar un tema con el `id` de uno de serie («El id «steam» es de
+  un tema de serie; cámbialo en theme.json»).
+- Límite: 200 MB descomprimido.
+
+## Y ahora, ¿qué?
+
+- **[La referencia](/referencia/sdk)** lo tiene todo: logros
+  (`ejg.game.achievements()`), colecciones (`ejg.library.collections`),
+  estadísticas (`ejg.stats`), tráileres con `attachStream()`, fondos con fundido
+  (`createBackdrop()`), arte que encaja en cualquier marco (`artFor()`)…
+- Los temas de serie están hechos exactamente con lo mismo: **Retro** es el más
+  sencillo y **Steam** el más completo. Los encontrarás en la carpeta `themes`
+  de la instalación (normalmente `%LOCALAPPDATA%\ejGames\themes`), y **Duplicar para
+  editar** (Apariencia) copia cualquiera a tu carpeta de temas para que
+  trastees con él.

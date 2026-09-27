@@ -1,0 +1,24 @@
+---
+title: "Juegos"
+description: "ejg.game: ficha completa, lanzar, favoritos, valoración y estado."
+icon: "play"
+---
+
+```js
+const d = await ejg.game.details(id)   // + description, screenshots[], trailers[], recentSessions[]
+await ejg.game.launch(id)
+ejg.game.favorite(id)                  // alterna (o pasa true/false)
+ejg.game.hide(id, true)
+ejg.game.rate(id, 80)
+ejg.game.edit(id)                      // abre el editor del host
+ejg.game.openFolder(id)
+ejg.game.isRunning(id)
+ejg.game.onState(({ gameId, state }) => …)   // "launching" | "running" | "stopped"
+```
+
+`description` es texto con un marcado mínimo (`## título`, `- viñeta`,
+párrafos separados por línea en blanco). `description()` del kit lo convierte en
+nodos DOM seguros.
+
+Los tráilers (`d.trailers[i].url`) son HLS (`.m3u8`): usa `attachStream()` del kit,
+que usa HLS nativo o hls.js según haga falta.

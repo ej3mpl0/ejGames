@@ -1,0 +1,37 @@
+---
+title: "El theme.json mínimo"
+description: "El manifiesto que hace que ejGames reconozca tu tema."
+sidebarTitle: "2. El theme.json mínimo"
+---
+
+Crea `theme.json` con esto:
+
+```json
+{
+  "id": "ejemplo",
+  "name": "Mi primer tema",
+  "version": "1.0.0",
+  "author": "Tu nombre",
+  "description": "Rejilla de carátulas con ficha de juego (el tema de la guía)",
+  "sdk": 1
+}
+```
+
+| Campo | Qué es |
+|---|---|
+| `id` | **Obligatorio.** Identificador único: letras, números, `-` y `_` (máximo 64). No uses el de un tema de serie (`steam`, `ps5`, `xbox`, `switch`, `cinema`, `retro`). Lo normal es que coincida con el nombre de la carpeta. |
+| `name` | **Obligatorio.** El nombre que se ve en la galería. |
+| `version`, `author`, `description` | Opcionales; la descripción sale bajo el nombre en la galería. |
+| `sdk` | Versión del SDK que usa tu tema. Hoy es `1`. |
+
+Hay más campos (`entry`, `palette`, `host`, `sounds`, `settings`…) que iremos
+añadiendo en los pasos 7 y 8. `entry` es la página de entrada y, si no lo pones,
+vale `index.html`.
+
+<Tip>
+**¿No aparece en la galería?** Casi siempre es un JSON mal escrito (una coma
+de más al final, comillas que faltan) o un `id` con espacios o tildes. ejGames
+se salta el tema y lo apunta en `%APPDATA%\ejGames\logs\ejgames.log`, en una
+línea como `WARN ejgames_lib::themes: tema C:\…\themes\ejemplo: trailing comma
+at line 1 column 33`. Arréglalo y vuelve a entrar en Apariencia.
+</Tip>

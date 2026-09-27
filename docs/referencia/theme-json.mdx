@@ -1,0 +1,72 @@
+---
+title: "theme.json"
+description: "El manifiesto del tema y cómo llegan sus opciones al CSS."
+icon: "file-code"
+---
+
+```json
+{
+  "id": "mi-tema",
+  "name": "Mi tema",
+  "version": "1.0.0",
+  "author": "yo",
+  "description": "Una línea para la galería",
+  "sdk": 1,
+  "entry": "index.html",
+  "modes": ["desktop", "tv"],
+  "preview": "preview.jpg",
+  "palette": ["#101010", "#202020", "#ff4d4d", "#ffffff"],
+  "host": { "accent": "#ff4d4d", "surface": "#161616", "radius": "10px", "dark": true },
+  "sounds": { "preset": "soft" },
+  "overlay": { "style": "ejgames" },
+  "windowControls": "host",
+  "settings": [
+    { "key": "accent", "type": "color", "label": "Acento", "default": "#ff4d4d" },
+    { "key": "cardSize", "type": "range", "label": "Tamaño", "min": 120, "max": 300, "step": 10, "unit": "px", "default": 180, "group": "Rejilla" },
+    { "key": "showClock", "type": "toggle", "label": "Reloj", "default": true },
+    { "key": "layout", "type": "select", "label": "Distribución", "default": "grid",
+      "options": [{ "value": "grid", "label": "Rejilla" }, { "value": "list", "label": "Lista" }] },
+    { "key": "font", "type": "font", "label": "Tipografía", "default": "Segoe UI" },
+    { "key": "wallpaper", "type": "image", "label": "Fondo" }
+  ]
+}
+```
+
+| Campo | Para qué |
+|---|---|
+| `id` | letras, números, `-` y `_`. Único. |
+| `sdk` | versión del SDK que usa el tema (hoy `1`). |
+| `modes` | `desktop` y/o `tv` (Big Picture). |
+| `preview` | imagen para la galería. Sin ella se dibuja un boceto con `palette`. |
+| `host` | colores de las pantallas del launcher (ajustes, editor…) mientras el tema está activo. `dark: false` = claras. |
+| `sounds` | `{"preset": "soft" \| "ps" \| "xbox" \| "switch" \| "retro" \| "none"}` o ficheros propios: `{"move": "sounds/move.wav", "select": …, "back": …, "launch": …, "error": …, "open": …}`. |
+| `overlay` | aspecto de los avisos de logros dentro del juego: `{"style": "steam" \| "playstation" \| "xbox" \| "switch" \| "cinema" \| "retro" \| "ejgames"}`. `ejgames` (el de serie) usa los colores de `host`; los demás imitan a su plataforma y respetan los ajustes `accent`, `dark` y `palette` del tema. El usuario puede cambiarlo en **Ajustes → Overlay**. |
+| `features` | vistas que pinta el propio tema: `{"explore": true}` (Explorar y Descargas). Sin ello, el host abre las suyas. |
+| `windowControls` | `"host"`: ejGames pinta minimizar/maximizar/cerrar arriba a la derecha (aparecen al pasar el ratón). `"theme"`: los pinta el tema con `ejg.window.*`. |
+| `settings` | opciones que aparecen en **Ajustes → Apariencia** para cualquier usuario, sin tocar código. |
+
+## Opciones del editor visual → CSS
+
+Cada opción llega al tema de dos formas:
+
+* **Variable CSS** en `:root`: `--ejg-<clave-en-kebab>`. `cardSize` → `--ejg-card-size: 180px`.
+  - `color`, `text`, `select`: el valor tal cual.
+  - `range`/`number`: con su `unit`.
+  - `toggle`: `1` o `0`.
+  - `font`: `"Nombre", system-ui, sans-serif`.
+  - `image`: `url("…")` (el usuario elige una imagen o un vídeo mp4/webm).
+* **Atributo** en `<html>` para `toggle` y `select`: `data-show-clock="on|off"`, `data-layout="grid"`.
+
+```css
+:root { --accent: var(--ejg-accent, #ff4d4d); }
+.card { width: var(--ejg-card-size, 180px); }
+html[data-show-clock="off"] .clock { display: none; }
+html[data-layout="list"] .grid { display: block; }
+html[data-mode="tv"] body { font-size: 18px; }   /* Big Picture */
+```
+
+Y en JavaScript: `ejg.settings.cardSize`. Si una opción necesita volver a
+dibujar, escucha `ejg.on("settings", …)`.
+
+Además, cada perfil puede añadir **CSS extra** a cualquier tema (Ajustes →
+Apariencia), que se aplica el último.

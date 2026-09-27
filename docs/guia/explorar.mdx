@@ -1,0 +1,64 @@
+---
+title: "Explorar y descargas"
+description: "Abrir la tienda, enseñar lo que se descarga o pintar tu propia tienda."
+sidebarTitle: "9. Explorar y descargas"
+---
+
+El launcher trae una tienda de repacks (**Explorar**) y una cola de descargas con
+torrent integrado (**Descargas**). Tu tema no tiene que hacer nada para que
+funcionen: el menú rápido, **Ctrl+E** y **Ctrl+J** abren las ventanas del
+launcher encima de tu tema. Pero queda mucho mejor si el tema, al menos, enseña
+qué se está descargando y tiene un botón para ir a la tienda.
+
+## Un botón para abrir la tienda
+
+```js
+// Abre las ventanas del launcher (para temas sin vistas propias).
+botonTienda.addEventListener("click", () => ejg.downloads.open("explore"));
+botonDescargas.addEventListener("click", () => ejg.downloads.open("downloads"));
+// Si el usuario desactiva Explorar en los ajustes, escóndelo:
+const pintarBoton = () => (botonTienda.hidden = !ejg.explore.enabled);
+ejg.explore.onEnabled(pintarBoton);
+pintarBoton();
+```
+
+## Qué se está descargando
+
+`ejg.downloads.all` es la lista de descargas y `ejg.downloads.onChange` avisa
+cuando cambia (como mucho una vez por segundo, así que puedes repintar sin
+miedo). El kit trae los formatos:
+
+```js
+import { bytes, speed, percent, downloadLabel } from "/_sdk/kit/store.js";
+
+const tira = document.querySelector("#descargas");
+function pintarDescargas() {
+  const ahora = ejg.downloads.all.filter((d) => d.state === "downloading");
+  tira.hidden = !ahora.length;
+  if (!ahora.length) return;
+  const d = ahora[0];
+  tira.textContent = `${d.title} · ${percent(d.progress)} · ${speed(d.downBps)} · ${bytes(d.doneBytes)} de ${bytes(d.totalBytes)}`;
+}
+ejg.downloads.onChange(pintarDescargas);
+pintarDescargas();
+tira.addEventListener("click", () => ejg.downloads.open("downloads"));
+```
+
+`downloadLabel(d)` da un texto corto para cualquier estado («En pausa mientras
+juegas», «Listo para instalar», «Instalando…»).
+
+## Tu propia tienda
+
+Si quieres que la tienda y la cola tengan el aspecto de tu tema, declara en
+`theme.json`:
+
+```json
+"features": { "explore": true }
+```
+
+A partir de ahí, el launcher ya no abre sus ventanas: le pide a tu tema que abra
+su vista con `ejg.ui.onView(({ view, slug }) => …)` (`explore`, `downloads` o
+`repack`, una ficha). La lógica difícil ya está hecha en `/_sdk/kit/store.js`
+(portada, búsqueda, selección de archivos, estados…); el tema **Steam**
+(`themes/steam/store.js`) es un ejemplo completo y la referencia está en
+[la referencia](/referencia/explorar).

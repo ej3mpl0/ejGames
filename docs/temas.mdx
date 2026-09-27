@@ -1,0 +1,63 @@
+---
+title: "Crear temas"
+description: "Un tema es una página web normal que dibuja tu biblioteca como quieras."
+icon: "palette"
+---
+
+Un tema es una **página web completa** (HTML + CSS + JavaScript) que dibuja tu biblioteca como quieras. No hace
+falta compilar nada: guardas y se recarga solo. Los seis temas de serie (Steam, PS5, Xbox, Switch, Cinema y Retro)
+están hechos exactamente con lo que se explica aquí: úsalos de ejemplo.
+
+<CardGroup cols={2}>
+  <Card title="Guía paso a paso" icon="graduation-cap" href="/guia">
+    Tu primer tema desde cero: rejilla de carátulas, mando, ficha del juego y opciones sin código.
+  </Card>
+  <Card title="Referencia" icon="book" href="/referencia/sdk">
+    `theme.json`, el SDK `window.ejg` completo (también Explorar y Descargas) y el kit de utilidades.
+  </Card>
+</CardGroup>
+
+## Empezar en 1 minuto
+
+<Steps>
+  <Step title="Elige una base">
+    **Ajustes → Apariencia** → el tema que más se parezca a lo que quieres.
+  </Step>
+  <Step title="Duplícalo">
+    Pulsa **Duplicar para editar**. Se copia a tu carpeta de temas (`%APPDATA%\ejGames\themes\<id>-custom`) y queda
+    seleccionado.
+  </Step>
+  <Step title="Abre su carpeta">
+    Activa **Modo desarrollador** (misma pantalla) y pulsa **Abrir carpeta del tema**.
+  </Step>
+  <Step title="Edita">
+    Cambia `style.css` o `main.js` con tu editor: al guardar, el tema se recarga solo.
+  </Step>
+</Steps>
+
+`F5` recarga el tema a mano. Si el tema se cuelga (no responde en unos segundos), ejGames vuelve al tema Steam
+automáticamente. Un error de JavaScript no lo cambia: deja el tema en blanco y, con el modo desarrollador, sale como
+aviso. Mantén **Shift** al abrir ejGames para arrancar en modo seguro.
+
+La galería vuelve a leer la carpeta de temas al entrar en Apariencia, y los cambios de `theme.json` se aplican al
+recargar el tema: no hace falta reiniciar.
+
+## Estructura
+
+```
+mi-tema/
+  theme.json      manifiesto (obligatorio)
+  index.html      entrada (el SDK se inyecta solo en el <head>)
+  style.css
+  main.js         ES module
+  fonts/ sounds/ img/ …  lo que necesites
+```
+
+- [`theme.json`](/referencia/theme-json) dice cómo se llama el tema, qué opciones ofrece en Apariencia y qué colores
+  usan las pantallas del launcher.
+- [`window.ejg`](/referencia/sdk) es el SDK: la biblioteca, lanzar juegos, el mando, los logros, las descargas…
+- El [kit](/referencia/kit) (`/_sdk/kit/`) trae lo que casi todos los temas necesitan: navegación con mando, arte que
+  encaja, formatos, tráileres.
+
+El tema de ejemplo de la guía, terminado, está en
+[`examples/ejemplo-tema/`](https://github.com/ej3mpl0/ejGames/tree/main/examples/ejemplo-tema).

@@ -13,7 +13,7 @@
   var seq = 0;
   var pending = new Map();
   var listeners = new Map();
-  var state = { init: null, settings: {}, library: [], collections: [], profile: null, running: [], input: { source: "mouse", pad: "xbox" } };
+  var state = { init: null, settings: {}, library: [], collections: [], profile: null, running: [], input: { source: "mouse", pad: "xbox" }, downloads: [], explore: true };
   var readyResolve;
   var readyPromise = new Promise(function (r) { readyResolve = r; });
   var initialized = false;
@@ -114,6 +114,8 @@
       state.profile = m.data.profile;
       state.running = m.data.running || [];
       if (m.data.input) state.input = m.data.input;
+      state.downloads = m.data.downloads || [];
+      state.explore = m.data.explore !== false;
       root.setAttribute("data-mode", m.data.mode || "desktop");
       applyInput();
       applySettings(m.data.settings);
@@ -152,6 +154,8 @@
         case "mode": root.setAttribute("data-mode", d); break;
         case "running": state.running = d; break;
         case "input": state.input = d; applyInput(); break;
+        case "downloads": state.downloads = d || []; break;
+        case "explore": state.explore = !!(d && d.enabled); break;
       }
       emit(m.name, d);
     }
@@ -197,7 +201,8 @@
   }
   window.addEventListener("keydown", function (e) {
     localInput("keyboard");
-    var global = e.key === "F11" || e.key === "F5" || (e.ctrlKey && (e.key === "f" || e.key === "," || e.key === "p" || e.key === "k"));
+    var k = (e.key || "").toLowerCase();
+    var global = e.key === "F11" || e.key === "F5" || (e.ctrlKey && (k === "f" || k === "," || k === "p" || k === "k" || k === "e" || k === "j"));
     if (global) {
       e.preventDefault();
       post({ type: "key", key: e.key, ctrl: e.ctrlKey, shift: e.shiftKey, alt: e.altKey });
@@ -279,9 +284,55 @@
       set: function (key, value) { return call("storage.set", { key: key, value: value === undefined ? null : value }); },
     },
     ui: {
-      /** settings | game | profiles | search | add-folder | stats | theme | collections | menu */
+      /** settings | game | profiles | search | add-folder | stats | theme | collections | menu | explore | downloads */
       open: function (name, args) { return call("ui.open", { name: name, args: args || null }); },
       toast: function (message, kind) { return call("ui.toast", { message: message, kind: kind || "info" }); },
+      /** El host pide abrir una vista del tema: fn({view: "explore"|"downloads"|"repack", slug?}). */
+      onView: function (fn) { return on("ui:view", fn); },
+      /** Teclado en pantalla del host (para escribir con el mando). Resuelve con el texto o null. */
+      keyboard: function (opts) { return call("ui.keyboard", opts || {}); },
+    },
+    explore: {
+      /** Explorar activado en los ajustes. */
+      get enabled() { return state.explore; },
+      onEnabled: function (fn) { return on("explore", function (d) { fn(!!(d && d.enabled)); }); },
+      /** {sections: [{id, title, items}]}: populares (hoy, semana, mes) y novedades. */
+      home: function () { return call("explore.home"); },
+      /** {query, items, page, pages, total}. Sin texto: novedades. */
+      search: function (query, page) { return call("explore.search", { query: query || "", page: page || 1 }); },
+      /** Ficha completa: capturas, características, descripción… */
+      details: function (slug) { return call("explore.details", { slug: slug }); },
+      /** Abre la ficha en la web oficial (navegador del sistema). */
+      openPage: function (slug) { return call("explore.openPage", { slug: slug }); },
+    },
+    downloads: {
+      /** Lista en memoria (se actualiza sola, como mucho una vez por segundo). */
+      get all() { return state.downloads; },
+      list: function () { return call("downloads.list"); },
+      onChange: function (fn) { return on("downloads", fn); },
+      byId: function (id) { return state.downloads.find(function (d) { return d.id === id; }); },
+      /** {downloadDir, installDir, configured} */
+      defaults: function () { return call("downloads.defaults"); },
+      /** Pide la lista de archivos del torrent: {token, files, totalBytes, dir, freeBytes, …}. */
+      prepare: function (slug) { return call("downloads.prepare", { slug: slug }); },
+      cancelPrepare: function (key) { return call("downloads.cancelPrepare", { key: key }); },
+      /** Empieza con los archivos elegidos (índices). `dir`: una carpeta de pickFolder(). */
+      start: function (token, files, dir) { return call("downloads.start", { token: token, files: files, dir: dir || null }); },
+      /** Sin id: todas. */
+      pause: function (id) { return call("downloads.pause", { id: id == null ? null : id }); },
+      resume: function (id) { return call("downloads.resume", { id: id == null ? null : id }); },
+      move: function (id, pos) { return call("downloads.move", { id: id, pos: pos }); },
+      remove: function (id, deleteFiles) { return call("downloads.remove", { id: id, deleteFiles: !!deleteFiles }); },
+      /** Borra los archivos de un repack ya instalado. */
+      deleteFiles: function (id) { return call("downloads.deleteFiles", { id: id }); },
+      install: function (id) { return call("downloads.install", { id: id }); },
+      /** Tras instalar, si no se supo dónde quedó el juego: elegir su carpeta. */
+      locate: function (id) { return call("downloads.locate", { id: id }); },
+      openFolder: function (id) { return call("downloads.openFolder", { id: id }); },
+      /** Diálogo de carpeta del host: {path, freeBytes} o null. */
+      pickFolder: function (current) { return call("downloads.pickFolder", { current: current || null }); },
+      /** Abre las ventanas del host (para temas sin vistas propias). */
+      open: function (view, slug) { return call("downloads.open", { view: view || "explore", slug: slug || null }); },
     },
     input: {
       /** fn({action, source, repeat, preventDefault}) — up/down/left/right/accept/back/x/y/lb/rb/lt/rt/menu/view */

@@ -5,6 +5,7 @@ pub mod gamepad_home;
 pub mod launch;
 pub mod tracker;
 
+use crate::db::models::Game;
 use crate::db::repo;
 use crate::discord::Presence;
 use crate::state::AppState;
@@ -14,6 +15,12 @@ use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
+
+/// Si el juego se vuelve a abrir solo en este tiempo, se sigue como otra partida.
+const RELAUNCH_WINDOW: Duration = Duration::from_secs(30);
+/// ejGames vuelve a los pocos segundos de cerrar el juego, no al instante: si
+/// el juego se reinicia, la ventana no se cuela entre medias.
+const RESTORE_AFTER: Duration = Duration::from_secs(3);
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -27,6 +34,19 @@ pub struct RunningGame {
     /// La sesión ya se guardó (el tracker o al salir de ejGames): solo una vez.
     #[serde(skip)]
     pub recorded: Arc<AtomicBool>,
+}
+
+impl RunningGame {
+    fn new(game_id: i64, profile_id: i64, title: &str) -> Self {
+        RunningGame {
+            game_id,
+            profile_id,
+            title: title.to_string(),
+            started_at: None,
+            cancel: Arc::new(AtomicBool::new(false)),
+            recorded: Arc::new(AtomicBool::new(false)),
+        }
+    }
 }
 
 #[derive(Default)]
@@ -46,6 +66,16 @@ impl Sessions {
     }
     fn release(&self, id: i64) {
         self.starting.lock().remove(&id);
+    }
+    fn insert(&self, r: RunningGame) {
+        self.running.lock().insert(r.game_id, r);
+    }
+    /// En marcha o lanzándose.
+    fn busy(&self, id: i64) -> bool {
+        self.running.lock().contains_key(&id) || self.starting.lock().contains(&id)
+    }
+    fn idle(&self) -> bool {
+        self.running.lock().is_empty() && self.starting.lock().is_empty()
     }
     pub fn list(&self) -> Vec<RunningGame> {
         self.running.lock().values().cloned().collect()
@@ -108,76 +138,136 @@ async fn play_inner(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow
     st.db.with(|c| repo::bump_launch(c, profile_id, game_id))?;
     crate::events::library_changed(st, vec![game_id]);
 
-    let cancel = Arc::new(AtomicBool::new(false));
-    let recorded = Arc::new(AtomicBool::new(false));
-    st.sessions.running.lock().insert(
-        game_id,
-        RunningGame {
-            game_id,
-            profile_id,
-            title: game.title.clone(),
-            started_at: None,
-            cancel: cancel.clone(),
-            recorded: recorded.clone(),
-        },
-    );
+    let run = RunningGame::new(game_id, profile_id, &game.title);
+    let (cancel, recorded) = (run.cancel.clone(), run.recorded.clone());
+    st.sessions.insert(run);
     crate::events::game_state(st, game_id, "launching", None);
 
     let behavior = profile.launch_behavior.clone();
-    match behavior.as_str() {
+    apply_behavior(st, &behavior);
+
+    let target = tracker::Target::from_game(&game, launched.pid);
+    let discovery = if launched.via_uri { Duration::from_secs(300) } else { Duration::from_secs(120) };
+    let discord = if st.settings.get().discord_enabled && profile.discord_enabled && game.discord_enabled {
+        let id = crate::settings::DISCORD_CLIENT_ID.to_string();
+        Some(DiscordCtx {
+            small_icon: crate::discord::app_icon(&st.http, &id).await,
+            cover_url: st.db.with(|c| repo::selected_remote_url(c, game_id, "cover")).ok().flatten(),
+            hide: profile.discord_hide_names,
+            id,
+        })
+    } else {
+        None
+    };
+    let track = Track { st: st.clone(), game, profile_id, behavior, discord };
+    std::thread::Builder::new()
+        .name(format!("ejg-track-{game_id}"))
+        .spawn(move || track.run(target, discovery, cancel, recorded))?;
+    Ok(())
+}
+
+fn apply_behavior(st: &Arc<AppState>, behavior: &str) {
+    match behavior {
         "saver" => crate::lifecycle::enter_saver(st),
         "minimize" => crate::lifecycle::minimize(st),
         _ => {}
     }
+}
 
-    let target = tracker::Target::from_game(&game, launched.pid);
-    let discovery = if launched.via_uri { Duration::from_secs(300) } else { Duration::from_secs(120) };
-    let st2 = st.clone();
-    let settings = st.settings.get();
-    let cover_url = st.db.with(|c| repo::selected_remote_url(c, game_id, "cover")).ok().flatten();
-    let discord_on = profile.discord_enabled && game.discord_enabled;
-    let discord_id = settings.discord_id();
-    let small_icon = if discord_on { crate::discord::app_icon(&st.http, &discord_id).await } else { None };
-    let hide = profile.discord_hide_names;
-    let title = game.title.clone();
-    let game2 = game.clone();
+struct DiscordCtx {
+    id: String,
+    cover_url: Option<String>,
+    small_icon: Option<String>,
+    hide: bool,
+}
 
-    std::thread::Builder::new().name(format!("ejg-track-{game_id}")).spawn(move || {
+/// Seguimiento de las partidas de un juego (en su propio hilo).
+struct Track {
+    st: Arc<AppState>,
+    game: Game,
+    profile_id: i64,
+    behavior: String,
+    discord: Option<DiscordCtx>,
+}
+
+impl Track {
+    fn run(self, mut target: tracker::Target, mut discovery: Duration, mut cancel: Arc<AtomicBool>, mut recorded: Arc<AtomicBool>) {
+        let (st, id) = (&self.st, self.game.id);
+        loop {
+            let outcome = self.session(&target, discovery, &cancel, &recorded);
+            if !matches!(outcome, tracker::Outcome::Played(..)) {
+                self.restore_window();
+                return;
+            }
+            // La partida ya está guardada y a la vista. Si el juego vuelve a
+            // abrirse solo, se sigue como otra partida.
+            let mut restored = false;
+            let again = tracker::reappears(
+                &target,
+                RELAUNCH_WINDOW,
+                || st.sessions.busy(id),
+                |t| {
+                    if !restored && t >= RESTORE_AFTER {
+                        restored = true;
+                        self.restore_window();
+                    }
+                },
+            );
+            if !again || !st.sessions.claim(id) {
+                if !restored {
+                    self.restore_window();
+                }
+                return;
+            }
+            tracing::info!("«{}» se ha vuelto a abrir: nueva partida", self.game.title);
+            let run = RunningGame::new(id, self.profile_id, &self.game.title);
+            (cancel, recorded) = (run.cancel.clone(), run.recorded.clone());
+            st.sessions.insert(run);
+            st.sessions.release(id);
+            crate::events::game_state(st, id, "launching", None);
+            if restored {
+                apply_behavior(st, &self.behavior);
+            }
+            target.launched_pid = None;
+            discovery = Duration::from_secs(20);
+        }
+    }
+
+    /// Una partida: esperar al juego, seguirlo y guardar la sesión al cerrarlo.
+    fn session(&self, target: &tracker::Target, discovery: Duration, cancel: &AtomicBool, recorded: &AtomicBool) -> tracker::Outcome {
+        let (st, game_id, profile_id) = (&self.st, self.game.id, self.profile_id);
         let pad_stop = Arc::new(AtomicBool::new(false));
-        let st_start = st2.clone();
-        let pad_stop2 = pad_stop.clone();
-        let target2 = target.clone();
-        let outcome = tracker::run(target, discovery, &cancel, move |started| {
-            if let Some(r) = st_start.sessions.running.lock().get_mut(&game_id) {
+        let outcome = tracker::run(target.clone(), discovery, cancel, |started| {
+            if let Some(r) = st.sessions.running.lock().get_mut(&game_id) {
                 r.started_at = Some(started);
             }
-            crate::events::game_state(&st_start, game_id, "running", Some(started));
-            if discord_on {
-                st_start.discord.set(
-                    &discord_id,
+            crate::events::game_state(st, game_id, "running", Some(started));
+            if let Some(d) = &self.discord {
+                st.discord.set(
+                    &d.id,
                     Presence {
-                        title: if hide { "Un juego".into() } else { title.clone() },
+                        title: if d.hide { "Un juego".into() } else { self.game.title.clone() },
                         details: Some("Jugando desde ejGames".into()),
                         state: None,
                         start: started,
-                        image_url: if hide { None } else { cover_url.clone() },
-                        small_image_url: small_icon.clone(),
+                        image_url: if d.hide { None } else { d.cover_url.clone() },
+                        small_image_url: d.small_icon.clone(),
                     },
                 );
             }
-            crate::overlay::session_started(&st_start, &game2, profile_id, started, target2.clone());
-            crate::achievements::watch(st_start.clone(), game_id, profile_id, pad_stop2.clone());
-            if st_start.settings.get().gamepad_home_button {
-                let st_pad = st_start.clone();
+            crate::overlay::session_started(st, &self.game, profile_id, started, target.clone());
+            crate::achievements::watch(st.clone(), game_id, profile_id, pad_stop.clone());
+            if st.settings.get().gamepad_home_button {
+                let st_pad = st.clone();
                 // En juegos de Steam el botón Guía es del overlay de Steam.
-                let guide = game2.source != "steam";
-                gamepad_home::spawn(pad_stop2.clone(), guide, move |ev| crate::overlay::pad_event(&st_pad, ev));
+                let guide = self.game.source != "steam";
+                gamepad_home::spawn(pad_stop.clone(), guide, move |ev| crate::overlay::pad_event(&st_pad, ev));
             }
         });
         pad_stop.store(true, Ordering::Relaxed);
-        crate::overlay::session_ended(&st2, game_id);
-        if discord_on {
-            st2.discord.clear();
+        crate::overlay::session_ended(st, game_id);
+        if self.discord.is_some() {
+            st.discord.clear();
         }
         let played = match outcome {
             tracker::Outcome::Played(s, e) | tracker::Outcome::Cancelled(Some((s, e))) => Some((s, e)),
@@ -185,20 +275,22 @@ async fn play_inner(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow
         };
         if let Some((s, e)) = played {
             if e - s >= 5 && !recorded.swap(true, Ordering::SeqCst) {
-                if let Err(err) = st2.db.with(|c| repo::record_session(c, profile_id, game_id, s, e)) {
+                if let Err(err) = st.db.with(|c| repo::record_session(c, profile_id, game_id, s, e)) {
                     tracing::warn!("sesión: {err:#}");
                 }
             }
         }
-        st2.sessions.running.lock().remove(&game_id);
-        crate::events::game_state(&st2, game_id, "stopped", played.map(|p| p.1 - p.0));
-        crate::events::library_changed(&st2, vec![game_id]);
-        if !st2.sessions.any() {
-            match behavior.as_str() {
-                "saver" | "minimize" => crate::lifecycle::show_main(&st2),
-                _ => {}
-            }
+        st.sessions.running.lock().remove(&game_id);
+        crate::events::game_state(st, game_id, "stopped", played.map(|p| p.1 - p.0));
+        crate::events::library_changed(st, vec![game_id]);
+        outcome
+    }
+
+    /// Con el último juego cerrado, ejGames vuelve (si se minimizó o se cerró
+    /// para ahorrar).
+    fn restore_window(&self) {
+        if self.st.sessions.idle() && matches!(self.behavior.as_str(), "saver" | "minimize") {
+            crate::lifecycle::show_main(&self.st);
         }
-    })?;
-    Ok(())
+    }
 }

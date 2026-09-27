@@ -52,6 +52,13 @@ pub struct ThemeManifest {
     /// "host" (botones de ventana del host) o "theme" (el tema los pinta).
     #[serde(default)]
     pub window_controls: Option<String>,
+    /// Avisos del overlay dentro del juego: {"style": "xbox"}.
+    #[serde(default, skip_serializing_if = "Value::is_null")]
+    pub overlay: Value,
+    /// Vistas que pinta el propio tema: {"explore": true} (Explorar y
+    /// Descargas). Sin ellas, el host abre las suyas.
+    #[serde(default, skip_serializing_if = "Value::is_null")]
+    pub features: Value,
 }
 
 #[derive(Debug, Clone, Serialize)]

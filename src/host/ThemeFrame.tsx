@@ -143,6 +143,8 @@ export function ThemeFrame() {
         mode: st.mode,
         input: { source: st.inputSource, pad: st.padType },
         version: st.boot?.version,
+        downloads: st.downloads,
+        explore: st.settings?.exploreEnabled !== false,
       },
     });
   }
@@ -222,14 +224,39 @@ export function ThemeFrame() {
     }
   }, [overlays]);
 
+  // Descargas → tema (como mucho una vez por segundo).
+  const downloads = useApp((s) => s.downloads);
+  const dlTimer = useRef<{ t: number | null; last: number }>({ t: null, last: 0 });
+  useEffect(() => {
+    if (!beats.current.ready) return;
+    const send = () => {
+      dlTimer.current.t = null;
+      dlTimer.current.last = Date.now();
+      event("downloads", useApp.getState().downloads);
+    };
+    const wait = 1000 - (Date.now() - dlTimer.current.last);
+    if (wait <= 0) send();
+    else if (dlTimer.current.t == null) dlTimer.current.t = window.setTimeout(send, wait);
+  }, [downloads]);
+  useEffect(() => () => void (dlTimer.current.t != null && clearTimeout(dlTimer.current.t)), []);
+  const exploreOn = useApp((s) => s.settings?.exploreEnabled !== false);
+  useEffect(() => void (beats.current.ready && event("explore", { enabled: exploreOn })), [exploreOn]);
+
   // Eventos de partida reenviados al tema.
   useEffect(() => {
     const fn = (e: Event) => event("game-state", (e as CustomEvent).detail);
     window.addEventListener("ejg:game-state", fn);
+    // El host pide al tema que abra una de sus vistas (menú rápido, atajos…).
+    const view = (e: Event) => {
+      frame.current?.focus();
+      event("ui:view", (e as CustomEvent).detail);
+    };
+    window.addEventListener("ejg:ui-view", view);
     const vis = () => event("visibility", { visible: !document.hidden });
     document.addEventListener("visibilitychange", vis);
     return () => {
       window.removeEventListener("ejg:game-state", fn);
+      window.removeEventListener("ejg:ui-view", view);
       document.removeEventListener("visibilitychange", vis);
     };
   });

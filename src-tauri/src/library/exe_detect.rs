@@ -418,8 +418,35 @@ pub fn analyze(dir: &Path) -> Option<DirAnalysis> {
     })
 }
 
+static REPACK_BIN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)^(fg|setup-fitgirl)-.+\.bin$").unwrap());
+
+/// Carpeta de un repack sin instalar (descargado con ejGames, o `setup.exe`
+/// con los `.bin` de FitGirl): no es un juego, aunque tenga exes dentro.
+pub fn is_repack_dir(dir: &Path) -> bool {
+    if dir.join(crate::downloads::MARKER).exists() {
+        return true;
+    }
+    let Ok(rd) = std::fs::read_dir(dir) else { return false };
+    let (mut setup, mut bins) = (false, false);
+    for e in rd.filter_map(Result::ok) {
+        let name = e.file_name().to_string_lossy().to_ascii_lowercase();
+        if name == "setup.exe" {
+            setup = true;
+        } else if REPACK_BIN.is_match(&name) {
+            bins = true;
+        }
+        if setup && bins {
+            return true;
+        }
+    }
+    false
+}
+
 /// ¿Parece la carpeta de un único juego? (exe jugable en la raíz o marcadores).
 pub fn looks_like_game_dir(dir: &Path) -> bool {
+    if is_repack_dir(dir) {
+        return false;
+    }
     let Ok(rd) = std::fs::read_dir(dir) else { return false };
     for e in rd.filter_map(Result::ok) {
         let name = e.file_name().to_string_lossy().to_ascii_lowercase();
@@ -441,6 +468,27 @@ pub fn looks_like_game_dir(dir: &Path) -> bool {
 mod tests {
     use super::*;
     use std::fs;
+
+    #[test]
+    fn repack_folders_are_not_games() {
+        let t = tempfile::tempdir().unwrap();
+        let r = t.path().join("Some Game [FitGirl Repack]");
+        fs::create_dir_all(r.join("MD5")).unwrap();
+        fs::write(r.join("setup.exe"), b"x").unwrap();
+        fs::write(r.join("fg-01.bin"), b"x").unwrap();
+        fs::write(r.join("MD5").join("QuickSFV.exe"), b"x").unwrap();
+        assert!(is_repack_dir(&r));
+        assert!(!looks_like_game_dir(&r));
+        let g = t.path().join("Some Game");
+        fs::create_dir_all(&g).unwrap();
+        fs::write(g.join("game.exe"), b"x").unwrap();
+        assert!(!is_repack_dir(&g));
+        assert_eq!(crate::library::scanner::game_dirs(t.path(), "subfolders"), vec![g.clone()]);
+        // Una instalación en curso tampoco se escanea.
+        crate::library::scanner::set_ignored(&g, true);
+        assert!(crate::library::scanner::game_dirs(t.path(), "subfolders").is_empty());
+        crate::library::scanner::set_ignored(&g, false);
+    }
 
     /// Crea un "exe" falso. No es PE válido, así que puntúa por nombre/estructura
     /// (la penalización por PE inválido es igual para todos).

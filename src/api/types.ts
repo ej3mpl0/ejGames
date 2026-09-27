@@ -65,6 +65,22 @@ export interface AchList {
   items: Achievement[];
 }
 
+export type NoticeStyle = "steam" | "playstation" | "xbox" | "switch" | "cinema" | "retro" | "ejgames";
+export type NoticeCorner = "top-left" | "top-center" | "top-right" | "bottom-left" | "bottom-center" | "bottom-right";
+
+/** Aspecto de los avisos: estilo y, si es el del propio tema, sus colores. */
+export interface NoticeLook {
+  style: NoticeStyle;
+  corner: NoticeCorner;
+  accent?: string | null;
+  surface?: string | null;
+  text?: string | null;
+  radius?: string | null;
+  font?: string | null;
+  dark: boolean;
+  palette?: string | null;
+}
+
 export interface OverlayNotice {
   id: number;
   kind: "achievement" | "info" | "summary";
@@ -75,6 +91,11 @@ export interface OverlayNotice {
   icon?: string | null;
   rarity?: number | null;
   at: number;
+  /** Puntos al estilo Xbox (1000 por juego). */
+  score?: number | null;
+  /** [conseguidos, total] contando este. */
+  progress?: [number, number] | null;
+  look: NoticeLook;
 }
 
 export interface OverlayPanel {
@@ -88,7 +109,6 @@ export interface OverlayPanel {
 }
 
 export interface OverlayInit {
-  corner: "top-left" | "top-right" | "bottom-left" | "bottom-right";
   notices: OverlayNotice[];
   panel?: OverlayPanel | null;
 }
@@ -279,6 +299,9 @@ export interface ThemeInfo {
   palette: string[];
   host: ThemeHostStyle | null;
   windowControls?: "host" | "theme" | null;
+  overlay?: { style?: NoticeStyle } | null;
+  /** Vistas propias del tema (sin ellas, el host abre las suyas). */
+  features?: { explore?: boolean } | null;
   builtin: boolean;
   dir: string;
   previewUrl?: string | null;
@@ -291,7 +314,7 @@ export interface Settings {
   sgdbKey: string;
   igdbClientId: string;
   igdbClientSecret: string;
-  discordClientId: string;
+  discordEnabled: boolean;
   trailerCacheMb: number;
   trailerMaxHeight: number;
   startWithWindows: boolean;
@@ -310,13 +333,37 @@ export interface Settings {
   importUninstalled: boolean;
   overlayEnabled: boolean;
   overlayHotkey: string;
-  overlayCorner: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  overlayCorner: NoticeCorner | "auto";
+  overlayStyle: NoticeStyle | "auto";
   overlaySound: boolean;
   overlayStartHint: boolean;
   overlaySteamNotify: boolean;
   achievementDirs: string[];
   firstRunDone: boolean;
+  exploreEnabled: boolean;
+  exploreHideAdult: boolean;
+  downloadDir: string;
+  installDir: string;
+  maxDownloadKbps: number;
+  maxUploadKbps: number;
+  maxActiveDownloads: number;
+  pauseWhilePlaying: boolean;
+  seedPolicy: SeedPolicy;
+  seedRatio: number;
+  autoInstall: boolean;
+  deleteRepackAfterInstall: boolean;
+  preventSleep: boolean;
+  listenPort: number;
+  upnp: boolean;
+  utp: boolean;
+  extraTrackers: boolean;
+  peerLimit: number;
+  torrentProxy: string;
+  updateAuto: boolean;
+  updateSkipped: string;
 }
+
+export type SeedPolicy = "never" | "until-install" | "ratio";
 
 export interface RunningGame {
   gameId: number;
@@ -336,6 +383,7 @@ export interface Bootstrap {
   portable: boolean;
   running: RunningGame[];
   hasFolders: boolean;
+  downloads: DownloadItem[];
 }
 
 export interface Candidate {
@@ -383,3 +431,153 @@ export interface StoreSummary {
 export type NavAction =
   | "up" | "down" | "left" | "right" | "accept" | "back" | "x" | "y"
   | "lb" | "rb" | "lt" | "rt" | "menu" | "view" | "home";
+
+// ───────────────────────────── Explorar y descargas ─────────────────────────────
+
+export type RepackState =
+  | "none"
+  | "library"
+  | "queued"
+  | "downloading"
+  | "paused"
+  | "seeding"
+  | "completed"
+  | "installing"
+  | "installed"
+  | "error";
+
+export interface RepackStatus {
+  state: RepackState;
+  downloadId?: number | null;
+  gameId?: number | null;
+  progress?: number | null;
+}
+
+export interface Repack {
+  source: string;
+  id: number;
+  slug: string;
+  title: string;
+  version?: string | null;
+  fullTitle: string;
+  url: string;
+  date: string;
+  number?: number | null;
+  cover?: string | null;
+  coverFull?: string | null;
+  hero?: string | null;
+  genres: string[];
+  companies?: string | null;
+  languages?: string | null;
+  originalSize?: string | null;
+  repackSize?: string | null;
+  repackBytes?: number | null;
+  selective: boolean;
+  adult: boolean;
+  status: RepackStatus;
+}
+
+export interface RepackDetails extends Repack {
+  screenshots: { thumb: string; full: string }[];
+  features: string[];
+  installSize?: string | null;
+  description?: string | null;
+  magnet?: string | null;
+}
+
+export interface ExploreHome {
+  sections: { id: string; title: string; items: Repack[] }[];
+}
+
+export interface ExplorePage {
+  query: string;
+  items: Repack[];
+  page: number;
+  pages: number;
+  total: number;
+}
+
+export interface TorrentFile {
+  index: number;
+  path: string;
+  size: number;
+  kind: "setup" | "core" | "selective" | "optional" | "extra";
+  label: string;
+  required: boolean;
+  selected: boolean;
+}
+
+export interface PreparedDownload {
+  token: string;
+  slug: string;
+  title: string;
+  version?: string | null;
+  name: string;
+  files: TorrentFile[];
+  totalBytes: number;
+  dir: string;
+  freeBytes?: number | null;
+  installSize?: string | null;
+  installDir: string;
+  installFreeBytes?: number | null;
+}
+
+export type DownloadState = "queued" | "downloading" | "paused" | "seeding" | "completed" | "installing" | "installed" | "error";
+
+export interface DownloadItem {
+  id: number;
+  source: string;
+  sourceId: string;
+  slug?: string | null;
+  title: string;
+  version?: string | null;
+  cover?: string | null;
+  hero?: string | null;
+  pageUrl?: string | null;
+  state: DownloadState;
+  /** user | queue | playing | install | needs-folder */
+  pauseReason?: string | null;
+  error?: string | null;
+  totalBytes: number;
+  doneBytes: number;
+  uploadedBytes: number;
+  progress: number;
+  downBps: number;
+  upBps: number;
+  peers: number;
+  eta?: number | null;
+  checking: boolean;
+  queuePos: number;
+  installSize?: string | null;
+  outputDir: string;
+  name: string;
+  fileCount: number;
+  selectedCount: number;
+  installDir?: string | null;
+  gameId?: number | null;
+  addedAt: number;
+  completedAt?: number | null;
+  installedAt?: number | null;
+  filesDeleted: boolean;
+}
+
+export interface DownloadDefaults {
+  downloadDir: string;
+  installDir: string;
+  configured: boolean;
+}
+
+// ───────────────────────────── actualizaciones ─────────────────────────────
+
+export interface UpdateCheck {
+  current: string;
+  latest: string;
+  available: boolean;
+  skipped: boolean;
+  notes: string;
+  url: string;
+  assetUrl?: string | null;
+  assetName?: string | null;
+  assetSize?: number | null;
+  publishedAt?: string | null;
+}

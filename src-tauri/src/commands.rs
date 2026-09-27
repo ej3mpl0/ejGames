@@ -37,6 +37,7 @@ pub struct Bootstrap {
     portable: bool,
     running: Vec<RunningGame>,
     has_folders: bool,
+    downloads: Vec<crate::downloads::DownloadItem>,
 }
 
 #[tauri::command]
@@ -59,6 +60,7 @@ pub async fn bootstrap(st: St<'_>) -> CmdResult<Bootstrap> {
         portable: s.paths.portable,
         running: s.sessions.list(),
         has_folders,
+        downloads: crate::downloads::list(&s).unwrap_or_default(),
     })
 }
 
@@ -786,12 +788,33 @@ pub async fn update_settings(app: tauri::AppHandle, st: St<'_>, patch: Value) ->
             obj.insert(k.clone(), v.clone());
         }
     }
-    let next: Settings = serde_json::from_value(cur).map_err(|e| CmdError::Msg(e.to_string()))?;
+    let mut next: Settings = serde_json::from_value(cur).map_err(|e| CmdError::Msg(e.to_string()))?;
+    for d in [&mut next.download_dir, &mut next.install_dir] {
+        if !d.trim().is_empty() {
+            *d = crate::util::clean_dir(d);
+        }
+    }
     if !next.overlay_hotkey.trim().is_empty() && crate::overlay::hotkey::parse(&next.overlay_hotkey).is_none() {
         return Err(CmdError::Msg(format!("Atajo no válido: {}", next.overlay_hotkey)));
     }
-    if !["top-left", "top-right", "bottom-left", "bottom-right"].contains(&next.overlay_corner.as_str()) {
-        return Err(CmdError::Msg("Esquina no válida".into()));
+    if !crate::settings::OVERLAY_CORNERS.contains(&next.overlay_corner.as_str()) {
+        return Err(CmdError::Msg("Posición de los avisos no válida".into()));
+    }
+    if !crate::settings::OVERLAY_STYLES.contains(&next.overlay_style.as_str()) {
+        return Err(CmdError::Msg("Estilo de los avisos no válido".into()));
+    }
+    if !crate::settings::SEED_POLICIES.contains(&next.seed_policy.as_str()) {
+        return Err(CmdError::Msg("Opción de compartir no válida".into()));
+    }
+    if !(0.1..=50.0).contains(&next.seed_ratio) {
+        return Err(CmdError::Msg("El ratio debe estar entre 0,1 y 50".into()));
+    }
+    if !(1..=5).contains(&next.max_active_downloads) {
+        return Err(CmdError::Msg("Descargas a la vez: de 1 a 5".into()));
+    }
+    let proxy = next.torrent_proxy.trim();
+    if !proxy.is_empty() && !(proxy.starts_with("socks5://") && url::Url::parse(proxy).map(|u| u.port().is_some()).unwrap_or(false)) {
+        return Err(CmdError::Msg("El proxy debe ser socks5://host:puerto".into()));
     }
     let saved = st.settings.update(|s| *s = next)?;
     if before.start_with_windows != saved.start_with_windows {
@@ -801,6 +824,14 @@ pub async fn update_settings(app: tauri::AppHandle, st: St<'_>, patch: Value) ->
     }
     if before.dev_mode != saved.dev_mode {
         watch_active_theme(st.inner());
+    }
+    // Apagar Discord con una partida en marcha quita ya el «Jugando a…».
+    if before.discord_enabled && !saved.discord_enabled {
+        st.discord.clear();
+    }
+    {
+        let (s2, b, a) = (st.inner().clone(), before.clone(), saved.clone());
+        tauri::async_runtime::spawn(async move { crate::downloads::queue::settings_changed(&s2, &b, &a).await });
     }
     Ok(saved)
 }
@@ -898,6 +929,20 @@ pub async fn overlay_action(st: St<'_>, action: String) -> CmdResult<()> {
     Ok(())
 }
 
+/// La página del overlay enseña un aviso: su sonido, a la vez.
+#[tauri::command]
+pub async fn overlay_chime(st: St<'_>, rare: bool) -> CmdResult<()> {
+    crate::overlay::chime(st.inner(), rare);
+    Ok(())
+}
+
+/// Aspecto de los avisos con los ajustes actuales (vista previa en Ajustes).
+#[tauri::command]
+pub async fn overlay_look(st: St<'_>) -> CmdResult<crate::overlay::Look> {
+    let s = st.inner().clone();
+    blocking(move || Ok(crate::overlay::look(&s))).await
+}
+
 #[tauri::command]
 pub async fn overlay_test(st: St<'_>) -> CmdResult<()> {
     let s = st.inner().clone();
@@ -912,4 +957,159 @@ pub async fn overlay_test(st: St<'_>) -> CmdResult<()> {
 #[tauri::command]
 pub async fn ping() -> CmdResult<String> {
     Ok("pong".into())
+}
+
+// ───────────────────────────── explorar ─────────────────────────────
+
+#[tauri::command]
+pub async fn explore_home(st: St<'_>) -> CmdResult<crate::explore::Home> {
+    Ok(crate::explore::home(st.inner()).await?)
+}
+
+#[tauri::command]
+pub async fn explore_search(st: St<'_>, query: String, page: Option<u32>) -> CmdResult<crate::explore::SearchPage> {
+    Ok(crate::explore::search(st.inner(), &query, page.unwrap_or(1)).await?)
+}
+
+#[tauri::command]
+pub async fn explore_details(st: St<'_>, slug: String) -> CmdResult<crate::explore::RepackDetails> {
+    Ok(crate::explore::details(st.inner(), &slug).await?)
+}
+
+// ───────────────────────────── descargas ─────────────────────────────
+
+use crate::downloads;
+
+#[tauri::command]
+pub async fn downloads_list(st: St<'_>) -> CmdResult<Vec<downloads::DownloadItem>> {
+    let s = st.inner().clone();
+    blocking(move || downloads::list(&s)).await
+}
+
+#[tauri::command]
+pub async fn downloads_defaults(st: St<'_>) -> CmdResult<downloads::Defaults> {
+    let s = st.inner().clone();
+    blocking(move || Ok(downloads::defaults(&s))).await
+}
+
+#[tauri::command]
+pub async fn downloads_prepare(st: St<'_>, slug: String) -> CmdResult<downloads::PreparedDownload> {
+    Ok(downloads::prepare(st.inner(), &slug).await?)
+}
+
+/// Solo en desarrollo (pruebas del motor con torrents legales).
+#[tauri::command]
+pub async fn downloads_prepare_magnet(st: St<'_>, magnet: String, title: String) -> CmdResult<downloads::PreparedDownload> {
+    #[cfg(debug_assertions)]
+    return Ok(downloads::prepare_magnet(st.inner(), &magnet, &title).await?);
+    #[cfg(not(debug_assertions))]
+    {
+        let _ = (st, magnet, title);
+        Err(CmdError::Msg("no disponible".into()))
+    }
+}
+
+#[tauri::command]
+pub async fn downloads_cancel_prepare(st: St<'_>, key: String) -> CmdResult<()> {
+    downloads::cancel_prepare(st.inner(), &key);
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn downloads_start(st: St<'_>, token: String, files: Vec<usize>, dir: Option<String>) -> CmdResult<downloads::DownloadItem> {
+    Ok(downloads::start(st.inner(), &token, &files, dir).await?)
+}
+
+#[tauri::command]
+pub async fn downloads_pause(st: St<'_>, id: Option<i64>) -> CmdResult<()> {
+    Ok(downloads::pause(st.inner(), id).await?)
+}
+
+#[tauri::command]
+pub async fn downloads_resume(st: St<'_>, id: Option<i64>) -> CmdResult<()> {
+    Ok(downloads::resume(st.inner(), id).await?)
+}
+
+#[tauri::command]
+pub async fn downloads_move(st: St<'_>, id: i64, pos: usize) -> CmdResult<()> {
+    Ok(downloads::move_to(st.inner(), id, pos).await?)
+}
+
+#[tauri::command]
+pub async fn downloads_remove(st: St<'_>, id: i64, delete_files: bool) -> CmdResult<()> {
+    Ok(downloads::remove(st.inner(), id, delete_files).await?)
+}
+
+/// Borra los archivos de un repack (ya instalado) y conserva la entrada.
+#[tauri::command]
+pub async fn downloads_delete_files(st: St<'_>, id: i64) -> CmdResult<()> {
+    Ok(downloads::delete_repack(st.inner(), id).await?)
+}
+
+#[tauri::command]
+pub async fn downloads_install(st: St<'_>, id: i64) -> CmdResult<()> {
+    Ok(downloads::install::install(st.inner(), id).await?)
+}
+
+#[tauri::command]
+pub async fn downloads_finish_install(st: St<'_>, id: i64, dir: String) -> CmdResult<()> {
+    Ok(downloads::install::finish_manual(st.inner(), id, &dir).await?)
+}
+
+#[tauri::command]
+pub async fn downloads_open_folder(app: tauri::AppHandle, st: St<'_>, id: i64) -> CmdResult<()> {
+    use tauri_plugin_opener::OpenerExt;
+    let s = st.inner().clone();
+    let row = blocking(move || s.db.with(|c| repo::get_download(c, id))).await?.ok_or_else(|| CmdError::Msg("Esa descarga ya no existe".into()))?;
+    let dir = [row.install_dir.as_deref().filter(|_| row.state == "installed"), Some(row.output_dir.as_str())]
+        .into_iter()
+        .flatten()
+        .find(|d| std::path::Path::new(d).is_dir())
+        .ok_or_else(|| CmdError::Msg("La carpeta ya no existe".into()))?
+        .to_string();
+    app.opener().open_path(dir, None::<&str>).map_err(|e| CmdError::Msg(e.to_string()))?;
+    Ok(())
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiskSpace {
+    free_bytes: Option<u64>,
+}
+
+#[tauri::command]
+pub async fn disk_space(path: String) -> CmdResult<DiskSpace> {
+    Ok(DiskSpace {
+        free_bytes: downloads::win::disk_free(std::path::Path::new(&path)),
+    })
+}
+
+// ───────────────────────────── actualizaciones ─────────────────────────────
+
+/// Última versión de GitHub frente a la instalada. `force` se salta la caché
+/// (el botón «Buscar ahora»); la comprobación al abrir reutiliza una reciente.
+#[tauri::command]
+pub async fn update_check(st: St<'_>, force: bool) -> CmdResult<crate::update::UpdateCheck> {
+    let skipped = st.settings.get().update_skipped;
+    Ok(st.updater.check(force, &skipped).await?)
+}
+
+#[tauri::command]
+pub async fn update_download(st: St<'_>) -> CmdResult<crate::update::Downloaded> {
+    Ok(st.updater.download(st.inner()).await?)
+}
+
+/// Abre el instalador descargado y cierra ejGames para que pueda sustituirlo
+/// (al salir se guardan las partidas y el progreso de las descargas).
+#[tauri::command]
+pub async fn update_install(app: tauri::AppHandle, st: St<'_>, path: String) -> CmdResult<()> {
+    if st.downloads.installing.lock().is_some() {
+        return Err(CmdError::Msg("Espera a que termine la instalación del juego".into()));
+    }
+    crate::update::launch_installer(&path)?;
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+        app.exit(0);
+    });
+    Ok(())
 }

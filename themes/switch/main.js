@@ -1,4 +1,5 @@
 // Tema "Switch": fila de iconos grandes, botones redondos y panel de opciones.
+// La eShop y la gestión de descargas están en store.js.
 
 import { h, img, initials, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
@@ -8,6 +9,8 @@ import { visible, sort, recent, installedFirst } from "/_sdk/kit/library.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { clock } from "/_sdk/kit/clock.js";
+import { isActive } from "/_sdk/kit/store.js";
+import { createShop } from "./store.js";
 
 const ejg = await window.ejg.ready();
 const $ = (s) => document.querySelector(s);
@@ -45,16 +48,20 @@ function stile(g, prev) {
 }
 
 let allTile;
+let railDl = "";
 function renderRail() {
   const list = railGames();
-  keyed(rail, list, (g) => g.id, stile);
+  // Las descargas en curso van primero, con su barra de progreso (como en la consola).
+  const dls = shop.railItems();
+  railDl = dls.map((d) => d.id).join(",");
+  keyed(rail, [...dls.map((dl) => ({ dl })), ...list], (x) => (x.dl ? "dl" + x.dl.id : x.id), (x, prev) => (x.dl ? shop.railTile(x.dl, prev) : stile(x, prev)));
   allTile ||= h(
     "button",
     { class: "stile allsw", "data-focus": "", onclick: () => setView("all") },
     h("div", { class: "art", html: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Todos los programas</span>' }),
   );
   rail.append(allTile);
-  if (!list.length) $("#sel-title").textContent = "Pulsa + para añadir tus juegos";
+  if (!list.length && !dls.length) $("#sel-title").textContent = "Pulsa + para añadir tus juegos";
 }
 
 function renderAll() {
@@ -82,6 +89,17 @@ async function launch(id) {
 
 // ─────────────── panel de opciones (X) ───────────────
 let releaseVideo = () => {};
+// Lo que cambia al jugar (horas, logros, «En juego»): se repinta con el panel abierto.
+const startLabel = (g) => (ejg.game.isRunning(g.id) ? "En juego" : g.installed === false ? "Instalar desde la tienda" : "Iniciar");
+function optionStats(g) {
+  const stat = (label, value) => h("div", { class: "stat" }, h("small", null, label), h("b", null, value));
+  return [
+    stat("Tiempo de juego", playtime(g.playtime, "—")),
+    stat("Última vez", relative(g.lastPlayed)),
+    g.achievements ? stat("Logros", `${g.achievements.unlocked} / ${g.achievements.total}`) : null,
+  ].filter(Boolean);
+}
+
 async function openOptions(id) {
   const g = ejg.library.byId(id);
   if (!g) return;
@@ -95,17 +113,11 @@ async function openOptions(id) {
     cover,
     h("h2", null, g.title),
     h("div", { class: "sub" }, [g.developer, year(g.releaseDate), SOURCE_LABEL[g.source]].filter(Boolean).join(" · ")),
-    h(
-      "div",
-      { class: "stats" },
-      h("div", { class: "stat" }, h("small", null, "Tiempo de juego"), h("b", null, playtime(g.playtime, "—"))),
-      h("div", { class: "stat" }, h("small", null, "Última vez"), h("b", null, relative(g.lastPlayed))),
-      g.achievements ? h("div", { class: "stat" }, h("small", null, "Logros"), h("b", null, `${g.achievements.unlocked} / ${g.achievements.total}`)) : null,
-    ),
+    h("div", { class: "stats" }, ...optionStats(g)),
     h(
       "div",
       { class: "menu" },
-      item(ejg.game.isRunning(g.id) ? "En juego" : g.installed === false ? "Instalar desde la tienda" : "Iniciar", () => (closeOptions(), launch(g.id))),
+      item(startLabel(g), () => (closeOptions(), launch(g.id))),
       item(g.favorite ? "Quitar de favoritos" : "Añadir a favoritos", () => (ejg.game.favorite(g.id), closeOptions())),
       item("Ver tráiler", () => playTrailer(g.id, cover)),
       item("Editar datos del programa", () => (closeOptions(), ejg.game.edit(g.id))),
@@ -141,47 +153,77 @@ function closeOptions() {
 options.addEventListener("click", (e) => e.target === options && closeOptions());
 
 // ─────────────── vistas y navegación ───────────────
-function setView(v) {
+// home | all | shop (eShop) | dls (Gestión de descargas). `target`: qué enfocar al volver al HOME.
+function setView(v, target) {
   state.view = v;
-  $("#home").hidden = v !== "home";
-  $("#all").hidden = v !== "all";
+  document.documentElement.dataset.view = v;
+  for (const id of ["home", "all", "shop", "dls"]) $("#" + id).hidden = v !== id;
   if (v === "all") {
     renderAll();
     focus.first($("#all-grid"));
-  } else {
+  } else if (v === "home") {
     renderRail();
-    focus.first(rail);
+    const t = typeof target === "string" ? $(target) : target;
+    if (t?.isConnected && !t.hidden) focus.focus(t, { instant: true, silent: true });
+    else focus.first(rail);
   }
+  updateHints();
 }
 
 const focus = createFocus({
   root: document.body,
   scroll: "nearest",
   onChange: (el) => {
-    const id = Number(el.dataset.gameId);
-    const g = id && ejg.library.byId(id);
-    if (el.closest("#rail")) $("#sel-title").textContent = g ? g.title : el.classList.contains("allsw") ? "Todos los programas" : "";
-    updateHints(g);
+    if (el.closest("#rail")) selTitle(el);
+    updateHints();
   },
 });
-bindNav(focus, {
+
+function selTitle(el) {
+  const t = $("#sel-title");
+  const d = el.dataset.dlId && ejg.downloads.byId(Number(el.dataset.dlId));
+  if (d) return t.replaceChildren(d.title, h("small", null, shop.railState(d)));
+  const g = Number(el.dataset.gameId) && ejg.library.byId(Number(el.dataset.gameId));
+  t.textContent = g ? g.title : el.classList.contains("allsw") ? "Todos los programas" : "";
+}
+const actions = {
   back: () => {
     if (!options.hidden) return closeOptions(), true;
+    if (shop.back()) return true;
     if (state.view === "all") return setView("home"), true;
     return false;
   },
   x: () => {
+    if (!options.hidden) return true;
+    if (shop.x(focus.current)) return true;
     const id = Number(focus.current?.dataset.gameId);
-    if (id && options.hidden) openOptions(id);
+    if (id) openOptions(id);
     return true;
   },
   y: () => {
+    if (options.hidden && shop.y()) return true;
     const id = Number(focus.current?.dataset.gameId) || state.optionsFor;
     if (id) ejg.game.favorite(id);
     return true;
   },
+  lb: () => shop.cycle(-1),
+  rb: () => shop.cycle(1),
   menu: () => (ejg.ui.open("menu"), true),
   view: () => (ejg.ui.open("search"), true),
+};
+bindNav(focus, actions);
+
+// eShop y Gestión de descargas (store.js).
+const shop = createShop({
+  ejg,
+  focus,
+  shopEl: $("#shop"),
+  dlsEl: $("#dls"),
+  show: setView,
+  where: () => state.view,
+  openGame: (id) => launch(id),
+  onChange: () => onDownloads(),
+  onHints: () => updateHints(),
 });
 ejg.on("focus-return", () => focus.restore());
 // Clic derecho = opciones (como X).
@@ -193,7 +235,53 @@ document.addEventListener("contextmenu", (e) => {
   }
 });
 
-document.querySelectorAll("[data-action]").forEach((b) => b.addEventListener("click", () => ejg.ui.open(b.dataset.action)));
+document.querySelectorAll("[data-action]").forEach((b) =>
+  b.addEventListener("click", () => {
+    const a = b.dataset.action;
+    // La eShop y las descargas las pinta el tema, no el host.
+    if (a === "explore" || a === "downloads") return shop.open(a);
+    ejg.ui.open(a);
+  }),
+);
+
+// ─────────────── descargas en el HOME ───────────────
+function updateDlUi() {
+  const all = ejg.downloads.all;
+  const n = all.filter((d) => d.state !== "installed").length;
+  const badge = $("#dl-count");
+  badge.hidden = !n;
+  badge.textContent = n > 99 ? "99+" : String(n);
+  $("#c-eshop").hidden = !ejg.explore.enabled;
+  $("#c-dl").hidden = !ejg.explore.enabled && !all.length;
+}
+function onDownloads() {
+  updateDlUi();
+  if (state.view !== "home") return;
+  const dls = shop.railItems();
+  if (dls.map((d) => d.id).join(",") !== railDl) {
+    renderRail();
+    if (focus.current && !focus.current.isConnected) focus.first(rail);
+  } else for (const d of dls) rail.querySelector(`[data-dl-id="${d.id}"]`)?.__upd?.(d);
+  const el = focus.current;
+  if (el?.dataset.dlId && el.closest("#rail")) {
+    selTitle(el);
+    updateHints();
+  }
+}
+ejg.explore.onEnabled(() => {
+  updateDlUi();
+  if (!ejg.explore.enabled && state.view === "shop") {
+    shop.closeAll();
+    setView("home");
+  }
+});
+// El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
+ejg.ui.onView(({ view, slug }) => {
+  if (!options.hidden) closeOptions();
+  if (view === "downloads") return shop.open("downloads");
+  if (!ejg.explore.enabled) return;
+  shop.open(view === "repack" ? "repack" : "explore", slug);
+});
 
 function renderUser() {
   const p = ejg.profile;
@@ -210,7 +298,13 @@ function applyWall() {
 const refresh = debounce(() => {
   if (state.view === "all") renderAll();
   else renderRail();
-  if (focus.current && !focus.current.isConnected) {
+  const og = !options.hidden && state.optionsFor && ejg.library.byId(state.optionsFor);
+  if (og) {
+    options.querySelector(".stats")?.replaceChildren(...optionStats(og));
+    const start = options.querySelector(".menu .mi");
+    if (start) start.textContent = startLabel(og);
+  }
+  if ((state.view === "home" || state.view === "all") && focus.current && !focus.current.isConnected) {
     const again = document.querySelector(`[data-game-id="${focus.current.dataset.gameId}"]`);
     if (again) focus.focus(again, { noScroll: true, silent: true });
     else focus.first(rail);
@@ -223,7 +317,13 @@ ejg.on("settings", () => (applyWall(), refresh()));
 ejg.on("profile", renderUser);
 
 const hintBar = hints($("#bar"), []);
-function updateHints(g) {
+function updateHints() {
+  if (state.view === "shop" || state.view === "dls" || shop.hasDialog()) return hintBar.set(shop.hints());
+  const el = focus.current;
+  const d = el?.dataset?.dlId && ejg.downloads.byId(Number(el.dataset.dlId));
+  if (d) return hintBar.set([["accept", "Ver descarga"], ...(isActive(d) || d.state === "paused" ? [["x", isActive(d) ? "Pausar" : "Reanudar"]] : []), ["back", "Atrás"]]);
+  if (el?.closest?.(".circles")) return hintBar.set([["accept", "Aceptar"], ["back", "Atrás"]]);
+  const g = Number(el?.dataset?.gameId) && ejg.library.byId(Number(el.dataset.gameId));
   hintBar.set([
     ["accept", g && g.installed === false ? "Instalar" : "Iniciar"],
     ["x", "Opciones"],
@@ -231,8 +331,14 @@ function updateHints(g) {
     ["back", "Atrás"],
   ]);
 }
+// Las pistas se pueden pulsar, como en la pantalla táctil.
+$("#bar").addEventListener("click", (e) => {
+  const a = e.target.closest(".ejg-hint")?.querySelector(".ejg-glyph")?.dataset.action;
+  if (a === "accept") focus.current?.click();
+  else if (a) actions[a]?.();
+});
 
 renderUser();
 applyWall();
+updateDlUi();
 setView("home");
-updateHints();

@@ -2,7 +2,9 @@ mod achievements;
 mod commands;
 mod db;
 mod discord;
+mod downloads;
 mod events;
+mod explore;
 mod import;
 mod launcher;
 mod library;
@@ -17,6 +19,7 @@ mod settings;
 mod state;
 mod stats;
 mod themes;
+mod update;
 mod util;
 
 use state::AppState;
@@ -174,7 +177,30 @@ pub fn run() {
             commands::overlay_panel,
             commands::overlay_action,
             commands::overlay_test,
+            commands::overlay_chime,
+            commands::overlay_look,
             commands::ping,
+            commands::explore_home,
+            commands::explore_search,
+            commands::explore_details,
+            commands::downloads_list,
+            commands::downloads_defaults,
+            commands::downloads_prepare,
+            commands::downloads_prepare_magnet,
+            commands::downloads_cancel_prepare,
+            commands::downloads_start,
+            commands::downloads_pause,
+            commands::downloads_resume,
+            commands::downloads_move,
+            commands::downloads_remove,
+            commands::downloads_delete_files,
+            commands::downloads_install,
+            commands::downloads_finish_install,
+            commands::downloads_open_folder,
+            commands::disk_space,
+            commands::update_check,
+            commands::update_download,
+            commands::update_install,
         ])
         .setup(move |app| {
             let paths = paths::Paths::resolve(app.path().resource_dir().ok())?;
@@ -205,6 +231,9 @@ pub fn run() {
                 saver_active: Default::default(),
                 scan_lock: Default::default(),
                 overlay: Default::default(),
+                explore: Default::default(),
+                downloads: Default::default(),
+                updater: update::Updater::new(env!("CARGO_PKG_VERSION").to_string()),
             });
             app.manage(st.clone());
 
@@ -242,6 +271,8 @@ pub fn run() {
             let st_bg = st.clone();
             tauri::async_runtime::spawn(async move {
                 tokio::time::sleep(Duration::from_secs(4)).await;
+                // Descargas pendientes (el motor solo arranca si hay alguna).
+                downloads::startup(&st_bg).await;
                 let first_run_done = st_bg.settings.get().first_run_done;
                 if first_run_done {
                     let _ = services::import_stores(&st_bg, None).await;
@@ -253,7 +284,8 @@ pub fn run() {
                 achievements::refresh_library(&st_bg).await;
                 let st3 = st_bg.clone();
                 let _ = tauri::async_runtime::spawn_blocking(move || {
-                    media::trailers::prune(&st3.paths.trailers, st3.settings.get().trailer_cache_mb)
+                    media::trailers::prune(&st3.paths.trailers, st3.settings.get().trailer_cache_mb);
+                    explore::images::prune(&explore::images::cache_dir(&st3), 256);
                 })
                 .await;
             });
@@ -267,6 +299,7 @@ pub fn run() {
         if let tauri::RunEvent::Exit = event {
             if let Some(st) = app.try_state::<Arc<AppState>>() {
                 launcher::finish_all(st.inner());
+                downloads::shutdown(st.inner());
             }
             return;
         }
@@ -274,9 +307,11 @@ pub fn run() {
             // code == None: se cerró la última ventana (no una salida explícita).
             if code.is_none() {
                 if let Some(st) = app.try_state::<Arc<AppState>>() {
+                    // Con descargas en marcha se queda en la bandeja.
                     let keep = st.settings.get().close_to_tray
                         || st.sessions.any()
-                        || st.saver_active.load(Ordering::Relaxed);
+                        || st.saver_active.load(Ordering::Relaxed)
+                        || st.downloads.keep_alive(st.inner());
                     if keep {
                         api.prevent_exit();
                     }

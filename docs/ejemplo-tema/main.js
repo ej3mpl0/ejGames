@@ -6,6 +6,7 @@ import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { visible, sort } from "/_sdk/kit/library.js";
 import { description, playtime, year } from "/_sdk/kit/format.js";
 import { hints } from "/_sdk/kit/hints.js";
+import { bytes, speed, percent } from "/_sdk/kit/store.js";
 
 // Espera a que ejGames mande la biblioteca, el perfil y las opciones.
 const ejg = await window.ejg.ready();
@@ -102,6 +103,8 @@ function pintar() {
 let fichaId = null;
 let turno = 0; // para descartar respuestas de una ficha que ya se cerró
 
+const datos = (g) => [g.developer, year(g.releaseDate), playtime(g.playtime)].filter(Boolean).join(" · ");
+
 async function abrirFicha(id) {
   const g = ejg.library.byId(id);
   if (!g) return;
@@ -121,7 +124,7 @@ async function abrirFicha(id) {
         "div",
         { class: "ficha-info" },
         h("h2", null, g.title),
-        h("p", { class: "datos" }, [g.developer, year(g.releaseDate), playtime(g.playtime)].filter(Boolean).join(" · ")),
+        h("p", { class: "datos" }, datos(g)),
         botones,
         texto,
       ),
@@ -195,13 +198,33 @@ for (const b of document.querySelectorAll("[data-ui]")) {
   b.addEventListener("click", () => ejg.ui.open(b.dataset.ui));
 }
 
+// ─────────────── Explorar y descargas (ventanas de ejGames) ───────────────
+const botonTienda = document.querySelector("#tienda");
+botonTienda.addEventListener("click", () => ejg.downloads.open("explore"));
+const pintarBoton = () => (botonTienda.hidden = !ejg.explore.enabled);
+ejg.explore.onEnabled(pintarBoton);
+pintarBoton();
+
+const tira = document.querySelector("#descargas");
+function pintarDescargas() {
+  const ahora = ejg.downloads.all.filter((d) => d.state === "downloading");
+  tira.hidden = !ahora.length;
+  if (!ahora.length) return;
+  const d = ahora[0];
+  tira.textContent = `${d.title} · ${percent(d.progress)} · ${speed(d.downBps)} · ${bytes(d.doneBytes)} de ${bytes(d.totalBytes)}`;
+}
+ejg.downloads.onChange(pintarDescargas);
+pintarDescargas();
+tira.addEventListener("click", () => ejg.downloads.open("downloads"));
+
 // ─────────────── cambios que avisa ejGames ───────────────
 const repintar = debounce(() => {
   pintar();
   if (fichaId) {
     const g = ejg.library.byId(fichaId);
-    if (g) pintarBotones(g);
-    else cerrarFicha();
+    if (!g) return cerrarFicha();
+    pintarBotones(g);
+    ficha.querySelector(".datos").textContent = datos(g); // las horas, al cerrar el juego
   }
 }, 50);
 ejg.library.onChange(repintar); // juegos nuevos, favoritos, carátulas…

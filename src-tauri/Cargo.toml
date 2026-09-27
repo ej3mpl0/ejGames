@@ -1,11 +1,11 @@
 [package]
 name = "ejgames"
-version = "0.2.1"
+version = "0.3.0"
 description = "ejGames — launcher de juegos personalizable"
 authors = ["ej"]
 license = "MIT"
 edition = "2021"
-rust-version = "1.80"
+rust-version = "1.88"
 
 [lib]
 name = "ejgames_lib"
@@ -28,7 +28,7 @@ anyhow = "1"
 thiserror = "2"
 tokio = { version = "1", features = ["rt-multi-thread", "sync", "time", "fs", "macros"] }
 futures = "0.3"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "stream"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "stream", "cookies"] }
 rusqlite = { version = "0.37", features = ["bundled"] }
 rayon = "1.11"
 walkdir = "2.5"
@@ -40,6 +40,7 @@ strsim = "0.11"
 regex = "1.11"
 parking_lot = "0.12"
 blake3 = "1.8"
+sha2 = "0.10"
 url = "2.5"
 percent-encoding = "2.3"
 zip = { version = "2", default-features = false, features = ["deflate"] }
@@ -49,6 +50,12 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 dirs = "6"
 mime_guess = "2"
+# Torrents (Explorar → Descargas). Sin las funciones por defecto: `default-tls`
+# arrastra aws-lc-rs. SHA-1 con la CryptoAPI de Windows y TLS de los trackers
+# https con SChannel (el `reqwest` 0.13 de librqbit toma `native-tls` de aquí).
+librqbit = { version = "=9.0.1", default-features = false }
+librqbit-core = { version = "=9.0.1", default-features = false, features = ["sha1-crypto-hash"] }
+reqwest013 = { package = "reqwest", version = "0.13", default-features = false, features = ["native-tls"] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"
@@ -69,7 +76,13 @@ windows = { version = "0.61", features = [
   "Win32_UI_HiDpi",
   "Win32_UI_Accessibility",
   "Win32_Media_Audio",
+  "Win32_System_Power",
+  "Win32_Storage_FileSystem",
 ] }
+
+[patch.crates-io]
+# DHT que no muere en Windows con el error UDP 10054 (ver vendor/README.md).
+librqbit-dht = { path = "vendor/librqbit-dht" }
 
 [dev-dependencies]
 tempfile = "3"
@@ -85,4 +98,5 @@ lto = "fat"
 codegen-units = 1
 opt-level = 3
 strip = true
-panic = "abort"
+# "unwind": un panic en una tarea de librqbit no debe cerrar el launcher.
+panic = "unwind"

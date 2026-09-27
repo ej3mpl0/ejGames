@@ -30,7 +30,7 @@ main { height: 100%; overflow-y: auto; overflow-x: hidden; scrollbar-width: none
 .hero-media { position: absolute; inset: 0; background: #000 center 20% / cover; }
 .hero-media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1s ease; }
 .hero-media video.on { opacity: 1; }
-.hero-fade { position: absolute; inset: 0; background: linear-gradient(77deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 80%), linear-gradient(180deg, transparent 60%, var(--bg) 99%); }
+.hero-fade { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 60%, var(--bg) 99%), linear-gradient(77deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 80%); }
 .hero-info { position: absolute; left: var(--pad); bottom: 26%; width: min(620px, 42vw); }
 .hero-logo { max-width: 100%; max-height: 190px; object-fit: contain; object-position: left bottom; margin-bottom: 20px; filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.6)); transform-origin: left bottom; transition: transform 1s ease; }
 body.playing-hero .hero-logo { transform: scale(0.75); }

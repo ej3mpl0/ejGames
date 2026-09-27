@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { FolderOpen, Gamepad2, MonitorPlay, Power } from "lucide-react";
+import { FolderOpen, Gamepad2, MonitorPlay, Power, RefreshCw } from "lucide-react";
 import { api } from "../../api/tauri";
 import type { NavAction, Settings } from "../../api/types";
-import { Button, Field, Section, TextInput, Toggle } from "../../components/ui";
+import { Button, Section, Toggle } from "../../components/ui";
 import { GLYPHS } from "../../../sdk/kit/hints.js";
 import { Glyph } from "../../components/Hints";
 import { setBigPicture } from "../../host/window";
+import { checkNow, useUpdate } from "../../host/update";
 import { useApp } from "../../store/app";
 
 function useSave() {
@@ -132,7 +133,6 @@ export function SystemTab() {
   const settings = useApp((s) => s.settings)!;
   const boot = useApp((s) => s.boot);
   const save = useSave();
-  const [discord, setDiscord] = useState(settings.discordClientId);
 
   return (
     <div>
@@ -144,18 +144,22 @@ export function SystemTab() {
       </Section>
 
       <Section title="Discord Rich Presence">
-        <p className="px-3 pb-1 text-xs leading-relaxed text-muted">
-          Ya viene configurado: tus amigos verán «Jugando a &lt;juego&gt;» con su portada y «Jugando desde ejGames». Se activa o desactiva por
-          perfil (Ajustes → Perfil) y por juego. Solo hace falta cambiar el ID si quieres usar tu propia aplicación de Discord.
-        </p>
-        <Field label="Application ID (opcional)">
-          <div className="flex gap-2">
-            <TextInput value={discord} onChange={(e) => setDiscord(e.target.value.replace(/\D/g, ""))} placeholder="1553143273869287435 (el de ejGames)" />
-            <Button variant="primary" disabled={discord === settings.discordClientId} onClick={() => save({ discordClientId: discord })}>
-              Guardar
-            </Button>
-          </div>
-        </Field>
+        <Toggle
+          label="Mostrar en Discord a qué estoy jugando"
+          hint="Tus amigos verán «Jugando a <juego>» con su portada y «Jugando desde ejGames». También se puede quitar por perfil (Ajustes → Perfil) y por juego."
+          checked={settings.discordEnabled}
+          onChange={(v) => save({ discordEnabled: v })}
+        />
+      </Section>
+
+      <Section title="Actualizaciones">
+        <Toggle
+          label="Buscar versiones nuevas al abrir ejGames"
+          hint="Si hay una, te avisa y la descarga e instala con un clic, sin perder nada."
+          checked={settings.updateAuto}
+          onChange={(v) => save({ updateAuto: v })}
+        />
+        <UpdateRow />
       </Section>
 
       <Section title="Datos">
@@ -179,6 +183,34 @@ export function SystemTab() {
           </Button>
         </div>
       </Section>
+    </div>
+  );
+}
+
+function UpdateRow() {
+  const boot = useApp((s) => s.boot);
+  const open = useApp((s) => s.open);
+  const { check, phase, checkError } = useUpdate();
+  const status = checkError
+    ? checkError
+    : phase === "checking"
+      ? "Buscando…"
+      : check
+        ? check.available
+          ? `Hay una versión nueva: ${check.latest}`
+          : `Tienes la última versión (${check.current})`
+        : `Versión instalada: ${boot?.version ?? ""}`;
+  return (
+    <div className="flex items-center gap-3 px-3 py-2 text-sm">
+      <span className={checkError ? "flex-1 text-red-300" : "flex-1 text-muted"}>{status}</span>
+      {check?.available && (
+        <Button size="sm" variant="primary" onClick={() => open("update")}>
+          Ver
+        </Button>
+      )}
+      <Button size="sm" icon={<RefreshCw size={14} />} disabled={phase !== "idle"} onClick={() => void checkNow()}>
+        Buscar ahora
+      </Button>
     </div>
   );
 }

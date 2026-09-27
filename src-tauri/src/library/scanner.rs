@@ -28,6 +28,25 @@ fn is_hidden(name: &str) -> bool {
     name.starts_with('.') || name.starts_with('$')
 }
 
+/// Carpetas que no se escanean por ahora (un juego instalándose).
+static IGNORED: std::sync::LazyLock<parking_lot::Mutex<std::collections::HashSet<String>>> =
+    std::sync::LazyLock::new(Default::default);
+
+pub fn set_ignored(dir: &Path, ignored: bool) {
+    let key = norm_path(dir);
+    let mut g = IGNORED.lock();
+    if ignored {
+        g.insert(key);
+    } else {
+        g.remove(&key);
+    }
+}
+
+fn is_ignored(dir: &Path) -> bool {
+    let g = IGNORED.lock();
+    !g.is_empty() && g.contains(&norm_path(dir))
+}
+
 fn child_dirs(dir: &Path) -> Vec<PathBuf> {
     let Ok(rd) = std::fs::read_dir(dir) else { return vec![] };
     rd.filter_map(Result::ok)
@@ -37,6 +56,8 @@ fn child_dirs(dir: &Path) -> Vec<PathBuf> {
             !is_hidden(&n) && !is_store_or_system_dir(&n)
         })
         .map(|e| e.path())
+        // Repacks sin instalar e instalaciones en curso.
+        .filter(|p| !exe_detect::is_repack_dir(p) && !is_ignored(p))
         .collect()
 }
 

@@ -1,6 +1,7 @@
 // Menú rápido (botón Guía / Ctrl+K): lo esencial a un botón de distancia.
 
-import { BarChart3, FolderPlus, Gamepad2, Library, LogOut, Minimize2, MonitorPlay, Power, Search, Settings, StopCircle } from "lucide-react";
+import { BarChart3, Compass, Download, FolderPlus, Gamepad2, Library, LogOut, Minimize2, MonitorPlay, Power, Search, Settings, StopCircle } from "lucide-react";
+import { openExplore } from "../host/downloads";
 import { api } from "../api/tauri";
 import { setBigPicture } from "../host/window";
 import { useOverlayNav } from "../input/nav";
@@ -14,6 +15,9 @@ export function QuickMenu({ onClose }: { onClose: () => void }) {
   const profile = useApp((s) => s.profile);
   const running = useApp((s) => s.running);
   const mode = useApp((s) => s.mode);
+  const exploreOn = useApp((s) => s.settings?.exploreEnabled !== false);
+  const downloads = useApp((s) => s.downloads);
+  const pending = downloads.filter((d) => ["queued", "downloading", "paused", "seeding", "completed", "installing", "error"].includes(d.state)).length;
   const ref = useOverlayNav<HTMLDivElement>({ onBack: onClose, extra: { home: onClose } });
 
   const item = (icon: React.ReactNode, label: string, fn: () => void, autofocus = false) => (
@@ -54,6 +58,8 @@ export function QuickMenu({ onClose }: { onClose: () => void }) {
         ))}
         {item(<Library size={19} />, "Volver a la biblioteca", onClose, true)}
         {item(<Search size={19} />, "Buscar", () => open("search"))}
+        {exploreOn && item(<Compass size={19} />, "Explorar", () => openExplore("explore"))}
+        {(exploreOn || downloads.length > 0) && item(<Download size={19} />, pending ? `Descargas (${pending})` : "Descargas", () => openExplore("downloads"))}
         {item(<BarChart3 size={19} />, "Estadísticas", () => open("stats"))}
         {item(<FolderPlus size={19} />, "Añadir juegos", () => open("settings", { tab: "library", addFolder: true }))}
         {item(<Settings size={19} />, "Ajustes", () => open("settings"))}

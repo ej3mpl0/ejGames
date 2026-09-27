@@ -137,7 +137,11 @@ pub fn enter_saver(st: &Arc<AppState>) {
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_secs(3));
         if SAVER_GEN.load(Ordering::SeqCst) == gen && st.saver_active.load(Ordering::Relaxed) {
-            set_eco(true);
+            // Con descargas que siguen mientras juegas, sin EcoQoS (las frenaría).
+            let downloading = !st.settings.get().pause_while_playing && st.downloads.keep_alive(&st);
+            if !downloading {
+                set_eco(true);
+            }
             trim_memory();
         }
     });
@@ -187,8 +191,11 @@ pub(crate) fn trim_memory() {}
 pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "open", "Abrir ejGames", true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
+    let pause = MenuItem::with_id(app, "downloads-pause", "Pausar descargas", true, None::<&str>)?;
+    let resume = MenuItem::with_id(app, "downloads-resume", "Reanudar descargas", true, None::<&str>)?;
+    let sep2 = PredefinedMenuItem::separator(app)?;
     let quit = MenuItem::with_id(app, "quit", "Salir", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open, &sep, &quit])?;
+    let menu = Menu::with_items(app, &[&open, &sep, &pause, &resume, &sep2, &quit])?;
     let mut b = TrayIconBuilder::with_id("main")
         .tooltip("ejGames")
         .menu(&menu)
@@ -200,6 +207,18 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
                 }
             }
             "quit" => app.exit(0),
+            id @ ("downloads-pause" | "downloads-resume") => {
+                if let Some(st) = app.try_state::<Arc<AppState>>() {
+                    let st = st.inner().clone();
+                    let pause = id == "downloads-pause";
+                    tauri::async_runtime::spawn(async move {
+                        let r = if pause { crate::downloads::pause(&st, None).await } else { crate::downloads::resume(&st, None).await };
+                        if let Err(e) = r {
+                            tracing::warn!("bandeja: {e:#}");
+                        }
+                    });
+                }
+            }
             _ => {}
         })
         .on_tray_icon_event(|tray, ev| {

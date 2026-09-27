@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { FolderPlus, Keyboard, Sparkles, Trash2 } from "lucide-react";
+import { FolderPlus, Keyboard, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
-import type { Settings } from "../../api/types";
+import type { NoticeLook, OverlayNotice, Settings } from "../../api/types";
 import { Button, Cycle, Section, Toggle } from "../../components/ui";
+import { NOTICE_STYLES, NoticeStack, NoticeView } from "../../ingame/notices";
 import { useApp } from "../../store/app";
 
 function useSave() {
@@ -17,12 +18,65 @@ function useSave() {
   };
 }
 
+const STYLES: { value: Settings["overlayStyle"]; label: string }[] = [{ value: "auto", label: "El de mi tema" }, ...NOTICE_STYLES];
+
 const CORNERS: { value: Settings["overlayCorner"]; label: string }[] = [
+  { value: "auto", label: "La de su plataforma" },
   { value: "bottom-right", label: "Abajo a la derecha" },
+  { value: "bottom-center", label: "Abajo en el centro" },
   { value: "bottom-left", label: "Abajo a la izquierda" },
   { value: "top-right", label: "Arriba a la derecha" },
+  { value: "top-center", label: "Arriba en el centro" },
   { value: "top-left", label: "Arriba a la izquierda" },
 ];
+
+/** Cómo se verá el aviso encima de uno de tus juegos. */
+function NoticePreview({ settings }: { settings: Settings }) {
+  const profile = useApp((s) => s.profile);
+  const games = useApp((s) => s.games);
+  const [look, setLook] = useState<NoticeLook | null>(null);
+  const [seq, setSeq] = useState(0);
+  useEffect(() => {
+    api.overlayLook().then(setLook).catch(() => setLook(null));
+  }, [settings.overlayStyle, settings.overlayCorner, profile?.themeId, profile?.themeSettings]);
+  const game = useMemo(
+    () => games.filter((g) => g.media.hero || g.media.heroThumb).sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0))[0],
+    [games],
+  );
+  if (!look) return null;
+  const rare = seq % 2 === 1;
+  const n: OverlayNotice = {
+    id: seq,
+    kind: "achievement",
+    game: game?.title ?? "Tu juego",
+    title: rare ? "Contra todo pronóstico" : "Primeros pasos",
+    body: rare ? "Termina el juego en la dificultad más alta." : "Completa el primer capítulo.",
+    rarity: rare ? 3.2 : 41,
+    score: rare ? 90 : 15,
+    progress: [rare ? 12 : 3, 40],
+    at: 0,
+    look,
+  };
+  const art = game?.media.heroThumb || game?.media.hero;
+  return (
+    <div className="px-3 pb-2 pt-1">
+      <div
+        className="relative h-[230px] overflow-hidden rounded-lg bg-black bg-cover bg-center ring-1 ring-line"
+        style={art ? { backgroundImage: `url("${art}")` } : { background: "linear-gradient(135deg, #1d2633, #0b0e13)" }}
+      >
+        <NoticeStack corner={look.corner}>
+          <NoticeView key={seq} n={n} />
+        </NoticeStack>
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted">
+        <span>Así se verá encima del juego, con los colores de tu tema.</span>
+        <Button size="sm" variant="ghost" icon={<RotateCcw size={13} />} onClick={() => setSeq((x) => x + 1)}>
+          {rare ? "Ver uno normal" : "Ver uno raro"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 const MOD_KEYS = ["Shift", "Control", "Alt", "Meta"];
 
@@ -115,7 +169,9 @@ export function OverlayTab() {
         {settings.overlayEnabled && (
           <>
             <HotkeyInput value={settings.overlayHotkey} onChange={(v) => save({ overlayHotkey: v })} />
-            <Cycle label="Esquina de los avisos" value={settings.overlayCorner} options={CORNERS} onChange={(v) => save({ overlayCorner: v })} />
+            <Cycle label="Estilo de los avisos" value={settings.overlayStyle} options={STYLES} onChange={(v) => save({ overlayStyle: v })} />
+            <Cycle label="Dónde salen" value={settings.overlayCorner} options={CORNERS} onChange={(v) => save({ overlayCorner: v })} />
+            <NoticePreview settings={settings} />
             <Toggle label="Sonido al desbloquear un logro" checked={settings.overlaySound} onChange={(v) => save({ overlaySound: v })} />
             <Toggle
               label="Recordar el atajo al empezar a jugar"

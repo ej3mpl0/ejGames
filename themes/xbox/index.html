@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>Xbox</title>
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="store.css" />
     <script type="module" src="main.js"></script>
   </head>
   <body>
@@ -17,8 +18,10 @@
       <nav class="nav" data-ejg-nodrag>
         <button class="navbtn" data-focus data-view="home">Inicio</button>
         <button class="navbtn" data-focus data-view="collection">Mi colección</button>
+        <button class="navbtn" data-focus data-view="store" id="nav-store" hidden>Tienda</button>
       </nav>
       <div class="right" data-ejg-nodrag>
+        <button class="ib" data-focus id="q-btn" title="Administrar cola" hidden><span class="q-ring"></span><svg viewBox="0 0 24 24"><path d="M4 6h10M4 11h10M4 16h6m8-8v10m0 0-3-3m3 3 3-3" /></svg><span class="ib-badge" id="q-badge"></span></button>
         <button class="ib" data-focus data-action="search" title="Buscar"><svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" /></svg></button>
         <button class="ib" data-focus data-action="stats" title="Estadísticas"><svg viewBox="0 0 24 24"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2" /></svg></button>
         <button class="ib" data-focus data-action="settings" title="Ajustes"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" /><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2Z" /></svg></button>
@@ -33,6 +36,9 @@
         <div class="grid" id="grid" data-focus-group="grid"></div>
       </div>
     </main>
+    <main id="store" class="page" hidden></main>
+    <main id="queue" class="page" hidden></main>
+    <section id="repack" class="page" data-focus-trap hidden></section>
     <section id="hub" class="page" hidden></section>
     <div id="hints" class="hints"></div>
     <div id="player" hidden></div>

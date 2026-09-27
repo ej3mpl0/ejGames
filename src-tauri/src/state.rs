@@ -39,4 +39,7 @@ pub struct AppState {
     pub saver_active: AtomicBool,
     pub scan_lock: tokio::sync::Mutex<()>,
     pub overlay: crate::overlay::Overlay,
+    pub explore: crate::explore::Explore,
+    pub downloads: crate::downloads::Downloads,
+    pub updater: crate::update::Updater,
 }

@@ -17,12 +17,44 @@ fn wide(s: &str) -> Vec<u16> {
     std::ffi::OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
 }
 
+/// Proceso abierto por ShellExecuteEx, para esperarlo (se cierra al soltarlo).
 #[cfg(windows)]
-fn shell_execute(verb: &str, file: &str, params: &str, dir: Option<&str>) -> anyhow::Result<Option<u32>> {
+pub struct OwnedProcess(windows::Win32::Foundation::HANDLE);
+
+#[cfg(windows)]
+unsafe impl Send for OwnedProcess {}
+
+#[cfg(windows)]
+impl OwnedProcess {
+    pub fn pid(&self) -> u32 {
+        unsafe { windows::Win32::System::Threading::GetProcessId(self.0) }
+    }
+
+    /// true si el proceso terminó dentro de `ms`.
+    pub fn wait(&self, ms: u32) -> bool {
+        use windows::Win32::Foundation::WAIT_OBJECT_0;
+        unsafe { windows::Win32::System::Threading::WaitForSingleObject(self.0, ms) == WAIT_OBJECT_0 }
+    }
+
+    pub fn exit_code(&self) -> Option<u32> {
+        let mut code = 0u32;
+        unsafe { windows::Win32::System::Threading::GetExitCodeProcess(self.0, &mut code).ok().map(|_| code) }
+    }
+}
+
+#[cfg(windows)]
+impl Drop for OwnedProcess {
+    fn drop(&mut self) {
+        unsafe {
+            let _ = windows::Win32::Foundation::CloseHandle(self.0);
+        }
+    }
+}
+
+#[cfg(windows)]
+fn shell_execute_process(verb: &str, file: &str, params: &str, dir: Option<&str>) -> windows::core::Result<Option<OwnedProcess>> {
     use windows::core::PCWSTR;
-    use windows::Win32::Foundation::CloseHandle;
     use windows::Win32::System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE};
-    use windows::Win32::System::Threading::GetProcessId;
     use windows::Win32::UI::Shell::{ShellExecuteExW, SEE_MASK_NOASYNC, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW};
     use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
 
@@ -45,13 +77,33 @@ fn shell_execute(verb: &str, file: &str, params: &str, dir: Option<&str>) -> any
     };
     unsafe {
         ShellExecuteExW(&mut info)?;
-        if !info.hProcess.is_invalid() {
-            let pid = GetProcessId(info.hProcess);
-            let _ = CloseHandle(info.hProcess);
-            return Ok((pid != 0).then_some(pid));
-        }
     }
-    Ok(None)
+    Ok((!info.hProcess.is_invalid()).then_some(OwnedProcess(info.hProcess)))
+}
+
+#[cfg(windows)]
+fn shell_execute(verb: &str, file: &str, params: &str, dir: Option<&str>) -> anyhow::Result<Option<u32>> {
+    Ok(shell_execute_process(verb, file, params, dir)?.map(|p| p.pid()).filter(|pid| *pid != 0))
+}
+
+pub enum InstallerError {
+    /// El usuario dijo que no al permiso de administrador.
+    Cancelled,
+    Other(anyhow::Error),
+}
+
+/// Abre un instalador (con "runas": pide permiso de administrador) y devuelve
+/// su proceso para esperar a que termine.
+#[cfg(windows)]
+pub fn start_installer(verb: &str, exe: &str, params: &str, dir: Option<&str>) -> Result<Option<OwnedProcess>, InstallerError> {
+    use windows::Win32::Foundation::ERROR_CANCELLED;
+    shell_execute_process(verb, exe, params, dir).map_err(|e| {
+        if e.code() == windows::core::HRESULT::from_win32(ERROR_CANCELLED.0) {
+            InstallerError::Cancelled
+        } else {
+            InstallerError::Other(e.into())
+        }
+    })
 }
 
 /// CreateProcess con `__COMPAT_LAYER` en el entorno (ShellExecuteEx no deja

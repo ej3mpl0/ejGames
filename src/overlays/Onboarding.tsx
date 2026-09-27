@@ -1,14 +1,14 @@
-// Primer arranque: perfil → tema → biblioteca.
+// Primer arranque: perfil → tema → biblioteca → descargas.
 
 import { useEffect, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { ArrowLeft, ArrowRight, FolderPlus, Gamepad2, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Compass, FolderOpen, FolderPlus, Gamepad2, HardDrive, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import { api, errMsg } from "../api/tauri";
 import type { FolderInspection, StoreSummary } from "../api/types";
 import { Button, TextInput, Toggle, cx } from "../components/ui";
 import { ThemeCard } from "../components/ThemeCard";
 import { useOverlayNav } from "../input/nav";
-import { PROFILE_COLORS } from "../lib/format";
+import { PROFILE_COLORS, bytes } from "../lib/format";
 import { useApp } from "../store/app";
 import { Hints } from "../components/Hints";
 
@@ -46,7 +46,26 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
   const [uninstalled, setUninstalled] = useState(true);
   const [summary, setSummary] = useState<StoreSummary[] | null>(null);
   const [busy, setBusy] = useState(false);
+  // Descargas: carpeta (por defecto la primera carpeta de juegos) y Explorar.
+  const [dlDir, setDlDir] = useState<string | null>(null);
+  const [dlFree, setDlFree] = useState<number | null>(null);
+  const [explore, setExplore] = useState(true);
   const ref = useOverlayNav<HTMLDivElement>({ onBack: () => setStep((s) => Math.max(0, s - 1)) });
+
+  useEffect(() => {
+    if (step !== 3 || dlDir) return;
+    const lib = folders.find((f) => f.suggestedMode !== "single");
+    if (lib) setDlDir(lib.path);
+  }, [step]);
+  useEffect(() => {
+    if (!dlDir) return setDlFree(null);
+    api.diskSpace(dlDir).then((d) => setDlFree(d.freeBytes ?? null)).catch(() => setDlFree(null));
+  }, [dlDir]);
+
+  async function pickDownloads() {
+    const path = await openDialog({ directory: true, multiple: false, title: "Carpeta de descargas", defaultPath: dlDir || undefined });
+    if (typeof path === "string") setDlDir(path);
+  }
 
   // Detectar tiendas en cuanto se llega al paso de juegos (sin red, rápido).
   useEffect(() => {
@@ -81,7 +100,13 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
     try {
       const p = await api.createProfile(name.trim() || "Jugador", color, theme);
       await api.login(p.id);
-      await api.updateSettings({ ...stores, importUninstalled: uninstalled, firstRunDone: true });
+      await api.updateSettings({
+        ...stores,
+        importUninstalled: uninstalled,
+        firstRunDone: true,
+        exploreEnabled: explore,
+        downloadDir: explore ? dlDir ?? "" : "",
+      });
       for (const f of folders) await api.addFolder(f.path, f.suggestedMode);
       await api.importStores();
       onDone(p.id);
@@ -91,7 +116,8 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
     }
   }
 
-  const steps = ["Tu perfil", "Tu estilo", "Tus juegos"];
+  const steps = ["Tu perfil", "Tu estilo", "Tus juegos", "Descargas"];
+  const last = step === steps.length - 1;
   return (
     <div ref={ref} className="relative flex h-full flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,#1d2a4a,#090c12_60%)]">
       <div
@@ -228,6 +254,51 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
               </div>
             </div>
           )}
+
+          {step === 3 && (
+            <div className="max-w-2xl">
+              <h1 className="text-3xl font-semibold tracking-tight">¿Dónde guardamos las descargas?</h1>
+              <p className="mt-2 text-muted">
+                En <span className="text-fg">Explorar</span> buscas un juego y ejGames lo descarga con su torrent integrado. Al terminar,
+                pulsas Instalar y el juego aparece en tu biblioteca.
+              </p>
+              <div className="mt-6 rounded-[var(--h-radius)] bg-surface-2/70 p-2 ring-1 ring-line">
+                <Toggle
+                  label={
+                    <span className="flex items-center gap-2">
+                      <Compass size={16} className="text-accent" /> Usar Explorar y Descargas
+                    </span>
+                  }
+                  hint="Puedes cambiarlo cuando quieras en Ajustes → Descargas."
+                  checked={explore}
+                  onChange={setExplore}
+                />
+              </div>
+              {explore && (
+                <>
+                  <div className="mt-3 flex items-center gap-4 rounded-[var(--h-radius)] bg-surface-2/70 p-4 ring-1 ring-line">
+                    <HardDrive size={22} className="shrink-0 text-muted" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm">{dlDir || "Aún no has elegido carpeta"}</div>
+                      <div className="text-xs text-muted">
+                        {dlDir
+                          ? `${dlFree != null ? `${bytes(dlFree)} libres · ` : ""}Los juegos también se instalarán aquí`
+                          : "Elige una carpeta en un disco con espacio (los repacks ocupan decenas de GB)."}
+                      </div>
+                    </div>
+                    <Button icon={<FolderOpen size={16} />} onClick={pickDownloads} data-autofocus>
+                      {dlDir ? "Cambiar" : "Elegir carpeta"}
+                    </Button>
+                  </div>
+                  <p className="mt-4 flex items-start gap-2 text-xs text-muted">
+                    <ShieldCheck size={15} className="mt-0.5 shrink-0" />
+                    La primera vez que descargues, Windows te pedirá permiso en el firewall: acéptalo para que otros usuarios puedan
+                    conectarse contigo y la descarga vaya más rápida.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="mt-8 flex items-center justify-between gap-6">
@@ -241,12 +312,12 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
               ["back", "Atrás"],
             ]}
           />
-          {step < 2 ? (
+          {!last ? (
             <Button variant="primary" size="lg" onClick={() => setStep(step + 1)} disabled={step === 0 && !name.trim()}>
               Siguiente <ArrowRight size={18} />
             </Button>
           ) : (
-            <Button variant="primary" size="lg" icon={<Sparkles size={18} />} onClick={finish} disabled={busy}>
+            <Button variant="primary" size="lg" icon={<Sparkles size={18} />} onClick={finish} disabled={busy || (explore && !dlDir)}>
               {busy ? "Preparando…" : "Empezar"}
             </Button>
           )}

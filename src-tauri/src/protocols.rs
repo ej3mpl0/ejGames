@@ -171,6 +171,11 @@ async fn media(st: &Arc<AppState>, req: &Request<Vec<u8>>) -> Resp {
                 Err(e) => text(StatusCode::BAD_GATEWAY, &e.to_string()),
             }
         }
+        // Portadas y capturas de Explorar (id opaco, ver explore::images).
+        ["x", id] => match crate::explore::images::serve(st, id).await {
+            Ok(p) => serve_file(&p, &mime_of(&p), None, true, None).await,
+            Err(e) => text(StatusCode::NOT_FOUND, &e.to_string()),
+        },
         ["t", id, rel] => {
             let Ok(id) = id.parse::<i64>() else { return text(StatusCode::BAD_REQUEST, "id") };
             match trailers::get(st, id, rel).await {

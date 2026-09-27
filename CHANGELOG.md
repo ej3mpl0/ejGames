@@ -5,6 +5,70 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_x64-setup.exe
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.3.0
+
+**Explorar**
+- Nueva tienda de repacks dentro de ejGames: populares de hoy, de la semana y del mes, novedades y búsqueda por nombre. Cada ficha trae capturas, géneros, compañías, idiomas, tamaños (original, descarga e instalado), características del repack y descripción.
+- Marca lo que ya tienes: en tu biblioteca, descargando, listo para instalar o instalado.
+- Oculta los juegos para adultos (se puede desactivar en *Ajustes → Descargas*).
+- Se abre desde el menú rápido, con **Ctrl+E** o desde la tienda de tu tema.
+
+**Descargas**
+- Torrent integrado, sin programas aparte. Antes de empezar eliges qué idiomas y extras opcionales bajas (lo imprescindible va siempre) y la carpeta, y ves si cabe en el disco.
+- Pensado para ir a toda velocidad: una descarga a la vez (el resto espera en cola), puerto de entrada abierto en el router con UPnP, trackers públicos extra y arranque inmediato con las fuentes encontradas al pedir la lista de archivos.
+- Se reanuda donde lo dejaste al volver a abrir ejGames, sin comprobar otra vez lo descargado. Si cierras la ventana con descargas en marcha, ejGames sigue en la bandeja; desde su menú puedes pausarlas o reanudarlas todas.
+- Se pausan solas mientras juegas y siguen al cerrar el juego (desactivable), y también mientras se instala otro juego para no pelear por el disco.
+- El PC no se suspende a mitad de una descarga (desactivable).
+- **Instalar** abre el instalador del repack con la carpeta de juegos ya propuesta. Cuando termina, el juego entra en tu biblioteca con su arte y el repack se borra (desactivable). Si no se sabe dónde se instaló, te pide la carpeta.
+- Al terminar de descargar sale un aviso con el botón **Instalar**, y al instalar otro con **Jugar**. La descarga en curso se ve abajo a la izquierda y en el icono de la bandeja.
+- Las carpetas de repacks sin instalar ya no aparecen como juegos en la biblioteca.
+- Motor ligero: solo está en marcha mientras hay algo que bajar o compartir; un minuto después se apaga.
+
+**Cada tema, su tienda**
+- Steam: pestañas Tienda y Descargas con la portada de la tienda de Steam (destacados, cápsulas, listas), página de producto con su caja de compra, diálogo «Instalar» y el gestor de descargas con la gráfica de velocidad. En la biblioteca, la barra de descargas abajo.
+- PS5, Xbox, Switch, Cine y Retro, cada uno con la tienda y la cola de su plataforma.
+- Los temas propios pueden pintar su tienda y su cola con `"features": { "explore": true }` en `theme.json`; si no, se abren las ventanas de ejGames. Está en la guía y en la referencia de temas.
+
+**Ajustes → Descargas**
+- Carpetas de descargas y de instalación, límites de velocidad de bajada y subida, descargas a la vez, pausar al jugar, compartir (nunca, hasta instalar o hasta un ratio), abrir el instalador al terminar, borrar el repack al instalar, evitar la suspensión, puerto, UPnP, trackers extra, uTP, conexiones por descarga y proxy SOCKS5.
+- El asistente del primer arranque tiene un paso nuevo para elegir la carpeta de descargas (por defecto, tu carpeta de juegos).
+
+**Actualizaciones**
+- Al abrir, ejGames mira si hay una versión nueva. Si la hay, te enseña qué trae y con un botón la descarga (comprobando que el instalador es el publicado), cierra ejGames, la instala sin tocar tus datos y lo vuelve a abrir.
+- Puedes saltarte una versión o dejarlo para más tarde. En *Ajustes → Sistema → Actualizaciones* se desactiva la comprobación al abrir y está «Buscar ahora».
+
+**Discord**
+- Interruptor en *Ajustes → Sistema* para mostrar o no en Discord a qué juegas (activado de serie). Sigue pudiéndose quitar solo en un perfil o en un juego.
+- Ya no se puede poner otro Application ID: se usa siempre la aplicación de ejGames.
+
+**Instalador nuevo**
+- `ejGames_0.3.0_Instalar.exe`: instalador propio con la cara de ejGames. Eliges carpeta, acceso directo y si se abre al terminar, ves el progreso real y, si ya tenías ejGames, sabe que es una actualización. Si al PC le falta WebView2, abre el instalador clásico.
+- El instalador clásico (`…_x64-setup.exe`) se sigue publicando: es el que usan las actualizaciones automáticas.
+
+**Además**
+- Teclado en pantalla para escribir con el mando (búsquedas).
+- Icono nuevo.
+
+## 0.2.2
+
+**Al cerrar el juego**
+- Las horas, la última sesión y los logros se actualizan en cuanto cierras el juego. Antes ejGames esperaba 12 segundos por si el juego se volvía a abrir, y los temas Steam, Xbox, Switch y Cine no repintaban la ficha que tenías abierta hasta salir y volver a entrar.
+- Si el juego se reinicia solo (para aplicar ajustes, o un lanzador que lo abre después de cerrarse), se sigue como una partida nueva sin tener que darle a Jugar.
+- Si lo tienes configurado para minimizarse o ahorrar mientras juegas, ejGames vuelve unos 4 segundos después de cerrar el juego (antes, unos 14).
+- El informe de errores que abren algunos juegos al cerrarse ya no alarga la partida.
+
+**Avisos de logros**
+- Cada tema tiene el aviso de su plataforma, con su posición, su animación y su sonido:
+  - **Steam:** abajo a la derecha, sube desde el borde. Los raros (menos del 10 % de jugadores) salen en dorado.
+  - **PlayStation:** arriba a la derecha, con una copa de bronce, plata u oro según la rareza, y de platino con el último logro del juego.
+  - **Xbox:** abajo en el centro. El círculo se abre en píldora con el color de acento del tema y los puntos del logro (1000 por juego, repartidos por rareza). Los raros llevan diamante.
+  - **Switch:** arriba a la izquierda, clara u oscura según el tema.
+  - **Cine:** un rótulo abajo a la izquierda, como en los créditos.
+  - **Retro:** un cartel pixelado arriba en el centro, con la paleta del tema.
+- En *Ajustes → Overlay* puedes elegir otro estilo y otra posición (ahora también arriba y abajo en el centro), con vista previa encima de uno de tus juegos.
+- Con el juego a pantalla completa, los avisos van pegados al borde de la pantalla y no por encima de donde estaría la barra de tareas.
+- Los temas propios eligen su aviso en `theme.json` con `"overlay": { "style": "xbox" }`. Sin él, sale uno sobrio con los colores del tema. Está en la guía de temas.
+
 ## 0.2.1
 
 **Overlay**

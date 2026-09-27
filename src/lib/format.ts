@@ -33,6 +33,34 @@ export const SOURCE_LABEL: Record<string, string> = {
   ea: "EA app",
   folder: "Carpeta local",
   manual: "Manual",
+  repack: "Repack",
 };
+
+/** Bytes → "18,4 GB" / "512 MB". */
+export function bytes(n?: number | null) {
+  const b = Math.max(0, n || 0);
+  if (b >= 1024 ** 4) return `${(b / 1024 ** 4).toLocaleString("es", { maximumFractionDigits: 2 })} TB`;
+  if (b >= 1024 ** 3) return `${(b / 1024 ** 3).toLocaleString("es", { maximumFractionDigits: 1 })} GB`;
+  if (b >= 1024 ** 2) return `${Math.round(b / 1024 ** 2)} MB`;
+  if (b >= 1024) return `${Math.round(b / 1024)} KB`;
+  return `${b} B`;
+}
+
+/** Bytes/s → "12,3 MB/s". */
+export function speed(bps?: number | null) {
+  const b = Math.max(0, bps || 0);
+  if (b >= 1024 ** 2) return `${(b / 1024 ** 2).toLocaleString("es", { maximumFractionDigits: 1 })} MB/s`;
+  return `${Math.round(b / 1024)} KB/s`;
+}
+
+/** Segundos que faltan → "1 h 20 min". */
+export function eta(s?: number | null) {
+  if (s == null || !isFinite(s) || s <= 0) return "";
+  if (s < 60) return "menos de 1 min";
+  const h = Math.floor(s / 3600);
+  const m = Math.round((s % 3600) / 60);
+  if (h >= 48) return `${Math.round(h / 24)} días`;
+  return h ? `${h} h ${m} min` : `${m} min`;
+}
 
 export const PROFILE_COLORS = ["#4f8cff", "#8b5cf6", "#ec4899", "#f97316", "#eab308", "#22c55e", "#14b8a6", "#ef4444", "#64748b"];

@@ -7,6 +7,10 @@
 //!
 //! La ventana solo existe mientras se ve algo (avisos o el panel) y se
 //! destruye a los pocos segundos, así que no gasta memoria durante la partida.
+//!
+//! Los avisos imitan a la plataforma del tema activo (Steam, PlayStation,
+//! Xbox…): el tema lo declara en su theme.json (`"overlay": {"style": …}`) y el
+//! usuario puede forzar otro en Ajustes → Overlay.
 
 pub mod hotkey;
 #[cfg(windows)]
@@ -27,8 +31,27 @@ use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 pub const LABEL: &str = "overlay";
 
 /// Tamaño de la zona de avisos (px lógicos).
-const NOTICE_W: f64 = 420.0;
-const NOTICE_H: f64 = 380.0;
+const NOTICE_W: f64 = 480.0;
+const NOTICE_H: f64 = 460.0;
+
+pub const STYLES: [&str; 7] = ["steam", "playstation", "xbox", "switch", "cinema", "retro", "ejgames"];
+
+/// Aspecto de los avisos: estilo y, si es el del propio tema, sus colores.
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Look {
+    pub style: String,
+    /// top-left | top-center | top-right | bottom-left | bottom-center | bottom-right
+    pub corner: String,
+    pub accent: Option<String>,
+    pub surface: Option<String>,
+    pub text: Option<String>,
+    pub radius: Option<String>,
+    pub font: Option<String>,
+    pub dark: bool,
+    /// Paleta del tema Retro (arcade, phosphor…).
+    pub palette: Option<String>,
+}
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -43,6 +66,12 @@ pub struct Notice {
     pub icon: Option<String>,
     pub rarity: Option<f64>,
     pub at: i64,
+    /// Puntos al estilo Xbox (1000 por juego, repartidos por rareza).
+    pub score: Option<i64>,
+    /// (conseguidos, total) contando este.
+    pub progress: Option<(i64, i64)>,
+    /// Se rellena al avisar.
+    pub look: Look,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -61,7 +90,6 @@ pub struct PanelData {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OverlayInit {
-    pub corner: String,
     pub notices: Vec<Notice>,
     pub panel: Option<PanelData>,
 }
@@ -114,6 +142,72 @@ fn next_id(st: &AppState) -> u64 {
     st.overlay.next_id.fetch_add(1, Ordering::Relaxed) + 1
 }
 
+// ───────────────────────────── aspecto ─────────────────────────────
+
+/// Posición natural de cada estilo (donde la pone su plataforma).
+fn default_corner(style: &str) -> &'static str {
+    match style {
+        "playstation" => "top-right",
+        "xbox" => "bottom-center",
+        "switch" => "top-left",
+        "cinema" => "bottom-left",
+        "retro" => "top-center",
+        _ => "bottom-right",
+    }
+}
+
+/// Estilo propio de un tema: el de su theme.json o, en los de serie y sus
+/// copias ("xbox-custom"), el de la plataforma que imitan.
+fn native_style(m: &crate::themes::ThemeManifest) -> Option<&'static str> {
+    let declared = m.overlay.get("style").and_then(|v| v.as_str());
+    let by_id = match m.id.split(['-', '_']).next().unwrap_or("") {
+        "ps5" => "playstation",
+        id => id,
+    };
+    let find = |s: &str| STYLES.iter().find(|x| **x == s).copied();
+    declared.and_then(find).or_else(|| find(by_id))
+}
+
+/// Estilo y colores de los avisos para el perfil que juega (o el activo).
+pub fn look(st: &AppState) -> Look {
+    let s = st.settings.get();
+    let profile_id = st.overlay.inner.lock().live.as_ref().map(|l| l.profile_id).or(*st.profile.read());
+    let profile = profile_id.and_then(|id| st.db.with(|c| repo::get_profile(c, id)).ok());
+    let manifest = |id: &str| crate::themes::dir_of(&st.paths, id).and_then(|d| crate::themes::read_manifest(&d).ok());
+    let theme = profile.as_ref().and_then(|p| manifest(&p.theme_id)).or_else(|| manifest("steam"));
+    let native = theme.as_ref().and_then(native_style);
+    let style = STYLES.iter().find(|x| **x == s.overlay_style).copied().or(native).unwrap_or("ejgames");
+    let corner = if s.overlay_corner == "auto" || s.overlay_corner.is_empty() { default_corner(style).to_string() } else { s.overlay_corner };
+    let mut look = Look { style: style.into(), corner, dark: style != "switch", ..Default::default() };
+    let Some(m) = theme else { return look };
+    // Ajustes del tema (los de serie + los del perfil).
+    let saved = profile.as_ref().and_then(|p| p.theme_settings.get(&m.id)).cloned().unwrap_or_default();
+    let setting = |k: &str| {
+        saved.get(k).cloned().filter(|v| !v.is_null()).or_else(|| {
+            m.settings.iter().find(|d| d.get("key").and_then(|x| x.as_str()) == Some(k)).and_then(|d| d.get("default").cloned())
+        })
+    };
+    let text = |v: Option<serde_json::Value>| v.and_then(|v| v.as_str().map(String::from)).filter(|v| !v.trim().is_empty());
+    let host = |k: &str| text(m.host.get(k).cloned());
+    if style == "ejgames" {
+        look.accent = host("accent");
+        look.surface = host("surface");
+        look.text = host("text");
+        look.radius = host("radius");
+        look.font = host("font");
+        look.dark = m.host.get("dark").and_then(|v| v.as_bool()) != Some(false);
+    } else if native == Some(style) {
+        // Los colores del tema solo en su propio estilo: un aviso de Xbox con
+        // el azul del tema Steam ya no parecería de Xbox.
+        look.accent = text(setting("accent")).or_else(|| host("accent"));
+        if let Some(d) = setting("dark").and_then(|v| v.as_bool()) {
+            look.dark = d;
+        }
+        look.palette = text(setting("palette"));
+    }
+    look
+}
+
 // ───────────────────────────── ventana ─────────────────────────────
 
 /// Rectángulo en px físicos + escala del monitor.
@@ -151,11 +245,19 @@ fn geometry(st: &AppState, panel: bool) -> Geo {
     if panel {
         return Geo { rect: m.full, scale: m.scale };
     }
-    let (x, y, w, h) = m.work;
+    // Con el juego a pantalla completa no hay barra de tareas: los avisos van
+    // pegados al borde, como en las consolas.
+    let (x, y, w, h) = if win::covers(reference, m.full) { m.full } else { m.work };
     let nw = ((NOTICE_W * m.scale) as i32).min(w);
     let nh = ((NOTICE_H * m.scale) as i32).min(h);
-    let corner = st.settings.get().overlay_corner;
-    let px = if corner.ends_with("left") { x } else { x + w - nw };
+    let corner = look(st).corner;
+    let px = if corner.ends_with("left") {
+        x
+    } else if corner.ends_with("center") {
+        x + (w - nw) / 2
+    } else {
+        x + w - nw
+    };
     let py = if corner.starts_with("top") { y } else { y + h - nh };
     Geo { rect: (px, py, nw, nh), scale: m.scale }
 }
@@ -307,20 +409,18 @@ fn fallback_toast(st: &AppState, n: &Notice) {
 
 // ───────────────────────────── avisos ─────────────────────────────
 
-pub fn notify(st: &Arc<AppState>, n: Notice) {
+pub fn notify(st: &Arc<AppState>, mut n: Notice) {
     let s = st.settings.get();
-    let chime = || {
+    n.look = look(st);
+    if !s.overlay_enabled {
         #[cfg(windows)]
         if n.kind == "achievement" && s.overlay_sound {
-            win::play_chime();
+            win::play_chime(&n.look.style, n.rarity.map(|r| r < 10.0).unwrap_or(false));
         }
-    };
-    if !s.overlay_enabled {
-        chime();
         fallback_toast(st, &n);
         return;
     }
-    chime();
+    // El sonido lo pide la página al enseñar el aviso (a la vez que la animación).
     let deliver_now = {
         let mut g = st.overlay.inner.lock();
         if let Some(live) = g.live.as_mut() {
@@ -370,13 +470,28 @@ fn session_summary(st: &Arc<AppState>, live: Live) {
             icon: first.icon.clone(),
             rarity: if n == 1 { first.rarity } else { None },
             at: crate::util::now(),
+            score: if n == 1 { first.score } else { Some(live.unlocked.iter().filter_map(|x| x.score).sum()) },
+            progress: st.db.with(|c| achievements::summary(c, live.game_id)).ok().flatten().map(|s| (s.unlocked, s.total)),
+            look: Look::default(),
         },
     );
+}
+
+/// Sonido del aviso, cuando la página lo enseña.
+pub fn chime(st: &AppState, rare: bool) {
+    if !st.settings.get().overlay_sound {
+        return;
+    }
+    #[cfg(windows)]
+    win::play_chime(&look(st).style, rare);
+    let _ = rare;
 }
 
 /// Aviso de logro nuevo (con su icono ya en caché para que salga al instante).
 pub fn notify_achievement(st: &Arc<AppState>, game_id: i64, u: &NewUnlock) {
     let def = st.db.with(|c| achievements::def_of(c, game_id, &u.api_name)).ok().flatten();
+    let score = st.db.with(|c| achievements::score(c, game_id, &u.api_name)).ok().flatten();
+    let progress = st.db.with(|c| achievements::summary(c, game_id)).ok().flatten().map(|s| (s.unlocked, s.total));
     let game = st.db.with(|c| repo::get_game(c, game_id)).ok().map(|g| g.title);
     let (appid, name, body, icon_file, rarity) = match def {
         Some((appid, d)) => (appid, d.name, d.description, d.icon, d.global_pct),
@@ -403,6 +518,9 @@ pub fn notify_achievement(st: &Arc<AppState>, game_id: i64, u: &NewUnlock) {
             icon: achievements::icon_url(appid, icon_file.as_deref()),
             rarity,
             at: u.unlocked_at,
+            score,
+            progress,
+            look: Look::default(),
         },
     );
     // Con el panel abierto, que el contador y la lista se pongan al día.
@@ -453,6 +571,9 @@ pub fn test(st: &Arc<AppState>) {
             icon: None,
             rarity: Some(12.5),
             at: crate::util::now(),
+            score: Some(30),
+            progress: Some((1, 12)),
+            look: Look::default(),
         },
     );
 }
@@ -463,7 +584,7 @@ pub fn on_ready(st: &Arc<AppState>) -> OverlayInit {
     let mut g = st.overlay.inner.lock();
     g.ready = true;
     g.gen += 1;
-    OverlayInit { corner: st.settings.get().overlay_corner, notices: std::mem::take(&mut g.pending), panel: g.panel.clone() }
+    OverlayInit { notices: std::mem::take(&mut g.pending), panel: g.panel.clone() }
 }
 
 /// La página no enseña nada: destruir la ventana en unos segundos.
@@ -624,6 +745,9 @@ pub fn session_started(st: &Arc<AppState>, game: &Game, profile_id: i64, started
             icon: None,
             rarity: None,
             at: crate::util::now(),
+            score: None,
+            progress: None,
+            look: Look::default(),
         };
         // Cuando el juego ya tiene ventana (si no, saldría en el monitor de la
         // ventana activa, que puede ser otro).

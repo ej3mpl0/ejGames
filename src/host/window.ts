@@ -1,5 +1,6 @@
 import { api } from "../api/tauri";
 import { activeTheme, useApp } from "../store/app";
+import { openExplore } from "./downloads";
 
 /** Vuelve a leer los temas de la carpeta: temas nuevos y cambios de theme.json. */
 export async function refreshThemes() {
@@ -44,4 +45,6 @@ export function globalKey(k: { key: string; ctrl?: boolean; shift?: boolean }) {
   else if (key === ",") st.open("settings");
   else if (key === "p") st.open("profiles");
   else if (key === "k") st.open("menu");
+  else if (key === "e") openExplore("explore");
+  else if (key === "j") openExplore("downloads");
 }

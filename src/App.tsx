@@ -5,10 +5,16 @@ import { ActivityPill, Toasts, WindowControls } from "./components/Chrome";
 import { ThemeFrame } from "./host/ThemeFrame";
 import { playSound } from "./host/sounds";
 import { globalKey, reloadTheme, setBigPicture } from "./host/window";
+import { installDownload, locateInstall, mergeProgress, setDownloads } from "./host/downloads";
 import { padTypeOf, startGamepad } from "./input/gamepad";
 import { dispatchNav } from "./input/nav";
 import { playtime } from "./lib/format";
 import { CollectionsOverlay } from "./overlays/Collections";
+import { DownloadsOverlay } from "./overlays/explore/Downloads";
+import { ExploreOverlay } from "./overlays/explore/Explore";
+import { KeyboardOverlay } from "./overlays/Keyboard";
+import { UpdateAvailable } from "./overlays/UpdateAvailable";
+import { checkOnLaunch } from "./host/update";
 import { GameEditor } from "./overlays/GameEditor";
 import { Onboarding } from "./overlays/Onboarding";
 import { ProfilePicker } from "./overlays/ProfilePicker";
@@ -56,6 +62,7 @@ export default function App() {
     await loadLibrary();
     useApp.getState().closeAll();
     setPhase("main");
+    checkOnLaunch();
   }
 
   // Arranque.
@@ -64,6 +71,7 @@ export default function App() {
       try {
         const b = await api.bootstrap();
         set({ boot: b, profiles: b.profiles, settings: b.settings, themes: b.themes, running: b.running, themeOverride: b.safeMode ? "steam" : null, safeOrigin: b.safeMode });
+        setDownloads(b.downloads ?? []);
         if (b.safeMode) useApp.getState().toast("info", "Modo seguro: se ha cargado el tema Steam.");
         if (b.settings.startBigPicture) void setBigPicture(true);
         if (b.profiles.length === 0) setPhase("onboarding");
@@ -98,6 +106,20 @@ export default function App() {
         // al arreglarlo, tiene que volver.
         const st = useApp.getState();
         if ((st.themeOverride ?? st.profile?.themeId) === t.id) void reloadTheme();
+      }),
+      on("downloads:changed", (list) => setDownloads(list)),
+      on("downloads:progress", (list) => mergeProgress(list)),
+      on("downloads:finished", (d) =>
+        useApp.getState().toast("ok", `«${d.title}» descargado`, { label: "Instalar", run: () => void installDownload(d.id) }),
+      ),
+      on("downloads:install", (e) => {
+        const st = useApp.getState();
+        if (e.phase === "needs-folder")
+          st.toast("info", e.message || "Elige la carpeta del juego instalado", { label: "Elegir carpeta", run: () => void locateInstall(e.id) });
+        else if (e.phase === "done" && e.gameId) {
+          const id = e.gameId;
+          st.toast("ok", "Juego instalado", { label: "Jugar", run: () => void api.play(id).catch((x) => st.toast("error", errMsg(x))) });
+        }
       }),
       on("game:state", async (e) => {
         set({ running: await api.runningGames() });
@@ -141,7 +163,7 @@ export default function App() {
     };
     const onKey = (e: KeyboardEvent) => {
       setSource("keyboard");
-      const global = e.key === "F11" || e.key === "F5" || (e.ctrlKey && ["f", ",", "p", "k"].includes(e.key.toLowerCase()));
+      const global = e.key === "F11" || e.key === "F5" || (e.ctrlKey && ["f", ",", "p", "k", "e", "j"].includes(e.key.toLowerCase()));
       if (global) {
         e.preventDefault();
         globalKey({ key: e.key, ctrl: e.ctrlKey, shift: e.shiftKey });
@@ -189,6 +211,14 @@ export default function App() {
             return <CollectionsOverlay key={key} onClose={onClose} />;
           case "menu":
             return <QuickMenu key={key} onClose={onClose} />;
+          case "explore":
+            return <ExploreOverlay key={key} args={o.args} onClose={onClose} />;
+          case "downloads":
+            return <DownloadsOverlay key={key} onClose={onClose} />;
+          case "keyboard":
+            return <KeyboardOverlay key={key} args={o.args} onClose={close} />;
+          case "update":
+            return <UpdateAvailable key={key} onClose={onClose} />;
           case "profiles":
             return (
               <ProfilePicker

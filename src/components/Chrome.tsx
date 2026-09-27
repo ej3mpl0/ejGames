@@ -1,8 +1,10 @@
 // Piezas fijas del host sobre el tema: botones de ventana, avisos y progreso.
 
 import { useEffect, useState } from "react";
-import { Copy, Minus, Square, X, Loader2, CheckCircle2, AlertTriangle, Info } from "lucide-react";
+import { Copy, Minus, Square, X, Loader2, CheckCircle2, AlertTriangle, Info, Download } from "lucide-react";
 import { api } from "../api/tauri";
+import { openExplore, themeHasExplore } from "../host/downloads";
+import { speed } from "../lib/format";
 import { activeTheme, useApp } from "../store/app";
 import { cx } from "./ui";
 
@@ -65,19 +67,53 @@ export function Toasts() {
             <Info size={18} className="mt-0.5 shrink-0 text-accent" />
           )}
           <span className="flex-1 leading-snug">{t.message}</span>
+          {t.action && (
+            <button
+              className="-my-1 shrink-0 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-accent-contrast hover:brightness-110 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                dismiss(t.id);
+                t.action!.run();
+              }}
+            >
+              {t.action.label}
+            </button>
+          )}
         </div>
       ))}
     </div>
   );
 }
 
-/** Indicador discreto de escaneo / descarga de metadatos. */
+/** Indicador discreto de escaneo, metadatos y descargas. */
 export function ActivityPill() {
   const meta = useApp((s) => s.meta);
   const scan = useApp((s) => s.scan);
+  const downloads = useApp((s) => s.downloads);
   const busyMeta = meta.total > 0;
   const busyScan = scan && scan.phase !== "done";
-  if (!busyMeta && !busyScan) return null;
+  const active = downloads.filter((d) => d.state === "downloading" || d.state === "installing");
+  // Los temas con su propia cola ya lo enseñan a su manera.
+  const showDownloads = active.length > 0 && !themeHasExplore();
+  if (!busyMeta && !busyScan && !showDownloads) return null;
+  if (showDownloads && !busyScan) {
+    const installing = active.find((d) => d.state === "installing");
+    const done = active.reduce((a, d) => a + d.doneBytes, 0);
+    const total = active.reduce((a, d) => a + d.totalBytes, 0);
+    const down = active.reduce((a, d) => a + d.downBps, 0);
+    const label = installing
+      ? `Instalando «${installing.title}»…`
+      : `Descargando ${active.length === 1 ? `«${active[0].title}»` : `${active.length} juegos`} · ${total ? Math.floor((done * 100) / total) : 0} % · ${speed(down)}`;
+    return (
+      <button
+        onClick={() => openExplore("downloads")}
+        className="glass absolute bottom-5 left-5 z-30 flex max-w-md items-center gap-2.5 rounded-full py-2 pl-3 pr-4 text-xs shadow-xl hover:brightness-125 cursor-pointer"
+      >
+        {installing ? <Loader2 size={14} className="animate-spin text-accent" /> : <Download size={14} className="text-accent" />}
+        <span className="truncate">{label}</span>
+      </button>
+    );
+  }
   const label = busyScan
     ? scan!.phase === "stores"
       ? "Buscando juegos en tus tiendas…"

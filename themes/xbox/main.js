@@ -1,5 +1,5 @@
-// Tema "Xbox": inicio con filas de mosaicos, "Mi colección" con filtros y
-// ficha de juego a pantalla completa.
+// Tema "Xbox": inicio con filas de mosaicos, "Mi colección" con filtros,
+// ficha de juego a pantalla completa, Tienda y «Administrar cola» (store.js).
 
 import { h, img, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
@@ -9,6 +9,8 @@ import { visible, sort, recent, favorites, byGenre, inCollection, SORTS } from "
 import { clock } from "/_sdk/kit/clock.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
+import { createDownloads, percent, speed } from "/_sdk/kit/store.js";
+import { createStore } from "./store.js";
 
 const ejg = await window.ejg.ready();
 const $ = (s) => document.querySelector(s);
@@ -28,6 +30,8 @@ const ICON = {
   grid: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
   plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
   download: '<svg viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>',
+  store: '<svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 12H6.2Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>',
+  queue: '<svg viewBox="0 0 24 24"><path d="M4 6h10M4 11h10M4 16h6m8-8v10m0 0-3-3m3 3 3-3"/></svg>',
 };
 
 const games = () => visible(ejg.library.all);
@@ -61,6 +65,7 @@ function row(title, list, { first = "square", cls = "", extra = [] } = {}) {
 
 function renderHome() {
   const all = installedGames();
+  updateQueueUi();
   if (!all.length) {
     home.replaceChildren(
       h(
@@ -70,6 +75,7 @@ function renderHome() {
         h("p", null, "Añade la carpeta donde tienes juegos o importa los de tus tiendas instaladas."),
         h("button", { class: "btn primary", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, "Añadir juegos"),
       ),
+      h("div", { class: "track home-empty-tiles", "data-focus-group": "empty" }, storeTile, queueTile),
     );
     return;
   }
@@ -83,7 +89,7 @@ function renderHome() {
     h("small", null, `${games().length} juegos`),
   );
   const addTile = h("button", { class: "tile special", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, h("span", { html: ICON.plus }), h("b", null, "Añadir juegos"), h("small", null, "Carpetas y tiendas"));
-  const rows = [row(rec.length ? "Continuar jugando" : "Añadidos recientemente", jump, { first: "wide", cls: "hero-row", extra: [colTile, addTile] })];
+  const rows = [row(rec.length ? "Continuar jugando" : "Añadidos recientemente", jump, { first: "wide", cls: "hero-row", extra: [colTile, queueTile, storeTile, addTile] })];
   const favs = favorites(all);
   if (favs.length) rows.push(row("Anclados", sort(favs, "title")));
   if (rec.length) rows.push(row("Añadidos recientemente", sort(all, "added").slice(0, 16)));
@@ -94,6 +100,55 @@ function renderHome() {
   home.replaceChildren(...rows);
   home.scrollTop = top;
 }
+
+// Mosaicos «Tienda» y «Cola»: nodos fijos que se actualizan en su sitio (el
+// progreso llega cada segundo y no debe quitarles el foco).
+const storeTile = h(
+  "button",
+  { class: "tile special", "data-focus": "", onclick: () => setView("store") },
+  h("span", { class: "ico", html: ICON.store }),
+  h("b", null, "Tienda"),
+  h("small", null, "Explorar juegos"),
+);
+const qt = { bg: h("span", { class: "qt-bg" }), sub: h("small"), meta: h("small", { class: "qt-meta" }), bar: h("i"), count: h("span", { class: "qt-count" }) };
+const queueTile = h(
+  "button",
+  { class: "tile special qtile", "data-focus": "", onclick: () => setView("queue") },
+  qt.bg,
+  h("span", { class: "ico", html: ICON.queue }),
+  h("b", null, "Cola"),
+  qt.sub,
+  qt.meta,
+  h("span", { class: "qt-bar" }, qt.bar),
+  qt.count,
+);
+
+const downloads = createDownloads(ejg, () => updateQueueUi());
+const PENDING = new Set(["queued", "downloading", "paused", "seeding", "completed", "installing", "error"]);
+function updateQueueUi() {
+  const g = downloads.groups();
+  const pend = g.all.filter((d) => PENDING.has(d.state)).length;
+  const cur = g.active[0];
+  const ready = g.ready.length;
+  const p = cur ? (cur.state === "installing" ? cur.progress : g.total.size ? g.total.done / g.total.size : cur.progress) : 0;
+  queueTile.classList.toggle("busy", !!cur);
+  qt.bg.style.backgroundImage = cur && (cur.hero || cur.cover) ? `url("${cur.hero || cur.cover}")` : "";
+  qt.sub.textContent = cur ? cur.title : ready ? `${ready} ${ready === 1 ? "listo" : "listos"} para instalar` : pend ? `${pend} en cola` : "No hay descargas";
+  qt.meta.textContent = cur ? (cur.state === "installing" ? "Instalando…" : `${percent(p)} · ${speed(g.total.speed)}`) : "";
+  qt.bar.style.width = `${p * 100}%`;
+  qt.count.textContent = pend ? String(pend) : "";
+  storeTile.hidden = !ejg.explore.enabled;
+  queueTile.hidden = !ejg.explore.enabled && !g.all.length;
+  // Icono de la barra superior: visible si hay algo pendiente, con anillo de progreso.
+  const qb = $("#q-btn");
+  qb.hidden = !pend;
+  qb.classList.toggle("busy", !!cur);
+  qb.style.setProperty("--p", String(Math.round(p * 100)));
+  qb.title = cur ? `Administrar cola · ${cur.title} ${percent(p)}` : "Administrar cola";
+  $("#q-badge").textContent = pend ? String(pend) : "";
+  $("#nav-store").hidden = !ejg.explore.enabled;
+}
+$("#q-btn").addEventListener("click", () => setView("queue"));
 
 // ─────────────── colección ───────────────
 function renderCollection() {
@@ -167,14 +222,7 @@ async function openHub(id) {
       h("button", { class: "btn", "data-focus": "", onclick: () => ejg.game.edit(g.id) }, h("span", { html: ICON.gear }), "Gestionar"),
       h("button", { class: "btn", "data-focus": "", onclick: () => ejg.game.openFolder(g.id) }, h("span", { html: ICON.folder }), "Carpeta"),
     ),
-    h(
-      "div",
-      { class: "hub-stats" },
-      h("div", { class: "hstat" }, h("small", null, "Tiempo de juego"), h("b", null, playtime(g.playtime, "—"))),
-      h("div", { class: "hstat" }, h("small", null, "Última vez"), h("b", null, relative(g.lastPlayed))),
-      g.achievements ? h("div", { class: "hstat" }, h("small", null, "Logros"), h("b", null, `${g.achievements.unlocked} / ${g.achievements.total}`)) : null,
-      h("div", { class: "hstat" }, h("small", null, "Tienda"), h("b", null, SOURCE_LABEL[g.source] || g.source)),
-    ),
+    h("div", { class: "hub-stats" }, ...hubStats(g)),
     h("div", { class: "hub-desc", id: "desc" }, g.shortDescription || ""),
   );
   const mediaRow = h("div", { class: "hub-media", "data-focus-group": "media" });
@@ -225,31 +273,54 @@ async function openVideo(t) {
   player.hidden = false;
   release = await attachStream(v, t.url);
 }
-function openImage(url) {
+// Imagen suelta o galería (capturas de la Tienda: ← → para pasar).
+let gallery = null;
+function openImage(url, list = null, i = 0) {
+  gallery = list && list.length > 1 ? { list, i } : null;
   player.replaceChildren(img(url, { loading: "eager" }));
   player.hidden = false;
+  ejg.sound.play("open");
+  updateHints();
+}
+function stepImage(d) {
+  gallery.i = (gallery.i + d + gallery.list.length) % gallery.list.length;
+  player.replaceChildren(img(gallery.list[gallery.i], { loading: "eager" }));
+  ejg.sound.play("move");
 }
 function closePlayer() {
   release();
   release = () => {};
+  gallery = null;
   player.replaceChildren();
   player.hidden = true;
+  updateHints();
 }
 player.addEventListener("click", (e) => e.target === player && closePlayer());
 
 // ─────────────── vistas y foco ───────────────
 function setView(v) {
+  if (v === "store" && !ejg.explore.enabled) v = "home";
+  if (v === "queue" && state.view !== "queue") state.queueFrom = state.view;
   state.view = v;
+  document.documentElement.dataset.view = v;
   document.querySelectorAll(".navbtn").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === v)));
-  $("#home").hidden = v !== "home";
-  $("#collection").hidden = v !== "collection";
+  for (const id of ["home", "collection", "store", "queue"]) $("#" + id).hidden = v !== id;
+  if (v === "store" || v === "queue") shop.show(v);
+  else shop.hide();
   if (v === "home") {
     renderHome();
     focus.first(home);
-  } else {
+  } else if (v === "collection") {
     renderCollection();
     focus.first($("#grid")) || focus.first($("#filters"));
   }
+  updateHints();
+}
+/** Inicio → Mi colección → Tienda (la cola va detrás de la Tienda). */
+function cycleView(d) {
+  const list = ["home", "collection", ...(ejg.explore.enabled ? ["store"] : []), ...(state.view === "queue" ? ["queue"] : [])];
+  const i = Math.max(0, list.indexOf(state.view));
+  setView(list[(i + d + list.length) % list.length]);
 }
 document.querySelectorAll(".navbtn").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
 document.querySelectorAll("[data-action]").forEach((b) => b.addEventListener("click", () => ejg.ui.open(b.dataset.action)));
@@ -262,42 +333,72 @@ const updateBg = debounce((g) => {
 
 const focus = createFocus({
   root: document.body,
-  onChange: (el) => {
+  onChange: (el, prev, info) => {
     const id = Number(el.dataset.gameId);
     if (id && hub.hidden) updateBg(ejg.library.byId(id));
+    shop.focused(el, info);
   },
 });
+const isShop = () => state.view === "store" || state.view === "queue";
 bindNav(focus, {
   back: () => {
     if (!player.hidden) return closePlayer(), true;
     if (!hub.hidden) return closeHub(), true;
+    if (shop.back()) return true;
+    if (state.view === "queue") return setView(state.queueFrom && state.queueFrom !== "queue" ? state.queueFrom : "home"), true;
     if (state.view !== "home") return setView("home"), true;
     return false;
   },
   y: () => {
+    if (state.view === "store" && hub.hidden) return shop.search(), true;
+    if (isShop()) return true;
     const id = state.hubId || Number(focus.current?.dataset.gameId);
     if (id) ejg.game.favorite(id);
     return true;
   },
   x: () => {
+    if (isShop() && hub.hidden) return true;
     const id = state.hubId || Number(focus.current?.dataset.gameId);
     if (id) ejg.game.edit(id);
     return true;
   },
   menu: () => (ejg.ui.open("menu"), true),
   view: () => (ejg.ui.open("search"), true),
-  lb: () => (hub.hidden ? setView(state.view === "home" ? "collection" : "home") : null, true),
-  rb: () => (hub.hidden ? setView(state.view === "home" ? "collection" : "home") : null, true),
+  lb: () => (hub.hidden && player.hidden && !shop.busy() ? cycleView(-1) : null, true),
+  rb: () => (hub.hidden && player.hidden && !shop.busy() ? cycleView(1) : null, true),
+  left: () => (!player.hidden && gallery ? (stepImage(-1), true) : false),
+  right: () => (!player.hidden && gallery ? (stepImage(1), true) : false),
+});
+
+// Tienda y Cola (store.js).
+const shop = createStore({
+  ejg,
+  focus,
+  pages: { store: $("#store"), queue: $("#queue"), repack: $("#repack") },
+  setView: (v) => setView(v),
+  openImage,
+  onChange: () => updateHints(),
+});
+ejg.explore.onEnabled(() => {
+  if (!ejg.explore.enabled && state.view === "store") setView("home");
+  else updateQueueUi();
+});
+// El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
+ejg.ui.onView(({ view, slug }) => {
+  if (!player.hidden) closePlayer();
+  if (!hub.hidden) closeHub();
+  if (view === "downloads") return setView("queue");
+  if (!ejg.explore.enabled) return;
+  setView("store");
+  if (view === "repack" && slug) shop.openRepack(slug);
 });
 ejg.on("focus-return", () => focus.restore());
 
 const hintBar = hints($("#hints"), []);
 function updateHints() {
-  hintBar.set(
-    !hub.hidden
-      ? [["accept", "Elegir"], ["back", "Volver"], ["y", "Anclar"], ["x", "Gestionar"]]
-      : [["accept", "Abrir"], ["y", "Anclar"], ["x", "Gestionar"], ["lb", "Inicio / Colección"], ["menu", "Menú"]],
-  );
+  if (!player.hidden) return hintBar.set(gallery ? [["left", "Anterior"], ["right", "Siguiente"], ["back", "Cerrar"]] : [["back", "Cerrar"]]);
+  if (!hub.hidden) return hintBar.set([["accept", "Elegir"], ["back", "Volver"], ["y", "Anclar"], ["x", "Gestionar"]]);
+  hintBar.set(shop.hints() || [["accept", "Abrir"], ["y", "Anclar"], ["x", "Gestionar"], ["lb", "Secciones"], ["menu", "Menú"]]);
 }
 
 function renderProfile() {
@@ -318,11 +419,23 @@ function applyWallpaper() {
   if (w && ejg.settings.dynamicBg === false) bg.set(null);
 }
 
+// Horas, última vez y logros: cambian al cerrar el juego.
+function hubStats(g) {
+  const stat = (label, value) => h("div", { class: "hstat" }, h("small", null, label), h("b", null, value));
+  return [
+    stat("Tiempo de juego", playtime(g.playtime, "—")),
+    stat("Última vez", relative(g.lastPlayed)),
+    g.achievements ? stat("Logros", `${g.achievements.unlocked} / ${g.achievements.total}`) : null,
+    stat("Tienda", SOURCE_LABEL[g.source] || g.source),
+  ].filter(Boolean);
+}
+
 const refresh = debounce(() => {
   renderProfile();
   if (!hub.hidden && state.hubId) {
     const g = ejg.library.byId(state.hubId);
     const p = $("#play");
+    if (g) $(".hub-stats")?.replaceChildren(...hubStats(g));
     if (g && p) {
       p.classList.toggle("running", running(g.id));
       p.lastChild.textContent = running(g.id) ? "En juego" : g.installed === false ? "Instalar" : "Jugar";
@@ -332,7 +445,7 @@ const refresh = debounce(() => {
     }
   }
   if (state.view === "home") renderHome();
-  else renderCollection();
+  else if (state.view === "collection") renderCollection();
   if (focus.current && !focus.current.isConnected) {
     const again = document.querySelector(`[data-game-id="${focus.current.dataset.gameId}"]`);
     if (again) focus.focus(again, { noScroll: true, silent: true });

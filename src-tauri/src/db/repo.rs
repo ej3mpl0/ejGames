@@ -1237,6 +1237,169 @@ pub fn cache_put(c: &Connection, provider: &str, key: &str, json: &str) -> rusql
     Ok(())
 }
 
+// ───────────────────────────── descargas ─────────────────────────────
+
+const DOWNLOAD_COLS: &str = "id, source, source_id, slug, title, version, page_url, cover_url, hero_url, magnet,
+    info_hash, torrent_name, output_dir, selected_files, file_count, total_bytes, done_bytes, uploaded_bytes,
+    state, pause_reason, queue_pos, error, install_size, install_dir, game_id, added_at, completed_at,
+    installed_at, files_deleted";
+
+fn download_row(r: &Row) -> rusqlite::Result<DownloadRow> {
+    Ok(DownloadRow {
+        id: r.get(0)?,
+        source: r.get(1)?,
+        source_id: r.get(2)?,
+        slug: r.get(3)?,
+        title: r.get(4)?,
+        version: r.get(5)?,
+        page_url: r.get(6)?,
+        cover_url: r.get(7)?,
+        hero_url: r.get(8)?,
+        magnet: r.get(9)?,
+        info_hash: r.get(10)?,
+        torrent_name: r.get(11)?,
+        output_dir: r.get(12)?,
+        selected_files: r.get::<_, String>(13).ok().and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default(),
+        file_count: r.get(14)?,
+        total_bytes: r.get(15)?,
+        done_bytes: r.get(16)?,
+        uploaded_bytes: r.get(17)?,
+        state: r.get(18)?,
+        pause_reason: r.get(19)?,
+        queue_pos: r.get(20)?,
+        error: r.get(21)?,
+        install_size: r.get(22)?,
+        install_dir: r.get(23)?,
+        game_id: r.get(24)?,
+        added_at: r.get(25)?,
+        completed_at: r.get(26)?,
+        installed_at: r.get(27)?,
+        files_deleted: r.get(28)?,
+    })
+}
+
+/// Todas las descargas, en el orden de la cola.
+pub fn list_downloads(c: &Connection) -> rusqlite::Result<Vec<DownloadRow>> {
+    let mut st = c.prepare_cached(&format!("SELECT {DOWNLOAD_COLS} FROM downloads ORDER BY queue_pos, id"))?;
+    let rows = st.query_map([], download_row)?;
+    rows.collect()
+}
+
+pub fn get_download(c: &Connection, id: i64) -> rusqlite::Result<Option<DownloadRow>> {
+    c.query_row(&format!("SELECT {DOWNLOAD_COLS} FROM downloads WHERE id = ?1"), [id], download_row)
+        .optional()
+}
+
+pub fn download_by_hash(c: &Connection, info_hash: &str) -> rusqlite::Result<Option<DownloadRow>> {
+    c.query_row(&format!("SELECT {DOWNLOAD_COLS} FROM downloads WHERE info_hash = ?1"), [info_hash], download_row)
+        .optional()
+}
+
+pub fn download_torrent(c: &Connection, id: i64) -> rusqlite::Result<Vec<u8>> {
+    c.query_row("SELECT torrent FROM downloads WHERE id = ?1", [id], |r| r.get(0))
+}
+
+pub fn insert_download(c: &Connection, d: &NewDownload) -> rusqlite::Result<i64> {
+    let pos: i64 = c.query_row("SELECT COALESCE(MAX(queue_pos), 0) + 1 FROM downloads", [], |r| r.get(0))?;
+    c.execute(
+        "INSERT INTO downloads (source, source_id, slug, title, version, page_url, cover_url, hero_url, magnet,
+            info_hash, torrent, torrent_name, output_dir, selected_files, file_count, total_bytes, install_size,
+            state, queue_pos, added_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, 'queued', ?18, ?19)",
+        params![
+            d.source,
+            d.source_id,
+            d.slug,
+            d.title,
+            d.version,
+            d.page_url,
+            d.cover_url,
+            d.hero_url,
+            d.magnet,
+            d.info_hash,
+            d.torrent,
+            d.torrent_name,
+            d.output_dir,
+            serde_json::to_string(&d.selected_files).unwrap_or_else(|_| "[]".into()),
+            d.file_count,
+            d.total_bytes,
+            d.install_size,
+            pos,
+            now(),
+        ],
+    )?;
+    Ok(c.last_insert_rowid())
+}
+
+/// Cambia el estado. `completed_at` se fija la primera vez que termina.
+pub fn set_download_state(c: &Connection, id: i64, state: &str, pause_reason: Option<&str>, error: Option<&str>) -> rusqlite::Result<()> {
+    c.execute(
+        "UPDATE downloads SET state = ?2, pause_reason = ?3, error = ?4,
+            completed_at = CASE WHEN ?2 IN ('seeding', 'completed') AND completed_at IS NULL THEN ?5 ELSE completed_at END
+         WHERE id = ?1",
+        params![id, state, pause_reason, error, now()],
+    )?;
+    Ok(())
+}
+
+pub fn set_download_progress(c: &Connection, id: i64, done: i64, total: i64, uploaded: i64) -> rusqlite::Result<()> {
+    c.execute(
+        "UPDATE downloads SET done_bytes = ?2, total_bytes = CASE WHEN ?3 > 0 THEN ?3 ELSE total_bytes END,
+            uploaded_bytes = MAX(uploaded_bytes, ?4) WHERE id = ?1",
+        params![id, done, total, uploaded],
+    )?;
+    Ok(())
+}
+
+pub fn set_download_install_dir(c: &Connection, id: i64, install_dir: &str) -> rusqlite::Result<()> {
+    c.execute("UPDATE downloads SET install_dir = ?2 WHERE id = ?1", params![id, install_dir])?;
+    Ok(())
+}
+
+pub fn set_download_installed(c: &Connection, id: i64, install_dir: &str, game_id: Option<i64>) -> rusqlite::Result<()> {
+    c.execute(
+        "UPDATE downloads SET state = 'installed', pause_reason = NULL, error = NULL, install_dir = ?2, game_id = ?3,
+            installed_at = ?4 WHERE id = ?1",
+        params![id, install_dir, game_id, now()],
+    )?;
+    Ok(())
+}
+
+pub fn set_download_files_deleted(c: &Connection, id: i64) -> rusqlite::Result<()> {
+    c.execute("UPDATE downloads SET files_deleted = 1 WHERE id = ?1", [id])?;
+    Ok(())
+}
+
+/// Mueve una descarga a la posición `pos` (0 = primera) y renumera la cola.
+pub fn move_download(c: &mut Connection, id: i64, pos: usize) -> rusqlite::Result<()> {
+    let tx = c.transaction()?;
+    let mut ids: Vec<i64> = {
+        let mut st = tx.prepare("SELECT id FROM downloads ORDER BY queue_pos, id")?;
+        let rows = st.query_map([], |r| r.get(0))?;
+        rows.collect::<rusqlite::Result<_>>()?
+    };
+    if let Some(i) = ids.iter().position(|x| *x == id) {
+        ids.remove(i);
+        ids.insert(pos.min(ids.len()), id);
+    }
+    for (i, d) in ids.iter().enumerate() {
+        tx.execute("UPDATE downloads SET queue_pos = ?2 WHERE id = ?1", params![d, i as i64 + 1])?;
+    }
+    tx.commit()
+}
+
+pub fn delete_download(c: &Connection, id: i64) -> rusqlite::Result<()> {
+    c.execute("DELETE FROM downloads WHERE id = ?1", [id])?;
+    Ok(())
+}
+
+/// Juegos instalados, para marcar en Explorar lo que ya tienes: (id, título, source, source_id).
+pub fn library_titles(c: &Connection) -> rusqlite::Result<Vec<(i64, String, String, String)>> {
+    let mut st = c.prepare_cached("SELECT id, title, source, source_id FROM games WHERE missing = 0 AND installed = 1")?;
+    let rows = st.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))?;
+    rows.collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

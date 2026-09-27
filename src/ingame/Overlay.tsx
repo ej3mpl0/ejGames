@@ -1,5 +1,6 @@
 // Overlay dentro del juego (ventana transparente encima del juego).
-// - Avisos: pila en una esquina (logros desbloqueados, pista del atajo).
+// - Avisos: pila en una esquina (logros desbloqueados, pista del atajo), con
+//   el aspecto de la plataforma del tema (ver notices.tsx).
 // - Panel: logros, tiempo de sesión y reloj. Se abre con el atajo o el botón
 //   Guía; el núcleo manda la navegación del mando (el Gamepad API no sirve
 //   cuando el foco lo tiene el juego).
@@ -8,16 +9,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Clock3, Gamepad2, Lock, Trophy } from "lucide-react";
+import { Clock3, Lock, Trophy } from "lucide-react";
 import { api } from "../api/tauri";
-import type { Achievement, NavAction, OverlayInit, OverlayNotice, OverlayPanel } from "../api/types";
+import type { Achievement, NavAction, OverlayNotice, OverlayPanel } from "../api/types";
 import { Hints } from "../components/Hints";
 import { padTypeOf } from "../input/gamepad";
 import { playtime } from "../lib/format";
 import { useApp } from "../store/app";
 import "./ingame.css";
+import { isRare, LEAVE_MS, noticeMs, NoticeStack, NoticeView } from "./notices";
 
-const NOTICE_MS = { achievement: 6500, info: 5500, summary: 9000 } as const;
 const MAX_VISIBLE = 3;
 
 type Shown = OverlayNotice & { leaving?: boolean };
@@ -40,28 +41,6 @@ function TrophyIcon({ src, size = 64, locked }: { src?: string | null; size?: nu
     <span className={`ig-icon ig-icon-fallback ${locked ? "locked" : ""}`} style={{ width: size, height: size }}>
       {locked ? <Lock size={size * 0.4} /> : <Trophy size={size * 0.46} />}
     </span>
-  );
-}
-
-function NoticeCard({ n }: { n: Shown }) {
-  const r = rarityLabel(n.rarity);
-  const ach = n.kind !== "info";
-  return (
-    <div className={`ig-notice ${ach ? "ach" : "info"} ${n.leaving ? "leaving" : ""}`}>
-      {ach ? <TrophyIcon src={n.icon} /> : <span className="ig-icon ig-icon-fallback info"><Gamepad2 size={28} /></span>}
-      <div className="min-w-0 flex-1">
-        <div className="ig-caption">{n.kind === "summary" ? "Resumen de la partida" : ach ? "Logro desbloqueado" : n.game || "ejGames"}</div>
-        <div className="ig-title">{n.title}</div>
-        {n.body && <div className="ig-body">{n.body}</div>}
-        {ach && (r || n.game) && (
-          <div className="ig-meta">
-            {r && <span className={`ig-rarity ${r.cls}`}>{r.text}</span>}
-            {n.game && <span className="truncate">{n.game}</span>}
-          </div>
-        )}
-      </div>
-      {ach && <span className="ig-shine" />}
-    </div>
   );
 }
 
@@ -255,7 +234,6 @@ function Panel({ data, nav }: { data: OverlayPanel; nav: { action: NavAction; se
 }
 
 export function Overlay() {
-  const [corner, setCorner] = useState<OverlayInit["corner"]>("bottom-right");
   const [queue, setQueue] = useState<OverlayNotice[]>([]);
   const [shown, setShown] = useState<Shown[]>([]);
   const [panel, setPanel] = useState<OverlayPanel | null>(null);
@@ -275,7 +253,6 @@ export function Overlay() {
     ];
     Promise.all(subs).then(async () => {
       const init = await api.overlayReady();
-      setCorner(init.corner);
       if (init.notices.length) setQueue((q) => [...q, ...init.notices]);
       if (init.panel) openPanel(init.panel);
       setReady(true);
@@ -313,8 +290,10 @@ export function Overlay() {
     setQueue((q) => q.slice(take.length));
     setShown((s) => [...s, ...take]);
     for (const n of take) {
-      setTimeout(() => setShown((s) => s.map((x) => (x.id === n.id ? { ...x, leaving: true } : x))), NOTICE_MS[n.kind] ?? 6000);
-      setTimeout(() => setShown((s) => s.filter((x) => x.id !== n.id)), (NOTICE_MS[n.kind] ?? 6000) + 450);
+      // El sonido, a la vez que la animación de entrada.
+      if (n.kind !== "info") void api.overlayChime(isRare(n)).catch(() => {});
+      setTimeout(() => setShown((s) => s.map((x) => (x.id === n.id ? { ...x, leaving: true } : x))), noticeMs(n));
+      setTimeout(() => setShown((s) => s.filter((x) => x.id !== n.id)), noticeMs(n) + LEAVE_MS);
     }
   }, [queue, shown]);
 
@@ -328,11 +307,13 @@ export function Overlay() {
   return (
     <div className="ig-root">
       {panel && <Panel data={panel} nav={nav} />}
-      <div className={`ig-stack ${corner}`}>
-        {shown.map((n) => (
-          <NoticeCard key={n.id} n={n} />
-        ))}
-      </div>
+      {shown.length > 0 && (
+        <NoticeStack corner={shown[shown.length - 1].look.corner}>
+          {shown.map((n) => (
+            <NoticeView key={n.id} n={n} leaving={n.leaving} />
+          ))}
+        </NoticeStack>
+      )}
     </div>
   );
 }

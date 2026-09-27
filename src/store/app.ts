@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type {
   Bootstrap,
   Collection,
+  DownloadItem,
   LibGame,
   Profile,
   RunningGame,
@@ -21,6 +22,10 @@ export type OverlayName =
   | "theme"
   | "collections"
   | "menu"
+  | "explore"
+  | "downloads"
+  | "keyboard"
+  | "update"
   | "onboarding";
 
 export interface Overlay {
@@ -32,6 +37,7 @@ export interface Toast {
   id: number;
   kind: string;
   message: string;
+  action?: { label: string; run: () => void };
 }
 
 interface State {
@@ -43,6 +49,7 @@ interface State {
   games: LibGame[];
   collections: Collection[];
   running: RunningGame[];
+  downloads: DownloadItem[];
   overlays: Overlay[];
   toasts: Toast[];
   meta: { done: number; total: number };
@@ -63,7 +70,7 @@ interface State {
   open: (name: OverlayName, args?: Record<string, unknown> | null) => void;
   close: () => void;
   closeAll: () => void;
-  toast: (kind: string, message: string) => void;
+  toast: (kind: string, message: string, action?: Toast["action"]) => void;
   dismiss: (id: number) => void;
   upsertProfile: (p: Profile) => void;
 }
@@ -79,6 +86,7 @@ export const useApp = create<State>((set, get) => ({
   games: [],
   collections: [],
   running: [],
+  downloads: [],
   overlays: [],
   toasts: [],
   meta: { done: 0, total: 0 },
@@ -105,10 +113,10 @@ export const useApp = create<State>((set, get) => ({
   },
   close: () => set({ overlays: get().overlays.slice(0, -1) }),
   closeAll: () => set({ overlays: [] }),
-  toast: (kind, message) => {
+  toast: (kind, message, action) => {
     const id = ++toastId;
-    set({ toasts: [...get().toasts.slice(-3), { id, kind, message }] });
-    setTimeout(() => get().dismiss(id), kind === "error" ? 7000 : 4000);
+    set({ toasts: [...get().toasts.slice(-3), { id, kind, message, action }] });
+    setTimeout(() => get().dismiss(id), action ? 10000 : kind === "error" ? 7000 : 4000);
   },
   dismiss: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),
   upsertProfile: (p) => {

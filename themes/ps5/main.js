@@ -1,5 +1,6 @@
 // Tema "PS5": fila de iconos arriba, fondo a pantalla completa del juego
-// seleccionado y hub con Jugar, datos, capturas y tráileres.
+// seleccionado y hub con Jugar, datos, capturas y tráileres. PlayStation Store
+// y Descargas están en store.js.
 
 import { h, img, initials, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
@@ -9,6 +10,8 @@ import { visible, sort, recent } from "/_sdk/kit/library.js";
 import { clock } from "/_sdk/kit/clock.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
+import { percent } from "/_sdk/kit/store.js";
+import { createStore } from "./store.js";
 
 const ejg = await window.ejg.ready();
 const $ = (s) => document.querySelector(s);
@@ -177,18 +180,33 @@ function renderHub(g) {
 }
 
 async function startBackgroundTrailer(g) {
-  if (state.selected !== g.id || !document.hasFocus()) return;
+  if (state.selected !== g.id || state.tab !== "home" || shop.panelOpen || !document.hasFocus()) return;
   let url = g.media.microtrailer;
   if (ejg.settings.trailerSound) {
     const d = await ejg.game.details(g.id).catch(() => null);
     url = d?.trailers?.[0]?.url || url;
   }
-  if (!url || state.selected !== g.id) return;
+  if (!url || state.selected !== g.id || state.tab !== "home") return;
   const video = document.querySelector(".ejg-backdrop-video");
   if (video) video.muted = !ejg.settings.trailerSound;
   await bg.video(url);
   document.body.classList.add("trailer-on");
   releaseTrailer = () => bg.stopVideo();
+}
+
+// Fuera de Juegos no hace falta el tráiler ni cargar el hub.
+function stopHome() {
+  releaseTrailer();
+  releaseTrailer = () => {};
+  clearTimeout(idleTimer);
+  clearTimeout(detailsTimer);
+  document.body.classList.remove("trailer-on");
+}
+
+function homeBg() {
+  const g = ejg.library.byId(state.selected);
+  const u = g && (g.media.hero || g.media.heroThumb || g.media.header);
+  bg.set(u || ejg.settings.wallpaper || null);
 }
 
 async function loadDetails(id) {
@@ -315,25 +333,52 @@ function renderLibrary() {
 
 const hintBar = hints($("#hints"), []);
 function updateHints() {
+  if (state.tab === "store" || shop.hasDialog()) return hintBar.set(shop.hints());
   const inMedia = focus.current?.closest("#media");
   hintBar.set(
     state.tab === "library"
       ? [["accept", "Abrir"], ["y", "Favorito"], ["back", "Inicio"], ["lb", "Pestañas"]]
-      : [["accept", inMedia ? "Ver" : "Seleccionar"], ["back", "Atrás"], ["y", "Favorito"], ["x", "Opciones"], ["menu", "Menú"]],
+      : [["accept", inMedia ? "Ver" : "Seleccionar"], ["back", "Atrás"], ["y", "Favorito"], ["x", "Opciones"], ["lb", "Pestañas"], ["menu", "Menú"]],
   );
 }
 
+// Pestañas: Juegos, Biblioteca y PlayStation Store (si Explorar está activado).
+function tabList() {
+  return ["home", "library", ...(ejg.explore.enabled ? ["store"] : [])];
+}
+function cycleTab(d) {
+  const tabs = tabList();
+  const i = Math.max(0, tabs.indexOf(state.tab));
+  setTab(tabs[(i + d + tabs.length) % tabs.length]);
+}
+
 function setTab(tab) {
+  if (tab === "store" && !ejg.explore.enabled) tab = "home";
+  const was = state.tab;
   state.tab = tab;
+  document.documentElement.dataset.view = tab;
   document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === tab)));
   $("#home").hidden = tab !== "home";
   $("#library").hidden = tab !== "library";
+  $("#store").hidden = tab !== "store";
+  if (was === "store" && tab !== "store") {
+    shop.hide();
+    // El fondo vuelve a ser el del juego seleccionado.
+    shownId = null;
+    if (tab === "library") homeBg();
+  }
+  if (tab === "store") stopHome();
   updateHints();
   if (tab === "library") {
     renderLibrary();
     focus.first($("#lib-grid"));
+  } else if (tab === "store") {
+    shop.show();
   } else {
     renderRow();
+    const g = ejg.library.byId(state.selected);
+    if (g) renderHub(g);
+    else homeBg();
     const t = row.querySelector(".tile.sel") || row.firstChild;
     if (t) focus.focus(t, { instant: true, silent: true });
   }
@@ -355,6 +400,10 @@ const focus = createFocus({
   root: document.body,
   scroll: "none",
   onChange: (el, _prev, { pointer }) => {
+    if (shop.owns(el)) {
+      shop.onFocus(el, pointer);
+      return updateHints();
+    }
     // Con el ratón, pasar por encima solo resalta: se selecciona con clic (si
     // no, la fila se deslizaría y el icono se escaparía de debajo del cursor).
     if (pointer) return updateHints();
@@ -367,11 +416,31 @@ const focus = createFocus({
   },
 });
 
+// PlayStation Store y Descargas (store.js).
+const shop = createStore({
+  ejg,
+  root: $("#store"),
+  layer: $("#downloads"),
+  focus,
+  bg,
+  openViewer,
+  setTab: (t) => setTab(t),
+  focusView: () => {
+    if (state.tab === "library") return focus.first($("#lib-grid"));
+    const t = row.querySelector(".tile.sel") || row.firstChild || $("#play");
+    if (t) focus.focus(t, { silent: true });
+  },
+  onChange: () => updateDownloadsUi(),
+  onView: () => updateHints(),
+});
+
+const mediaOpen = () => !player.hidden || !viewer.hidden;
 bindNav(focus, {
   back: () => {
     if (!player.hidden) return closePlayer(), true;
     if (!viewer.hidden) return (viewer.hidden = true), true;
-    if (state.tab === "library") return setTab("home"), true;
+    if (shop.back()) return true;
+    if (state.tab === "library" || state.tab === "store") return setTab("home"), true;
     const t = row.querySelector(".tile.sel");
     if (t && focus.current !== t) return focus.focus(t), true;
     return false;
@@ -384,12 +453,16 @@ bindNav(focus, {
     if (focus.current?.classList.contains("tile") && state.tab === "home") return focus.focus($("#play")), true;
     return !player.hidden || !viewer.hidden;
   },
-  y: () => (state.selected && ejg.game.favorite(state.selected), true),
-  x: () => (state.selected && ejg.game.edit(state.selected), true),
+  y: () => {
+    if (mediaOpen() || shop.hasDialog()) return true;
+    if (state.tab === "store") return shop.search(), true;
+    return (state.selected && ejg.game.favorite(state.selected), true);
+  },
+  x: () => (mediaOpen() || shop.hasDialog() || state.tab === "store" || (state.selected && ejg.game.edit(state.selected)), true),
   menu: () => (ejg.ui.open("menu"), true),
   view: () => (ejg.ui.open("search"), true),
-  lb: () => (setTab(state.tab === "home" ? "library" : "home"), true),
-  rb: () => (setTab(state.tab === "home" ? "library" : "home"), true),
+  lb: () => (mediaOpen() || shop.hasDialog() || cycleTab(-1), true),
+  rb: () => (mediaOpen() || shop.hasDialog() || cycleTab(1), true),
 });
 ejg.on("focus-return", () => focus.restore());
 // Tráiler solo con la ventana activa.
@@ -406,6 +479,7 @@ function renderProfile() {
 // ─────────────── eventos ───────────────
 const refresh = debounce(() => {
   if (state.tab === "library") renderLibrary();
+  if (state.tab !== "home") return;
   renderRow();
   const g = ejg.library.byId(state.selected);
   if (g) renderHub(g);
@@ -414,6 +488,7 @@ ejg.library.onChange(refresh);
 ejg.on("running", refresh);
 ejg.game.onState(refresh);
 ejg.on("settings", () => {
+  if (state.tab !== "home") return void (shownId = null);
   renderRow();
   const g = ejg.library.byId(state.selected);
   if (g) {
@@ -424,7 +499,45 @@ ejg.on("settings", () => {
 ejg.on("profile", renderProfile);
 window.addEventListener("resize", debounce(markSelected, 100));
 
+// ─────────────── descargas: icono de la barra de estado ───────────────
+const dlIco = $("#dl-ico");
+const dlBadge = $("#dl-badge");
+const dlRing = $("#dl-ring");
+const RING = 2 * Math.PI * 20;
+dlRing.style.strokeDasharray = String(RING);
+dlIco.addEventListener("click", () => (stopHome(), shop.openDownloads()));
+function updateDownloadsUi() {
+  const all = ejg.downloads.all;
+  const n = shop.pendingCount();
+  dlBadge.hidden = !n;
+  dlBadge.textContent = String(n);
+  $("#tab-store").hidden = !ejg.explore.enabled;
+  // Anillo con el progreso de lo que se está bajando (o instalando).
+  const going = all.filter((d) => d.state === "downloading");
+  const inst = all.find((d) => d.state === "installing");
+  const t = going.reduce((a, d) => ({ done: a.done + d.doneBytes, size: a.size + d.totalBytes }), { done: 0, size: 0 });
+  const p = t.size ? t.done / t.size : inst ? inst.progress || 0 : 0;
+  dlIco.classList.toggle("busy", going.length > 0 || !!inst);
+  dlRing.style.strokeDashoffset = String(RING * (1 - p));
+  dlIco.title = going.length ? `Descargando ${going[0].title} · ${percent(p)}` : inst ? `Instalando ${inst.title}` : n ? `Descargas · ${n} pendientes` : "Descargas";
+}
+ejg.explore.onEnabled(() => {
+  if (!ejg.explore.enabled && state.tab === "store") setTab("home");
+  updateDownloadsUi();
+});
+// El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
+ejg.ui.onView(({ view, slug }) => {
+  if (view === "downloads") return stopHome(), shop.openDownloads();
+  if (!ejg.explore.enabled) return;
+  shop.closeDownloads();
+  if (state.tab !== "store") setTab("store");
+  if (view === "repack" && slug) shop.openRepack(slug);
+  else shop.front();
+});
+
 renderProfile();
+document.documentElement.dataset.view = "home";
+updateDownloadsUi();
 renderRow();
 if (state.selected) select(state.selected);
 const first = row.querySelector(".tile.sel") || row.firstChild || $("#play");

@@ -163,62 +163,181 @@ pub fn force_foreground(hwnd: isize) {
     }
 }
 
-/// Campanita del logro: dos notas sintetizadas (WAV en memoria, sin ficheros).
-fn chime() -> &'static [u8] {
-    static WAV: OnceLock<Vec<u8>> = OnceLock::new();
-    WAV.get_or_init(|| {
-        const RATE: u32 = 44_100;
-        let len = (RATE as f32 * 0.9) as usize;
-        let notes = [(0.0f32, 987.77f32), (0.085, 1479.98)]; // Si5 → Fa#6
-        let mut samples = vec![0f32; len];
-        for (start, freq) in notes {
-            let s0 = (start * RATE as f32) as usize;
-            for (i, out) in samples.iter_mut().enumerate().skip(s0) {
-                let t = (i - s0) as f32 / RATE as f32;
-                let attack = (t / 0.006).min(1.0);
-                let env = attack * (-t / 0.22).exp();
-                let w = std::f32::consts::TAU * freq * t;
-                *out += env * (w.sin() + 0.28 * (2.0 * w).sin() + 0.08 * (3.0 * w).sin());
-            }
-        }
-        let peak = samples.iter().fold(0f32, |m, s| m.max(s.abs())).max(1e-6);
-        let gain = 0.32 / peak;
-        let data: Vec<u8> = samples
-            .iter()
-            .flat_map(|s| (((s * gain).clamp(-1.0, 1.0) * i16::MAX as f32) as i16).to_le_bytes())
-            .collect();
-        let mut wav = Vec::with_capacity(44 + data.len());
-        wav.extend_from_slice(b"RIFF");
-        wav.extend_from_slice(&(36 + data.len() as u32).to_le_bytes());
-        wav.extend_from_slice(b"WAVEfmt ");
-        wav.extend_from_slice(&16u32.to_le_bytes());
-        wav.extend_from_slice(&1u16.to_le_bytes()); // PCM
-        wav.extend_from_slice(&1u16.to_le_bytes()); // mono
-        wav.extend_from_slice(&RATE.to_le_bytes());
-        wav.extend_from_slice(&(RATE * 2).to_le_bytes());
-        wav.extend_from_slice(&2u16.to_le_bytes());
-        wav.extend_from_slice(&16u16.to_le_bytes());
-        wav.extend_from_slice(b"data");
-        wav.extend_from_slice(&(data.len() as u32).to_le_bytes());
-        wav.extend_from_slice(&data);
-        wav
-    })
+/// Una nota del sintetizador de avisos.
+#[derive(Clone, Copy)]
+struct Voice {
+    /// Inicio y duración en segundos.
+    at: f32,
+    dur: f32,
+    /// Frecuencia inicial y final (deslizamiento en `glide` segundos).
+    f0: f32,
+    f1: f32,
+    glide: f32,
+    wave: Wave,
+    gain: f32,
+    attack: f32,
+    /// Constante de caída exponencial.
+    decay: f32,
 }
 
-pub fn play_chime() {
-    let wav = chime();
+#[derive(Clone, Copy)]
+enum Wave {
+    /// Senoidal con armónicos suaves.
+    Soft,
+    /// Campana: parciales inarmónicos.
+    Bell,
+    Triangle,
+    Square,
+}
+
+const fn v(at: f32, dur: f32, f0: f32, wave: Wave, gain: f32, decay: f32) -> Voice {
+    Voice { at, dur, f0, f1: f0, glide: 0.0, wave, gain, attack: 0.006, decay }
+}
+
+/// Sonido de cada estilo de aviso. No copia los de las consolas: se queda con
+/// su carácter (campana, "bwoop", clic, 8 bits…).
+fn voices(style: &str, rare: bool) -> Vec<Voice> {
+    use Wave::*;
+    let mut out = match style {
+        // Dos notas limpias y cortas, sin adornos.
+        "steam" => vec![v(0.0, 0.5, 880.0, Soft, 0.8, 0.14), v(0.075, 0.7, 1318.5, Soft, 0.9, 0.22)],
+        // Un "ding" metálico brillante.
+        "playstation" => vec![v(0.0, 1.2, 1108.7, Bell, 1.0, 0.45), v(0.0, 0.6, 2217.5, Soft, 0.12, 0.2)],
+        // Un "bwoop" grave que sube y una nota que se abre.
+        "xbox" => vec![
+            Voice { f1: 523.3, glide: 0.07, attack: 0.012, ..v(0.0, 0.3, 261.6, Triangle, 1.0, 0.12) },
+            Voice { f1: 784.0, glide: 0.05, attack: 0.01, ..v(0.09, 0.6, 587.3, Soft, 0.8, 0.2) },
+            v(0.0, 0.25, 130.8, Soft, 0.5, 0.1),
+        ],
+        // Clic seco y un "pop" que sube.
+        "switch" => vec![
+            v(0.0, 0.012, 2200.0, Square, 0.25, 0.01),
+            Voice { f1: 1568.0, glide: 0.06, ..v(0.035, 0.25, 1046.5, Soft, 0.8, 0.08) },
+        ],
+        // Golpe grave de sala de cine y un brillo encima.
+        "cinema" => vec![
+            Voice { attack: 0.03, ..v(0.0, 1.4, 98.0, Soft, 1.0, 0.45) },
+            Voice { attack: 0.03, ..v(0.0, 1.2, 196.0, Soft, 0.45, 0.4) },
+            v(0.14, 1.0, 1318.5, Bell, 0.22, 0.35),
+        ],
+        // Arpegio de 8 bits.
+        "retro" => [1046.5, 1318.5, 1568.0, 2093.0]
+            .iter()
+            .enumerate()
+            .map(|(i, f)| Voice { attack: 0.002, ..v(i as f32 * 0.055, 0.09, *f, Square, 0.5, 0.2) })
+            .collect(),
+        _ => vec![v(0.0, 0.9, 987.77, Soft, 1.0, 0.22), v(0.085, 0.9, 1479.98, Soft, 1.0, 0.22)],
+    };
+    // Raro: una coda que sube una octava.
+    if rare {
+        let last = out.iter().map(|x| x.at).fold(0.0, f32::max);
+        let top = out.iter().map(|x| x.f1.max(x.f0)).fold(0.0, f32::max).min(1800.0);
+        let wave = if style == "retro" { Wave::Square } else { Wave::Bell };
+        let gain = if style == "retro" { 0.4 } else { 0.35 };
+        out.push(v(last + 0.14, 1.0, top * 1.5, wave, gain, 0.3));
+        out.push(v(last + 0.24, 1.2, top * 2.0, wave, gain * 0.8, 0.4));
+    }
+    out
+}
+
+const RATE: u32 = 44_100;
+
+fn render(voices: &[Voice]) -> Vec<f32> {
+    let end = voices.iter().map(|x| x.at + x.dur).fold(0.0, f32::max);
+    let mut samples = vec![0f32; (end * RATE as f32) as usize + 1];
+    for x in voices {
+        let s0 = (x.at * RATE as f32) as usize;
+        let n = (x.dur * RATE as f32) as usize;
+        let mut phase = 0f32;
+        for i in 0..n.min(samples.len().saturating_sub(s0)) {
+            let t = i as f32 / RATE as f32;
+            let f = if x.glide > 0.0 && t < x.glide { x.f0 * (x.f1 / x.f0).powf(t / x.glide) } else { x.f1 };
+            phase += std::f32::consts::TAU * f / RATE as f32;
+            let env = (t / x.attack).min(1.0) * (-t / x.decay).exp() * ((x.dur - t) / 0.01).min(1.0);
+            let w = match x.wave {
+                Wave::Soft => phase.sin() + 0.28 * (2.0 * phase).sin() + 0.08 * (3.0 * phase).sin(),
+                Wave::Bell => {
+                    phase.sin()
+                        + 0.45 * (2.76 * phase).sin() * (-t / 0.25).exp()
+                        + 0.22 * (5.4 * phase).sin() * (-t / 0.12).exp()
+                        + 0.1 * (8.93 * phase).sin() * (-t / 0.06).exp()
+                }
+                Wave::Triangle => std::f32::consts::FRAC_2_PI * phase.sin().asin(),
+                Wave::Square => {
+                    if phase.sin() >= 0.0 {
+                        0.6
+                    } else {
+                        -0.6
+                    }
+                }
+            };
+            samples[s0 + i] += x.gain * env * w;
+        }
+    }
+    samples
+}
+
+fn wav(samples: &[f32]) -> Vec<u8> {
+    let peak = samples.iter().fold(0f32, |m, s| m.max(s.abs())).max(1e-6);
+    let gain = 0.32 / peak;
+    let data: Vec<u8> = samples
+        .iter()
+        .flat_map(|s| (((s * gain).clamp(-1.0, 1.0) * i16::MAX as f32) as i16).to_le_bytes())
+        .collect();
+    let mut wav = Vec::with_capacity(44 + data.len());
+    wav.extend_from_slice(b"RIFF");
+    wav.extend_from_slice(&(36 + data.len() as u32).to_le_bytes());
+    wav.extend_from_slice(b"WAVEfmt ");
+    wav.extend_from_slice(&16u32.to_le_bytes());
+    wav.extend_from_slice(&1u16.to_le_bytes()); // PCM
+    wav.extend_from_slice(&1u16.to_le_bytes()); // mono
+    wav.extend_from_slice(&RATE.to_le_bytes());
+    wav.extend_from_slice(&(RATE * 2).to_le_bytes());
+    wav.extend_from_slice(&2u16.to_le_bytes());
+    wav.extend_from_slice(&16u16.to_le_bytes());
+    wav.extend_from_slice(b"data");
+    wav.extend_from_slice(&(data.len() as u32).to_le_bytes());
+    wav.extend_from_slice(&data);
+    wav
+}
+
+/// WAV en memoria del aviso (se genera una vez por estilo; PlaySound necesita
+/// que siga vivo mientras suena).
+fn chime(style: &str, rare: bool) -> &'static [u8] {
+    static CACHE: OnceLock<parking_lot::Mutex<HashMap<(String, bool), &'static [u8]>>> = OnceLock::new();
+    let mut cache = CACHE.get_or_init(Default::default).lock();
+    cache.entry((style.to_string(), rare)).or_insert_with(|| Box::leak(wav(&render(&voices(style, rare))).into_boxed_slice()))
+}
+
+pub fn play_chime(style: &str, rare: bool) {
+    let wav = chime(style, rare);
     unsafe {
         let _ = PlaySoundW(PCWSTR(wav.as_ptr() as *const u16), None, SND_MEMORY | SND_ASYNC | SND_NODEFAULT);
     }
 }
 
+/// ¿La ventana tapa el monitor entero? (pantalla completa o sin bordes)
+pub fn covers(hwnd: isize, r: Rect) -> bool {
+    let mut w = RECT::default();
+    let ok = unsafe { GetWindowRect(h(hwnd), &mut w).is_ok() };
+    ok && w.left <= r.0
+        && w.top <= r.1
+        && w.right >= r.0 + r.2
+        && w.bottom >= r.1 + r.3
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
-    fn chime_is_valid_wav() {
-        let w = super::chime();
-        assert_eq!(&w[..4], b"RIFF");
-        assert_eq!(&w[8..12], b"WAVE");
-        assert!(w.len() > 44 + 44_100);
+    fn chimes_are_valid_wavs() {
+        for style in ["steam", "playstation", "xbox", "switch", "cinema", "retro", "ejgames"] {
+            for rare in [false, true] {
+                let w = super::chime(style, rare);
+                assert_eq!(&w[..4], b"RIFF", "{style}");
+                assert_eq!(&w[8..12], b"WAVE");
+                assert!(w.len() > 44 + 44_100 / 10, "{style} demasiado corto");
+                assert!(w.len() < 44 + 44_100 * 2 * 3, "{style} demasiado largo");
+            }
+        }
     }
 }

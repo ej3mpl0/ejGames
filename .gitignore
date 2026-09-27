@@ -8,3 +8,5 @@ themes/switch/fonts
 *.log
 .DS_Store
 installer/
+installer-app/src-tauri/target
+installer-app/src-tauri/gen

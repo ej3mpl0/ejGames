@@ -19,7 +19,7 @@ img { display: block; }
 .ejg-backdrop-layer { background-position: center 20% !important; }
 .scrim { position: fixed; inset: 0; z-index: 1; pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(3, 5, 10, calc(var(--ejg-dim, 45) / 100 + 0.35)) 0%, rgba(3, 5, 10, calc(var(--ejg-dim, 45) / 100)) 45%, rgba(3, 5, 10, 0.05) 75%),
+    linear-gradient(90deg, rgba(3, 5, 10, calc(var(--dim) + 35%)) 0%, rgba(3, 5, 10, var(--dim)) 45%, rgba(3, 5, 10, 0.05) 75%),
     linear-gradient(180deg, rgba(3, 5, 10, 0.55) 0%, transparent 28%, transparent 60%, rgba(3, 5, 10, 0.75) 100%);
 }
 body.trailer-on .scrim { background: linear-gradient(90deg, rgba(3, 5, 10, 0.75), rgba(3, 5, 10, 0.1) 55%), linear-gradient(180deg, rgba(3, 5, 10, 0.5), transparent 30%, transparent 70%, rgba(3, 5, 10, 0.7)); }

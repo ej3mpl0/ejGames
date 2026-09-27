@@ -121,6 +121,11 @@ html[data-show-titles="off"] .nombre { display: none; }
 .descripcion h3 { margin: 1.2em 0 0.4em; font-size: 1.05em; color: var(--texto); }
 
 /* ───── Pistas de controles ───── */
+/* Descarga en curso (abajo a la izquierda). */
+.descargas { position: fixed; left: 32px; bottom: 18px; max-width: 60vw; padding: 8px 14px; border-radius: 99px; background: color-mix(in srgb, var(--texto) 10%, transparent); color: var(--tenue); font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.descargas.is-focused { color: var(--texto); box-shadow: 0 0 0 2px var(--acento); }
+.descargas[hidden], .acciones [hidden] { display: none; }
+
 .pistas {
   position: fixed;
   right: 20px;

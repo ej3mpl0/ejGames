@@ -10,6 +10,8 @@
   "palette": ["#141414", "#232323", "#e50914", "#ffffff"],
   "host": { "accent": "#e50914", "surface": "#181818", "radius": "6px" },
   "sounds": { "preset": "soft" },
+  "overlay": { "style": "cinema" },
+  "features": { "explore": true },
   "windowControls": "host",
   "settings": [
     { "key": "accent", "type": "color", "label": "Color de acento", "default": "#e50914" },

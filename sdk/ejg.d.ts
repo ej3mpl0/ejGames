@@ -114,6 +114,116 @@ export interface NavEvent {
   preventDefault(): void;
 }
 
+// ───────────── Explorar y descargas ─────────────
+
+export type RepackState = "none" | "library" | "queued" | "downloading" | "paused" | "seeding" | "completed" | "installing" | "installed" | "error";
+
+export interface Repack {
+  source: string;
+  id: number;
+  slug: string;
+  /** Nombre del juego, sin versión. */
+  title: string;
+  version?: string | null;
+  fullTitle: string;
+  url: string;
+  date: string;
+  number?: number | null;
+  /** Portada vertical (miniatura) y a tamaño completo. */
+  cover?: string | null;
+  coverFull?: string | null;
+  /** Captura grande para fondos y cabeceras. */
+  hero?: string | null;
+  genres: string[];
+  companies?: string | null;
+  languages?: string | null;
+  originalSize?: string | null;
+  repackSize?: string | null;
+  repackBytes?: number | null;
+  /** Se pueden dejar sin bajar idiomas y extras. */
+  selective: boolean;
+  adult: boolean;
+  /** Relación contigo: en tu biblioteca, descargando, instalado… */
+  status: { state: RepackState; downloadId?: number | null; gameId?: number | null; progress?: number | null };
+}
+
+export interface RepackDetails extends Repack {
+  screenshots: { thumb: string; full: string }[];
+  features: string[];
+  /** "up to 26.7 GB" */
+  installSize?: string | null;
+  /** Texto con saltos de línea; las listas empiezan por "• ". */
+  description?: string | null;
+}
+
+export interface TorrentFile {
+  index: number;
+  path: string;
+  size: number;
+  /** setup y core son obligatorios; selective = idiomas; optional = extras. */
+  kind: "setup" | "core" | "selective" | "optional" | "extra";
+  label: string;
+  required: boolean;
+  /** Selección propuesta. */
+  selected: boolean;
+}
+
+export interface PreparedDownload {
+  token: string;
+  slug: string;
+  title: string;
+  version?: string | null;
+  name: string;
+  files: TorrentFile[];
+  totalBytes: number;
+  /** Carpeta de descargas; "" si aún no hay: pedir una con downloads.pickFolder(). */
+  dir: string;
+  freeBytes?: number | null;
+  installSize?: string | null;
+  installDir: string;
+  installFreeBytes?: number | null;
+}
+
+export type DownloadState = "queued" | "downloading" | "paused" | "seeding" | "completed" | "installing" | "installed" | "error";
+
+export interface Download {
+  id: number;
+  slug?: string | null;
+  title: string;
+  version?: string | null;
+  cover?: string | null;
+  hero?: string | null;
+  pageUrl?: string | null;
+  state: DownloadState;
+  /** Por qué espera o está parada: user | queue | playing | install | needs-folder */
+  pauseReason?: string | null;
+  error?: string | null;
+  totalBytes: number;
+  doneBytes: number;
+  uploadedBytes: number;
+  /** 0..1 */
+  progress: number;
+  /** Bytes por segundo. */
+  downBps: number;
+  upBps: number;
+  peers: number;
+  /** Segundos que faltan. */
+  eta?: number | null;
+  /** Comprobando lo ya descargado. */
+  checking: boolean;
+  queuePos: number;
+  installSize?: string | null;
+  outputDir: string;
+  installDir?: string | null;
+  /** Juego de la biblioteca, cuando ya está instalado. */
+  gameId?: number | null;
+  addedAt: number;
+  completedAt?: number | null;
+  installedAt?: number | null;
+  /** El repack ya se borró (tras instalar). */
+  filesDeleted: boolean;
+}
+
 export interface InitData {
   sdk: number;
   theme: { id: string; name: string; settings: any[] };
@@ -124,13 +234,17 @@ export interface InitData {
   collections: Collection[];
   running: { gameId: number; startedAt?: number }[];
   mode: "desktop" | "tv";
+  input: { source: "mouse" | "keyboard" | "gamepad"; pad: "xbox" | "playstation" | "nintendo" | "generic" };
   version: string;
+  downloads: Download[];
+  /** Explorar activado en los ajustes. */
+  explore: boolean;
 }
 
 export interface Ejg {
   version: 1;
   ready(): Promise<Ejg>;
-  on(event: "library" | "settings" | "css" | "collections" | "profile" | "mode" | "running" | "game-state" | "visibility" | "meta-progress" | "focus-return" | "input", fn: (data: any) => void): () => void;
+  on(event: "library" | "settings" | "css" | "collections" | "profile" | "mode" | "running" | "game-state" | "visibility" | "focus-return" | "input" | "downloads" | "explore" | "ui:view", fn: (data: any) => void): () => void;
   readonly init: InitData | null;
   readonly settings: Record<string, any>;
   readonly profile: Profile | null;
@@ -159,8 +273,41 @@ export interface Ejg {
   stats: { get(days?: number): Promise<any>; recent(limit?: number): Promise<any[]> };
   storage: { getAll(): Promise<Record<string, any>>; get(key: string): Promise<any>; set(key: string, value: any): Promise<void> };
   ui: {
-    open(name: "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu", args?: any): Promise<void>;
+    open(name: "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads", args?: any): Promise<void>;
     toast(message: string, kind?: "info" | "ok" | "error"): Promise<void>;
+    /** El host pide abrir una vista del tema (menú rápido, Ctrl+E, Ctrl+J, el indicador de descargas…). */
+    onView(fn: (e: { view: "explore" | "downloads" | "repack"; slug?: string }) => void): () => void;
+    /** Teclado en pantalla del host: el texto escrito o null si se cancela. */
+    keyboard(opts?: { title?: string; value?: string; placeholder?: string; maxLength?: number }): Promise<string | null>;
+  };
+  explore: {
+    readonly enabled: boolean;
+    onEnabled(fn: (enabled: boolean) => void): () => void;
+    home(): Promise<{ sections: { id: "today" | "week" | "month" | "latest" | string; title: string; items: Repack[] }[] }>;
+    search(query: string, page?: number): Promise<{ query: string; items: Repack[]; page: number; pages: number; total: number }>;
+    details(slug: string): Promise<RepackDetails>;
+    /** Abre la ficha en la web de la fuente (navegador del sistema). */
+    openPage(slug: string): Promise<void>;
+  };
+  downloads: {
+    readonly all: Download[];
+    list(): Promise<Download[]>;
+    onChange(fn: (list: Download[]) => void): () => void;
+    byId(id: number): Download | undefined;
+    defaults(): Promise<{ downloadDir: string; installDir: string; configured: boolean }>;
+    prepare(slug: string): Promise<PreparedDownload>;
+    cancelPrepare(slugOrToken: string): Promise<void>;
+    start(token: string, files: number[], dir?: string | null): Promise<Download>;
+    pause(id?: number): Promise<void>;
+    resume(id?: number): Promise<void>;
+    move(id: number, pos: number): Promise<void>;
+    remove(id: number, deleteFiles?: boolean): Promise<void>;
+    deleteFiles(id: number): Promise<void>;
+    install(id: number): Promise<void>;
+    locate(id: number): Promise<void>;
+    openFolder(id: number): Promise<void>;
+    pickFolder(current?: string): Promise<{ path: string; freeBytes?: number | null } | null>;
+    open(view?: "explore" | "downloads", slug?: string): Promise<void>;
   };
   input: {
     on(event: "nav", fn: (e: NavEvent) => void): () => void;

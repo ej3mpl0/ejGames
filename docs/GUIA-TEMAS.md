@@ -24,8 +24,9 @@ que ofrece el SDK tienes la referencia en [`docs/THEMES.md`](THEMES.md).
 6. [La ficha del juego](#6-la-ficha-del-juego)
 7. [Opciones sin código y modo Big Picture](#7-opciones-sin-código-y-modo-big-picture)
 8. [Sonidos y colores del launcher](#8-sonidos-y-colores-del-launcher)
-9. [Depurar y errores típicos](#9-depurar-y-errores-típicos)
-10. [Exportar y compartir](#10-exportar-y-compartir)
+9. [Explorar y descargas](#9-explorar-y-descargas)
+10. [Depurar y errores típicos](#10-depurar-y-errores-típicos)
+11. [Exportar y compartir](#11-exportar-y-compartir)
 
 ---
 
@@ -581,6 +582,8 @@ imports: `import { description, playtime, year } from "/_sdk/kit/format.js";`):
 let fichaId = null;
 let turno = 0; // para descartar respuestas de una ficha que ya se cerró
 
+const datos = (g) => [g.developer, year(g.releaseDate), playtime(g.playtime)].filter(Boolean).join(" · ");
+
 async function abrirFicha(id) {
   const g = ejg.library.byId(id);
   if (!g) return;
@@ -600,7 +603,7 @@ async function abrirFicha(id) {
         "div",
         { class: "ficha-info" },
         h("h2", null, g.title),
-        h("p", { class: "datos" }, [g.developer, year(g.releaseDate), playtime(g.playtime)].filter(Boolean).join(" · ")),
+        h("p", { class: "datos" }, datos(g)),
         botones,
         texto,
       ),
@@ -723,8 +726,9 @@ const repintar = debounce(() => {
   pintar();
   if (fichaId) {
     const g = ejg.library.byId(fichaId);
-    if (g) pintarBotones(g);
-    else cerrarFicha();
+    if (!g) return cerrarFicha();
+    pintarBotones(g);
+    ficha.querySelector(".datos").textContent = datos(g); // las horas, al cerrar el juego
   }
 }, 50);
 ejg.library.onChange(repintar); // juegos nuevos, favoritos, carátulas…
@@ -736,7 +740,9 @@ pistasRejilla();
 
 Sustituye con esto el `bindNav`, la barra de pistas y las dos últimas líneas
 que tenías, y añade `debounce` al `import` de `dom.js`: agrupa varios avisos
-seguidos en un solo repintado. El CSS de la ficha, resumido (el completo está en
+seguidos en un solo repintado. Al cerrar un juego, sus horas nuevas llegan por
+el mismo aviso: por eso `repintar` también pone al día los datos de la ficha
+abierta. El CSS de la ficha, resumido (el completo está en
 `docs/ejemplo-tema/style.css`):
 
 ```css
@@ -943,6 +949,23 @@ Y para la galería:
 - **`preview`**: una imagen de tu tema (`"preview": "preview.jpg"`), en la
   carpeta del tema. La tarjeta es de 16:10.
 
+### Avisos de logros dentro del juego
+
+Mientras juegas, los logros salen en una capa encima del juego. Tu tema elige
+su aspecto con **`overlay`**:
+
+```json
+"overlay": { "style": "xbox" }
+```
+
+Los estilos son `steam`, `playstation`, `xbox`, `switch`, `cinema`, `retro` y
+`ejgames`. Cada uno sale donde lo pone su plataforma (Xbox abajo en el centro,
+PlayStation arriba a la derecha…) y con su sonido. `ejgames` es el sobrio: usa
+los colores de tu `host` (acento, fondo, texto, redondeo y tipografía), y es el
+que se usa si no pones nada. Si tu tema tiene un ajuste `accent` (o `dark`, o
+`palette` en el estilo `retro`), el aviso lo respeta. El usuario puede cambiar
+el estilo y la posición en **Ajustes → Overlay**.
+
 ### Botones de ventana
 
 Con **`"windowControls": "host"`** (lo del ejemplo) ejGames dibuja minimizar,
@@ -953,7 +976,70 @@ la ventana, `data-ejg-drag` como en el paso 3.
 
 ---
 
-## 9. Depurar y errores típicos
+## 9. Explorar y descargas
+
+El launcher trae una tienda de repacks (**Explorar**) y una cola de descargas con
+torrent integrado (**Descargas**). Tu tema no tiene que hacer nada para que
+funcionen: el menú rápido, **Ctrl+E** y **Ctrl+J** abren las ventanas del
+launcher encima de tu tema. Pero queda mucho mejor si el tema, al menos, enseña
+qué se está descargando y tiene un botón para ir a la tienda.
+
+### Un botón para abrir la tienda
+
+```js
+// Abre las ventanas del launcher (para temas sin vistas propias).
+botonTienda.addEventListener("click", () => ejg.downloads.open("explore"));
+botonDescargas.addEventListener("click", () => ejg.downloads.open("downloads"));
+// Si el usuario desactiva Explorar en los ajustes, escóndelo:
+const pintarBoton = () => (botonTienda.hidden = !ejg.explore.enabled);
+ejg.explore.onEnabled(pintarBoton);
+pintarBoton();
+```
+
+### Qué se está descargando
+
+`ejg.downloads.all` es la lista de descargas y `ejg.downloads.onChange` avisa
+cuando cambia (como mucho una vez por segundo, así que puedes repintar sin
+miedo). El kit trae los formatos:
+
+```js
+import { bytes, speed, percent, downloadLabel } from "/_sdk/kit/store.js";
+
+const tira = document.querySelector("#descargas");
+function pintarDescargas() {
+  const ahora = ejg.downloads.all.filter((d) => d.state === "downloading");
+  tira.hidden = !ahora.length;
+  if (!ahora.length) return;
+  const d = ahora[0];
+  tira.textContent = `${d.title} · ${percent(d.progress)} · ${speed(d.downBps)} · ${bytes(d.doneBytes)} de ${bytes(d.totalBytes)}`;
+}
+ejg.downloads.onChange(pintarDescargas);
+pintarDescargas();
+tira.addEventListener("click", () => ejg.downloads.open("downloads"));
+```
+
+`downloadLabel(d)` da un texto corto para cualquier estado («En pausa mientras
+juegas», «Listo para instalar», «Instalando…»).
+
+### Tu propia tienda
+
+Si quieres que la tienda y la cola tengan el aspecto de tu tema, declara en
+`theme.json`:
+
+```json
+"features": { "explore": true }
+```
+
+A partir de ahí, el launcher ya no abre sus ventanas: le pide a tu tema que abra
+su vista con `ejg.ui.onView(({ view, slug }) => …)` (`explore`, `downloads` o
+`repack`, una ficha). La lógica difícil ya está hecha en `/_sdk/kit/store.js`
+(portada, búsqueda, selección de archivos, estados…); el tema **Steam**
+(`themes/steam/store.js`) es un ejemplo completo y la referencia está en
+[`docs/THEMES.md`](THEMES.md#explorar-y-descargas).
+
+---
+
+## 10. Depurar y errores típicos
 
 ### Ver los errores
 
@@ -1023,7 +1109,7 @@ mucho puede lanzar juegos de tu biblioteca o abrir pantallas del launcher.
 
 ---
 
-## 10. Exportar y compartir
+## 11. Exportar y compartir
 
 Cuando tu tema esté listo:
 

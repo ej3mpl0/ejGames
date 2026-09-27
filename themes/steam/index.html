@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>Steam</title>
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="store.css" />
     <script type="module" src="main.js"></script>
   </head>
   <body>
@@ -16,6 +17,8 @@
       <nav class="tabs" data-ejg-nodrag>
         <button class="tab" data-focus data-tab="home">Inicio</button>
         <button class="tab" data-focus data-tab="collections">Colecciones</button>
+        <button class="tab" data-focus data-tab="store" id="tab-store">Tienda</button>
+        <button class="tab" data-focus data-tab="downloads">Descargas<span class="tab-badge" id="dl-badge" hidden></span></button>
       </nav>
       <div class="top-actions" data-ejg-nodrag>
         <button class="icon-btn" data-focus data-action="search" title="Buscar (Ctrl+F)"><svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg></button>
@@ -43,6 +46,7 @@
       </aside>
       <main id="main"></main>
     </div>
+    <button id="dl-footer" class="dl-footer" data-focus hidden></button>
     <div id="hints" class="hints"></div>
     <div id="lightbox" hidden></div>
   </body>

@@ -257,6 +257,62 @@ pub fn trailer_url(id: i64, file: &str) -> String {
     format!("{MEDIA_ORIGIN}/t/{id}/{file}")
 }
 
+/// Descarga de Explorar tal y como está en la BD (sin el .torrent).
+#[derive(Debug, Clone, Default)]
+pub struct DownloadRow {
+    pub id: i64,
+    pub source: String,
+    pub source_id: String,
+    pub slug: Option<String>,
+    pub title: String,
+    pub version: Option<String>,
+    pub page_url: Option<String>,
+    pub cover_url: Option<String>,
+    pub hero_url: Option<String>,
+    pub magnet: String,
+    pub info_hash: String,
+    pub torrent_name: String,
+    pub output_dir: String,
+    pub selected_files: Vec<usize>,
+    pub file_count: i64,
+    pub total_bytes: i64,
+    pub done_bytes: i64,
+    pub uploaded_bytes: i64,
+    pub state: String,
+    pub pause_reason: Option<String>,
+    pub queue_pos: i64,
+    pub error: Option<String>,
+    pub install_size: Option<String>,
+    pub install_dir: Option<String>,
+    pub game_id: Option<i64>,
+    pub added_at: i64,
+    pub completed_at: Option<i64>,
+    pub installed_at: Option<i64>,
+    pub files_deleted: bool,
+}
+
+/// Descarga nueva (al confirmar los archivos).
+#[derive(Debug, Clone, Default)]
+pub struct NewDownload {
+    pub source: String,
+    pub source_id: String,
+    pub slug: Option<String>,
+    pub title: String,
+    pub version: Option<String>,
+    pub page_url: Option<String>,
+    pub cover_url: Option<String>,
+    pub hero_url: Option<String>,
+    pub magnet: String,
+    pub info_hash: String,
+    pub torrent: Vec<u8>,
+    pub torrent_name: String,
+    pub output_dir: String,
+    pub selected_files: Vec<usize>,
+    pub file_count: i64,
+    pub total_bytes: i64,
+    pub install_size: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

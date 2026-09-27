@@ -395,6 +395,31 @@ pub fn list(c: &Connection, game_id: i64) -> rusqlite::Result<AchList> {
     Ok(AchList { game_id, appid, total: items.len() as i64, unlocked, items })
 }
 
+/// Peso de un logro según su rareza (los raros valen más).
+fn weight(pct: Option<f64>) -> f64 {
+    match pct {
+        None => 2.0,
+        Some(p) if p < 5.0 => 8.0,
+        Some(p) if p < 10.0 => 5.0,
+        Some(p) if p < 20.0 => 3.0,
+        Some(p) if p < 50.0 => 2.0,
+        _ => 1.0,
+    }
+}
+
+/// Puntos al estilo Xbox: 1000 por juego repartidos por rareza, en múltiplos de 5.
+fn score_of(defs: &[(String, Option<f64>)], api: &str) -> Option<i64> {
+    let total: f64 = defs.iter().map(|d| weight(d.1)).sum();
+    let w = weight(defs.iter().find(|d| d.0 == api)?.1);
+    Some(((1000.0 * w / total / 5.0).round() as i64 * 5).max(5))
+}
+
+pub fn score(c: &Connection, game_id: i64, api: &str) -> rusqlite::Result<Option<i64>> {
+    let mut q = c.prepare_cached("SELECT api_name, global_pct FROM achievement_defs WHERE game_id = ?1")?;
+    let defs: Vec<(String, Option<f64>)> = q.query_map([game_id], |r| Ok((r.get(0)?, r.get(1)?)))?.filter_map(Result::ok).collect();
+    Ok(score_of(&defs, api))
+}
+
 /// Datos de un logro para la notificación.
 pub fn def_of(c: &Connection, game_id: i64, api: &str) -> rusqlite::Result<Option<(Option<i64>, Def)>> {
     use rusqlite::OptionalExtension;
@@ -621,9 +646,12 @@ pub fn watch(st: Arc<AppState>, game_id: i64, profile: i64, stop: Arc<AtomicBool
             }
             check(&src, &mut sig);
         }
-        // Lo escrito al cerrar el juego.
-        std::thread::sleep(Duration::from_millis(1500));
-        check(&src, &mut sig);
+        // Lo escrito al cerrar el juego: enseguida y un par de veces más, por
+        // si el emulador termina de guardar un poco después.
+        for wait in [0, 1500, 2500] {
+            std::thread::sleep(Duration::from_millis(wait));
+            check(&src, &mut sig);
+        }
     });
 }
 
@@ -647,6 +675,18 @@ mod tests {
         assert!(!valid_icon_name("../x.jpg"));
         assert!(!valid_icon_name("a.exe"));
         assert_eq!(icon_url(Some(10), Some("a.jpg")).unwrap(), "http://ejg-media.localhost/a/10/a.jpg");
+    }
+
+    #[test]
+    fn scores() {
+        let defs: Vec<(String, Option<f64>)> = (0..10).map(|i| (format!("A{i}"), Some(60.0))).chain([("RARE".into(), Some(2.0))]).collect();
+        let common = score_of(&defs, "A0").unwrap();
+        let rare = score_of(&defs, "RARE").unwrap();
+        assert!(rare > common * 4, "{rare} vs {common}");
+        assert_eq!(common % 5, 0);
+        let sum: i64 = defs.iter().map(|d| score_of(&defs, &d.0).unwrap()).sum();
+        assert!((950..=1050).contains(&sum), "{sum}");
+        assert_eq!(score_of(&defs, "NO"), None);
     }
 
     #[test]

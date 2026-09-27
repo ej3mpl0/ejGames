@@ -10,6 +10,8 @@
 :root[data-palette="amber"] { --bg: #0d0700; --bg2: #241400; --fg: #ffb000; --hi: #ffd580; --hi2: #ff8c00; --dim: #996a00; }
 :root[data-palette="gameboy"] { --bg: #0f380f; --bg2: #306230; --fg: #9bbc0f; --hi: #cadc9f; --hi2: #8bac0f; --dim: #5a8a20; }
 :root[data-palette="c64"] { --bg: #40318d; --bg2: #352879; --fg: #a59ae6; --hi: #ffffff; --hi2: #7abfc7; --dim: #7869c4; }
+/* Big Picture: letra más grande para verla desde el sofá. */
+:root[data-mode="tv"] { --fs: calc(var(--ejg-font-size, 14px) * 1.25); }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: var(--fg); font: var(--fs)/1.7 "Press Start 2P", Consolas, monospace; user-select: none; -webkit-font-smoothing: none; }
@@ -36,6 +38,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .tab.on { color: var(--hi2); text-decoration: underline; text-underline-offset: 6px; }
 .tab.is-focused { color: var(--hi); }
 
+.body[hidden] { display: none; }
 .body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 38%); gap: 44px; }
 .list { list-style: none; margin: 0; padding: 0 10px 0 0; overflow-y: auto; scrollbar-width: none; border-right: 2px dashed color-mix(in srgb, var(--dim) 60%, transparent); }
 .item { display: block; width: 100%; padding: 6px 10px 6px 34px; position: relative; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--fg); }

@@ -1,6 +1,8 @@
 //! Seguimiento de la partida: localiza los procesos del juego (exe bajo el
 //! directorio de instalación o pistas por nombre) y luego espera en sus handles
-//! sin sondear. Cuando todos terminan, un periodo de gracia detecta relanzamientos.
+//! sin sondear. Cuando todos terminan se mira enseguida si el juego sigue en
+//! otro proceso (lanzador → juego); si no, la partida acaba ya, y quien llama
+//! vigila un rato por si el juego se vuelve a abrir solo (`reappears`).
 
 use crate::db::models::Game;
 use crate::util::{is_under, now};
@@ -59,6 +61,7 @@ pub(crate) fn safe_install_dir(d: &Path) -> bool {
     true
 }
 
+#[derive(Debug)]
 pub enum Outcome {
     /// (inicio, fin) en segundos Unix.
     Played(i64, i64),
@@ -165,6 +168,12 @@ pub fn matches_pid(t: &Target, pid: u32) -> bool {
     false
 }
 
+/// Programas que viven en la carpeta del juego pero no son el juego: no
+/// alargan la partida (el informe de errores se queda abierto tras un cierre).
+fn is_helper(name: &str) -> bool {
+    ["crash", "bugsplat", "unins", "redist", "dxsetup", "werfault"].iter().any(|h| name.contains(h))
+}
+
 /// Encuentra los PIDs del juego. Cachea rutas por PID para no reabrir procesos.
 fn find_pids(t: &Target, cache: &mut HashMap<u32, (String, Option<PathBuf>)>) -> Vec<u32> {
     #[cfg(windows)]
@@ -186,7 +195,7 @@ fn find_pids(t: &Target, cache: &mut HashMap<u32, (String, Option<PathBuf>)>) ->
                 *entry = (p.name.clone(), None); // PID reutilizado
             }
             let by_name = t.exe_names.contains(&p.name);
-            let by_dir = match &t.install_dir {
+            let by_dir = !is_helper(&p.name) && match &t.install_dir {
                 Some(dir) => {
                     if entry.1.is_none() {
                         entry.1 = win::image_path(p.pid);
@@ -234,7 +243,9 @@ pub fn run(t: Target, discovery: Duration, cancel: &std::sync::atomic::AtomicBoo
     let started = now();
     on_start(started);
 
-    // 2) Esperar en handles; al terminar todos, gracia de 12 s por si relanza.
+    // 2) Esperar en handles. Al terminar todos, el juego puede seguir en otro
+    // proceso que no estaba al principio (lanzador → juego): se mira enseguida
+    // y otra vez al poco por si tarda un instante en aparecer.
     loop {
         #[cfg(windows)]
         {
@@ -259,17 +270,49 @@ pub fn run(t: Target, discovery: Duration, cancel: &std::sync::atomic::AtomicBoo
         std::thread::sleep(Duration::from_secs(5));
 
         let ended = now();
-        let mut again = vec![];
-        for _ in 0..6 {
-            std::thread::sleep(Duration::from_secs(2));
+        let mut again = find_pids(&t, &mut cache);
+        if again.is_empty() {
+            std::thread::sleep(Duration::from_millis(1500));
             again = find_pids(&t, &mut cache);
-            if !again.is_empty() {
-                break;
-            }
         }
         if again.is_empty() {
             return Outcome::Played(started, ended);
         }
         pids = again;
+    }
+}
+
+/// Tras una partida: ¿vuelve a abrirse el juego solo en `within`? (se reinicia
+/// para aplicar ajustes, un lanzador que abre el juego después de cerrarse…)
+/// `abort` corta la espera; `tick` recibe el tiempo transcurrido.
+pub fn reappears(t: &Target, within: Duration, abort: impl Fn() -> bool, mut tick: impl FnMut(Duration)) -> bool {
+    let mut cache = HashMap::new();
+    // El PID del lanzamiento ya no es del juego (Windows puede reutilizarlo).
+    let t = Target { launched_pid: None, ..t.clone() };
+    let begin = Instant::now();
+    while begin.elapsed() < within {
+        std::thread::sleep(Duration::from_millis(1500));
+        if abort() {
+            return false;
+        }
+        if !find_pids(&t, &mut cache).is_empty() {
+            return true;
+        }
+        tick(begin.elapsed());
+    }
+    false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn helpers_do_not_extend_the_session() {
+        assert!(is_helper("crashreportclient.exe"));
+        assert!(is_helper("unitycrashhandler64.exe"));
+        assert!(is_helper("unins000.exe"));
+        assert!(!is_helper("controlresonant.exe"));
+        assert!(!is_helper("launcher.exe"));
     }
 }

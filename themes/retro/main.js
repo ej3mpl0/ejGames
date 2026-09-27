@@ -1,5 +1,6 @@
 // Tema "Retro": menú arcade en una pantalla CRT. Las carátulas se pixelan y
-// se reducen a la paleta elegida en un <canvas>.
+// se reducen a la paleta elegida en un <canvas> (pixel.js). SHOP y DOWNLOADS
+// están en store.js.
 
 import { h, debounce } from "/_sdk/kit/dom.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
@@ -7,6 +8,8 @@ import { playtime, relative, year, description } from "/_sdk/kit/format.js";
 import { visible, sort } from "/_sdk/kit/library.js";
 import { clock } from "/_sdk/kit/clock.js";
 import { hints } from "/_sdk/kit/hints.js";
+import { SIZES, drawCover, quantize } from "./pixel.js";
+import { createStore } from "./store.js";
 
 const ejg = await window.ejg.ready();
 const $ = (s) => document.querySelector(s);
@@ -18,7 +21,9 @@ const FILTERS = [
   ["uninstalled", "NOT INSTALLED"],
   ["fav", "FAV ★"],
 ];
-const state = { filter: 0, selected: null };
+const TITLES = { library: "SELECT GAME", shop: "GAME SHOP", downloads: "DOWNLOADS" };
+// view: library (pestañas de filtro) | shop | downloads
+const state = { filter: 0, selected: null, view: "library" };
 clock($("#clock"));
 
 const games = () => {
@@ -30,21 +35,53 @@ const games = () => {
   return l;
 };
 
+// ─────────────── pestañas: filtros + SHOP + DOWNLOADS ───────────────
+const tabList = () => [...FILTERS.map((_, i) => i), ...(ejg.explore.enabled ? ["shop"] : []), "downloads"];
+const curTab = () => (state.view === "library" ? state.filter : state.view);
+const pending = () => ejg.downloads.all.filter((d) => ["queued", "downloading", "paused", "seeding", "completed", "installing", "error"].includes(d.state)).length;
+
 function renderTabs() {
+  const cur = curTab();
+  const tab = (id, label, extra) => h("button", { class: "tab" + (id === cur ? " on" : ""), "data-focus": "", onclick: () => goTab(id) }, label, extra);
+  const n = pending();
   $("#tabs").replaceChildren(
-    ...FILTERS.map(([, l], i) => h("button", { class: "tab" + (i === state.filter ? " on" : ""), "data-focus": "", onclick: () => setFilter(i) }, l)),
+    ...[
+      ...FILTERS.map(([, l], i) => tab(i, l)),
+      h("span", { class: "tab-sep" }),
+      ejg.explore.enabled ? tab("shop", "SHOP") : null,
+      tab("downloads", "DOWNLOADS", h("span", { class: "tab-n", id: "tab-n", hidden: !n }, String(n))),
+    ].filter(Boolean),
   );
   const total = visible(ejg.library.all).length;
   $("#credits").textContent = `CREDIT ${String(Math.min(total, 99)).padStart(2, "0")}`;
   $("#p1").textContent = `1UP ${(ejg.profile?.name || "PLAYER").toUpperCase().slice(0, 10)}`;
 }
 
-function setFilter(i) {
-  state.filter = (i + FILTERS.length) % FILTERS.length;
+function goTab(t) {
+  if (!detail.hidden) closeDetail(true);
+  shop.leave();
+  if (typeof t === "number") {
+    state.filter = (t + FILTERS.length) % FILTERS.length;
+    state.view = "library";
+  } else state.view = t;
+  document.documentElement.dataset.view = state.view;
+  $("#lib").hidden = state.view !== "library";
+  $("#view").hidden = state.view === "library";
+  $("#title").textContent = TITLES[state.view];
   renderTabs();
-  renderList();
-  const first = list.querySelector(".item");
-  if (first) focus.focus(first, { instant: true });
+  updateStatus();
+  if (state.view === "library") {
+    renderList();
+    const first = list.querySelector(".item");
+    if (first) focus.focus(first, { instant: true });
+    const g = ejg.library.byId(state.selected);
+    if (g) showCard(g);
+    else updateHints();
+  } else shop.render();
+}
+function switchTab(d) {
+  const tabs = tabList();
+  goTab(tabs[(tabs.indexOf(curTab()) + d + tabs.length) % tabs.length]);
 }
 
 function renderList() {
@@ -74,13 +111,6 @@ function renderList() {
 }
 
 // ─────────────── carátula pixelada ───────────────
-const SIZES = { low: [160, 240], medium: [84, 126], high: [44, 66] };
-function cssColor(v) {
-  const c = document.createElement("canvas").getContext("2d");
-  c.fillStyle = getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-  const hex = c.fillStyle;
-  return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
-}
 let artToken = 0;
 function drawArt(url) {
   const my = ++artToken;
@@ -118,44 +148,6 @@ function drawArt(url) {
   im.src = url;
 }
 
-/** drawImage que rellena el lienzo recortando (como object-fit: cover). */
-function drawCover(ctx, im, w, hh) {
-  const s = Math.max(w / im.naturalWidth, hh / im.naturalHeight);
-  const sw = w / s;
-  const sh = hh / s;
-  ctx.drawImage(im, (im.naturalWidth - sw) / 2, (im.naturalHeight - sh) / 4, sw, sh, 0, 0, w, hh);
-}
-
-/** Paletas monocromas: 4 tonos por luminancia. Resto: posterizado a 4 niveles por canal. */
-function quantize(ctx, w, hh) {
-  let data;
-  try {
-    data = ctx.getImageData(0, 0, w, hh);
-  } catch {
-    return; // lienzo "manchado": se queda solo pixelado
-  }
-  const p = ejg.settings.palette || "arcade";
-  const d = data.data;
-  if (p === "gameboy" || p === "phosphor" || p === "amber") {
-    const shades = [cssColor("--bg"), cssColor("--dim"), cssColor("--fg"), cssColor("--hi")];
-    for (let i = 0; i < d.length; i += 4) {
-      const l = (0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]) / 255;
-      const s = shades[Math.min(3, Math.floor(l * 4))];
-      d[i] = s[0];
-      d[i + 1] = s[1];
-      d[i + 2] = s[2];
-    }
-  } else {
-    const q = (v) => Math.round(v / 85) * 85;
-    for (let i = 0; i < d.length; i += 4) {
-      d[i] = q(d[i]);
-      d[i + 1] = q(d[i + 1]);
-      d[i + 2] = q(d[i + 2]);
-    }
-  }
-  ctx.putImageData(data, 0, 0);
-}
-
 function showCard(g) {
   if (!g) return;
   state.selected = g.id;
@@ -174,6 +166,7 @@ function showCard(g) {
     g.installed === false ? row("STATUS", "NOT INSTALLED") : null,
     ].filter(Boolean),
   );
+  if (state.view !== "library") return;
   updateHints(g);
   $("#ticker").textContent = (g.shortDescription || `${g.title} · INSERT COIN`).toUpperCase();
 }
@@ -221,9 +214,10 @@ async function openDetail(id) {
     shots.append(c);
   }
 }
-function closeDetail() {
+function closeDetail(quiet) {
   detail.hidden = true;
   detail.replaceChildren();
+  if (quiet === true) return;
   const el = list.querySelector(`[data-game-id="${state.selected}"]`);
   if (el) focus.focus(el, { silent: true });
 }
@@ -235,8 +229,10 @@ const focus = createFocus({
   onChange: (el) => {
     const id = Number(el.dataset.gameId);
     if (id) showCard(ejg.library.byId(id));
+    else if (state.view !== "library") shop.onFocus(el);
   },
 });
+const inLib = () => state.view === "library";
 function jump(n) {
   const items = [...list.querySelectorAll(".item")];
   const i = items.indexOf(focus.current);
@@ -244,29 +240,40 @@ function jump(n) {
   if (next) focus.focus(next);
 }
 bindNav(focus, {
-  back: () => (!detail.hidden ? (closeDetail(), true) : false),
-  left: () => (detail.hidden && focus.current?.classList.contains("item") ? (jump(-10), true) : false),
-  right: () => (detail.hidden && focus.current?.classList.contains("item") ? (jump(10), true) : false),
+  back: () => {
+    if (!detail.hidden) return closeDetail(), true;
+    if (inLib()) return false;
+    if (shop.back()) return true;
+    goTab(0); // a la pantalla principal
+    return true;
+  },
+  left: () => (inLib() ? (detail.hidden && list.contains(focus.current) ? (jump(-10), true) : false) : shop.nav("left")),
+  right: () => (inLib() ? (detail.hidden && list.contains(focus.current) ? (jump(10), true) : false) : shop.nav("right")),
   x: () => {
+    if (!inLib()) return shop.key("x");
     const id = Number(focus.current?.dataset.gameId);
     if (id && detail.hidden) openDetail(id);
     return true;
   },
   y: () => {
+    if (!inLib()) return shop.key("y");
     const id = Number(focus.current?.dataset.gameId) || state.selected;
     if (id) ejg.game.favorite(id);
     return true;
   },
-  lb: () => (setFilter(state.filter - 1), true),
-  rb: () => (setFilter(state.filter + 1), true),
+  rt: () => !inLib() && shop.key("rt"),
+  lb: () => (shop.hasDialog() || switchTab(-1), true),
+  rb: () => (shop.hasDialog() || switchTab(1), true),
   menu: () => (ejg.ui.open("menu"), true),
   view: () => (ejg.ui.open("search"), true),
 });
 ejg.on("focus-return", () => focus.restore());
-// Letra = saltar al primer juego que empieza por ella.
+// Letra = saltar al primer juego que empieza por ella (en SHOP, buscar).
 window.addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.altKey || e.metaKey || e.key.length !== 1 || e.target.tagName === "INPUT") return;
+  if (state.view === "shop") return shop.typeKey(e);
   // E y F son atajos (opciones/favorito): no saltan de letra.
-  if (e.ctrlKey || e.altKey || e.key.length !== 1 || !/[a-df-z0-9]/i.test(e.key) || !detail.hidden) return;
+  if (!inLib() || !/[a-df-z0-9]/i.test(e.key) || !detail.hidden) return;
   const k = e.key.toLowerCase();
   const el = [...list.querySelectorAll(".item")].find((b) => b.textContent.trim().toLowerCase().startsWith(k));
   if (el) focus.focus(el);
@@ -279,9 +286,47 @@ document.addEventListener("contextmenu", (e) => {
   }
 });
 
+// ─────────────── SHOP y DOWNLOADS (store.js) ───────────────
+const hintBar = hints($("#press"), []);
+const shop = createStore({
+  ejg,
+  root: $("#view"),
+  screen: $(".screen"),
+  ficha: $("#repack"),
+  focus,
+  hints: hintBar,
+  ticker: (t) => ($("#ticker").textContent = String(t || "").toUpperCase()),
+  tab: () => state.view,
+  goTab,
+  onChange: () => {
+    const n = pending();
+    const el = $("#tab-n");
+    if (el) (el.hidden = !n), (el.textContent = String(n));
+    updateStatus();
+  },
+});
+// Línea de estado con la descarga actual (solo en la pantalla principal).
+const statusEl = $("#status");
+statusEl.addEventListener("click", () => goTab("downloads"));
+function updateStatus() {
+  if (!inLib()) statusEl.hidden = true;
+  else shop.status(statusEl);
+}
+ejg.ui.onView(({ view, slug }) => {
+  if (view === "downloads") return goTab("downloads");
+  if (!ejg.explore.enabled) return;
+  if (state.view !== "shop") goTab("shop");
+  if (view === "repack" && slug) shop.openRepack(slug);
+});
+ejg.explore.onEnabled(() => {
+  if (!ejg.explore.enabled && state.view === "shop") goTab(state.filter);
+  else renderTabs();
+});
+
 const refresh = debounce(() => {
   renderTabs();
   renderList();
+  if (!inLib()) return;
   const g = ejg.library.byId(state.selected);
   if (g) showCard(g);
 }, 60);
@@ -292,21 +337,23 @@ ejg.on("settings", () => {
   refresh();
   const g = ejg.library.byId(state.selected);
   if (g) drawArt(g.media.coverThumb);
+  shop.redraw();
 });
 ejg.on("profile", renderTabs);
 
-const hintBar = hints($("#press"), []);
 function updateHints(g) {
+  if (!inLib()) return;
   hintBar.set([
     ["accept", g && g.installed === false ? "INSTALL" : "START"],
     ["x", "INFO"],
     ["y", "FAV"],
-    ["lb", "FILTRO"],
+    ["lb", "PESTAÑA"],
   ]);
 }
 
 renderTabs();
 renderList();
 updateHints();
+updateStatus();
 const first = list.querySelector(".item");
 if (first) focus.focus(first, { instant: true, silent: true });

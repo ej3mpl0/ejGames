@@ -10,6 +10,8 @@
   "palette": ["#ebebeb", "#ffffff", "#00c3e3", "#2d2d2d"],
   "host": { "accent": "#00b4d8", "surface": "#f4f4f4", "text": "#222222", "radius": "12px", "dark": false, "font": "Nunito, \"Segoe UI\", sans-serif" },
   "sounds": { "preset": "switch" },
+  "overlay": { "style": "switch" },
+  "features": { "explore": true },
   "windowControls": "host",
   "settings": [
     { "key": "dark", "type": "toggle", "label": "Tema oscuro", "default": false },

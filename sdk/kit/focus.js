@@ -201,6 +201,9 @@ export function bindNav(focus, handlers = {}) {
       return;
     }
     if (e.action === "accept" && focus.current) {
+      // Enter escribiendo en un campo: es del campo, no del elemento enfocado.
+      const a = document.activeElement;
+      if (e.source === "keyboard" && a && a !== focus.current && (a.tagName === "INPUT" || a.tagName === "TEXTAREA")) return;
       e.preventDefault();
       window.ejg.sound.play("select");
       focus.current.click();

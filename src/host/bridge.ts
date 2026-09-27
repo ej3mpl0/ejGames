@@ -3,6 +3,7 @@
 
 import { api } from "../api/tauri";
 import { useApp, activeTheme, type OverlayName } from "../store/app";
+import { installDownload, locateInstall, openExplore, openKeyboard, pickFolder } from "./downloads";
 import { playSound } from "./sounds";
 import { toggleBigPicture } from "./window";
 
@@ -22,7 +23,27 @@ const UI_NAMES: Record<string, OverlayName> = {
   theme: "theme",
   collections: "collections",
   menu: "menu",
+  explore: "explore",
+  downloads: "downloads",
 };
+
+const str = (v: unknown, max = 300): string => {
+  if (typeof v !== "string") throw new Error("texto no válido");
+  return v.slice(0, max);
+};
+
+const slug = (v: unknown): string => {
+  const s = str(v, 200);
+  if (!/^[a-z0-9-]+$/.test(s)) throw new Error("ficha no válida");
+  return s;
+};
+
+const optId = (v: unknown): number | null => (v == null ? null : num(v));
+
+/** Carpetas que el usuario eligió en el diálogo: un tema solo puede mandar
+ *  descargas a una de ellas (o a la de siempre), no a cualquier ruta. */
+const picked = new Set<string>();
+const normDir = (d: string) => d.replace(/\//g, "\\").replace(/\\+$/, "").toLowerCase();
 
 let launching = new Set<number>();
 
@@ -80,9 +101,71 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
       const args = params?.args && typeof params.args === "object" ? params.args : null;
       if (name === "add-folder") st.open("settings", { tab: "library", addFolder: true });
       else if (name === "theme") st.open("settings", { tab: "appearance" });
+      else if (name === "explore" || name === "downloads") st.open(name, { view: name, ...(args ?? {}) });
       else st.open(name, args);
       return;
     }
+    case "ui.keyboard": {
+      const o = params && typeof params === "object" ? params : {};
+      return openKeyboard({
+        title: o.title == null ? undefined : str(o.title, 80),
+        value: o.value == null ? "" : str(o.value, 200),
+        placeholder: o.placeholder == null ? undefined : str(o.placeholder, 80),
+        maxLength: o.maxLength == null ? 100 : Math.max(1, Math.min(200, num(o.maxLength))),
+      });
+    }
+    case "explore.home":
+      return api.exploreHome();
+    case "explore.search":
+      return api.exploreSearch(str(params?.query ?? "", 100), params?.page == null ? 1 : Math.max(1, Math.min(500, num(params.page))));
+    case "explore.details":
+      return api.exploreDetails(slug(params?.slug));
+    case "explore.openPage":
+      // Solo la ficha de la web oficial (se construye aquí, no la manda el tema).
+      return api.openExternal(`https://fitgirl-repacks.site/${slug(params?.slug)}/`);
+    case "downloads.list":
+      return st.downloads;
+    case "downloads.defaults":
+      return api.downloadsDefaults();
+    case "downloads.prepare":
+      return api.downloadsPrepare(slug(params?.slug));
+    case "downloads.cancelPrepare":
+      return api.downloadsCancelPrepare(str(params?.key, 200));
+    case "downloads.start": {
+      const files = Array.isArray(params?.files) ? params.files.slice(0, 5000).map(num) : [];
+      let dir = params?.dir == null || params.dir === "" ? null : str(params.dir, 1000);
+      if (dir && !picked.has(normDir(dir))) {
+        const d = await api.downloadsDefaults();
+        if (normDir(d.downloadDir) !== normDir(dir)) throw new Error("Elige la carpeta con el botón «Cambiar»");
+        dir = null;
+      }
+      return api.downloadsStart(str(params?.token, 64), files, dir);
+    }
+    case "downloads.pause":
+      return api.downloadsPause(optId(params?.id));
+    case "downloads.resume":
+      return api.downloadsResume(optId(params?.id));
+    case "downloads.move":
+      return api.downloadsMove(num(params?.id), Math.max(0, num(params?.pos)));
+    case "downloads.remove":
+      return api.downloadsRemove(num(params?.id), !!params?.deleteFiles);
+    case "downloads.deleteFiles":
+      return api.downloadsDeleteFiles(num(params?.id));
+    case "downloads.install":
+      return installDownload(num(params?.id));
+    case "downloads.locate":
+      return locateInstall(num(params?.id));
+    case "downloads.openFolder":
+      return api.downloadsOpenFolder(num(params?.id));
+    case "downloads.pickFolder": {
+      const r = await pickFolder("Carpeta de descargas", params?.current == null ? null : str(params.current, 1000));
+      if (r) picked.add(normDir(r.path));
+      return r;
+    }
+    case "downloads.open":
+      // Desde un tema sin vistas propias: las del host.
+      openExplore(params?.view === "downloads" ? "downloads" : "explore", params?.slug ? { slug: slug(params.slug) } : undefined);
+      return;
     case "ui.toast":
       st.toast(["ok", "error", "info"].includes(params?.kind) ? params.kind : "info", String(params?.message ?? "").slice(0, 300));
       return;

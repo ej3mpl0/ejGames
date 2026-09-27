@@ -9,7 +9,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 /// Iconos del exe para juegos nuevos + cola de metadatos.
-async fn after_new_games(st: &Arc<AppState>, new: Vec<(i64, Option<String>)>) {
+pub(crate) async fn after_new_games(st: &Arc<AppState>, new: Vec<(i64, Option<String>)>) {
     if new.is_empty() {
         return;
     }

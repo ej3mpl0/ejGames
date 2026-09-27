@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Instalar ejGames</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body data-view="welcome">
+    <aside class="poster" data-tauri-drag-region>
+      <div class="dots" aria-hidden="true"></div>
+      <span class="mark" data-tauri-drag-region>EJ<sup>®</sup></span>
+      <span class="vtext" data-tauri-drag-region>EJGAMES — INSTALADOR — <span id="v-ver">0.0.0</span></span>
+      <img class="avatar" src="img/brand.webp" alt="EJ" draggable="false" />
+    </aside>
+
+    <section class="sheet">
+      <header class="bar" data-tauri-drag-region>
+        <span class="crumb" data-tauri-drag-region>ejGames <span>/</span> <b id="crumb">Instalación</b></span>
+        <button id="btn-min" aria-label="Minimizar"><svg viewBox="0 0 12 12"><path d="M2 6h8" /></svg></button>
+        <button id="btn-close" aria-label="Cerrar"><svg viewBox="0 0 12 12"><path d="m2.5 2.5 7 7m0-7-7 7" /></svg></button>
+      </header>
+
+      <img class="sticker" src="img/icon.png" alt="" draggable="false" />
+
+      <!-- Bienvenida -->
+      <div class="view" id="welcome">
+        <h1 class="display" id="w-title">Instalar</h1>
+        <p class="sub" id="w-sub"></p>
+        <dl class="spec">
+          <div>
+            <dt>Destino</dt>
+            <dd><span class="path" id="path"></span><button class="link" id="btn-change">cambiar</button></dd>
+          </div>
+          <div>
+            <dt>Espacio</dt>
+            <dd id="space"></dd>
+          </div>
+          <div>
+            <dt>Extras</dt>
+            <dd class="boxes">
+              <label class="box"><input type="checkbox" id="opt-desktop" checked /><i></i>Acceso directo</label>
+              <label class="box"><input type="checkbox" id="opt-launch" checked /><i></i>Abrir al terminar</label>
+            </dd>
+          </div>
+        </dl>
+        <button class="cta" id="btn-install"><span id="cta-label">Instalar</span><svg viewBox="0 0 24 24"><path d="M4 12h15m0 0-6-6m6 6-6 6" /></svg></button>
+      </div>
+
+      <!-- Instalando -->
+      <div class="view" id="installing" hidden>
+        <div class="counter"><span id="pct">0</span><i>%</i></div>
+        <div class="meter"><i id="meter"></i></div>
+        <ol class="steps" id="steps">
+          <li><span class="st"></span>Preparar el paquete</li>
+          <li><span class="st"></span>Copiar ejGames y sus temas</li>
+          <li><span class="st"></span>Crear los accesos directos</li>
+          <li><span class="st"></span>Registrar la instalación</li>
+        </ol>
+      </div>
+
+      <!-- Hecho -->
+      <div class="view" id="done" hidden>
+        <h1 class="display">Listo.</h1>
+        <p class="sub" id="d-sub"></p>
+        <div class="stamp" id="stamp"><b>Instalado</b><small id="stamp-meta"></small></div>
+        <button class="cta" id="btn-launch"><span>Abrir ejGames</span><svg viewBox="0 0 24 24"><path d="M4 12h15m0 0-6-6m6 6-6 6" /></svg></button>
+        <p class="note"><span id="countdown"></span><button class="link" id="btn-finish">cerrar</button></p>
+      </div>
+
+      <!-- Error -->
+      <div class="view" id="error" hidden>
+        <h1 class="display">Error.</h1>
+        <p class="err" id="e-msg"></p>
+        <button class="cta" id="btn-retry"><span>Reintentar</span><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" /></svg></button>
+        <p class="note"><button class="link" id="btn-exit">cerrar</button></p>
+      </div>
+
+      <footer class="fine">Privacy is a universal right <b>— EJ</b></footer>
+    </section>
+  </body>
+</html>

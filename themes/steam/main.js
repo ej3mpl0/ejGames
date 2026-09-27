@@ -8,6 +8,8 @@ import { playtime, relative, date, description, SOURCE_LABEL } from "/_sdk/kit/f
 import { visible, sort, recent, search, inCollection, SORTS } from "/_sdk/kit/library.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
+import { downloadLabel, percent, speed } from "/_sdk/kit/store.js";
+import { createStore } from "./store.js";
 
 const ejg = await window.ejg.ready();
 const $ = (s) => document.querySelector(s);
@@ -47,31 +49,46 @@ const svg = (name) => {
 
 // ─────────────── foco y mando ───────────────
 const focus = createFocus({ root: document.body });
+const isShop = () => state.tab === "store" || state.tab === "downloads";
 bindNav(focus, {
   back: () => {
     if (!lightbox.hidden) return closeLightbox(), true;
+    if (shop.back()) return true;
     if (state.tab === "game") return goBack(), true;
     if (state.collection) return (state.collection = null), render(), true;
     return false;
   },
   y: () => {
+    if (state.tab === "store") return shop.search(), true;
     const id = focusedGameId();
     if (id) ejg.game.favorite(id);
     return !!id;
   },
   x: () => {
+    if (isShop()) return false;
     const id = focusedGameId() ?? state.gameId;
     if (id) ejg.game.edit(id);
     return !!id;
   },
   menu: () => (ejg.ui.open("menu"), true),
   view: () => (ejg.ui.open("search"), true),
-  lb: () => (switchTab(-1), true),
-  rb: () => (switchTab(1), true),
+  lb: () => (shop.hasDialog() || switchTab(-1), true),
+  rb: () => (shop.hasDialog() || switchTab(1), true),
   left: () => (!lightbox.hidden ? (stepLightbox(-1), true) : false),
   right: () => (!lightbox.hidden ? (stepLightbox(1), true) : false),
 });
 ejg.on("focus-return", () => focus.restore());
+
+// Tienda y Descargas (store.js).
+const shop = createStore({
+  ejg,
+  main,
+  focus,
+  openGame: (id) => openGame(id),
+  goTab: (t) => goTab(t),
+  onChange: () => updateDownloadsUi(),
+});
+shop.bindTab(() => state.tab);
 
 function focusedGameId() {
   const id = focus.current?.closest("[data-game-id]")?.dataset.gameId;
@@ -335,11 +352,64 @@ function updatePlayButton() {
   if (wasFocused) focus.focus(nb, { noScroll: true, silent: true });
 }
 
+// Lo que cambia al terminar una partida: horas, última sesión y logros. Se
+// repinta solo eso (sin recargar el banner ni el tráiler).
+const statsKey = (g) => `${g.id}|${g.playtime}|${g.lastPlayed}|${g.achievements?.unlocked}/${g.achievements?.total}|${g.installed}`;
+let renderedStats = "";
+let achSlot = null;
+let activitySlot = null;
+
+function gameStats(g) {
+  const stat = (label, value) => h("div", { class: "stat" }, h("small", null, label), h("span", null, value));
+  return [
+    g.installed === false ? stat("Estado", `Sin instalar · ${SOURCE_LABEL[g.source] || g.source}`) : null,
+    stat("Última sesión", relative(g.lastPlayed)),
+    stat("Tiempo de juego", playtime(g.playtime)),
+    g.achievements ? stat("Logros", `${g.achievements.unlocked} / ${g.achievements.total}`) : null,
+  ].filter(Boolean);
+}
+
+// Logros (llegan aparte: la primera vez pueden descargar el esquema).
+function loadAchievements(id, token) {
+  ejg.game
+    .achievements(id)
+    .then((list) => {
+      if (token !== detailsToken || !achSlot) return;
+      achSlot.replaceChildren(...(list.total ? [achievementsCard(list)] : []));
+    })
+    .catch(() => {});
+}
+
+function renderActivity(d) {
+  activitySlot?.replaceChildren(
+    ...(d.recentSessions.length
+      ? [
+          h(
+            "div",
+            { class: "card" },
+            h("h3", null, "Actividad"),
+            ...d.recentSessions.slice(0, 8).map((s) => h("div", { class: "session" }, h("span", null, relative(s.startedAt)), h("span", null, playtime(s.duration)))),
+          ),
+        ]
+      : []),
+  );
+}
+
+async function refreshGameStats(g) {
+  renderedStats = statsKey(g);
+  $(".playbar .stats")?.replaceChildren(...gameStats(g));
+  const token = detailsToken;
+  loadAchievements(g.id, token);
+  const d = await ejg.game.details(g.id).catch(() => null);
+  if (d && token === detailsToken) renderActivity(d);
+}
+
 let renderedArt = "";
 async function renderGame(id) {
   const g = ejg.library.byId(id);
   if (!g) return goBack();
   renderedArt = `${g.id}|${g.media.hero}|${g.media.logo}`;
+  renderedStats = statsKey(g);
   heroRelease();
   trailer?.destroy();
   trailer = null;
@@ -359,10 +429,7 @@ async function renderGame(id) {
     "div",
     { class: "playbar", "data-focus-group": "playbar" },
     playButton(g),
-    g.installed === false ? h("div", { class: "stat" }, h("small", null, "Estado"), h("span", null, `Sin instalar · ${SOURCE_LABEL[g.source] || g.source}`)) : null,
-    h("div", { class: "stat" }, h("small", null, "Última sesión"), h("span", null, relative(g.lastPlayed))),
-    h("div", { class: "stat" }, h("small", null, "Tiempo de juego"), h("span", null, playtime(g.playtime))),
-    g.achievements ? h("div", { class: "stat" }, h("small", null, "Logros"), h("span", null, `${g.achievements.unlocked} / ${g.achievements.total}`)) : null,
+    h("div", { class: "stats" }, ...gameStats(g)),
     h(
       "div",
       { class: "actions" },
@@ -372,7 +439,9 @@ async function renderGame(id) {
     ),
   );
   const left = h("div", null, h("div", { class: "card" }, h("h3", null, "Acerca del juego"), h("div", { class: "skel" }), h("div", { class: "skel" }), h("div", { class: "skel", style: { width: "60%" } })));
-  const right = h("div");
+  achSlot = h("div");
+  activitySlot = h("div");
+  const right = h("div", null, achSlot);
   const body = h("div", { class: "game-body" }, left, right);
   const bg = h("div", { class: "game-bg", style: heroUrl ? { backgroundImage: `url("${g.media.heroThumb || heroUrl}")` } : {} });
   main.replaceChildren(h("div", { class: "game" }, bg, hero, playbar, body));
@@ -451,14 +520,7 @@ async function renderGame(id) {
     left.append(h("div", { class: "card" }, h("h3", null, `Capturas (${d.screenshots.length})`), shots));
   }
 
-  // Logros (llegan aparte: la primera vez pueden descargar el esquema).
-  ejg.game
-    .achievements(id)
-    .then((list) => {
-      if (token !== detailsToken || !list.total) return;
-      right.prepend(achievementsCard(list));
-    })
-    .catch(() => {});
+  loadAchievements(id, token);
 
   // Columna lateral: información y actividad.
   const rows = [
@@ -472,16 +534,8 @@ async function renderGame(id) {
   right.append(h("div", { class: "card" }, h("h3", null, "Información"), ...rows.map(([k, v]) => h("div", { class: "info-row" }, h("span", null, k), h("span", null, String(v))))));
   const tags = [...new Set([...(d.genres || []), ...(d.tags || [])])].slice(0, 14);
   if (tags.length) right.append(h("div", { class: "card" }, h("h3", null, "Etiquetas"), h("div", { class: "tags" }, ...tags.map((t) => h("span", { class: "tag" }, t)))));
-  if (d.recentSessions.length) {
-    right.append(
-      h(
-        "div",
-        { class: "card" },
-        h("h3", null, "Actividad"),
-        ...d.recentSessions.slice(0, 8).map((s) => h("div", { class: "session" }, h("span", null, relative(s.startedAt)), h("span", null, playtime(s.duration)))),
-      ),
-    );
-  }
+  right.append(activitySlot);
+  renderActivity(d);
 }
 
 // ─────────────── logros ───────────────
@@ -584,8 +638,21 @@ function goBack() {
   if (el) focus.focus(el, { silent: true });
   else focus.first(main);
 }
+function tabList() {
+  return ["home", "collections", ...(ejg.explore.enabled ? ["store"] : []), "downloads"];
+}
+function goTab(t) {
+  heroRelease();
+  trailer?.destroy();
+  trailer = null;
+  state.tab = t;
+  state.gameId = null;
+  state.scroll = 0;
+  render();
+  focus.first(main);
+}
 function switchTab(d) {
-  const tabs = ["home", "collections"];
+  const tabs = tabList();
   const cur = tabs.indexOf(state.tab === "game" ? state.prevTab : state.tab);
   state.tab = tabs[(cur + d + tabs.length) % tabs.length];
   state.gameId = null;
@@ -600,7 +667,10 @@ function renderTabs() {
 
 function render() {
   renderTabs();
+  document.documentElement.dataset.view = isShop() ? state.tab : "library";
   if (typeof updateHints === "function") updateHints();
+  updateDownloadsUi();
+  if (isShop()) return shop.render();
   renderSidebar();
   if (state.tab === "game") renderGame(state.gameId);
   else if (state.tab === "collections") renderCollections();
@@ -617,11 +687,51 @@ function render() {
 // ─────────────── cabecera, perfil, fondo ───────────────
 document.querySelectorAll(".tab").forEach((t) =>
   t.addEventListener("click", () => {
+    heroRelease();
+    trailer?.destroy();
+    trailer = null;
     state.tab = t.dataset.tab;
     state.gameId = null;
     render();
   }),
 );
+
+// ─────────────── descargas: pestaña, contador y barra inferior ───────────────
+const dlBadge = $("#dl-badge");
+const dlFooter = $("#dl-footer");
+dlFooter.addEventListener("click", () => goTab("downloads"));
+function updateDownloadsUi() {
+  const all = ejg.downloads.all;
+  const pending = all.filter((d) => ["queued", "downloading", "paused", "seeding", "completed", "installing", "error"].includes(d.state));
+  dlBadge.hidden = !pending.length;
+  dlBadge.textContent = String(pending.length);
+  $("#tab-store").hidden = !ejg.explore.enabled;
+  // Barra de la biblioteca, como la de Steam: lo que se está bajando ahora.
+  const now = all.filter((d) => d.state === "downloading" || d.state === "installing");
+  const show = now.length > 0 && !isShop();
+  dlFooter.hidden = !show;
+  if (!show) return;
+  const done = pending.filter((d) => ["seeding", "completed"].includes(d.state)).length;
+  const cur = now[0];
+  const total = now.reduce((a, d) => ({ d: a.d + d.doneBytes, t: a.t + d.totalBytes, s: a.s + d.downBps }), { d: 0, t: 0, s: 0 });
+  dlFooter.replaceChildren(
+    h("span", { class: "dlf-label" }, "DESCARGAS"),
+    h("span", { class: "dlf-title" }, cur.state === "installing" ? `Instalando ${cur.title}` : cur.title),
+    h("span", { class: "dlf-bar" }, h("i", { style: { width: `${total.t ? (total.d / total.t) * 100 : 0}%` } })),
+    h("span", { class: "dlf-meta" }, cur.state === "installing" ? downloadLabel(cur) : `${percent(total.t ? total.d / total.t : 0)} · ${speed(total.s)}${done ? ` · ${done} listo${done === 1 ? "" : "s"} para instalar` : ""}`),
+  );
+}
+ejg.explore.onEnabled(() => {
+  if (!ejg.explore.enabled && state.tab === "store") goTab("home");
+  else updateDownloadsUi();
+});
+// El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
+ejg.ui.onView(({ view, slug }) => {
+  if (view === "downloads") return goTab("downloads");
+  if (!ejg.explore.enabled) return;
+  goTab("store");
+  if (view === "repack" && slug) shop.openRepack(slug);
+});
 document.querySelectorAll("[data-action]").forEach((b) =>
   b.addEventListener("click", () => {
     const a = b.dataset.action;
@@ -681,6 +791,7 @@ filterInput.addEventListener("keydown", (e) => {
 
 // ─────────────── eventos del host ───────────────
 const rerender = debounce(() => {
+  if (isShop()) return updateDownloadsUi();
   if (state.tab === "game") {
     // En la página de juego solo refrescamos lo que cambia (evita recargar el tráiler).
     renderSidebar();
@@ -693,6 +804,8 @@ const rerender = debounce(() => {
     }
     const fav = document.querySelector(".playbar .round");
     if (g && fav) fav.classList.toggle("on", g.favorite);
+    // Al cerrar el juego: horas, logros y actividad al día.
+    if (g && statsKey(g) !== renderedStats) refreshGameStats(g);
   } else render();
 }, 60);
 ejg.library.onChange(rerender);
@@ -708,9 +821,13 @@ ejg.on("profile", renderProfile);
 const hintBar = hints(document.getElementById("hints"), []);
 function updateHints() {
   hintBar.set(
-    state.tab === "game"
-      ? [["accept", "Elegir"], ["back", "Biblioteca"], ["y", "Favorito"], ["x", "Editar"]]
-      : [["accept", "Abrir"], ["y", "Favorito"], ["x", "Editar"], ["lb", "Inicio / Colecciones"], ["menu", "Menú"]],
+    state.tab === "store"
+      ? [["accept", "Abrir"], ["y", "Buscar"], ["back", "Volver"], ["lb", "Pestañas"], ["menu", "Menú"]]
+      : state.tab === "downloads"
+        ? [["accept", "Elegir"], ["lb", "Pestañas"], ["menu", "Menú"]]
+        : state.tab === "game"
+          ? [["accept", "Elegir"], ["back", "Biblioteca"], ["y", "Favorito"], ["x", "Editar"]]
+          : [["accept", "Abrir"], ["y", "Favorito"], ["x", "Editar"], ["lb", "Pestañas"], ["menu", "Menú"]],
   );
 }
 

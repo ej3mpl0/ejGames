@@ -6,6 +6,11 @@ import type {
   Bootstrap,
   Candidate,
   Collection,
+  DownloadDefaults,
+  DownloadItem,
+  ExploreHome,
+  ExplorePage,
+  NoticeLook,
   OverlayInit,
   FolderInspection,
   GameDetails,
@@ -13,13 +18,16 @@ import type {
   GamePatch,
   LibGame,
   LibraryFolder,
+  PreparedDownload,
   Profile,
   ProfilePatch,
+  RepackDetails,
   RunningGame,
   Settings,
   Stats,
   StoreSummary,
   ThemeInfo,
+  UpdateCheck,
 } from "./types";
 
 export const api = {
@@ -82,6 +90,8 @@ export const api = {
   overlayPanel: (open: boolean, restore?: boolean) => invoke<void>("overlay_panel", { open, restore }),
   overlayAction: (action: "launcher") => invoke<void>("overlay_action", { action }),
   overlayTest: () => invoke<void>("overlay_test"),
+  overlayChime: (rare: boolean) => invoke<void>("overlay_chime", { rare }),
+  overlayLook: () => invoke<NoticeLook>("overlay_look"),
 
   getStats: (days?: number) => invoke<Stats>("get_stats", { days }),
   recentSessions: (limit?: number) => invoke<unknown[]>("recent_sessions", { limit }),
@@ -110,6 +120,29 @@ export const api = {
   clearTrailerCache: () => invoke<void>("clear_trailer_cache"),
   openDataDir: () => invoke<void>("open_data_dir"),
   quit: () => invoke<void>("quit"),
+
+  exploreHome: () => invoke<ExploreHome>("explore_home"),
+  exploreSearch: (query: string, page?: number) => invoke<ExplorePage>("explore_search", { query, page }),
+  exploreDetails: (slug: string) => invoke<RepackDetails>("explore_details", { slug }),
+  downloadsList: () => invoke<DownloadItem[]>("downloads_list"),
+  downloadsDefaults: () => invoke<DownloadDefaults>("downloads_defaults"),
+  downloadsPrepare: (slug: string) => invoke<PreparedDownload>("downloads_prepare", { slug }),
+  downloadsCancelPrepare: (key: string) => invoke<void>("downloads_cancel_prepare", { key }),
+  downloadsStart: (token: string, files: number[], dir?: string | null) =>
+    invoke<DownloadItem>("downloads_start", { token, files, dir }),
+  downloadsPause: (id?: number | null) => invoke<void>("downloads_pause", { id }),
+  downloadsResume: (id?: number | null) => invoke<void>("downloads_resume", { id }),
+  downloadsMove: (id: number, pos: number) => invoke<void>("downloads_move", { id, pos }),
+  downloadsRemove: (id: number, deleteFiles: boolean) => invoke<void>("downloads_remove", { id, deleteFiles }),
+  downloadsDeleteFiles: (id: number) => invoke<void>("downloads_delete_files", { id }),
+  downloadsInstall: (id: number) => invoke<void>("downloads_install", { id }),
+  downloadsFinishInstall: (id: number, dir: string) => invoke<void>("downloads_finish_install", { id, dir }),
+  downloadsOpenFolder: (id: number) => invoke<void>("downloads_open_folder", { id }),
+  diskSpace: (path: string) => invoke<{ freeBytes?: number | null }>("disk_space", { path }),
+
+  updateCheck: (force: boolean) => invoke<UpdateCheck>("update_check", { force }),
+  updateDownload: () => invoke<{ path: string; size: number }>("update_download"),
+  updateInstall: (path: string) => invoke<void>("update_install", { path }),
 };
 
 export type Events = {
@@ -119,6 +152,11 @@ export type Events = {
   "game:state": { gameId: number; state: "launching" | "running" | "stopped"; value?: number | null };
   "app:toast": { kind: string; message: string };
   "theme:changed": { id: string };
+  "update:progress": { received: number; total: number };
+  "downloads:changed": DownloadItem[];
+  "downloads:progress": DownloadItem[];
+  "downloads:finished": { id: number; title: string };
+  "downloads:install": { id: number; phase: "running" | "done" | "cancelled" | "error" | "needs-folder"; message?: string | null; gameId?: number | null };
 };
 
 export function on<K extends keyof Events>(name: K, fn: (payload: Events[K]) => void): Promise<UnlistenFn> {

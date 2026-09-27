@@ -1,0 +1,30 @@
+[package]
+name = "ejgames-installer"
+version = "1.0.0"
+description = "Instalador de ejGames"
+authors = ["ej"]
+license = "MIT"
+edition = "2021"
+rust-version = "1.88"
+
+[build-dependencies]
+tauri-build = { version = "2.6", features = [] }
+
+[dependencies]
+# Misma minor que @tauri-apps/api y plugin-dialog del package.json (el CLI lo exige).
+tauri = { version = "~2.11", features = [] }
+tauri-plugin-dialog = "~2.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dirs = "6"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+windows = { version = "0.61", features = ["Win32_Foundation", "Win32_Storage_FileSystem"] }
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = "s"
+strip = true
+panic = "abort"

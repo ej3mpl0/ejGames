@@ -47,6 +47,7 @@ mi-tema/
   "palette": ["#101010", "#202020", "#ff4d4d", "#ffffff"],
   "host": { "accent": "#ff4d4d", "surface": "#161616", "radius": "10px", "dark": true },
   "sounds": { "preset": "soft" },
+  "overlay": { "style": "ejgames" },
   "windowControls": "host",
   "settings": [
     { "key": "accent", "type": "color", "label": "Acento", "default": "#ff4d4d" },
@@ -68,6 +69,8 @@ mi-tema/
 | `preview` | imagen para la galería. Sin ella se dibuja un boceto con `palette`. |
 | `host` | colores de las pantallas del launcher (ajustes, editor…) mientras el tema está activo. `dark: false` = claras. |
 | `sounds` | `{"preset": "soft" \| "ps" \| "xbox" \| "switch" \| "retro" \| "none"}` o ficheros propios: `{"move": "sounds/move.wav", "select": …, "back": …, "launch": …, "error": …, "open": …}`. |
+| `overlay` | aspecto de los avisos de logros dentro del juego: `{"style": "steam" \| "playstation" \| "xbox" \| "switch" \| "cinema" \| "retro" \| "ejgames"}`. `ejgames` (el de serie) usa los colores de `host`; los demás imitan a su plataforma y respetan los ajustes `accent`, `dark` y `palette` del tema. El usuario puede cambiarlo en **Ajustes → Overlay**. |
+| `features` | vistas que pinta el propio tema: `{"explore": true}` (Explorar y Descargas). Sin ello, el host abre las suyas. |
 | `windowControls` | `"host"`: ejGames pinta minimizar/maximizar/cerrar arriba a la derecha (aparecen al pasar el ratón). `"theme"`: los pinta el tema con `ejg.window.*`. |
 | `settings` | opciones que aparecen en **Ajustes → Apariencia** para cualquier usuario, sin tocar código. |
 
@@ -179,6 +182,86 @@ esperar, usa `game.achievements` de la biblioteca.
 - Un logro oculto sin desbloquear llega como «Logro oculto», sin icono ni
   descripción.
 
+### Explorar y descargas
+
+**Explorar** es la tienda de repacks del launcher y **Descargas**, la cola de su
+torrent integrado (con el botón «Instalar» al terminar). Un tema puede pintar las
+dos cosas a su manera: declara en `theme.json`
+
+```json
+"features": { "explore": true }
+```
+
+y el menú rápido, **Ctrl+E**, **Ctrl+J** y los avisos del host le pedirán que abra
+su vista en vez de abrir las ventanas genéricas del launcher:
+
+```js
+ejg.ui.onView(({ view, slug }) => {
+  // view: "explore" | "downloads" | "repack" (una ficha: slug)
+});
+```
+
+Sin `features.explore`, el tema no tiene que hacer nada: el host abre sus propias
+ventanas (y el tema puede abrirlas con `ejg.downloads.open("explore" | "downloads")`).
+
+```js
+ejg.explore.enabled              // el usuario tiene Explorar activado
+ejg.explore.onEnabled((on) => …)
+await ejg.explore.home()         // { sections: [{ id: "today"|"week"|"month"|"latest", title, items }] }
+await ejg.explore.search("elden", 1)   // { query, items, page, pages, total }; sin texto: novedades
+await ejg.explore.details(slug)  // ficha: screenshots [{thumb, full}], features, installSize, description
+ejg.explore.openPage(slug)       // abre la ficha en la web de la fuente
+```
+
+Cada elemento (`Repack`) trae `title`, `version`, `cover` (portada vertical,
+miniatura), `coverFull`, `hero` (captura grande; puede faltar), `genres`,
+`companies`, `languages`, `originalSize`, `repackSize`, `selective` y `status`
+(`{ state, downloadId, gameId, progress }`, con `state` = `none`, `library`,
+`queued`, `downloading`, `paused`, `seeding`, `completed`, `installing`,
+`installed` o `error`). Las imágenes ya vienen como URLs de `ejg-media`.
+
+```js
+ejg.downloads.all                // lista en memoria, al día (como mucho 1 vez/s)
+ejg.downloads.onChange((list) => …)
+const p = await ejg.downloads.prepare(slug)   // lista de archivos del torrent (puede tardar)
+// p = { token, files: [{ index, path, size, kind, label, required, selected }], dir, freeBytes,
+//       installSize, installDir, installFreeBytes }
+await ejg.downloads.start(p.token, indices, dir)   // dir: "" o una carpeta de pickFolder()
+ejg.downloads.cancelPrepare(slug)
+ejg.downloads.pause(id) / resume(id)      // sin id: todas
+ejg.downloads.move(id, 0)                  // descargar primero
+ejg.downloads.remove(id, borrarArchivos)
+ejg.downloads.install(id)                  // abre el instalador (pide administrador)
+ejg.downloads.locate(id)                   // tras instalar, elegir la carpeta del juego
+ejg.downloads.openFolder(id)
+ejg.downloads.deleteFiles(id)              // borra el repack de un juego ya instalado
+await ejg.downloads.pickFolder(actual)     // { path, freeBytes } o null
+ejg.ui.keyboard({ title, value })          // teclado en pantalla: texto o null
+```
+
+Estados de una descarga: `queued` (esperando; `pauseReason` dice por qué: `queue`,
+`playing` o `install`), `downloading` (`checking` mientras comprueba archivos),
+`paused` (la pausó el usuario), `seeding` y `completed` (lista para instalar),
+`installing`, `installed` (`gameId`) y `error` (`error`). Además: `progress`
+(0..1), `doneBytes`, `totalBytes`, `downBps`, `upBps`, `peers` y `eta` (segundos).
+
+`kind` de cada archivo: `setup` y `core` son imprescindibles; `selective` son
+idiomas y `optional`, extras que se pueden dejar sin bajar (`selected` es la
+selección propuesta: inglés, el idioma del usuario y nada opcional).
+
+El kit trae la lógica común en `/_sdk/kit/store.js`: `createExplore` (portada,
+búsqueda con espera al escribir, páginas y fichas en caché), `createDownloads`
+(la cola agrupada), `fileSelection` (lo obligatorio no se puede quitar; `bytes`,
+`error`, `fits(libre)`, `indices()`), `askQuery` (con mando abre el teclado en
+pantalla), `repackAction` (qué botón toca: Descargar, Instalar, Jugar…),
+`downloadLabel`, `canInstall`, `isActive`, `genreLabel` (los géneros llegan en
+inglés: «Open world» → «Mundo abierto») y los formatos `bytes`, `speed`, `eta`,
+`percent` y `sizeText` («from 18 GB» → «desde 18 GB»). El tema Steam lo usa todo
+(`themes/steam/store.js`).
+
+Dentro del iframe no funcionan `confirm()`, `alert()` ni `window.open()`: pinta
+tus propios diálogos.
+
 ### Mando y teclado
 
 ```js
@@ -190,7 +273,8 @@ ejg.input.on("nav", (e) => {
 ```
 
 Teclado: flechas, Enter/Espacio (accept), Esc/Retroceso (back), **E** (x),
-**F** (y), RePág/AvPág (lb/rb), Tab (rb).
+**F** (y), RePág/AvPág (lb/rb), Tab (rb). **Ctrl+E** (Explorar) y **Ctrl+J**
+(Descargas) los gestiona el host.
 
 Si no marcas un `back` como gestionado, lo usa el host: cierra lo que tenga
 abierto y, en Big Picture sin nada abierto, abre el menú rápido. El botón Guía
@@ -216,7 +300,7 @@ colores; con teclado, Enter, Esc, E y F. Se actualiza solo. Truco CSS:
 ### Host y ventana
 
 ```js
-ejg.ui.open("settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu", args)
+ejg.ui.open("settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads", args)
 ejg.ui.toast("Hecho", "ok")
 ejg.sound.play("move" | "select" | "back" | "launch" | "error" | "open")
 ejg.window.minimize(); ejg.window.maximize(); ejg.window.close(); ejg.window.fullscreen()
@@ -302,7 +386,9 @@ Los temas se ejecutan en un **iframe aislado** (origen `null`, sin
 * ❌ `localStorage`/`IndexedDB`: usa `ejg.storage`.
 
 Por eso instalar un tema de otra persona es seguro: como mucho puede lanzar
-juegos de tu biblioteca o abrir pantallas del launcher.
+juegos de tu biblioteca, abrir pantallas del launcher o gestionar descargas
+(solo en la carpeta de descargas o en una que elijas tú en el diálogo, y el
+instalador siempre pide permiso de administrador).
 
 ## Rendimiento
 

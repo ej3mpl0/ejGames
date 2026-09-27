@@ -5,6 +5,12 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.3.2
+
+**Tienda**
+- Si la tienda no carga, ahora dice por qué en vez de un error técnico: tu proveedor de internet bloquea la web, no hay conexión, un antivirus intercepta la conexión segura o la web no responde. La causa completa queda en el log.
+- La tienda y el resto de conexiones de ejGames (portadas, metadatos, actualizaciones) ya funcionan con antivirus que inspeccionan HTTPS (Avast, Kaspersky, ESET…) y con proxies de empresa: ahora también se fían de los certificados de Windows.
+
 ## 0.3.1
 
 **Tema Steam, más fiel al cliente**

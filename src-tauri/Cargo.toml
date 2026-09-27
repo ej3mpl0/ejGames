@@ -1,6 +1,6 @@
 [package]
 name = "ejgames"
-version = "0.3.1"
+version = "0.3.2"
 description = "ejGames — launcher de juegos personalizable"
 authors = ["ej"]
 license = "MIT"
@@ -26,9 +26,11 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
 thiserror = "2"
-tokio = { version = "1", features = ["rt-multi-thread", "sync", "time", "fs", "macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "time", "fs", "macros", "net"] }
 futures = "0.3"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "stream", "cookies"] }
+# Raíces de Mozilla y además las de Windows: los antivirus que inspeccionan
+# HTTPS (y los proxies de empresa) ponen la suya ahí; sin ella, error de certificado.
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "rustls-tls-native-roots", "json", "gzip", "stream", "cookies"] }
 rusqlite = { version = "0.37", features = ["bundled"] }
 rayon = "1.11"
 walkdir = "2.5"

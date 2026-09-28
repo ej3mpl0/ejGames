@@ -9,6 +9,7 @@ mod guides;
 mod launcher;
 mod library;
 mod lifecycle;
+mod maps;
 mod media;
 mod metadata;
 mod overlay;
@@ -19,6 +20,7 @@ mod settings;
 mod state;
 mod stats;
 mod themes;
+mod trainers;
 mod update;
 mod util;
 
@@ -193,6 +195,22 @@ pub fn run() {
             commands::guides_shelf,
             commands::guides_pin,
             commands::guides_progress,
+            commands::trainer_info,
+            commands::trainer_find,
+            commands::trainer_details,
+            commands::trainer_install,
+            commands::trainer_remove,
+            commands::trainer_auto,
+            commands::trainer_status,
+            commands::trainer_start,
+            commands::trainer_trigger,
+            commands::trainer_show,
+            commands::trainer_reset,
+            commands::maps_for,
+            commands::maps_search,
+            commands::maps_choose,
+            commands::maps_last,
+            commands::overlay_pin,
             commands::downloads_list,
             commands::downloads_defaults,
             commands::downloads_prepare,
@@ -244,8 +262,13 @@ pub fn run() {
                 explore: Default::default(),
                 downloads: Default::default(),
                 updater: update::Updater::new(env!("CARGO_PKG_VERSION").to_string()),
+                trainers: Default::default(),
             });
             app.manage(st.clone());
+            {
+                let st = st.clone();
+                std::thread::spawn(move || trainers::prune(&st));
+            }
 
             let st_w = st.clone();
             let _ = st.watcher.set(library::watcher::FolderWatcher::start(move |folder_id| {

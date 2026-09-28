@@ -228,6 +228,23 @@ async function loadDetails(id) {
       ),
     );
   }
+  // Trucos (trainers de FLiNG) y mapa (Map Genie): las ventanas son del host.
+  cards.push(
+    h(
+      "button",
+      { class: "mcard help-card", "data-focus": "", onclick: () => ejg.trainer.open(id) },
+      h("span", { class: "help-ico", html: '<svg viewBox="0 0 24 24"><path d="m15 4 5 5L8 21l-5-5L15 4Z"/><path d="M18 2v3M21 5h-3M4 3v2M5 4H3M20 13v2M21 14h-2"/></svg>' }),
+      h("div", { class: "lbl" }, "Trucos"),
+      h("div", { class: "sub" }, "Trainer de FLiNG"),
+    ),
+    h(
+      "button",
+      { class: "mcard help-card", "data-focus": "", onclick: () => ejg.maps.open(id) },
+      h("span", { class: "help-ico", html: '<svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>' }),
+      h("div", { class: "lbl" }, "Mapa"),
+      h("div", { class: "sub" }, "Puntos de interés"),
+    ),
+  );
   for (const t of d.trailers.slice(0, 3)) {
     cards.push(
       h(

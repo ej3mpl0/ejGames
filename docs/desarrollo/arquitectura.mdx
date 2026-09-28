@@ -18,6 +18,9 @@ src-tauri/src/     núcleo en Rust
   overlay/         ventana transparente encima del juego, atajo global, avisos y panel
   explore/         fuente de repacks (API de WordPress), lectura de fichas, caché e imágenes por ejg-media
   downloads/       motor torrent (librqbit) perezoso, cola, progreso, instalación y registro del juego
+  guides/          guías de la comunidad de Steam: HTML → bloques seguros, guardadas y progreso
+  trainers/        trainers de FLiNG: búsqueda, ficha, instalación, proceso durante la partida y SendInput
+  maps.rs          catálogo de Map Genie (sitemap), emparejado por título y elección manual
   protocols.rs     ejg-media (Range) y ejg-theme / ejg-safe (CSP + sandbox)
   lifecycle.rs     ventana, bandeja, modo ahorro (EcoQoS + recorte de memoria)
   update.rs        versiones nuevas desde GitHub Releases (descarga + SHA-256 + instalador pasivo)
@@ -35,6 +38,12 @@ Cada tema corre en un iframe aislado con origen `null`, sin `allow-same-origin` 
 Aunque WebView2 inyecta el IPC de Tauri en todos los frames, Tauri rechaza las llamadas de orígenes `null` y la CSP
 bloquea `ipc.localhost`. El tema solo habla con el host por `postMessage`, y el host valida cada llamada
 (`src/host/bridge.ts`).
+
+Los mapas de Map Genie son iframes de terceros (`sandbox` sin `allow-top-navigation` ni `allow-popups`). También
+reciben el IPC de Tauri, pero sus llamadas llegan con origen `https://mapgenie.io` y Tauri las rechaza: ningún comando
+admite orígenes remotos. Por eso `Object.prototype` no se congela con `freezePrototype` (en Windows entraría también
+en esas webs y las rompe) sino con un script propio que solo actúa en los documentos de ejGames
+(`lifecycle::FREEZE_OURS`).
 
 Si un tema se cuelga, un watchdog lo sustituye por el tema Steam servido desde otro origen (`ejg-safe`), es decir, en
 otro proceso.

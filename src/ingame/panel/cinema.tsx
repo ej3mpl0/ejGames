@@ -4,6 +4,8 @@
 
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { GuidesPane } from "../../components/guide";
+import { MapPane } from "../../components/map";
+import { TrainerPane } from "../../components/trainer";
 import { Hints } from "../../components/Hints";
 import { useOverlayNav } from "../../input/nav";
 import { useApp } from "../../store/app";
@@ -29,13 +31,15 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hms, hoursLabel, Img } from "./parts";
 import "./cinema.css";
 
-type Row = "ach" | "guides" | "shots" | "notes" | "music" | "perf" | "dl";
+type Row = "ach" | "guides" | "cheats" | "map" | "shots" | "notes" | "music" | "perf" | "dl";
 
 export function CinemaPanel({ p }: { p: Panel }) {
   const d = p.data;
   const rows: { id: Row; label: string }[] = [
     ...(p.ach.total ? [{ id: "ach" as Row, label: "Logros" }] : []),
     { id: "guides", label: "Guías" },
+    { id: "cheats", label: "Trucos" },
+    { id: "map", label: "Mapa" },
     { id: "shots", label: "Capturas" },
     { id: "notes", label: "Notas" },
     { id: "music", label: "Música" },
@@ -84,6 +88,20 @@ export function CinemaPanel({ p }: { p: Panel }) {
         </div>
       );
       break;
+    case "cheats":
+      rail = (
+        <div className="pn-guides">
+          <TrainerPane gameId={d.gameId} gameTitle={d.title} inGame />
+        </div>
+      );
+      break;
+    case "map":
+      rail = (
+        <div className="pn-guides">
+          <MapPane gameId={d.gameId} gameTitle={d.title} inGame />
+        </div>
+      );
+      break;
     case "shots":
       rail = (
         <div className="cn-shots-row">
@@ -121,7 +139,7 @@ export function CinemaPanel({ p }: { p: Panel }) {
   }
 
   return (
-    <div ref={ref} className={cls("pn-cinema", row === "guides" && "is-guides")} style={style}>
+    <div ref={ref} className={cls("pn-cinema", (row === "guides" || row === "cheats" || row === "map") && "is-guides")} style={style}>
       {/* El «fotograma congelado» es el propio juego: solo se oscurece. */}
       <div className="cn-shade" />
 
@@ -194,7 +212,7 @@ export function CinemaPanel({ p }: { p: Panel }) {
             />
           )}
         </nav>
-        <div className={cls("cn-rail", `is-${row}`)}>{rail}</div>
+        <div className={cls("cn-rail", `is-${row}`, (row === "cheats" || row === "map") && "is-guides")}>{rail}</div>
       </section>
 
       {viewer != null && <CaptureViewer k="cn" list={d.captures} index={viewer} onIndex={setViewer} onClose={() => setViewer(null)} />}

@@ -191,6 +191,8 @@ async function openDetail(id) {
     h("button", { "data-focus": "", onclick: () => (closeDetail(), start(g.id)) }, "▶ START"),
     h("button", { "data-focus": "", onclick: () => ejg.game.favorite(g.id) }, "★ FAV"),
     h("button", { "data-focus": "", onclick: () => (closeDetail(true), openGuides(g.id)) }, "? GUIDES"),
+    h("button", { "data-focus": "", onclick: () => ejg.trainer.open(g.id) }, "* CHEATS"),
+    h("button", { "data-focus": "", onclick: () => ejg.maps.open(g.id) }, "# MAP"),
     h("button", { "data-focus": "", onclick: () => (closeDetail(), ejg.game.edit(g.id)) }, "EDIT"),
     h("button", { "data-focus": "", onclick: closeDetail }, "BACK"),
   );

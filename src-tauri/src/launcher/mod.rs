@@ -244,6 +244,7 @@ impl Track {
                 );
             }
             crate::overlay::session_started(st, &self.game, profile_id, started, target.clone());
+            crate::trainers::run::session_started(st, &self.game, target.clone());
             crate::achievements::watch(st.clone(), game_id, profile_id, pad_stop.clone());
             if st.settings.get().gamepad_home_button {
                 let st_pad = st.clone();
@@ -252,6 +253,7 @@ impl Track {
         });
         pad_stop.store(true, Ordering::Relaxed);
         crate::overlay::session_ended(st, game_id);
+        crate::trainers::run::session_ended(st, game_id);
         if self.discord.is_some() {
             st.discord.clear();
         }

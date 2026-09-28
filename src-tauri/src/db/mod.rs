@@ -25,6 +25,7 @@ const MIGRATIONS: &[Migration] = &[
     // 0.5.0: fuera los juegos de tiendas.
     Migration::Rust(repo::migrate_local_only),
     Migration::Sql(include_str!("../../migrations/009_guides.sql")),
+    Migration::Sql(include_str!("../../migrations/010_trainers_maps.sql")),
 ];
 
 pub struct Db {

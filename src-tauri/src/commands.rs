@@ -1070,6 +1070,105 @@ pub async fn guides_progress(
     blocking(move || crate::guides::set_progress(&s, game_id, &id, &title, author.as_deref().unwrap_or(""), preview.as_deref(), section, scroll)).await
 }
 
+// ───────────────────────────── trucos (trainers de FLiNG) ─────────────────────────────
+
+#[tauri::command]
+pub async fn trainer_info(st: St<'_>, game_id: i64) -> CmdResult<Option<crate::trainers::Installed>> {
+    let s = st.inner().clone();
+    blocking(move || Ok(crate::trainers::installed(&s, game_id))).await
+}
+
+#[tauri::command]
+pub async fn trainer_find(st: St<'_>, game_id: i64, query: Option<String>) -> CmdResult<crate::trainers::Found> {
+    Ok(crate::trainers::find(st.inner(), game_id, query).await?)
+}
+
+#[tauri::command]
+pub async fn trainer_details(st: St<'_>, url: String) -> CmdResult<crate::trainers::fling::Page> {
+    Ok(crate::trainers::details(st.inner(), &url).await?)
+}
+
+/// Solo desde la confirmación del host (o del overlay): los temas no lo llaman.
+#[tauri::command]
+pub async fn trainer_install(st: St<'_>, game_id: i64, page_url: String, download_url: String) -> CmdResult<crate::trainers::Installed> {
+    Ok(crate::trainers::install(st.inner(), game_id, &page_url, &download_url).await?)
+}
+
+#[tauri::command]
+pub async fn trainer_remove(st: St<'_>, game_id: i64) -> CmdResult<()> {
+    let s = st.inner().clone();
+    blocking(move || Ok(crate::trainers::remove(&s, game_id)?)).await
+}
+
+#[tauri::command]
+pub async fn trainer_auto(st: St<'_>, game_id: i64, on: bool) -> CmdResult<()> {
+    let s = st.inner().clone();
+    blocking(move || Ok(crate::trainers::set_auto_start(&s, game_id, on)?)).await
+}
+
+#[tauri::command]
+pub async fn trainer_status(st: St<'_>) -> CmdResult<crate::trainers::Live> {
+    Ok(crate::trainers::run::status(st.inner()))
+}
+
+/// Abrirlo ya (desde el overlay). Si el juego va como administrador, Windows pide permiso.
+#[tauri::command]
+pub async fn trainer_start(st: St<'_>, game_id: i64) -> CmdResult<crate::trainers::Live> {
+    let s = st.inner().clone();
+    blocking(move || {
+        crate::trainers::run::start(&s, game_id, true)?;
+        Ok(crate::trainers::run::status(&s))
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn trainer_trigger(st: St<'_>, keys: String) -> CmdResult<crate::trainers::Live> {
+    let s = st.inner().clone();
+    blocking(move || Ok(crate::trainers::run::trigger(&s, &keys)?)).await
+}
+
+#[tauri::command]
+pub async fn trainer_show(st: St<'_>, visible: bool) -> CmdResult<crate::trainers::Live> {
+    let s = st.inner().clone();
+    blocking(move || Ok(crate::trainers::run::show(&s, visible)?)).await
+}
+
+#[tauri::command]
+pub async fn trainer_reset(st: St<'_>) -> CmdResult<crate::trainers::Live> {
+    Ok(crate::trainers::run::reset_toggles(st.inner()))
+}
+
+// ───────────────────────────── mapas (Map Genie) ─────────────────────────────
+
+#[tauri::command]
+pub async fn maps_for(st: St<'_>, game_id: i64) -> CmdResult<crate::maps::GameMaps> {
+    Ok(crate::maps::for_game(st.inner(), game_id).await?)
+}
+
+#[tauri::command]
+pub async fn maps_search(st: St<'_>, query: String) -> CmdResult<Vec<crate::maps::MapGame>> {
+    Ok(crate::maps::search(st.inner(), &query).await?)
+}
+
+/// `slug`: juego de Map Genie; "" = sin mapa; null = emparejar solo.
+#[tauri::command]
+pub async fn maps_choose(st: St<'_>, game_id: i64, slug: Option<String>) -> CmdResult<crate::maps::GameMaps> {
+    Ok(crate::maps::choose(st.inner(), game_id, slug).await?)
+}
+
+#[tauri::command]
+pub async fn maps_last(st: St<'_>, game_id: i64, map: String) -> CmdResult<()> {
+    let s = st.inner().clone();
+    blocking(move || Ok(crate::maps::set_last(&s, game_id, &map)?)).await
+}
+
+/// Ancla un mapa encima del juego (o lo quita con `null`).
+#[tauri::command]
+pub async fn overlay_pin(st: St<'_>, url: Option<String>) -> CmdResult<()> {
+    Ok(crate::overlay::pin_map(st.inner(), url)?)
+}
+
 // ───────────────────────────── descargas ─────────────────────────────
 
 use crate::downloads;

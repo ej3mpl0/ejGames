@@ -27,6 +27,8 @@ const UI_NAMES: Record<string, OverlayName> = {
   explore: "explore",
   downloads: "downloads",
   guides: "guides",
+  trainer: "trainer",
+  map: "map",
 };
 
 const GUIDE_SORTS = ["toprated", "trend", "mostrecent"];
@@ -120,6 +122,7 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
       const args = params?.args && typeof params.args === "object" ? params.args : null;
       if (name === "add-folder") st.open("settings", { tab: "library", addFolder: true });
       else if (name === "guides") st.open("guides", { id: libGame(args?.id), guide: args?.guide == null ? null : validGuideId(args.guide) });
+      else if (name === "trainer" || name === "map") st.open(name, { id: libGame(args?.id) });
       else if (name === "theme") st.open("settings", { tab: "appearance" });
       else if (name === "explore" || name === "downloads") st.open(name, { view: name, ...(args ?? {}) });
       else st.open(name, args);
@@ -196,6 +199,23 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
       return openGuideInBrowser(validGuideId(params?.id));
     case "guides.openLink":
       return openGuideLink(str(params?.href, 2000));
+    // Trucos: el tema solo ve el resumen; buscar e instalar pasa por la ventana del host.
+    case "trainer.info": {
+      const t = await api.trainerInfo(libGame(params?.gameId));
+      return t && {
+        name: t.name,
+        title: t.title,
+        options: t.options.length,
+        gameVersion: t.gameVersion ?? null,
+        autoStart: t.autoStart,
+        present: t.present,
+        anticheat: t.anticheat ?? null,
+      };
+    }
+    case "maps.info": {
+      const m = await api.mapsFor(libGame(params?.gameId));
+      return { game: m.game ? { name: m.game.name, maps: m.game.maps.map((x) => x.name) } : null, none: m.none };
+    }
     case "downloads.list":
       return st.downloads;
     case "downloads.defaults":

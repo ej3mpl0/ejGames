@@ -361,6 +361,22 @@ export interface GuideShelfItem {
   progress?: GuideProgress | null;
 }
 
+/** Trainer instalado para un juego (resumen). */
+export interface TrainerInfo {
+  /** Nombre del archivo en la web de FLiNG. */
+  name: string;
+  /** El juego según FLiNG. */
+  title: string;
+  /** Cuántas opciones tiene. */
+  options: number;
+  gameVersion: string | null;
+  /** Se abre solo al jugar. */
+  autoStart: boolean;
+  /** El .exe sigue en su sitio (un antivirus puede habérselo llevado). */
+  present: boolean;
+  anticheat: string | null;
+}
+
 export interface InitData {
   sdk: number;
   theme: { id: string; name: string; settings: any[] };
@@ -415,7 +431,10 @@ export interface Ejg {
   stats: { get(days?: number): Promise<any>; recent(limit?: number): Promise<any[]> };
   storage: { getAll(): Promise<Record<string, any>>; get(key: string): Promise<any>; set(key: string, value: any): Promise<void> };
   ui: {
-    open(name: "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads" | "guides", args?: any): Promise<void>;
+    open(
+      name: "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads" | "guides" | "trainer" | "map",
+      args?: any,
+    ): Promise<void>;
     toast(message: string, kind?: "info" | "ok" | "error"): Promise<void>;
     /** El host pide abrir una vista del tema (menú rápido, Ctrl+E, Ctrl+J, el indicador de descargas…). */
     onView(fn: (e: { view: "explore" | "downloads" | "repack" | "guides"; slug?: string; gameId?: number; guideId?: string | null }) => void): () => void;
@@ -442,6 +461,16 @@ export interface Ejg {
     progress(gameId: number, guide: { id: string; title: string; author?: string; authors?: string[] }, section: number, scroll: number): Promise<void>;
     openInBrowser(id: string): Promise<void>;
     openLink(href: string): Promise<void>;
+  };
+  /** Trucos con los trainers de FLiNG (buscar e instalar, siempre en la ventana del host). */
+  trainer: {
+    info(gameId: number): Promise<TrainerInfo | null>;
+    open(gameId: number): Promise<void>;
+  };
+  /** Mapas interactivos de Map Genie. */
+  maps: {
+    info(gameId: number): Promise<{ game: { name: string; maps: string[] } | null; none: boolean }>;
+    open(gameId: number): Promise<void>;
   };
   downloads: {
     readonly all: Download[];

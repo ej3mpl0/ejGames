@@ -120,6 +120,8 @@ async function openOptions(id) {
       item(g.favorite ? "Quitar de favoritos" : "Añadir a favoritos", () => (ejg.game.favorite(g.id), closeOptions())),
       item("Ver tráiler", () => playTrailer(g.id, cover)),
       item("Guías de la comunidad", () => (closeOptions(), openGuides(g.id))),
+      item("Trucos", () => ejg.trainer.open(g.id)),
+      item("Mapa del juego", () => ejg.maps.open(g.id)),
       item("Editar datos del programa", () => (closeOptions(), ejg.game.edit(g.id))),
       item("Abrir carpeta", () => ejg.game.openFolder(g.id)),
     ),

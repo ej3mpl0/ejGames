@@ -3,6 +3,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { GuidesPane } from "../../components/guide";
+import { MapPane } from "../../components/map";
+import { TrainerPane } from "../../components/trainer";
 import { Hints } from "../../components/Hints";
 import { focusNav, useOverlayNav } from "../../input/nav";
 import {
@@ -26,7 +28,7 @@ import { clock, cls, CupIcon, hms, pctNum, shortDate } from "./parts";
 import type { Achievement } from "../../api/types";
 import "./retro.css";
 
-type View = "menu" | "ach" | "guides" | "shots" | "notes" | "music" | "system" | "dl";
+type View = "menu" | "ach" | "guides" | "cheats" | "map" | "shots" | "notes" | "music" | "system" | "dl";
 
 /** El icono a 16 × 16 y ampliado sin suavizar, como un sprite. */
 function Sprite({ a }: { a: Achievement }) {
@@ -63,6 +65,8 @@ function Blocks({ value, of = 10 }: { value: number; of?: number }) {
 const TITLES: Record<Exclude<View, "menu">, string> = {
   ach: "Logros",
   guides: "Guías",
+  cheats: "Trucos",
+  map: "Mapa",
   shots: "Álbum",
   notes: "Notas",
   music: "Música",
@@ -159,6 +163,20 @@ export function RetroPanel({ p }: { p: Panel }) {
         </div>
       );
       break;
+    case "cheats":
+      screen = (
+        <div className="pn-guides">
+          <TrainerPane gameId={d.gameId} gameTitle={d.title} inGame />
+        </div>
+      );
+      break;
+    case "map":
+      screen = (
+        <div className="pn-guides">
+          <MapPane gameId={d.gameId} gameTitle={d.title} inGame />
+        </div>
+      );
+      break;
     case "notes":
       screen = <NotesEditor k="rt" p={p} placeholder="ESCRIBE AQUÍ TUS PISTAS…" />;
       break;
@@ -198,7 +216,7 @@ export function RetroPanel({ p }: { p: Panel }) {
         </span>
       </header>
 
-      <main className={cls("rt-box", view === "guides" && "is-guides")}>
+      <main className={cls("rt-box", (view === "guides" || view === "cheats" || view === "map") && "is-guides")}>
         {view === "menu" ? (
           <div ref={menuRef} className="rt-menu">
             <div className="rt-game">{d.title}</div>
@@ -207,6 +225,8 @@ export function RetroPanel({ p }: { p: Panel }) {
               {item(null, "Continuar", "", p.actions.close, "is-first")}
               {p.ach.total > 0 && item("ach", "Logros", `${p.ach.got}/${p.ach.total}`, () => setView("ach"))}
               {item("guides", "Guías", "", () => setView("guides"))}
+              {item("cheats", "Trucos", "", () => setView("cheats"))}
+              {item("map", "Mapa", "", () => setView("map"))}
               {item("shots", "Álbum", d.captures.length || "", () => setView("shots"))}
               {item("notes", "Notas", p.note.trim() ? "●" : "", () => setView("notes"))}
               {item("music", "Música", p.media ? (p.media.playing ? "♪" : "II") : "", () => setView("music"))}

@@ -111,6 +111,16 @@ pub struct PanelData {
 pub struct OverlayInit {
     pub notices: Vec<Notice>,
     pub panel: Option<PanelData>,
+    pub pin: Option<Pin>,
+}
+
+/// Mapa anclado encima del juego (sin coger clics ni el foco).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Pin {
+    pub game_id: i64,
+    /// Página de Map Genie.
+    pub url: String,
 }
 
 struct Live {
@@ -143,6 +153,8 @@ struct Inner {
     /// Ventana del juego antes de abrir el panel (para devolverle el foco).
     prev_fg: isize,
     gen: u64,
+    /// Mapa anclado: la ventana ocupa el monitor del juego y no se destruye.
+    pin: Option<Pin>,
 }
 
 #[derive(Default)]
@@ -305,8 +317,13 @@ fn place(w: &tauri::WebviewWindow, geo: Geo) {
     }
 }
 
+/// Ventana a pantalla completa del juego: con el panel o con un mapa anclado.
+fn full(st: &AppState, panel: bool) -> bool {
+    panel || st.overlay.inner.lock().pin.is_some()
+}
+
 fn apply_mode(st: &AppState, w: &tauri::WebviewWindow, panel: bool) {
-    let geo = geometry(st, panel);
+    let geo = geometry(st, full(st, panel));
     let _ = w.set_ignore_cursor_events(!panel);
     let _ = w.set_focusable(panel);
     place(w, geo);
@@ -341,7 +358,7 @@ fn ensure_window(st: &Arc<AppState>) {
             tokio::time::sleep(Duration::from_millis(20)).await;
         }
         let panel = st.overlay.panel_open.load(Ordering::Relaxed);
-        let geo = geometry(&st, panel);
+        let geo = geometry(&st, full(&st, panel));
         tracing::info!("overlay: creando ventana en {:?} (escala {}), panel: {panel}", geo.rect, geo.scale);
         let (x, y, cw, ch) = geo.rect;
         let sc = geo.scale.max(0.5);
@@ -364,6 +381,7 @@ fn ensure_window(st: &Arc<AppState>) {
             .position(x as f64 / sc, y as f64 / sc)
             .inner_size(cw as f64 / sc, ch as f64 / sc)
             .background_color(tauri::window::Color(0, 0, 0, 0))
+            .initialization_script(crate::lifecycle::FREEZE_OURS)
             .build();
         match built {
             Ok(w) => {
@@ -381,7 +399,7 @@ fn ensure_window(st: &Arc<AppState>) {
                 // Por si Windows la reajustó al mostrarla (DPI por monitor).
                 tokio::time::sleep(Duration::from_millis(250)).await;
                 let panel = st.overlay.panel_open.load(Ordering::Relaxed);
-                place(&w, geometry(&st, panel));
+                place(&w, geometry(&st, full(&st, panel)));
             }
             Err(e) => {
                 tracing::warn!("overlay: {e}");
@@ -405,7 +423,7 @@ fn schedule_destroy(st: &Arc<AppState>) {
         tokio::time::sleep(Duration::from_secs(4)).await;
         {
             let mut g = st.overlay.inner.lock();
-            if g.gen != gen || !g.alive || g.panel.is_some() || !g.pending.is_empty() {
+            if g.gen != gen || !g.alive || g.panel.is_some() || g.pin.is_some() || !g.pending.is_empty() {
                 return;
             }
             g.alive = false;
@@ -611,16 +629,55 @@ pub fn on_ready(st: &Arc<AppState>) -> OverlayInit {
     let mut g = st.overlay.inner.lock();
     g.ready = true;
     g.gen += 1;
-    OverlayInit { notices: std::mem::take(&mut g.pending), panel: g.panel.clone() }
+    OverlayInit { notices: std::mem::take(&mut g.pending), panel: g.panel.clone(), pin: g.pin.clone() }
 }
 
 /// La página no enseña nada: destruir la ventana en unos segundos.
 pub fn on_idle(st: &Arc<AppState>) {
-    if st.overlay.panel_open.load(Ordering::Relaxed) {
+    if st.overlay.panel_open.load(Ordering::Relaxed) || st.overlay.inner.lock().pin.is_some() {
         return;
     }
     schedule_destroy(st);
 }
+
+// ───────────────────────────── mapa anclado ─────────────────────────────
+
+/// Ancla un mapa de Map Genie encima del juego (y cierra el panel devolviendo
+/// el foco al juego) o lo quita (`None`).
+pub fn pin_map(st: &Arc<AppState>, url: Option<String>) -> anyhow::Result<()> {
+    let pin = match url {
+        Some(u) => {
+            let ok = url::Url::parse(&u).map(|x| x.scheme() == "https" && x.host_str() == Some("mapgenie.io")).unwrap_or(false);
+            if !ok {
+                anyhow::bail!("Solo mapas de Map Genie");
+            }
+            let game_id = st.overlay.inner.lock().live.as_ref().map(|l| l.game_id).ok_or_else(|| anyhow::anyhow!("No hay ningún juego en marcha"))?;
+            Some(Pin { game_id, url: u })
+        }
+        None => None,
+    };
+    let pinning = pin.is_some();
+    let was_pinned = {
+        let mut g = st.overlay.inner.lock();
+        if !pinning && g.pin.is_none() {
+            return Ok(());
+        }
+        std::mem::replace(&mut g.pin, pin.clone()).is_some()
+    };
+    let _ = st.app.emit_to(LABEL, "overlay:pin", &pin);
+    // Anclar cierra el panel; cambiar de mapa ya anclado, no.
+    if pinning && !was_pinned && st.overlay.panel_open.load(Ordering::Relaxed) {
+        // close_panel recoloca la ventana en modo anclado.
+        close_panel(st, true);
+    } else if let Some(w) = st.app.get_webview_window(LABEL) {
+        apply_mode(st, &w, st.overlay.panel_open.load(Ordering::Relaxed));
+    }
+    if pinning {
+        ensure_window(st);
+    }
+    Ok(())
+}
+
 
 // ───────────────────────────── panel ─────────────────────────────
 
@@ -942,6 +999,7 @@ pub fn session_ended(st: &Arc<AppState>, game_id: i64) {
     };
     if let Some(live) = ended {
         close_panel(st, false);
+        let _ = pin_map(st, None);
         session_summary(st, live);
     }
 }

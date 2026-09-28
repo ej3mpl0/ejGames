@@ -5,6 +5,30 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.6.0
+
+**Trucos**
+- Trucos para tus juegos de un jugador con los trainers de FLiNG, al estilo WeMod. En la ficha del juego (o en el
+  overlay) ejGames busca su trainer y te enseña sus opciones, la versión del juego que cubre, las notas del autor y
+  si el juego tiene antitrampas. Solo se descarga si tú lo confirmas.
+- Al jugar, el trainer se abre solo cuando el juego ya ha cargado, sin permisos de administrador y con su ventana
+  escondida, y se cierra con el juego. Se puede desactivar («Abrir con el juego») o abrirlo a mano.
+- **Pestaña Trucos en el overlay**, en los siete estilos: interruptores para lo que se activa y desactiva, botones
+  para lo que se hace una vez (+1 hora, teletransporte…) y «Ver la ventana del trainer» para las opciones que piden
+  un valor. ejGames pulsa las teclas del trainer por ti; sus teclas de siempre también funcionan.
+- Si Windows Defender se lleva el trainer (los antivirus suelen marcarlos), ejGames lo dice y explica cómo recuperarlo.
+
+**Mapas**
+- Mapas interactivos de Map Genie, con todos sus puntos de interés, para unos 250 juegos. ejGames encuentra solo el
+  de cada juego; si no acierta, lo eliges tú (o dices que no tiene mapa).
+- **Pestaña Mapa en el overlay** y botón Mapa en la ficha de cada tema.
+- **Anclado**: el mapa se queda en una esquina encima del juego, semitransparente y sin quitarle el foco. Tamaño,
+  transparencia y esquina a tu gusto.
+
+**Y además**
+- Los seis temas tienen su entrada a Trucos y Mapa junto a las guías.
+- Para temas: `ejg.trainer.info/open` y `ejg.maps.info/open`. Instalar un trainer siempre pasa por la ventana del host.
+
 ## 0.5.0
 
 **Solo juegos locales**

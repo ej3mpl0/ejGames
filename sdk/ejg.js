@@ -286,7 +286,8 @@
       set: function (key, value) { return call("storage.set", { key: key, value: value === undefined ? null : value }); },
     },
     ui: {
-      /** settings | game | profiles | search | add-folder | stats | theme | collections | menu | explore | downloads | guides ({id: gameId}) */
+      /** settings | game | profiles | search | add-folder | stats | theme | collections | menu | explore | downloads
+       *  | guides, trainer, map ({id: gameId}) */
       open: function (name, args) { return call("ui.open", { name: name, args: args || null }); },
       toast: function (message, kind) { return call("ui.toast", { message: message, kind: kind || "info" }); },
       /** El host pide abrir una vista del tema: fn({view: "explore"|"downloads"|"repack"|"guides", slug?, gameId?, guideId?}). */
@@ -332,6 +333,20 @@
       openInBrowser: function (id) { return call("guides.openInBrowser", { id: String(id) }); },
       /** Un enlace de una guía ya leída (span.href o el url de un vídeo). */
       openLink: function (href) { return call("guides.openLink", { href: href }); },
+    },
+    trainer: {
+      /** Trainer de FLiNG instalado para el juego, o null:
+       *  {name, title, options (cuántas), gameVersion, autoStart, present, anticheat}. */
+      info: function (gameId) { return call("trainer.info", { gameId: gameId }); },
+      /** Ventana de trucos del host: buscar, ver opciones, instalar (lo confirma
+       *  el usuario) y gestionar. Durante la partida, se usan desde el overlay. */
+      open: function (gameId) { return call("ui.open", { name: "trainer", args: { id: gameId } }); },
+    },
+    maps: {
+      /** Mapa de Map Genie del juego: {game: {name, maps: [nombre]} | null, none}. */
+      info: function (gameId) { return call("maps.info", { gameId: gameId }); },
+      /** Abre el mapa en una ventana del host. */
+      open: function (gameId) { return call("ui.open", { name: "map", args: { id: gameId } }); },
     },
     downloads: {
       /** Lista en memoria (se actualiza sola, como mucho una vez por segundo). */

@@ -42,4 +42,5 @@ pub struct AppState {
     pub explore: crate::explore::Explore,
     pub downloads: crate::downloads::Downloads,
     pub updater: crate::update::Updater,
+    pub trainers: crate::trainers::Trainers,
 }

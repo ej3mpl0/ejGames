@@ -205,6 +205,8 @@ async function openModal(id) {
         h("button", { class: "round", "data-focus": "", title: "Editar (X)", onclick: () => ejg.game.edit(g.id) }, "✎"),
         h("button", { class: "round", "data-focus": "", title: "Carpeta", onclick: () => ejg.game.openFolder(g.id) }, "📁"),
         h("button", { class: "round", "data-focus": "", title: "Guías de la comunidad", onclick: () => openGuides(g.id) }, "📖"),
+        h("button", { class: "round", "data-focus": "", title: "Trucos", onclick: () => ejg.trainer.open(g.id) }, "✨"),
+        h("button", { class: "round", "data-focus": "", title: "Mapa", onclick: () => ejg.maps.open(g.id) }, "🗺️"),
       ),
     ),
   );

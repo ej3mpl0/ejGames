@@ -179,6 +179,13 @@ export interface OverlayLive {
 export interface OverlayInit {
   notices: OverlayNotice[];
   panel?: OverlayPanel | null;
+  pin?: OverlayPin | null;
+}
+
+/** Mapa anclado encima del juego. */
+export interface OverlayPin {
+  gameId: number;
+  url: string;
 }
 
 export interface MediaItem {
@@ -733,6 +740,93 @@ export interface GuideShelfItem {
 export interface GuideShelf {
   pinned: GuideShelfItem[];
   recent: GuideShelfItem[];
+}
+
+// ───────────────────────────── trucos (FLiNG) ─────────────────────────────
+
+export interface TrainerOption {
+  /** "Ctrl+Num 1": identifica la opción. */
+  keys: string;
+  label: string;
+  group?: string | null;
+  /** toggle | action (una vez) | value (necesita un valor en el trainer) */
+  kind: "toggle" | "action" | "value";
+}
+
+export interface TrainerCandidate {
+  title: string;
+  url: string;
+  updated: string;
+  score: number;
+}
+
+export interface TrainerFound {
+  query: string;
+  candidates: TrainerCandidate[];
+}
+
+export interface TrainerDownload {
+  name: string;
+  url: string;
+  date: string;
+  size: string;
+}
+
+export interface TrainerPage {
+  title: string;
+  url: string;
+  gameVersion?: string | null;
+  updated?: string | null;
+  options: TrainerOption[];
+  notes: string[];
+  anticheat?: string | null;
+  downloads: TrainerDownload[];
+}
+
+export interface TrainerInstalled {
+  gameId: number;
+  name: string;
+  title: string;
+  pageUrl: string;
+  gameVersion?: string | null;
+  updated?: string | null;
+  options: TrainerOption[];
+  notes: string[];
+  anticheat?: string | null;
+  autoStart: boolean;
+  installedAt: number;
+  size: number;
+  /** El .exe sigue en su sitio. */
+  present: boolean;
+}
+
+export interface TrainerLive {
+  gameId?: number | null;
+  state: "none" | "idle" | "waiting" | "starting" | "running" | "stopped" | "error";
+  message?: string | null;
+  on: string[];
+  visible: boolean;
+  elevated: boolean;
+}
+
+// ───────────────────────────── mapas (Map Genie) ─────────────────────────────
+
+export interface MapRef {
+  slug: string;
+  name: string;
+}
+
+export interface MapGame {
+  slug: string;
+  name: string;
+  maps: MapRef[];
+}
+
+export interface GameMaps {
+  game?: MapGame | null;
+  manual: boolean;
+  none: boolean;
+  lastMap?: string | null;
 }
 
 // ───────────────────────────── actualizaciones ─────────────────────────────

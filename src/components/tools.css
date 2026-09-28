@@ -1,0 +1,362 @@
+/* Trucos (trainers) y Mapa: mismas variables que las guías (--gd-*), así
+   que cada panel del overlay y la ventana del host les dan su aspecto. */
+
+.tt-pane {
+  gap: 0;
+}
+.tt-pane .gd-pane-list {
+  padding-bottom: 12px;
+}
+.tt-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.tt-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.tt-title b {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.tt-title small {
+  font-size: 12.5px;
+  color: var(--gd-muted);
+}
+.tt-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--gd-surface-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tt-state i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gd-muted);
+}
+.tt-state.is-running i {
+  background: #3ddc84;
+  box-shadow: 0 0 8px #3ddc84;
+}
+.tt-state.is-waiting i,
+.tt-state.is-starting i {
+  background: #f5c518;
+  animation: tt-blink 1s ease-in-out infinite;
+}
+.tt-state.is-error i {
+  background: #ff5a5f;
+}
+@keyframes tt-blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+.tt-actions,
+.tt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+.tt-actions.is-foot {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--gd-line);
+}
+.gd-chip.is-primary {
+  background: var(--gd-accent);
+  color: #fff;
+  font-weight: 600;
+}
+.gd-chip.is-danger {
+  background: #c0392b;
+  color: #fff;
+}
+.gd-chip:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.tt-hint,
+.tt-note {
+  margin: 6px 2px 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--gd-muted);
+}
+.tt-note {
+  padding: 8px 12px;
+  border-radius: var(--gd-radius);
+  background: var(--gd-surface);
+  border-left: 3px solid #f5c518;
+  color: var(--gd-fg);
+}
+.tt-error {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: var(--gd-radius);
+  background: color-mix(in srgb, #ff5a5f 16%, transparent);
+  border-left: 3px solid #ff5a5f;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.tt-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  max-width: 90%;
+  padding: 9px 16px;
+  border-radius: var(--gd-radius);
+  background: var(--gd-bg, #111);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--gd-line);
+  font-size: 13px;
+  z-index: 5;
+}
+
+/* opciones */
+.tt-opts,
+.tt-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tt-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tt-opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 7px 12px;
+  border-radius: var(--gd-radius);
+  background: var(--gd-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tt-opt:hover:not(:disabled) {
+  background: var(--gd-surface-2);
+}
+.tt-opt.is-focused {
+  background: var(--gd-surface-2);
+  box-shadow: var(--gd-focus);
+}
+.tt-opt:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.tt-opt-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.tt-opt-label {
+  font-size: 14.5px;
+  font-weight: 500;
+}
+.tt-opt-main small {
+  font-size: 11.5px;
+  color: var(--gd-muted);
+}
+.tt-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--gd-surface-2);
+  box-shadow: inset 0 0 0 1px var(--gd-line);
+  transition: background 0.15s ease;
+}
+.tt-switch i {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--gd-muted);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.tt-opt.is-on .tt-switch {
+  background: var(--gd-accent);
+}
+.tt-opt.is-on .tt-switch i {
+  transform: translateX(16px);
+  background: #fff;
+}
+.tt-opt.is-action .tt-switch {
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: var(--gd-muted);
+  background: none;
+}
+.tt-keys {
+  display: inline-flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.tt-keys kbd {
+  min-width: 22px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--gd-surface-2);
+  box-shadow: inset 0 -1px 0 var(--gd-line);
+  font: 600 11px/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  text-align: center;
+  color: var(--gd-muted);
+}
+.tt-prow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+  border-radius: var(--gd-radius);
+  background: var(--gd-surface);
+  font-size: 13.5px;
+}
+
+/* Sin partida (ventana del host): las opciones en columnas, que son muchas. */
+.tt-preview .tt-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 4px 8px;
+}
+.tt-preview .tt-group > .gd-sub {
+  grid-column: 1 / -1;
+}
+
+/* ficha antes de instalar */
+.tt-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 13px;
+  color: var(--gd-muted);
+}
+.tt-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--gd-muted);
+}
+.tt-notes p {
+  margin: 0;
+}
+.tt-confirm {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: var(--gd-radius);
+  background: var(--gd-surface);
+  box-shadow: inset 0 0 0 1px var(--gd-line);
+}
+.tt-confirm p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.tt-warn {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--gd-muted);
+}
+.tt-warn .is-strong {
+  color: var(--gd-fg);
+  font-weight: 600;
+}
+
+/* ─── mapa ─── */
+.mp-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mp-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.mp-bar .tt-chips {
+  margin: 0;
+}
+.mp-pinbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--gd-muted);
+}
+.mp-pinbar .gd-chip {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+.mp-op {
+  min-width: 42px;
+  text-align: center;
+}
+.mp-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: var(--gd-radius);
+  overflow: hidden;
+  background: #0b0d10;
+}
+.mp-slot,
+.mp-inline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.mp-foot {
+  font-size: 11.5px;
+  color: var(--gd-muted);
+}
+/* El iframe del overlay (MapHost): encima del hueco o anclado en una esquina. */
+.mp-frame {
+  position: fixed;
+  z-index: 40;
+  border: 0;
+  background: #0b0d10;
+  pointer-events: auto;
+}
+.mp-frame.is-pinned {
+  z-index: 30;
+  pointer-events: none;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
+}

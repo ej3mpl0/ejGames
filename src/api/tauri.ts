@@ -15,6 +15,7 @@ import type {
   OverlayInit,
   FolderInspection,
   GameDetails,
+  GameMaps,
   Guide,
   GuideList,
   GuideQuery,
@@ -34,6 +35,11 @@ import type {
   ThemeInfo,
   UninstallPlan,
   UpdateCheck,
+  MapGame,
+  TrainerFound,
+  TrainerInstalled,
+  TrainerLive,
+  TrainerPage,
 } from "./types";
 
 export const api = {
@@ -144,6 +150,25 @@ export const api = {
     invoke<void>("guides_pin", { gameId, id, title, author, preview, value }),
   guidesProgress: (gameId: number, id: string, title: string, author: string, preview: string | null, section: number, scroll: number) =>
     invoke<void>("guides_progress", { gameId, id, title, author, preview, section, scroll }),
+  // Trucos (trainers de FLiNG)
+  trainerInfo: (gameId: number) => invoke<TrainerInstalled | null>("trainer_info", { gameId }),
+  trainerFind: (gameId: number, query?: string) => invoke<TrainerFound>("trainer_find", { gameId, query: query ?? null }),
+  trainerDetails: (url: string) => invoke<TrainerPage>("trainer_details", { url }),
+  trainerInstall: (gameId: number, pageUrl: string, downloadUrl: string) =>
+    invoke<TrainerInstalled>("trainer_install", { gameId, pageUrl, downloadUrl }),
+  trainerRemove: (gameId: number) => invoke<void>("trainer_remove", { gameId }),
+  trainerAuto: (gameId: number, on: boolean) => invoke<void>("trainer_auto", { gameId, on }),
+  trainerStatus: () => invoke<TrainerLive>("trainer_status"),
+  trainerStart: (gameId: number) => invoke<TrainerLive>("trainer_start", { gameId }),
+  trainerTrigger: (keys: string) => invoke<TrainerLive>("trainer_trigger", { keys }),
+  trainerShow: (visible: boolean) => invoke<TrainerLive>("trainer_show", { visible }),
+  trainerReset: () => invoke<TrainerLive>("trainer_reset"),
+  // Mapas (Map Genie)
+  mapsFor: (gameId: number) => invoke<GameMaps>("maps_for", { gameId }),
+  mapsSearch: (query: string) => invoke<MapGame[]>("maps_search", { query }),
+  mapsChoose: (gameId: number, slug: string | null) => invoke<GameMaps>("maps_choose", { gameId, slug }),
+  mapsLast: (gameId: number, map: string) => invoke<void>("maps_last", { gameId, map }),
+  overlayPin: (url: string | null) => invoke<void>("overlay_pin", { url }),
   downloadsList: () => invoke<DownloadItem[]>("downloads_list"),
   downloadsDefaults: () => invoke<DownloadDefaults>("downloads_defaults"),
   downloadsPrepare: (slug: string) => invoke<PreparedDownload>("downloads_prepare", { slug }),

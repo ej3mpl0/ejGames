@@ -3,8 +3,10 @@
 // panel a la derecha (como la de trofeos).
 
 import { useRef, useState, type ReactNode } from "react";
-import { Activity, BookOpen, Download, Gamepad2, Image as ImageIcon, Music2, NotebookPen, Power, Volume2 } from "lucide-react";
+import { Activity, BookOpen, Download, Gamepad2, Image as ImageIcon, MapIcon, Music2, NotebookPen, Power, Volume2, WandSparkles } from "lucide-react";
 import { GuidesPane } from "../../components/guide";
+import { MapPane } from "../../components/map";
+import { TrainerPane } from "../../components/trainer";
 import { Hints } from "../../components/Hints";
 import { focusNav, useOverlayNav } from "../../input/nav";
 import {
@@ -28,7 +30,7 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, CupIcon, downloadLine, dur, hoursLabel, Img, pctNum, shortDate } from "./parts";
 import "./playstation.css";
 
-type Sheet = "game" | "trophies" | "help" | "shots" | "music" | "notes" | "perf" | "dl";
+type Sheet = "game" | "trophies" | "help" | "cheats" | "map" | "shots" | "music" | "notes" | "perf" | "dl";
 
 type Grade = "platinum" | "gold" | "silver" | "bronze";
 const GRADES: Grade[] = ["platinum", "gold", "silver", "bronze"];
@@ -178,6 +180,22 @@ export function PlayStationPanel({ p }: { p: Panel }) {
         </div>
       ),
     },
+    cheats: {
+      title: "Trucos",
+      body: (
+        <div className="pn-guides">
+          <TrainerPane gameId={d.gameId} gameTitle={d.title} inGame />
+        </div>
+      ),
+    },
+    map: {
+      title: "Mapa",
+      body: (
+        <div className="pn-guides">
+          <MapPane gameId={d.gameId} gameTitle={d.title} inGame />
+        </div>
+      ),
+    },
     shots: {
       title: "Capturas",
       body: (
@@ -221,7 +239,7 @@ export function PlayStationPanel({ p }: { p: Panel }) {
       <div className="ps5-shade" onMouseDown={() => (sheet ? setSheet(null) : p.actions.close())} />
 
       {sheet && (
-        <section className={cls("ps5-sheet", sheet === "help" && "is-wide")} data-focus-trap key={sheet} ref={focusFirst}>
+        <section className={cls("ps5-sheet", (sheet === "help" || sheet === "cheats" || sheet === "map") && "is-wide")} data-focus-trap key={sheet} ref={focusFirst}>
           <header className="ps5-sheet-head">
             <h2>{SHEETS[sheet].title}</h2>
             <Hints items={[["back", "Atrás"]]} />
@@ -323,6 +341,8 @@ export function PlayStationPanel({ p }: { p: Panel }) {
             {icon("Abrir ejGames", <Gamepad2 />, p.actions.launcher)}
             {icon("Hacer captura", <ImageIcon />, p.actions.screenshot)}
             {icon("Ayuda del juego", <BookOpen />, () => setSheet("help"))}
+            {icon("Trucos", <WandSparkles />, () => setSheet("cheats"))}
+            {icon("Mapa", <MapIcon />, () => setSheet("map"))}
             {icon("Música", <Music2 />, () => setSheet("music"))}
             {icon("Sonido", <Volume2 />, () => setSheet("music"))}
             {icon("Notas", <NotebookPen />, () => setSheet("notes"))}

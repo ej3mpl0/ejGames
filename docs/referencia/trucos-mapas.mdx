@@ -1,0 +1,51 @@
+---
+title: "Trucos y mapas"
+description: "ejg.trainer y ejg.maps: los trainers de FLiNG y los mapas de Map Genie de cada juego."
+icon: "map"
+---
+
+ejGames trae dos herramientas por juego que se usan sobre todo **durante la partida**, desde el overlay:
+
+- **Trucos**: el trainer de [FLiNG](https://flingtrainer.com) del juego. ejGames lo abre al jugar (sin permisos de
+  administrador y con la ventana escondida), pulsa sus teclas desde el overlay y lo cierra con el juego.
+- **Mapa**: el mapa interactivo de [Map Genie](https://mapgenie.io) del juego, con sus puntos de interés. En el
+  overlay se puede anclar en una esquina, encima del juego.
+
+En la ficha de tu tema basta con **dos botones** que abran las ventanas del host: buscar e instalar un trainer siempre
+pasa por el host, que enseña de dónde viene, cuánto pesa y sus avisos, y pide confirmación. Ningún tema puede
+instalar nada.
+
+```js
+h("button", { onclick: () => ejg.trainer.open(juego.id) }, "Trucos");
+h("button", { onclick: () => ejg.maps.open(juego.id) }, "Mapa");
+```
+
+Los seis temas de serie los ponen junto a las guías: enlaces en la barra del juego (Steam), tarjetas (PS5), botones
+del hub (Xbox), opciones del juego (Switch), botones redondos (Cine) y `* CHEATS` / `# MAP` (Retro).
+
+## Para enseñar el estado
+
+Si quieres decir algo más que «Trucos», pide el resumen:
+
+```js
+const t = await ejg.trainer.info(gameId);
+// null (sin trainer) o { name, title, options, gameVersion, autoStart, present, anticheat }
+
+const m = await ejg.maps.info(gameId);
+// { game: { name: "Elden Ring", maps: ["The Lands Between", "The Shadow Realm"] } | null, none }
+```
+
+| Campo | Qué es |
+|---|---|
+| `options` | cuántas opciones tiene el trainer |
+| `gameVersion` | versiones del juego que cubre, según FLiNG (`"v1.02-v1.16.*+"`) |
+| `autoStart` | se abre solo al jugar |
+| `present` | el `.exe` sigue en su sitio (un antivirus puede habérselo llevado) |
+| `anticheat` | el juego tiene antitrampas (`"EasyAntiCheat"`, `"BattlEye"`…): solo sin conexión |
+| `m.game` | `null` si ejGames no encontró el juego en Map Genie (en la ventana del host se elige a mano) |
+| `m.none` | el usuario dijo que el juego no tiene mapa |
+
+```js
+const t = await ejg.trainer.info(juego.id);
+boton.textContent = t ? `Trucos · ${t.options}` : "Buscar trucos";
+```

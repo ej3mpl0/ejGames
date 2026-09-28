@@ -674,6 +674,8 @@ async function renderGame(id) {
     "div",
     { class: "game-nav", "data-focus-group": "gnav" },
     link("Guías", () => openGuides(g.id)),
+    link("Trucos", () => ejg.trainer.open(g.id)),
+    link("Mapa", () => ejg.maps.open(g.id)),
     link("Explorar archivos locales", () => ejg.game.openFolder(g.id)),
     link("Propiedades", () => ejg.game.edit(g.id)),
     link("Estadísticas", () => ejg.ui.open("stats")),

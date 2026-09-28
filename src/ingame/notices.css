@@ -12,7 +12,8 @@
   padding: 24px;
   box-sizing: border-box;
   pointer-events: none;
-  z-index: 10;
+  /* Por encima del mapa (anclado o en su pestaña). */
+  z-index: 45;
 }
 .nt-stack.bottom-right { right: 0; bottom: 0; flex-direction: column-reverse; align-items: flex-end; }
 .nt-stack.bottom-left { left: 0; bottom: 0; flex-direction: column-reverse; align-items: flex-start; }

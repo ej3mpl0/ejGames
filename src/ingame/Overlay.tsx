@@ -5,13 +5,16 @@
 //   música, volumen, rendimiento, descargas y cerrar el juego. Se abre con el
 //   atajo o el botón Guía; el núcleo manda la navegación del mando (el Gamepad
 //   API no sirve cuando el foco lo tiene el juego) y los datos vivos.
+// - Mapa: un iframe de Map Genie en la raíz (MapHost), que se coloca encima de
+//   la pestaña Mapa o se ancla en una esquina encima del juego.
 // Cuando no queda nada que enseñar se avisa al núcleo y la ventana se destruye.
 
 import { useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api } from "../api/tauri";
-import type { NavAction, OverlayLive, OverlayNotice, OverlayPanel } from "../api/types";
+import type { NavAction, OverlayLive, OverlayNotice, OverlayPanel, OverlayPin } from "../api/types";
+import { MapHost, useMapHost } from "../components/map";
 import { padTypeOf } from "../input/gamepad";
 import { configureSounds } from "../host/sounds";
 import { dispatchNav } from "../input/nav";
@@ -45,6 +48,7 @@ export function Overlay() {
   const [panel, setPanel] = useState<OverlayPanel | null>(null);
   const [live, setLive] = useState<OverlayLive>(NO_LIVE);
   const [ready, setReady] = useState(false);
+  const [pinned, setPinned] = useState(false);
   const panelRef = useRef<OverlayPanel | null>(null);
   panelRef.current = panel;
 
@@ -53,6 +57,7 @@ export function Overlay() {
       listen<OverlayNotice>("overlay:notice", (e) => setQueue((q) => [...q, e.payload])),
       listen<OverlayPanel | null>("overlay:panel", (e) => openPanel(e.payload)),
       listen<OverlayLive>("overlay:live", (e) => setLive(e.payload)),
+      listen<OverlayPin | null>("overlay:pin", (e) => setPin(e.payload)),
       listen<NavAction>("overlay:nav", (e) => {
         useApp.getState().set({ inputSource: "gamepad" });
         dispatchNav(e.payload, false, "gamepad");
@@ -62,6 +67,7 @@ export function Overlay() {
       const init = await api.overlayReady();
       if (init.notices.length) setQueue((q) => [...q, ...init.notices]);
       if (init.panel) openPanel(init.panel);
+      setPin(init.pin ?? null);
       setReady(true);
     });
     // Sin foco con el panel abierto (Alt+Tab, clic en otra ventana): cerrarlo.
@@ -97,6 +103,11 @@ export function Overlay() {
     };
   }, []);
 
+  function setPin(pin: OverlayPin | null) {
+    useMapHost.setState({ pin });
+    setPinned(!!pin);
+  }
+
   function openPanel(p: OverlayPanel | null) {
     if (p) {
       const pads = navigator.getGamepads?.().filter(Boolean) ?? [];
@@ -104,8 +115,10 @@ export function Overlay() {
       if (!panelRef.current) setLive(p.live ?? NO_LIVE);
       configureSounds({ volume: p.soundsVolume, preset: "soft" });
     } else {
-      // Cerrar el panel cierra también el teclado en pantalla.
+      // Cerrar el panel cierra también el teclado en pantalla y suelta el mapa
+      // (si no está anclado).
       useApp.getState().closeAll();
+      useMapHost.setState({ url: null, slot: null });
     }
     setPanel(p);
   }
@@ -128,14 +141,15 @@ export function Overlay() {
 
   // Nada que enseñar: el núcleo destruye la ventana.
   useEffect(() => {
-    if (!ready || queue.length || shown.length || panel) return;
+    if (!ready || queue.length || shown.length || panel || pinned) return;
     const t = setTimeout(() => void api.overlayIdle(), 400);
     return () => clearTimeout(t);
-  }, [ready, queue.length, shown.length, panel]);
+  }, [ready, queue.length, shown.length, panel, pinned]);
 
   return (
     <div className="ig-root">
       {panel && <PanelView key={panel.gameId} data={panel} live={live} />}
+      <MapHost panelOpen={!!panel} />
       {panel && <Keyboards />}
       {shown.length > 0 && (
         <NoticeStack corner={shown[shown.length - 1].look.corner}>

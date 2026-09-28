@@ -4,6 +4,8 @@
 
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { GuidesPane } from "../../components/guide";
+import { MapPane } from "../../components/map";
+import { TrainerPane } from "../../components/trainer";
 import { Hints } from "../../components/Hints";
 import { useOverlayNav } from "../../input/nav";
 import { useApp } from "../../store/app";
@@ -28,7 +30,7 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dayLabel, dur, hoursLabel } from "./parts";
 import "./ejgames.css";
 
-type Sec = "ach" | "guides" | "shots" | "notes" | "music" | "perf" | "dl";
+type Sec = "ach" | "guides" | "cheats" | "map" | "shots" | "notes" | "music" | "perf" | "dl";
 
 export function EjGamesPanel({ p }: { p: Panel }) {
   const d = p.data;
@@ -52,6 +54,8 @@ export function EjGamesPanel({ p }: { p: Panel }) {
   const secs: { id: Sec; label: string; info: string }[] = [
     { id: "ach", label: "Logros", info: p.ach.total ? `${p.ach.got}/${p.ach.total}` : "—" },
     { id: "guides", label: "Guías", info: "" },
+    { id: "cheats", label: "Trucos", info: "" },
+    { id: "map", label: "Mapa", info: "" },
     { id: "shots", label: "Capturas", info: d.captures.length ? String(d.captures.length) : "" },
     { id: "notes", label: "Notas", info: p.note.trim() ? `${p.note.trim().split("\n").length} líneas` : "" },
     { id: "music", label: "Música y sonido", info: p.media ? (p.media.playing ? "Sonando" : "En pausa") : "" },
@@ -107,6 +111,20 @@ export function EjGamesPanel({ p }: { p: Panel }) {
       body = (
         <div className="pn-guides">
           <GuidesPane gameId={d.gameId} onMenu={p.actions.close} />
+        </div>
+      );
+      break;
+    case "cheats":
+      body = (
+        <div className="pn-guides">
+          <TrainerPane gameId={d.gameId} gameTitle={d.title} inGame />
+        </div>
+      );
+      break;
+    case "map":
+      body = (
+        <div className="pn-guides">
+          <MapPane gameId={d.gameId} gameTitle={d.title} inGame />
         </div>
       );
       break;
@@ -194,7 +212,7 @@ export function EjGamesPanel({ p }: { p: Panel }) {
           <h2>{secs.find((s) => s.id === sec)!.label}</h2>
           {actions}
         </header>
-        <div className={cls("ej-main-body", sec === "guides" && "is-guides")}>{body}</div>
+        <div className={cls("ej-main-body", (sec === "guides" || sec === "cheats" || sec === "map") && "is-guides")}>{body}</div>
         {viewer != null && <CaptureViewer k="ej" list={d.captures} index={viewer} onIndex={setViewer} onClose={() => setViewer(null)} />}
       </section>
       <Message k="ej" p={p} />

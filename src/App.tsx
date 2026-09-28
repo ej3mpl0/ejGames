@@ -18,6 +18,8 @@ import { UninstallDialog } from "./overlays/Uninstall";
 import { checkOnLaunch } from "./host/update";
 import { GameEditor } from "./overlays/GameEditor";
 import { GuidesOverlay } from "./overlays/Guides";
+import { MapOverlay } from "./overlays/Map";
+import { TrainerOverlay } from "./overlays/Trainer";
 import { Onboarding } from "./overlays/Onboarding";
 import { ProfilePicker } from "./overlays/ProfilePicker";
 import { QuickMenu } from "./overlays/QuickMenu";
@@ -225,6 +227,10 @@ export default function App() {
             return <UninstallDialog key={key} id={Number(o.args?.id)} onClose={onClose} />;
           case "guides":
             return <GuidesOverlay key={key} args={o.args} onClose={onClose} />;
+          case "trainer":
+            return <TrainerOverlay key={key} args={o.args} onClose={onClose} />;
+          case "map":
+            return <MapOverlay key={key} args={o.args} onClose={onClose} />;
           case "profiles":
             return (
               <ProfilePicker

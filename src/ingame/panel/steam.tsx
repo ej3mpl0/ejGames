@@ -3,8 +3,10 @@
 // de herramientas. A la derecha, lo que suena y cómo va el PC.
 
 import { useState, type ReactNode } from "react";
-import { Activity, BookOpen, Download, Gamepad2, Image as ImageIcon, Music2, NotebookPen, Power, Trophy } from "lucide-react";
+import { Activity, BookOpen, Download, Gamepad2, Image as ImageIcon, MapIcon, Music2, NotebookPen, Power, Trophy, WandSparkles } from "lucide-react";
 import { GuidesPane } from "../../components/guide";
+import { MapPane } from "../../components/map";
+import { TrainerPane } from "../../components/trainer";
 import { Hints } from "../../components/Hints";
 import { useOverlayNav } from "../../input/nav";
 import { useApp } from "../../store/app";
@@ -29,11 +31,13 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hoursLabel, Img, PadIcon, pctNum, shortDate } from "./parts";
 import "./steam.css";
 
-type Tab = "ach" | "guides" | "shots" | "notes" | "music" | "perf" | "dl";
+type Tab = "ach" | "guides" | "trainer" | "map" | "shots" | "notes" | "music" | "perf" | "dl";
 
 const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: "ach", label: "Logros", icon: <Trophy /> },
   { id: "guides", label: "Guías", icon: <BookOpen /> },
+  { id: "trainer", label: "Trucos", icon: <WandSparkles /> },
+  { id: "map", label: "Mapa", icon: <MapIcon /> },
   { id: "shots", label: "Capturas", icon: <ImageIcon /> },
   { id: "notes", label: "Notas", icon: <NotebookPen /> },
   { id: "music", label: "Música", icon: <Music2 /> },
@@ -140,6 +144,24 @@ export function SteamPanel({ p }: { p: Panel }) {
         <Window title="Guías de la comunidad">
           <div className="pn-guides">
             <GuidesPane gameId={d.gameId} onMenu={p.actions.close} />
+          </div>
+        </Window>
+      );
+      break;
+    case "trainer":
+      body = (
+        <Window title="Trucos">
+          <div className="pn-guides">
+            <TrainerPane gameId={d.gameId} gameTitle={d.title} inGame />
+          </div>
+        </Window>
+      );
+      break;
+    case "map":
+      body = (
+        <Window title="Mapa">
+          <div className="pn-guides">
+            <MapPane gameId={d.gameId} gameTitle={d.title} inGame />
           </div>
         </Window>
       );

@@ -28,6 +28,8 @@ export type OverlayName =
   | "update"
   | "uninstall"
   | "guides"
+  | "trainer"
+  | "map"
   | "onboarding";
 
 export interface Overlay {

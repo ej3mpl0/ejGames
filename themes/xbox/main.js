@@ -24,6 +24,8 @@ const bg = createBackdrop($("#bg"), { fade: 600 });
 clock($("#clock"));
 
 const ICON = {
+  wand: '<svg viewBox="0 0 24 24"><path d="m15 4 5 5L8 21l-5-5L15 4Z"/><path d="M18 2v3M21 5h-3M4 3v2M5 4H3M20 13v2M21 14h-2"/></svg>',
+  map: '<svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>',
   book: '<svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>',
   play: '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="none"/></svg>',
   star: '<svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>',
@@ -214,6 +216,8 @@ async function openHub(id) {
       h("button", { class: "btn", "data-focus": "", onclick: () => ejg.game.edit(g.id) }, h("span", { html: ICON.gear }), "Gestionar"),
       h("button", { class: "btn", "data-focus": "", onclick: () => ejg.game.openFolder(g.id) }, h("span", { html: ICON.folder }), "Carpeta"),
       h("button", { class: "btn", "data-focus": "", onclick: () => openGuides(g.id) }, h("span", { html: ICON.book }), "Guías"),
+      h("button", { class: "btn", "data-focus": "", onclick: () => ejg.trainer.open(g.id) }, h("span", { html: ICON.wand }), "Trucos"),
+      h("button", { class: "btn", "data-focus": "", onclick: () => ejg.maps.open(g.id) }, h("span", { html: ICON.map }), "Mapa"),
     ),
     h("div", { class: "hub-stats" }, ...hubStats(g)),
     h("div", { class: "hub-desc", id: "desc" }, g.shortDescription || ""),

@@ -14,6 +14,12 @@ use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 pub const MAIN: &str = "main";
 
+/// `Object.prototype` congelado (contra la contaminación de prototipos), solo
+/// en los documentos de ejGames: host, overlay y temas. Lo hacía
+/// `freezePrototype` de Tauri, pero en Windows sus scripts entran también en
+/// los iframes de terceros y rompía webs como Map Genie.
+pub const FREEZE_OURS: &str = r"if (/(^|\.)localhost$/.test(location.hostname) || location.protocol === 'tauri:') Object.freeze(Object.prototype);";
+
 fn allowed_nav(url: &tauri::Url) -> bool {
     let s = url.as_str();
     s.starts_with("http://tauri.localhost")
@@ -38,6 +44,7 @@ fn build_window(app: &AppHandle, visible: bool) -> tauri::Result<()> {
         .shadow(true)
         .visible(visible)
         .background_color(tauri::window::Color(9, 12, 18, 255))
+        .initialization_script(FREEZE_OURS)
         .on_navigation(allowed_nav)
         .build()?;
     Ok(())

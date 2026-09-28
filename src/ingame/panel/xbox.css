@@ -842,3 +842,27 @@
   margin: 0;
   font-size: 13px;
 }
+
+/* ─── guías ─── */
+.xb-guide.is-guides .xb-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.xb-guide.is-reading {
+  width: min(980px, 62vw);
+  transition: width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.pn-xbox .gd-pane,
+.pn-xbox .gd-reader {
+  --gd-fg: var(--xb-text);
+  --gd-muted: var(--xb-dim);
+  --gd-accent: var(--xb-accent);
+  --gd-surface: var(--xb-tile);
+  --gd-surface-2: var(--xb-tile-hi);
+  --gd-line: rgba(255, 255, 255, 0.08);
+  --gd-bg: var(--xb-bg);
+  --gd-radius: 4px;
+  --gd-focus: 0 0 0 3px #fff;
+  --gd-toc-bg: #1f1f1f;
+}

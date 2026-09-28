@@ -3,6 +3,7 @@
 // importante a la vista, y el contenido al lado.
 
 import { useState, type CSSProperties, type ReactNode } from "react";
+import { GuidesPane } from "../../components/guide";
 import { Hints } from "../../components/Hints";
 import { useOverlayNav } from "../../input/nav";
 import { useApp } from "../../store/app";
@@ -27,7 +28,7 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dayLabel, dur, hoursLabel } from "./parts";
 import "./ejgames.css";
 
-type Sec = "ach" | "shots" | "notes" | "music" | "perf" | "dl";
+type Sec = "ach" | "guides" | "shots" | "notes" | "music" | "perf" | "dl";
 
 export function EjGamesPanel({ p }: { p: Panel }) {
   const d = p.data;
@@ -50,6 +51,7 @@ export function EjGamesPanel({ p }: { p: Panel }) {
 
   const secs: { id: Sec; label: string; info: string }[] = [
     { id: "ach", label: "Logros", info: p.ach.total ? `${p.ach.got}/${p.ach.total}` : "—" },
+    { id: "guides", label: "Guías", info: "" },
     { id: "shots", label: "Capturas", info: d.captures.length ? String(d.captures.length) : "" },
     { id: "notes", label: "Notas", info: p.note.trim() ? `${p.note.trim().split("\n").length} líneas` : "" },
     { id: "music", label: "Música y sonido", info: p.media ? (p.media.playing ? "Sonando" : "En pausa") : "" },
@@ -98,6 +100,13 @@ export function EjGamesPanel({ p }: { p: Panel }) {
           <button data-nav onClick={p.actions.openCaptures}>
             Abrir carpeta
           </button>
+        </div>
+      );
+      break;
+    case "guides":
+      body = (
+        <div className="pn-guides">
+          <GuidesPane gameId={d.gameId} onMenu={p.actions.close} />
         </div>
       );
       break;
@@ -185,7 +194,7 @@ export function EjGamesPanel({ p }: { p: Panel }) {
           <h2>{secs.find((s) => s.id === sec)!.label}</h2>
           {actions}
         </header>
-        <div className="ej-main-body">{body}</div>
+        <div className={cls("ej-main-body", sec === "guides" && "is-guides")}>{body}</div>
         {viewer != null && <CaptureViewer k="ej" list={d.captures} index={viewer} onIndex={setViewer} onClose={() => setViewer(null)} />}
       </section>
       <Message k="ej" p={p} />

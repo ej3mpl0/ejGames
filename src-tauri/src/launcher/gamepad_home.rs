@@ -40,8 +40,7 @@ fn power(gilrs: &Gilrs) -> Option<PadPower> {
     Some(PadPower { name: g.name().to_string(), state: state.into(), level })
 }
 
-/// `guide`: reaccionar al botón Guía (en juegos de Steam lo usa Steam).
-pub fn spawn(stop: Arc<AtomicBool>, guide: bool, on_event: impl Fn(PadEvent) + Send + 'static) {
+pub fn spawn(stop: Arc<AtomicBool>, on_event: impl Fn(PadEvent) + Send + 'static) {
     let _ = std::thread::Builder::new().name("ejg-pad-home".into()).spawn(move || {
         let Ok(mut gilrs) = Gilrs::new() else { return };
         let mut combo_since: Option<Instant> = None;
@@ -63,7 +62,7 @@ pub fn spawn(stop: Arc<AtomicBool>, guide: bool, on_event: impl Fn(PadEvent) + S
             while let Some(ev) = gilrs.next_event() {
                 if let gilrs::EventType::ButtonPressed(b, _) = ev.event {
                     if b == Button::Mode {
-                        fire |= guide;
+                        fire = true;
                     } else if let Some(a) = nav_of(b) {
                         on_event(PadEvent::Nav(a));
                     }

@@ -11,7 +11,7 @@
   "host": { "accent": "#1a9fff", "surface": "#1b1e24", "radius": "4px" },
   "sounds": { "preset": "soft" },
   "overlay": { "style": "steam" },
-  "features": { "explore": true },
+  "features": { "explore": true, "guides": true },
   "windowControls": "theme",
   "settings": [
     { "key": "accent", "type": "color", "label": "Color de acento", "default": "#1a9fff" },

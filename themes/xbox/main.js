@@ -4,12 +4,13 @@
 import { h, img, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { createBackdrop, attachStream } from "/_sdk/kit/media.js";
-import { playtime, relative, year, description, SOURCE_LABEL } from "/_sdk/kit/format.js";
+import { playtime, relative, year, description } from "/_sdk/kit/format.js";
 import { visible, sort, recent, favorites, byGenre, inCollection, SORTS } from "/_sdk/kit/library.js";
 import { clock } from "/_sdk/kit/clock.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { createDownloads, percent, speed } from "/_sdk/kit/store.js";
+import { createGuideView, starsText } from "/_sdk/kit/guides.js";
 import { createStore } from "./store.js";
 
 const ejg = await window.ejg.ready();
@@ -23,6 +24,7 @@ const bg = createBackdrop($("#bg"), { fade: 600 });
 clock($("#clock"));
 
 const ICON = {
+  book: '<svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>',
   play: '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="none"/></svg>',
   star: '<svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>',
   gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9l2.1 2.1m10 10 2.1 2.1m0-14.2-2.1 2.1m-10 10-2.1 2.1"/></svg>',
@@ -35,21 +37,16 @@ const ICON = {
 };
 
 const games = () => visible(ejg.library.all);
-const installedGames = () => {
-  const inst = games().filter((g) => g.installed !== false);
-  return inst.length ? inst : games();
-};
 const running = (id) => ejg.game.isRunning(id);
 
 function tile(g, wide, prev) {
-  const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.media.logo}:${wide}:${running(g.id)}:${g.installed}`;
+  const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.media.logo}:${wide}:${running(g.id)}`;
   if (prev && prev.__sig === sig) return prev;
   const el = h(
     "button",
-    { class: "tile" + (wide ? " wide" : "") + (g.installed === false ? " uninstalled" : ""), "data-focus": "", "data-game-id": g.id, onclick: () => openHub(g.id), title: g.title },
+    { class: "tile" + (wide ? " wide" : ""), "data-focus": "", "data-game-id": g.id, onclick: () => openHub(g.id), title: g.title },
     artFor(g, wide ? "landscape" : "square"),
     running(g.id) ? h("span", { class: "run" }, "EN JUEGO") : null,
-    g.installed === false ? h("span", { class: "dl", html: ICON.download }) : null,
     h("span", { class: "label" }, g.title),
   );
   el.__sig = sig;
@@ -64,7 +61,7 @@ function row(title, list, { first = "square", cls = "", extra = [] } = {}) {
 }
 
 function renderHome() {
-  const all = installedGames();
+  const all = games();
   updateQueueUi();
   if (!all.length) {
     home.replaceChildren(
@@ -72,7 +69,7 @@ function renderHome() {
         "div",
         { class: "empty" },
         h("h1", null, "Empieza tu colección"),
-        h("p", null, "Añade la carpeta donde tienes juegos o importa los de tus tiendas instaladas."),
+        h("p", null, "Añade la carpeta donde tienes tus juegos: cada subcarpeta se convierte en un juego de tu colección."),
         h("button", { class: "btn primary", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, "Añadir juegos"),
       ),
       h("div", { class: "track home-empty-tiles", "data-focus-group": "empty" }, storeTile, queueTile),
@@ -88,7 +85,7 @@ function renderHome() {
     h("b", null, "Mi colección"),
     h("small", null, `${games().length} juegos`),
   );
-  const addTile = h("button", { class: "tile special", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, h("span", { html: ICON.plus }), h("b", null, "Añadir juegos"), h("small", null, "Carpetas y tiendas"));
+  const addTile = h("button", { class: "tile special", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, h("span", { html: ICON.plus }), h("b", null, "Añadir juegos"), h("small", null, "Carpetas de juegos"));
   const rows = [row(rec.length ? "Continuar jugando" : "Añadidos recientemente", jump, { first: "wide", cls: "hero-row", extra: [colTile, queueTile, storeTile, addTile] })];
   const favs = favorites(all);
   if (favs.length) rows.push(row("Anclados", sort(favs, "title")));
@@ -155,8 +152,6 @@ function renderCollection() {
   const all = games();
   const opts = [
     ["all", "Todos", all.length],
-    ["installed", "Instalados", all.filter((g) => g.installed !== false).length],
-    ["uninstalled", "Sin instalar", all.filter((g) => g.installed === false).length],
     ["fav", "Favoritos", all.filter((g) => g.favorite).length],
     ["played", "Jugados", all.filter((g) => g.playtime).length],
     ["new", "Sin jugar", all.filter((g) => !g.playtime).length],
@@ -166,7 +161,7 @@ function renderCollection() {
     ...opts.map(([k, l, n], i) =>
       h(
         "button",
-        { class: "filter" + (i === 6 ? " sep" : ""), "data-focus": "", "aria-pressed": String(state.filter === k), onclick: () => ((state.filter = k), renderCollection()) },
+        { class: "filter" + (i === 4 ? " sep" : ""), "data-focus": "", "aria-pressed": String(state.filter === k), onclick: () => ((state.filter = k), renderCollection()) },
         h("span", null, l),
         h("span", null, n),
       ),
@@ -175,8 +170,6 @@ function renderCollection() {
   );
   let list = all;
   if (state.filter === "fav") list = all.filter((g) => g.favorite);
-  else if (state.filter === "installed") list = all.filter((g) => g.installed !== false);
-  else if (state.filter === "uninstalled") list = all.filter((g) => g.installed === false);
   else if (state.filter === "played") list = all.filter((g) => g.playtime);
   else if (state.filter === "new") list = all.filter((g) => !g.playtime);
   else if (state.filter.startsWith("c")) list = inCollection(all, ejg.library.collections.find((c) => `c${c.id}` === state.filter));
@@ -201,12 +194,11 @@ async function openHub(id) {
   state.hubId = id;
   const my = ++token;
   const heroUrl = g.media.hero || g.media.heroThumb || g.media.header;
-  const install = g.installed === false;
   const playBtn = h(
     "button",
-    { class: "btn primary" + (install ? " install" : ""), "data-focus": "", id: "play", onclick: () => launch(g.id) },
-    h("span", { html: install ? ICON.download : ICON.play }),
-    running(g.id) ? "En juego" : install ? "Instalar" : "Jugar",
+    { class: "btn primary", "data-focus": "", id: "play", onclick: () => launch(g.id) },
+    h("span", { html: ICON.play }),
+    running(g.id) ? "En juego" : "Jugar",
   );
   if (running(g.id)) playBtn.classList.add("running");
   const content = h(
@@ -221,12 +213,15 @@ async function openHub(id) {
       h("button", { class: "btn" + (g.favorite ? " on" : ""), "data-focus": "", id: "fav", onclick: () => ejg.game.favorite(g.id) }, h("span", { html: ICON.star }), g.favorite ? "Anclado" : "Anclar"),
       h("button", { class: "btn", "data-focus": "", onclick: () => ejg.game.edit(g.id) }, h("span", { html: ICON.gear }), "Gestionar"),
       h("button", { class: "btn", "data-focus": "", onclick: () => ejg.game.openFolder(g.id) }, h("span", { html: ICON.folder }), "Carpeta"),
+      h("button", { class: "btn", "data-focus": "", onclick: () => openGuides(g.id) }, h("span", { html: ICON.book }), "Guías"),
     ),
     h("div", { class: "hub-stats" }, ...hubStats(g)),
     h("div", { class: "hub-desc", id: "desc" }, g.shortDescription || ""),
   );
   const mediaRow = h("div", { class: "hub-media", "data-focus-group": "media" });
-  hub.replaceChildren(h("div", { class: "hub-bg", style: heroUrl ? { backgroundImage: `url("${heroUrl}")` } : {} }), content, mediaRow);
+  const guideRow = h("div", { class: "hub-guides", "data-focus-group": "hub-guides" });
+  hub.replaceChildren(h("div", { class: "hub-bg", style: heroUrl ? { backgroundImage: `url("${heroUrl}")` } : {} }), content, mediaRow, guideRow);
+  loadGuideRow(id, my, guideRow);
   hub.hidden = false;
   hub.scrollTop = 0;
   updateHints();
@@ -258,7 +253,7 @@ function closeHub() {
 async function launch(id) {
   if (running(id)) return;
   const b = $("#play");
-  if (b) b.lastChild.textContent = ejg.library.byId(id)?.installed === false ? "Abriendo la tienda…" : "Iniciando…";
+  if (b) b.lastChild.textContent = "Iniciando…";
   try {
     await ejg.game.launch(id);
   } catch (e) {
@@ -340,8 +335,10 @@ const focus = createFocus({
   },
 });
 const isShop = () => state.view === "store" || state.view === "queue";
+const gv = (a) => !!(guideView && guideView.nav(a));
 bindNav(focus, {
   back: () => {
+    if (gv("back")) return true;
     if (!player.hidden) return closePlayer(), true;
     if (!hub.hidden) return closeHub(), true;
     if (shop.back()) return true;
@@ -349,7 +346,12 @@ bindNav(focus, {
     if (state.view !== "home") return setView("home"), true;
     return false;
   },
+  up: () => gv("up"),
+  down: () => gv("down"),
+  lt: () => gv("lt"),
+  rt: () => gv("rt"),
   y: () => {
+    if (gv("y")) return true;
     if (state.view === "store" && hub.hidden) return shop.search(), true;
     if (isShop()) return true;
     const id = state.hubId || Number(focus.current?.dataset.gameId);
@@ -357,15 +359,16 @@ bindNav(focus, {
     return true;
   },
   x: () => {
+    if (gv("x")) return true;
     if (isShop() && hub.hidden) return true;
     const id = state.hubId || Number(focus.current?.dataset.gameId);
     if (id) ejg.game.edit(id);
     return true;
   },
   menu: () => (ejg.ui.open("menu"), true),
-  view: () => (ejg.ui.open("search"), true),
-  lb: () => (hub.hidden && player.hidden && !shop.busy() ? cycleView(-1) : null, true),
-  rb: () => (hub.hidden && player.hidden && !shop.busy() ? cycleView(1) : null, true),
+  view: () => gv("view") || (ejg.ui.open("search"), true),
+  lb: () => gv("lb") || (hub.hidden && !guideView && player.hidden && !shop.busy() ? cycleView(-1) : null, true),
+  rb: () => gv("rb") || (hub.hidden && !guideView && player.hidden && !shop.busy() ? cycleView(1) : null, true),
   left: () => (!player.hidden && gallery ? (stepImage(-1), true) : false),
   right: () => (!player.hidden && gallery ? (stepImage(1), true) : false),
 });
@@ -384,7 +387,9 @@ ejg.explore.onEnabled(() => {
   else updateQueueUi();
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
-ejg.ui.onView(({ view, slug }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId }) => {
+  if (view === "guides" && gameId) return openGuides(gameId, guideId);
+  closeGuides();
   if (!player.hidden) closePlayer();
   if (!hub.hidden) closeHub();
   if (view === "downloads") return setView("queue");
@@ -396,6 +401,7 @@ ejg.on("focus-return", () => focus.restore());
 
 const hintBar = hints($("#hints"), []);
 function updateHints() {
+  if (guideView) return hintBar.set(guideView.hints());
   if (!player.hidden) return hintBar.set(gallery ? [["left", "Anterior"], ["right", "Siguiente"], ["back", "Cerrar"]] : [["back", "Cerrar"]]);
   if (!hub.hidden) return hintBar.set([["accept", "Elegir"], ["back", "Volver"], ["y", "Anclar"], ["x", "Gestionar"]]);
   hintBar.set(shop.hints() || [["accept", "Abrir"], ["y", "Anclar"], ["x", "Gestionar"], ["lb", "Secciones"], ["menu", "Menú"]]);
@@ -419,6 +425,72 @@ function applyWallpaper() {
   if (w && ejg.settings.dynamicBg === false) bg.set(null);
 }
 
+// ─────────────── guías de la comunidad ───────────────
+let guideView = null;
+let guideReturn = null;
+const guidesPage = $("#guides");
+
+function openGuides(gameId, guideId = null) {
+  const g = ejg.library.byId(gameId);
+  if (!g) return;
+  guideView?.destroy();
+  if (!guideView) guideReturn = focus.current;
+  const art = g.media.hero || g.media.heroThumb || g.media.header;
+  $("#gx-bg").style.backgroundImage = art ? `url("${art}")` : "";
+  guidesPage.hidden = false;
+  guideView = createGuideView({
+    ejg,
+    root: $("#gx-inner"),
+    focus,
+    gameId,
+    gameTitle: g.title,
+    layout: "grid",
+    guide: guideId,
+    labels: { title: "Guías de la comunidad" },
+    onExit: closeGuides,
+    onChange: () => updateHints(),
+  });
+  ejg.sound.play("open");
+}
+
+function closeGuides() {
+  if (!guideView) return false;
+  guideView.destroy();
+  guideView = null;
+  guidesPage.hidden = true;
+  const back = guideReturn?.isConnected ? guideReturn : null;
+  guideReturn = null;
+  if (back) focus.focus(back, { silent: true });
+  else focus.first(hub.hidden ? $("#home") : hub);
+  updateHints();
+  return true;
+}
+
+/** Fila de guías en la ficha: las tuyas y las mejor valoradas. */
+async function loadGuideRow(id, my, row) {
+  const [shelf, list] = await Promise.all([ejg.guides.shelf(id).catch(() => null), ejg.guides.list(id, {}).catch(() => null)]);
+  if (my !== token || !list || list.appid == null) return;
+  const mine = [...(shelf?.pinned || []), ...(shelf?.recent || [])].slice(0, 3);
+  const top = list.items.filter((x) => !mine.some((m) => m.id === x.id)).slice(0, 8 - mine.length);
+  const tile = (it, sub) =>
+    h(
+      "button",
+      { class: "gtile", "data-focus": "", onclick: () => openGuides(id, it.id) },
+      it.preview ? img(it.preview) : h("span", { class: "gtile-ph", html: ICON.book }),
+      h("span", { class: "gtile-txt" }, h("b", null, it.title), h("small", null, sub)),
+    );
+  row.replaceChildren(
+    h("h2", null, "Guías de la comunidad"),
+    h(
+      "div",
+      { class: "gtrack" },
+      ...mine.map((x) => tile(x, x.pinned ? "★ Guardada" : `Seguir leyendo${x.progress ? ` · sección ${x.progress.section + 1}` : ""}`)),
+      ...top.map((x) => tile(x, [starsText(x.stars), x.author].filter(Boolean).join(" · "))),
+      h("button", { class: "gtile gtile-all", "data-focus": "", onclick: () => openGuides(id) }, h("span", { html: ICON.book }), h("b", null, "Ver todas"), h("small", null, `${list.total.toLocaleString("es")} guías`)),
+    ),
+  );
+}
+
 // Horas, última vez y logros: cambian al cerrar el juego.
 function hubStats(g) {
   const stat = (label, value) => h("div", { class: "hstat" }, h("small", null, label), h("b", null, value));
@@ -426,7 +498,7 @@ function hubStats(g) {
     stat("Tiempo de juego", playtime(g.playtime, "—")),
     stat("Última vez", relative(g.lastPlayed)),
     g.achievements ? stat("Logros", `${g.achievements.unlocked} / ${g.achievements.total}`) : null,
-    stat("Tienda", SOURCE_LABEL[g.source] || g.source),
+    g.launchCount ? stat("Partidas", String(g.launchCount)) : null,
   ].filter(Boolean);
 }
 
@@ -438,7 +510,7 @@ const refresh = debounce(() => {
     if (g) $(".hub-stats")?.replaceChildren(...hubStats(g));
     if (g && p) {
       p.classList.toggle("running", running(g.id));
-      p.lastChild.textContent = running(g.id) ? "En juego" : g.installed === false ? "Instalar" : "Jugar";
+      p.lastChild.textContent = running(g.id) ? "En juego" : "Jugar";
       const f = $("#fav");
       f.classList.toggle("on", g.favorite);
       f.lastChild.textContent = g.favorite ? "Anclado" : "Anclar";

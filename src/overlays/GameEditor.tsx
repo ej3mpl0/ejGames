@@ -8,9 +8,8 @@ import { useOverlayNav } from "../input/nav";
 import { playtime, SOURCE_LABEL } from "../lib/format";
 import { useApp } from "../store/app";
 
-/** Juegos que ejGames sabe desinstalar (los de carpeta, los de repack y los de Steam). */
-const canUninstall = (g: { source: string; missing?: boolean; installed?: boolean }) =>
-  ["folder", "manual", "repack", "steam"].includes(g.source) && !g.missing && g.installed !== false;
+/** Juegos que ejGames sabe desinstalar (todos los que siguen en su sitio). */
+const canUninstall = (g: { missing?: boolean }) => !g.missing;
 
 type Tab = "general" | "match" | "art" | "info";
 const ART_KINDS = [
@@ -141,12 +140,7 @@ function GeneralTab({ data, reload, onClose }: { data: GameFull; reload: () => v
       </Section>
 
       <Section title="Cómo se lanza">
-        {g.launchUri !== null && g.launchUri !== undefined && g.source !== "folder" && g.source !== "manual" && (
-          <p className="px-3 pb-2 text-xs text-muted">
-            Se lanza con {SOURCE_LABEL[g.source]} (recomendado). Si borras la URI se usará el ejecutable directamente.
-          </p>
-        )}
-        {(g.source !== "folder" && g.source !== "manual") || uri ? (
+        {uri ? (
           <Field label="URI de lanzamiento">
             <TextInput value={uri} onChange={(e) => setUri(e.target.value)} onBlur={() => uri !== (g.launchUri ?? "") && save({ launchUri: uri || null })} />
           </Field>

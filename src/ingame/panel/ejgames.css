@@ -690,3 +690,23 @@
   margin: 0;
   font-size: 13px;
 }
+
+/* ─── guías ─── */
+.ej-main-body.is-guides {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.pn-ejgames .gd-pane,
+.pn-ejgames .gd-reader {
+  --gd-fg: var(--ej-text);
+  --gd-muted: var(--ej-dim);
+  --gd-accent: var(--ej-accent);
+  --gd-surface: var(--ej-soft);
+  --gd-surface-2: var(--ej-soft-2);
+  --gd-line: var(--ej-line);
+  --gd-bg: var(--ej-surface);
+  --gd-radius: calc(var(--ej-radius) * 0.7);
+  --gd-font: var(--ej-font);
+  --gd-toc-bg: var(--ej-surface);
+}

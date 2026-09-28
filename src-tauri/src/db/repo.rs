@@ -67,7 +67,8 @@ pub fn sort_title(title: &str) -> String {
 }
 
 /// Inserta o actualiza un juego detectado. Devuelve `(id, es_nuevo)`, o `None`
-/// si una tienda ya tiene ese directorio (la tienda gana: lanza mejor).
+/// si el escáner de carpetas encuentra un directorio que ya es de un juego
+/// añadido de otra forma (a mano o instalado desde Descargas): ese gana.
 pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64, bool)>> {
     if g.source == "folder" {
         if let Some(dir) = &g.install_dir {
@@ -82,39 +83,6 @@ pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64,
                 return Ok(None);
             }
         }
-    } else if let Some(dir) = g.install_dir.as_ref().filter(|_| g.source != "manual") {
-        // Una tienda reclama un directorio que teníamos por carpeta: se convierte.
-        let folder_game: Option<i64> = c
-            .query_row(
-                "SELECT id FROM games WHERE install_dir = ?1 COLLATE NOCASE AND source = 'folder' LIMIT 1",
-                [dir],
-                |r| r.get(0),
-            )
-            .optional()?;
-        if let Some(id) = folder_game {
-            let store_row: Option<i64> = c
-                .query_row(
-                    "SELECT id FROM games WHERE source = ?1 AND source_id = ?2",
-                    params![g.source, g.source_id],
-                    |r| r.get(0),
-                )
-                .optional()?;
-            match store_row {
-                // La tienda ya lo tenía (p. ej. comprado sin instalar): se funde el
-                // juego de carpeta en esa fila y se sigue como una actualización.
-                Some(sid) if sid != id => merge_game(c, id, sid)?,
-                _ => {
-                    c.execute(
-                        "UPDATE games SET source = ?2, source_id = ?3, folder_id = NULL,
-                           launch_uri = CASE WHEN meta_locked LIKE '%\"launch\"%' THEN launch_uri ELSE ?4 END,
-                           steam_appid = COALESCE(steam_appid, ?5), updated_at = ?6, missing = 0
-                         WHERE id = ?1",
-                        params![id, g.source, g.source_id, g.launch_uri, g.steam_appid, now()],
-                    )?;
-                    return Ok(Some((id, false)));
-                }
-            }
-        }
     }
 
     let existing: Option<(i64, String)> = c
@@ -127,23 +95,6 @@ pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64,
     let hints = serde_json::to_string(&g.process_hints).unwrap_or_else(|_| "[]".into());
     let ts = now();
 
-    // Comprado pero sin instalar: solo se registra (o se marca como desinstalado).
-    if g.owned_only {
-        if let Some((id, _)) = existing {
-            c.execute(
-                "UPDATE games SET installed = 0, missing = 0, install_uri = COALESCE(?2, install_uri), updated_at = ?3 WHERE id = ?1",
-                params![id, g.install_uri, ts],
-            )?;
-            return Ok(Some((id, false)));
-        }
-        c.execute(
-            "INSERT INTO games (title, sort_title, source, source_id, steam_appid, installed, install_uri, added_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6, ?7, ?7)",
-            params![g.title, sort_title(&g.title), g.source, g.source_id, g.steam_appid, g.install_uri, ts],
-        )?;
-        return Ok(Some((c.last_insert_rowid(), true)));
-    }
-
     if let Some((id, locked)) = existing {
         let locked: Vec<String> = serde_json::from_str(&locked).unwrap_or_default();
         let lock_exe = locked.iter().any(|l| l == "exe");
@@ -152,7 +103,7 @@ pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64,
             "UPDATE games SET
                install_dir = ?2,
                exe_path = CASE WHEN ?3 THEN exe_path ELSE COALESCE(?4, exe_path) END,
-               launch_uri = CASE WHEN ?15 THEN launch_uri ELSE COALESCE(?5, launch_uri) END,
+               launch_uri = CASE WHEN ?14 THEN launch_uri ELSE COALESCE(?5, launch_uri) END,
                process_hints = CASE WHEN ?3 OR ?6 = '[]' THEN process_hints ELSE ?6 END,
                engine = COALESCE(?7, engine),
                steam_appid = COALESCE(steam_appid, ?8),
@@ -160,13 +111,12 @@ pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64,
                working_dir = CASE WHEN ?3 THEN working_dir ELSE COALESCE(?10, working_dir) END,
                missing = 0,
                installed = 1,
-               install_uri = COALESCE(?12, install_uri),
                -- Sin datos identificados ni nombre puesto a mano: el título es el
                -- de la carpeta (así mejora si mejora la limpieza de nombres).
                title = CASE WHEN meta_status IN ('failed', 'pending') AND meta_locked NOT LIKE '%\"title\"%'
-                            AND ?13 <> '' THEN ?13 ELSE title END,
+                            AND ?12 <> '' THEN ?12 ELSE title END,
                sort_title = CASE WHEN meta_status IN ('failed', 'pending') AND meta_locked NOT LIKE '%\"title\"%'
-                                 AND ?13 <> '' THEN ?14 ELSE sort_title END,
+                                 AND ?12 <> '' THEN ?13 ELSE sort_title END,
                updated_at = ?11
              WHERE id = ?1",
             params![
@@ -181,7 +131,6 @@ pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64,
                 g.folder_id,
                 g.working_dir,
                 ts,
-                g.install_uri,
                 g.title,
                 sort_title(&g.title),
                 lock_launch
@@ -191,8 +140,8 @@ pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64,
     } else {
         c.execute(
             "INSERT INTO games (title, sort_title, source, source_id, folder_id, install_dir, exe_path,
-               args, working_dir, launch_uri, process_hints, engine, steam_appid, added_at, updated_at, install_uri)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14, ?15)",
+               args, working_dir, launch_uri, process_hints, engine, steam_appid, added_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14)",
             params![
                 g.title,
                 sort_title(&g.title),
@@ -207,8 +156,7 @@ pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64,
                 hints,
                 g.engine,
                 g.steam_appid,
-                ts,
-                g.install_uri
+                ts
             ],
         )?;
         Ok(Some((c.last_insert_rowid(), true)))
@@ -255,28 +203,11 @@ pub fn mark_missing(
     Ok(n)
 }
 
-/// Marca como missing los juegos de una tienda que ya no aparecen instalados.
-pub fn mark_missing_source(c: &Connection, source: &str, present: &[String]) -> rusqlite::Result<usize> {
-    let all: Vec<(i64, String)> = {
-        let mut st = c.prepare_cached("SELECT id, source_id FROM games WHERE source = ?1 AND missing = 0")?;
-        let rows = st.query_map([source], |r| Ok((r.get(0)?, r.get(1)?)))?;
-        rows.collect::<rusqlite::Result<_>>()?
-    };
-    let mut n = 0;
-    for (id, sid) in all {
-        if !present.contains(&sid) {
-            c.execute("UPDATE games SET missing = 1 WHERE id = ?1", [id])?;
-            n += 1;
-        }
-    }
-    Ok(n)
-}
-
 const GAME_COLS: &str = "id, title, sort_title, source, source_id, folder_id, install_dir, exe_path, args,
   working_dir, launch_uri, run_as_admin, process_hints, engine, steam_appid, sgdb_id, igdb_id,
   description, short_description, developer, publisher, release_date, genres, tags, rating,
   meta_status, match_confidence, meta_locked, discord_enabled, missing, added_at, updated_at,
-  installed, install_uri";
+  installed";
 
 fn row_game(r: &Row) -> rusqlite::Result<Game> {
     Ok(Game {
@@ -313,7 +244,6 @@ fn row_game(r: &Row) -> rusqlite::Result<Game> {
         added_at: r.get(30)?,
         updated_at: r.get(31)?,
         installed: r.get(32)?,
-        install_uri: r.get(33)?,
     })
 }
 
@@ -489,6 +419,59 @@ fn merge_game(c: &Connection, from: i64, into: i64) -> rusqlite::Result<()> {
     // El arte elegido a mano también pasa al juego de la tienda.
     c.execute("UPDATE media SET game_id = ?2, selected = 0 WHERE game_id = ?1 AND source = 'user'", params![from, into])?;
     c.execute("DELETE FROM games WHERE id = ?1", [from])?;
+    Ok(())
+}
+
+/// Migración de la 0.5.0: ejGames ya no importa juegos de tiendas. Los que
+/// están dentro de una carpeta de la biblioteca (donde el escáner los habría
+/// encontrado) pasan a ser juegos de carpeta y conservan horas, logros y notas;
+/// el resto se quita de la biblioteca (no se borra nada del disco).
+pub fn migrate_local_only(c: &Connection) -> rusqlite::Result<()> {
+    use crate::util::norm_path;
+    use std::path::Path;
+    let folders: Vec<(i64, String, String)> = {
+        let mut q = c.prepare("SELECT id, path, mode FROM library_folders WHERE enabled = 1")?;
+        let rows = q.query_map([], |r| Ok((r.get(0)?, r.get::<_, String>(1)?, r.get(2)?)))?;
+        rows.collect::<rusqlite::Result<Vec<_>>>()?.into_iter().map(|(id, p, m)| (id, norm_path(Path::new(&p)), m)).collect()
+    };
+    let stores: Vec<(i64, Option<String>, bool)> = {
+        let mut q = c.prepare("SELECT id, install_dir, installed FROM games WHERE source IN ('steam', 'epic', 'gog', 'ubisoft', 'ea')")?;
+        let rows = q.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?;
+        rows.collect::<rusqlite::Result<_>>()?
+    };
+    for (id, dir, installed) in stores {
+        let dir = dir.filter(|d| installed && !d.trim().is_empty()).map(|d| norm_path(Path::new(&d)));
+        // Donde lo buscaría el escáner: la carpeta misma («un juego») o una o
+        // dos subcarpetas por debajo.
+        let folder = dir.as_deref().and_then(|d| {
+            folders.iter().find(|(_, f, mode)| {
+                if mode == "single" {
+                    return d == f;
+                }
+                d.strip_prefix(&format!("{f}\\")).map(|rest| (1..=2).contains(&rest.split('\\').count())).unwrap_or(false)
+            })
+        });
+        match (dir, folder) {
+            (Some(d), Some((fid, ..))) => {
+                let twin: Option<i64> =
+                    c.query_row("SELECT id FROM games WHERE source = 'folder' AND source_id = ?1", [&d], |r| r.get(0)).optional()?;
+                match twin {
+                    Some(t) => merge_game(c, id, t)?,
+                    None => {
+                        c.execute(
+                            "UPDATE games SET source = 'folder', source_id = ?2, folder_id = ?3, launch_uri = NULL, installed = 1 WHERE id = ?1",
+                            params![id, d, fid],
+                        )?;
+                    }
+                }
+            }
+            _ => {
+                c.execute("DELETE FROM games WHERE id = ?1", [id])?;
+            }
+        }
+    }
+    // Un escaneo completo al arrancar pone al día los que se han convertido.
+    c.execute("UPDATE library_folders SET last_scan = NULL", [])?;
     Ok(())
 }
 
@@ -787,18 +770,6 @@ pub fn record_session(c: &Connection, profile: i64, game: i64, start: i64, end: 
         "UPDATE profile_game SET playtime_s = playtime_s + ?3, last_played = ?4
          WHERE profile_id = ?1 AND game_id = ?2",
         params![profile, game, dur, end],
-    )?;
-    Ok(())
-}
-
-/// Horas y última partida importadas de una tienda (nunca reduce lo registrado).
-pub fn add_imported_playtime(c: &Connection, profile: i64, game: i64, secs: i64, last: Option<i64>) -> rusqlite::Result<()> {
-    ensure_pg(c, profile, game)?;
-    c.execute(
-        "UPDATE profile_game SET playtime_s = MAX(playtime_s, ?3),
-           last_played = CASE WHEN ?4 IS NULL THEN last_played ELSE MAX(COALESCE(last_played, 0), ?4) END
-         WHERE profile_id = ?1 AND game_id = ?2",
-        params![profile, game, secs, last],
     )?;
     Ok(())
 }
@@ -1424,18 +1395,16 @@ mod tests {
             assert_eq!(id, id2);
             assert!(!new2);
 
-            // Steam reclama el mismo directorio → se convierte, no se duplica.
-            let s = NewGame {
+            // Un juego a mano en ese directorio: el escáner ya no lo duplica.
+            let m = NewGame {
                 title: "Hollow Knight".into(),
-                source: "steam".into(),
-                source_id: "367520".into(),
-                install_dir: Some("c:\\games\\hollow knight".into()),
-                launch_uri: Some("steam://rungameid/367520".into()),
-                steam_appid: Some(367520),
+                source: "manual".into(),
+                source_id: r"c:\games\hollow knight\hollow_knight.exe".into(),
+                install_dir: Some(r"c:\games\hollow knight".into()),
                 ..Default::default()
             };
-            let (id3, _) = upsert_game(c, &s)?.unwrap();
-            assert_eq!(id, id3);
+            c.execute("DELETE FROM games WHERE id = ?1", [id])?;
+            let (id, _) = upsert_game(c, &m)?.unwrap();
             assert!(upsert_game(c, &g)?.is_none());
 
             set_favorite(c, pid, id, true)?;
@@ -1444,92 +1413,62 @@ mod tests {
             assert_eq!(lib.len(), 1);
             assert!(lib[0].favorite);
             assert_eq!(lib[0].playtime, 300);
-            assert_eq!(lib[0].source, "steam");
+            assert_eq!(lib[0].source, "manual");
             Ok(())
         })
         .unwrap();
     }
 
     #[test]
-    fn owned_then_installed_then_uninstalled() {
+    fn store_games_become_folder_games_or_go() {
         let db = Db::memory().unwrap();
         db.with(|c| {
             let pid = create_profile(c, "Yo", "#fff", "steam")?;
-            let owned = NewGame {
-                title: "Portal 2".into(),
-                source: "steam".into(),
-                source_id: "620".into(),
-                steam_appid: Some(620),
-                owned_only: true,
-                install_uri: Some("steam://install/620".into()),
-                ..Default::default()
+            let lib = add_folder(c, r"E:\Juegos", "subfolders")?;
+            add_folder(c, r"D:\Solo", "single")?;
+            let ins = |source: &str, sid: &str, dir: Option<&str>, installed: bool| -> rusqlite::Result<i64> {
+                c.execute(
+                    "INSERT INTO games (title, sort_title, source, source_id, install_dir, launch_uri, installed, added_at, updated_at)
+                     VALUES (?1, ?1, ?2, ?3, ?4, 'x://run', ?5, 0, 0)",
+                    params![sid, source, sid, dir, installed],
+                )?;
+                Ok(c.last_insert_rowid())
             };
-            let (id, new) = upsert_game(c, &owned)?.unwrap();
-            assert!(new);
-            assert!(!library(c, pid)?[0].installed);
+            // Dentro de la biblioteca: pasa a ser de carpeta, con sus horas.
+            let hades = ins("epic", "Hades", Some(r"E:\Juegos\Hades"), true)?;
+            record_session(c, pid, hades, 0, 3600)?;
+            // Dos niveles por debajo (carpeta de colección): también.
+            let deep = ins("gog", "Deep", Some(r"E:\Juegos\Pack\Deep"), true)?;
+            // La carpeta «un juego» exacta: también.
+            let solo = ins("ea", "Solo", Some(r"D:\Solo"), true)?;
+            // Ya había uno de carpeta en ese directorio: se funden.
+            let twin_store = ins("steam", "620", Some(r"E:\Juegos\Portal 2"), true)?;
+            record_session(c, pid, twin_store, 0, 60)?;
+            c.execute(
+                "INSERT INTO games (title, sort_title, source, source_id, install_dir, added_at, updated_at)
+                 VALUES ('Portal 2', 'portal 2', 'folder', 'e:\\juegos\\portal 2', 'E:\\Juegos\\Portal 2', 0, 0)",
+                [],
+            )?;
+            let twin = c.last_insert_rowid();
+            // Fuera de la biblioteca, sin instalar o demasiado hondo: se quitan.
+            let steam_lib = ins("steam", "70", Some(r"C:\Steam\steamapps\common\Half-Life"), true)?;
+            let owned = ins("steam", "400", None, false)?;
+            let too_deep = ins("steam", "10", Some(r"E:\Juegos\a\b\c"), true)?;
 
-            let inst = NewGame {
-                title: "Portal 2".into(),
-                source: "steam".into(),
-                source_id: "620".into(),
-                install_dir: Some("C:\\Steam\\common\\Portal 2".into()),
-                launch_uri: Some("steam://rungameid/620".into()),
-                ..Default::default()
-            };
-            assert_eq!(upsert_game(c, &inst)?.unwrap(), (id, false));
-            let g = get_game(c, id)?;
-            assert!(g.installed);
-            assert_eq!(g.install_uri.as_deref(), Some("steam://install/620"));
+            migrate_local_only(c)?;
 
-            upsert_game(c, &owned)?;
-            assert!(!get_game(c, id)?.installed);
-            Ok(())
-        })
-        .unwrap();
-    }
-
-    #[test]
-    fn store_claims_folder_game_it_already_owned() {
-        let db = Db::memory().unwrap();
-        db.with(|c| {
-            let pid = create_profile(c, "Yo", "#fff", "steam")?;
-            // Comprado sin instalar (fila de la tienda).
-            let owned = NewGame {
-                title: "Hades".into(),
-                source: "epic".into(),
-                source_id: "Hades".into(),
-                owned_only: true,
-                ..Default::default()
-            };
-            let (store_id, _) = upsert_game(c, &owned)?.unwrap();
-            // Instalado en una carpeta de la biblioteca: aparece como juego de carpeta.
-            let folder = NewGame {
-                title: "Hades".into(),
-                source: "folder".into(),
-                source_id: "d:\\juegos\\hades".into(),
-                install_dir: Some("D:\\Juegos\\Hades".into()),
-                exe_path: Some("D:\\Juegos\\Hades\\Hades.exe".into()),
-                ..Default::default()
-            };
-            let (folder_id, _) = upsert_game(c, &folder)?.unwrap();
-            record_session(c, pid, folder_id, 1000, 4600)?;
-            set_favorite(c, pid, folder_id, true)?;
-            // La tienda lo detecta instalado en esa carpeta: sin error de UNIQUE,
-            // una sola fila y con las horas y el favorito del de carpeta.
-            let inst = NewGame {
-                title: "Hades".into(),
-                source: "epic".into(),
-                source_id: "Hades".into(),
-                install_dir: Some("D:\\Juegos\\Hades".into()),
-                launch_uri: Some("com.epicgames.launcher://apps/Hades".into()),
-                ..Default::default()
-            };
-            assert_eq!(upsert_game(c, &inst)?.unwrap(), (store_id, false));
-            assert!(get_game(c, folder_id).is_err());
-            let lib = library(c, pid)?;
-            assert_eq!(lib.len(), 1);
-            assert!(lib[0].installed && lib[0].favorite);
-            assert_eq!(lib[0].playtime, 3600);
+            let g = get_game(c, hades)?;
+            assert_eq!((g.source.as_str(), g.source_id.as_str(), g.folder_id, g.launch_uri), ("folder", r"e:\juegos\hades", Some(lib), None));
+            assert_eq!(get_game(c, deep)?.source, "folder");
+            assert_eq!(get_game(c, solo)?.source, "folder");
+            assert!(get_game(c, twin_store).is_err());
+            assert_eq!(library(c, pid)?.iter().find(|x| x.id == twin).unwrap().playtime, 60);
+            assert_eq!(library(c, pid)?.iter().find(|x| x.id == hades).unwrap().playtime, 3600);
+            for id in [steam_lib, owned, too_deep] {
+                assert!(get_game(c, id).is_err());
+            }
+            let rest: i64 = c.query_row("SELECT COUNT(*) FROM games WHERE source NOT IN ('folder', 'manual', 'repack')", [], |r| r.get(0))?;
+            assert_eq!(rest, 0);
             Ok(())
         })
         .unwrap();

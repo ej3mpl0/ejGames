@@ -704,3 +704,44 @@
 .rt-empty code {
   color: var(--hi2);
 }
+
+/* ─── guías: los títulos en píxeles, el texto legible ─── */
+.rt-box.is-guides .rt-screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+.pn-retro .gd-pane,
+.pn-retro .gd-reader {
+  --gd-fg: var(--fg);
+  --gd-muted: var(--dim);
+  --gd-accent: var(--hi2);
+  --gd-surface: color-mix(in srgb, var(--fg) 7%, var(--bg));
+  --gd-surface-2: color-mix(in srgb, var(--fg) 14%, var(--bg));
+  --gd-line: color-mix(in srgb, var(--fg) 25%, transparent);
+  --gd-bg: var(--bg);
+  --gd-radius: 0;
+  --gd-focus: 0 0 0 2px var(--hi);
+  --gd-toc-bg: var(--bg);
+  text-transform: none;
+}
+.pn-retro .gd-body,
+.pn-retro .gd-row-desc,
+.pn-retro .gd-search input {
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 14px;
+  -webkit-font-smoothing: auto;
+}
+.pn-retro .gd-title,
+.pn-retro .gd-section-title,
+.pn-retro .gd-row-title,
+.pn-retro .gd-h {
+  font-family: "Press Start 2P", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  text-transform: uppercase;
+}
+.pn-retro .gd-stars {
+  color: var(--hi);
+}

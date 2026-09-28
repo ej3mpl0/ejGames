@@ -91,7 +91,7 @@ function pintarBotones(g) {
     h(
       "button",
       { class: "boton principal", "data-focus": "", "data-accion": "jugar", onclick: () => jugar(g.id) },
-      enMarcha ? "En marcha" : g.installed === false ? "Instalar" : "Jugar",
+      enMarcha ? "En marcha" : "Jugar",
     ),
     h("button", { class: "boton", "data-focus": "", "data-accion": "fav", onclick: () => ejg.game.favorite(g.id) }, g.favorite ? "★ Favorito" : "☆ Favorito"),
     h("button", { class: "boton", "data-focus": "", "data-accion": "editar", onclick: () => ejg.game.edit(g.id) }, "Editar"),
@@ -130,8 +130,7 @@ function cerrarFicha() {
 }
 ```
 
-- **Jugar o Instalar** según `installed`; **En marcha** si
-  `ejg.game.isRunning(id)`.
+- **Jugar**, o **En marcha** si `ejg.game.isRunning(id)`.
 - **`ejg.game.edit(id)`** abre el editor de juegos de ejGames (nombre, arte,
   ejecutable…). Al cerrarlo llega `focus-return` y el foco vuelve al botón.
 
@@ -196,3 +195,9 @@ abierta. El CSS de la ficha, resumido (el completo está en
 .boton.principal { padding-inline: 30px; background: var(--acento); color: #fff; font-weight: 600; }
 .boton.is-focused { box-shadow: 0 0 0 3px var(--texto); }
 ```
+
+<Tip>
+¿Quieres guías en tu ficha? La vista del kit `createGuideView` trae la lista de guías de la
+comunidad de Steam y su lector con mando: la montas en un contenedor y la vistes con CSS.
+Mira [Guías de la comunidad](/referencia/guias).
+</Tip>

@@ -5,11 +5,12 @@
 import { h, img, initials, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { createBackdrop, attachStream } from "/_sdk/kit/media.js";
-import { playtime, relative, year, SOURCE_LABEL } from "/_sdk/kit/format.js";
+import { playtime, relative, year } from "/_sdk/kit/format.js";
 import { visible, sort, recent } from "/_sdk/kit/library.js";
 import { clock } from "/_sdk/kit/clock.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
+import { createGuideView } from "/_sdk/kit/guides.js";
 import { percent } from "/_sdk/kit/store.js";
 import { createStore } from "./store.js";
 
@@ -32,9 +33,7 @@ const GRID_ICON = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="
 const games = () => visible(ejg.library.all);
 
 function rowGames() {
-  // La fila de inicio es para jugar: solo instalados (si hay alguno).
-  const inst = games().filter((g) => g.installed !== false);
-  const all = inst.length ? inst : games();
+  const all = games();
   let list;
   switch (ejg.settings.rowOrder) {
     case "added":
@@ -152,7 +151,7 @@ function renderHub(g) {
       h("div", null, h("b", null, playtime(g.playtime, "—")), "Tiempo jugado"),
       h("div", null, h("b", null, relative(g.lastPlayed)), "Última partida"),
       g.achievements ? h("div", null, h("b", null, `${Math.round((g.achievements.unlocked / g.achievements.total) * 100)} %`), `Trofeos · ${g.achievements.unlocked}/${g.achievements.total}`) : null,
-      h("div", null, h("b", null, SOURCE_LABEL[g.source] || g.source), "Tienda"),
+      g.launchCount ? h("div", null, h("b", null, String(g.launchCount)), g.launchCount === 1 ? "Partida" : "Partidas") : null,
     ].filter(Boolean),
   );
   $("#blurb").textContent = g.shortDescription || "";
@@ -218,6 +217,17 @@ async function loadDetails(id) {
   }
   if (state.selected !== id) return;
   const cards = [];
+  if (d.steamAppid) {
+    cards.push(
+      h(
+        "button",
+        { class: "mcard help-card", "data-focus": "", onclick: () => openGuides(id) },
+        h("span", { class: "help-ico", html: '<svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>' }),
+        h("div", { class: "lbl" }, "Ayuda del juego"),
+        h("div", { class: "sub" }, "Guías de la comunidad"),
+      ),
+    );
+  }
   for (const t of d.trailers.slice(0, 3)) {
     cards.push(
       h(
@@ -237,15 +247,14 @@ function updatePlay(g) {
   const play = $("#play");
   const running = ejg.game.isRunning(g.id);
   play.classList.toggle("running", running);
-  play.classList.toggle("install", g.installed === false);
   play.disabled = !!g.missing;
-  play.textContent = g.missing ? "No encontrado" : running ? "En marcha" : g.installed === false ? "Instalar" : "Jugar";
+  play.textContent = g.missing ? "No encontrado" : running ? "En marcha" : "Jugar";
 }
 
 $("#play").addEventListener("click", async () => {
   const id = state.selected;
   if (!id || ejg.game.isRunning(id)) return;
-  $("#play").textContent = ejg.library.byId(id)?.installed === false ? "Abriendo la tienda…" : "Iniciando…";
+  $("#play").textContent = "Iniciando…";
   releaseTrailer();
   try {
     await ejg.game.launch(id);
@@ -259,6 +268,50 @@ $("#play").addEventListener("click", async () => {
 });
 $("#edit").addEventListener("click", () => state.selected && ejg.game.edit(state.selected));
 $("#fav").addEventListener("click", () => state.selected && ejg.game.favorite(state.selected));
+$("#help").addEventListener("click", () => state.selected && openGuides(state.selected));
+
+// ─────────────── ayuda del juego (guías de la comunidad de Steam) ───────────────
+let guideView = null;
+let guideReturn = null;
+const guidesLayer = $("#guides");
+function openGuides(gameId, guideId = null) {
+  const g = ejg.library.byId(gameId);
+  if (!g) return;
+  stopHome();
+  shop.closeDownloads();
+  guideView?.destroy();
+  guideReturn = guideView ? guideReturn : focus.current;
+  const art = g.media.hero || g.media.heroThumb || g.media.header;
+  $("#gh-bg").style.backgroundImage = art ? `url("${art}")` : "";
+  guidesLayer.hidden = false;
+  document.documentElement.dataset.panel = "guides";
+  guideView = createGuideView({
+    ejg,
+    root: $("#gh-inner"),
+    focus,
+    gameId,
+    gameTitle: g.title,
+    layout: "grid",
+    guide: guideId,
+    labels: { title: "Ayuda del juego", community: "Guías de la comunidad", pin: "Guardar", pinned: "Guardada" },
+    onExit: closeGuides,
+    onChange: () => updateHints(),
+  });
+  ejg.sound.play("open");
+}
+function closeGuides() {
+  if (!guideView) return false;
+  guideView.destroy();
+  guideView = null;
+  guidesLayer.hidden = true;
+  delete document.documentElement.dataset.panel;
+  const back = guideReturn?.isConnected ? guideReturn : $("#help");
+  guideReturn = null;
+  if (back) focus.focus(back, { silent: true });
+  updateHints();
+  return true;
+}
+const gv = (a) => !!(guideView && guideView.nav(a));
 
 // ─────────────── reproductor y visor ───────────────
 let release = () => {};
@@ -294,8 +347,8 @@ player.addEventListener("click", (e) => e.target === player && closePlayer());
 // ─────────────── biblioteca ───────────────
 const CHIPS = [
   ["all", "Todos"],
-  ["installed", "Instalados"],
-  ["uninstalled", "Sin instalar"],
+  ["played", "Jugados"],
+  ["unplayed", "Sin jugar"],
   ["fav", "Favoritos"],
 ];
 function renderLibrary() {
@@ -306,15 +359,15 @@ function renderLibrary() {
   );
   let list = sort(games(), "title");
   if (state.chip === "fav") list = list.filter((g) => g.favorite);
-  if (state.chip === "installed") list = list.filter((g) => g.installed !== false);
-  if (state.chip === "uninstalled") list = list.filter((g) => g.installed === false);
+  if (state.chip === "played") list = list.filter((g) => g.playtime > 0 || g.lastPlayed);
+  if (state.chip === "unplayed") list = list.filter((g) => !g.playtime && !g.lastPlayed);
   keyed($("#lib-grid"), list, (g) => g.id, (g, prev) => {
-    const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.installed}`;
+    const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}`;
     if (prev && prev.__sig === sig) return prev;
     const el = h(
       "button",
       {
-        class: "lcard" + (g.installed === false ? " uninstalled" : ""),
+        class: "lcard",
         "data-focus": "",
         "data-game-id": g.id,
         onclick: () => {
@@ -324,7 +377,7 @@ function renderLibrary() {
         },
       },
       art(g),
-      h("div", { class: "t" }, g.installed === false ? `⤓ ${g.title}` : g.title),
+      h("div", { class: "t" }, g.title),
     );
     el.__sig = sig;
     return el;
@@ -333,6 +386,7 @@ function renderLibrary() {
 
 const hintBar = hints($("#hints"), []);
 function updateHints() {
+  if (guideView) return hintBar.set(guideView.hints());
   if (state.tab === "store" || shop.hasDialog()) return hintBar.set(shop.hints());
   const inMedia = focus.current?.closest("#media");
   hintBar.set(
@@ -389,7 +443,7 @@ document.querySelectorAll("[data-action]").forEach((b) => b.addEventListener("cl
 function renderEmpty() {
   hub.hidden = false;
   $("#logo").replaceChildren(h("h1", null, "Tu biblioteca está vacía"));
-  $("#meta").textContent = "Añade una carpeta con juegos o importa los de tus tiendas.";
+  $("#meta").textContent = "Añade la carpeta donde tienes tus juegos.";
   $("#play").textContent = "Añadir juegos";
   $("#stats").replaceChildren();
   $("#blurb").textContent = "";
@@ -437,6 +491,7 @@ const shop = createStore({
 const mediaOpen = () => !player.hidden || !viewer.hidden;
 bindNav(focus, {
   back: () => {
+    if (gv("back")) return true;
     if (!player.hidden) return closePlayer(), true;
     if (!viewer.hidden) return (viewer.hidden = true), true;
     if (shop.back()) return true;
@@ -447,22 +502,26 @@ bindNav(focus, {
   },
   left: () => (!viewer.hidden ? (stepViewer(-1), true) : !player.hidden),
   right: () => (!viewer.hidden ? (stepViewer(1), true) : !player.hidden),
-  up: () => !player.hidden || !viewer.hidden ? true : false,
+  up: () => gv("up") || (!player.hidden || !viewer.hidden ? true : false),
+  lt: () => gv("lt"),
+  rt: () => gv("rt"),
   down: () => {
+    if (gv("down")) return true;
     // Desde la fila, bajar siempre a "Jugar".
     if (focus.current?.classList.contains("tile") && state.tab === "home") return focus.focus($("#play")), true;
     return !player.hidden || !viewer.hidden;
   },
   y: () => {
+    if (gv("y")) return true;
     if (mediaOpen() || shop.hasDialog()) return true;
     if (state.tab === "store") return shop.search(), true;
     return (state.selected && ejg.game.favorite(state.selected), true);
   },
-  x: () => (mediaOpen() || shop.hasDialog() || (state.tab === "store" ? shop.filters() : state.selected && ejg.game.edit(state.selected)), true),
+  x: () => (gv("x") || mediaOpen() || shop.hasDialog() || (state.tab === "store" ? shop.filters() : state.selected && ejg.game.edit(state.selected)), true),
   menu: () => (ejg.ui.open("menu"), true),
-  view: () => (ejg.ui.open("search"), true),
-  lb: () => (mediaOpen() || shop.hasDialog() || cycleTab(-1), true),
-  rb: () => (mediaOpen() || shop.hasDialog() || cycleTab(1), true),
+  view: () => gv("view") || (ejg.ui.open("search"), true),
+  lb: () => gv("lb") || guideView || (mediaOpen() || shop.hasDialog() || cycleTab(-1), true),
+  rb: () => gv("rb") || guideView || (mediaOpen() || shop.hasDialog() || cycleTab(1), true),
 });
 ejg.on("focus-return", () => focus.restore());
 // Tráiler solo con la ventana activa.
@@ -526,7 +585,9 @@ ejg.explore.onEnabled(() => {
   updateDownloadsUi();
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
-ejg.ui.onView(({ view, slug }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId }) => {
+  if (view === "guides" && gameId) return openGuides(gameId, guideId);
+  closeGuides();
   if (view === "downloads") return stopHome(), shop.openDownloads();
   if (!ejg.explore.enabled) return;
   shop.closeDownloads();

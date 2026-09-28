@@ -2,6 +2,7 @@
 // menú con cursor ▶ y cada opción en su propia pantalla. Paletas del tema.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { GuidesPane } from "../../components/guide";
 import { Hints } from "../../components/Hints";
 import { focusNav, useOverlayNav } from "../../input/nav";
 import {
@@ -25,7 +26,7 @@ import { clock, cls, CupIcon, hms, pctNum, shortDate } from "./parts";
 import type { Achievement } from "../../api/types";
 import "./retro.css";
 
-type View = "menu" | "ach" | "shots" | "notes" | "music" | "system" | "dl";
+type View = "menu" | "ach" | "guides" | "shots" | "notes" | "music" | "system" | "dl";
 
 /** El icono a 16 × 16 y ampliado sin suavizar, como un sprite. */
 function Sprite({ a }: { a: Achievement }) {
@@ -61,6 +62,7 @@ function Blocks({ value, of = 10 }: { value: number; of?: number }) {
 
 const TITLES: Record<Exclude<View, "menu">, string> = {
   ach: "Logros",
+  guides: "Guías",
   shots: "Álbum",
   notes: "Notas",
   music: "Música",
@@ -150,6 +152,13 @@ export function RetroPanel({ p }: { p: Panel }) {
         </>
       );
       break;
+    case "guides":
+      screen = (
+        <div className="pn-guides">
+          <GuidesPane gameId={d.gameId} onMenu={p.actions.close} />
+        </div>
+      );
+      break;
     case "notes":
       screen = <NotesEditor k="rt" p={p} placeholder="ESCRIBE AQUÍ TUS PISTAS…" />;
       break;
@@ -189,7 +198,7 @@ export function RetroPanel({ p }: { p: Panel }) {
         </span>
       </header>
 
-      <main className="rt-box">
+      <main className={cls("rt-box", view === "guides" && "is-guides")}>
         {view === "menu" ? (
           <div ref={menuRef} className="rt-menu">
             <div className="rt-game">{d.title}</div>
@@ -197,6 +206,7 @@ export function RetroPanel({ p }: { p: Panel }) {
             <div className="rt-items">
               {item(null, "Continuar", "", p.actions.close, "is-first")}
               {p.ach.total > 0 && item("ach", "Logros", `${p.ach.got}/${p.ach.total}`, () => setView("ach"))}
+              {item("guides", "Guías", "", () => setView("guides"))}
               {item("shots", "Álbum", d.captures.length || "", () => setView("shots"))}
               {item("notes", "Notas", p.note.trim() ? "●" : "", () => setView("notes"))}
               {item("music", "Música", p.media ? (p.media.playing ? "♪" : "II") : "", () => setView("music"))}

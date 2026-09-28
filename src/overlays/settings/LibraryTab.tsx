@@ -1,23 +1,13 @@
 import { useEffect, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { FilePlus2, FolderPlus, RefreshCw, Store, Trash2, Eraser } from "lucide-react";
+import { FilePlus2, FolderPlus, RefreshCw, Trash2, Eraser } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
 import type { FolderInspection, LibraryFolder } from "../../api/types";
-import { Button, Cycle, Section, Toggle } from "../../components/ui";
+import { Button, Cycle, Section } from "../../components/ui";
 import { relative } from "../../lib/format";
 import { useApp } from "../../store/app";
 
-const STORES = [
-  { key: "importSteam", label: "Steam" },
-  { key: "importEpic", label: "Epic Games Store" },
-  { key: "importGog", label: "GOG Galaxy" },
-  { key: "importUbisoft", label: "Ubisoft Connect" },
-  { key: "importEa", label: "EA app" },
-] as const;
-
 export function LibraryTab({ autoAdd }: { autoAdd?: boolean }) {
-  const settings = useApp((s) => s.settings)!;
-  const set = useApp((s) => s.set);
   const toast = useApp((s) => s.toast);
   const scan = useApp((s) => s.scan);
   const [folders, setFolders] = useState<LibraryFolder[]>([]);
@@ -51,11 +41,6 @@ export function LibraryTab({ autoAdd }: { autoAdd?: boolean }) {
     } catch (e) {
       toast("error", errMsg(e));
     }
-  }
-
-  async function saveSetting(patch: Record<string, boolean>) {
-    const s = await api.updateSettings(patch);
-    set({ settings: s });
   }
 
   async function addExe() {
@@ -134,31 +119,6 @@ export function LibraryTab({ autoAdd }: { autoAdd?: boolean }) {
             </Button>
           </div>
         ))}
-      </Section>
-
-      <Section
-        title="Tiendas instaladas"
-        actions={
-          <Button size="sm" variant="primary" icon={<Store size={14} />} onClick={() => api.importStores()}>
-            Importar ahora
-          </Button>
-        }
-      >
-        <p className="px-3 pb-1 text-xs text-muted">
-          Se detectan los juegos instalados y se lanzan con su propio cliente (así funcionan logros, overlay y DRM).
-        </p>
-        {STORES.map((s) => (
-          <Toggle key={s.key} label={s.label} checked={settings[s.key]} onChange={(v) => saveSetting({ [s.key]: v })} />
-        ))}
-        <Toggle
-          label="Mostrar también los juegos que no tengo instalados"
-          hint="Tu biblioteca de Steam, Epic y GOG, con la opción de instalarlos desde su tienda."
-          checked={settings.importUninstalled}
-          onChange={async (v) => {
-            await saveSetting({ importUninstalled: v });
-            await api.importStores();
-          }}
-        />
       </Section>
 
       <Section title="Otras acciones">

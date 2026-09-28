@@ -233,12 +233,6 @@ export function OverlayTab() {
               checked={settings.overlayStartHint}
               onChange={(v) => save({ overlayStartHint: v })}
             />
-            <Toggle
-              label="Avisar también de los logros de Steam"
-              hint="Steam ya los enseña con su propio overlay; actívalo si lo tienes desactivado."
-              checked={settings.overlaySteamNotify}
-              onChange={(v) => save({ overlaySteamNotify: v })}
-            />
           </>
         )}
       </Section>
@@ -246,10 +240,7 @@ export function OverlayTab() {
       <Section title="Logros">
         <div className="space-y-2 px-3 pb-2 text-xs leading-relaxed text-muted">
           <p>
-            <b className="text-fg">Steam:</b> se leen de las estadísticas que Steam guarda en tu PC, sin cuenta ni clave.
-          </p>
-          <p>
-            <b className="text-fg">Juegos sueltos (solo el .exe):</b> si traen un emulador de la API de Steam, ejGames saca el appid de su
+            Si el juego trae un emulador de la API de Steam, ejGames saca el appid de su
             configuración (<code>steam_appid.txt</code>, <code>steam_emu.ini</code>, <code>OnlineFix.ini</code>…) y lee sus logros de{" "}
             <code>achievements.ini</code> / <code>achievements.json</code>. Busca en la carpeta del juego y en las de siempre (Documentos públicos
             de Steam\CODEX y RUNE, OnlineFix, %APPDATA%\Goldberg SteamEmu Saves, GSE Saves, EMPRESS, SKIDROW…). Nombres, iconos y rareza salen de

@@ -28,6 +28,11 @@ export function dispatchNav(action: NavAction, repeat: boolean, source: NavSourc
   themeSink?.(action, repeat, source);
 }
 
+/** ¿Es este el manejador de arriba (el que recibe mando y teclado)? */
+export function isTopNav(fn: Handler) {
+  return stack[stack.length - 1] === fn;
+}
+
 export function pushNav(fn: Handler) {
   stack.push(fn);
   return () => {

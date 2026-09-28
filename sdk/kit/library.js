@@ -45,7 +45,8 @@ export function search(games, query, limit = 50) {
 
 /**
  * Juegos visibles: sin ocultos ni desaparecidos (salvo que se pida).
- * installed: "all" (defecto) | "installed" | "uninstalled".
+ * installed: "all" (defecto) | "installed" | "uninstalled". Desde la 0.5.0
+ * todos los juegos de la biblioteca están instalados; se mantiene por compatibilidad.
  */
 export function visible(games, { hidden = false, missing = false, installed = "all" } = {}) {
   return games.filter(
@@ -58,10 +59,8 @@ export function visible(games, { hidden = false, missing = false, installed = "a
 
 export const isInstalled = (g) => g.installed !== false;
 
-/** Si `ejg.game.uninstall(id)` sirve para este juego: los de carpeta, los de
- *  repack y los de Steam que estén instalados. */
-export const canUninstall = (g) =>
-  ["folder", "manual", "repack", "steam"].includes(g.source) && !g.missing && g.installed !== false;
+/** Si `ejg.game.uninstall(id)` sirve para este juego: todos los que siguen en su sitio. */
+export const canUninstall = (g) => !g.missing;
 
 export const SORTS = {
   title: { label: "Nombre", fn: (a, b) => (a.sortTitle < b.sortTitle ? -1 : a.sortTitle > b.sortTitle ? 1 : 0) },

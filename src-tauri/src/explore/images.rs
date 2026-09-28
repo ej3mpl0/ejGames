@@ -1,4 +1,4 @@
-//! Portadas y capturas de Explorar servidas por ejg-media (`/x/<id>`), con
+//! Portadas y capturas de Explorar (y las imágenes de las guías) servidas por ejg-media (`/x/<id>`), con
 //! caché en disco. El id es opaco: solo se sirven imágenes cuya URL ha devuelto
 //! antes Rust en una búsqueda o ficha, así un tema (que puede pedir cualquier
 //! ruta de ejg-media) no la puede usar como proxy a internet.
@@ -12,8 +12,19 @@ use std::sync::{Arc, LazyLock};
 
 const MAX_IMAGE: usize = 10 * 1024 * 1024;
 const EXTS: [&str; 4] = ["jpg", "png", "webp", "gif"];
-/// Hosts de los que salen las imágenes de las fichas (y el arte de Steam).
-const HOSTS: [&str; 6] = ["imageban.ru", "riotpixels.net", "riotpixels.com", "wp.com", "fitgirl-repacks.site", "steamstatic.com"];
+/// Hosts de los que salen las imágenes de las fichas, el arte de Steam y las
+/// guías de la comunidad (con las miniaturas de sus vídeos).
+const HOSTS: [&str; 9] = [
+    "imageban.ru",
+    "riotpixels.net",
+    "riotpixels.com",
+    "wp.com",
+    "fitgirl-repacks.site",
+    "steamstatic.com",
+    "steamusercontent.com",
+    "steamuserimages-a.akamaihd.net",
+    "i.ytimg.com",
+];
 
 static MAP: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(Default::default);
 
@@ -204,6 +215,9 @@ mod tests {
         assert!(proxy("http://s01.riotpixels.net/data/a.jpg.240p.jpg").is_some());
         assert!(proxy("https://i0.wp.com/i3.imageban.ru/a.jpg?w=320").is_some());
         assert!(proxy("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1/h/header.jpg").is_some());
+        assert!(proxy("https://images.steamusercontent.com/ugc/1/A/?imw=640").is_some());
+        assert!(proxy("https://i.ytimg.com/vi/abc/hqdefault.jpg").is_some());
+        assert!(proxy("https://other.akamaihd.net/a.jpg").is_none());
         assert!(proxy("https://evil.com/a.jpg").is_none());
         assert!(proxy("https://imageban.ru.evil.com/a.jpg").is_none());
         assert!(proxy("https://public-api.wordpress.wp.com/x").is_none());

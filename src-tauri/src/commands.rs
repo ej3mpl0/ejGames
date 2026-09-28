@@ -398,7 +398,7 @@ pub async fn add_manual_game(st: St<'_>, exe: String) -> CmdResult<i64> {
     Ok(crate::services::add_manual(st.inner(), exe).await?)
 }
 
-// ───────────────────────────── carpetas y tiendas ─────────────────────────────
+// ───────────────────────────── carpetas ─────────────────────────────
 
 #[tauri::command]
 pub async fn inspect_folder(path: String) -> CmdResult<FolderInspection> {
@@ -449,24 +449,6 @@ pub async fn rescan(st: St<'_>, folder_id: Option<i64>) -> CmdResult<()> {
         };
         if let Err(e) = r {
             crate::events::toast(&s, "error", format!("{e:#}"));
-        }
-    });
-    Ok(())
-}
-
-/// Tiendas detectadas y juegos instalados en cada una (sin red; para el primer arranque).
-#[tauri::command]
-pub async fn store_summary() -> CmdResult<Vec<crate::import::StoreSummary>> {
-    blocking(|| Ok(crate::import::summary())).await
-}
-
-#[tauri::command]
-pub async fn import_stores(st: St<'_>, only: Option<Vec<String>>) -> CmdResult<()> {
-    let s = st.inner().clone();
-    tauri::async_runtime::spawn(async move {
-        match crate::services::import_stores(&s, only).await {
-            Ok(n) => crate::events::toast(&s, "ok", format!("{n} juegos encontrados en tus tiendas")),
-            Err(e) => crate::events::toast(&s, "error", format!("{e:#}")),
         }
     });
     Ok(())
@@ -633,8 +615,7 @@ pub async fn open_game_folder(app: tauri::AppHandle, st: St<'_>, id: i64) -> Cmd
 #[tauri::command]
 pub async fn open_external(app: tauri::AppHandle, url: String) -> CmdResult<()> {
     use tauri_plugin_opener::OpenerExt;
-    let ok = url.starts_with("https://") || url.starts_with("steam://") || url.starts_with("com.epicgames.launcher://");
-    if !ok {
+    if !url.starts_with("https://") {
         return Err(CmdError::Msg("URL no permitida".into()));
     }
     app.opener().open_url(url, None::<&str>).map_err(|e| CmdError::Msg(e.to_string()))?;
@@ -1046,6 +1027,47 @@ pub async fn explore_genres() -> CmdResult<&'static [crate::explore::genres::Gen
 #[tauri::command]
 pub async fn explore_details(st: St<'_>, slug: String) -> CmdResult<crate::explore::RepackDetails> {
     Ok(crate::explore::details(st.inner(), &slug).await?)
+}
+
+// ───────────────────────────── guías de Steam ─────────────────────────────
+
+#[tauri::command]
+pub async fn guides_list(st: St<'_>, game_id: i64, query: Option<crate::guides::ListQuery>) -> CmdResult<crate::guides::GuideList> {
+    Ok(crate::guides::list(st.inner(), game_id, query.unwrap_or_default()).await?)
+}
+
+#[tauri::command]
+pub async fn guides_get(st: St<'_>, id: String) -> CmdResult<crate::guides::GuideView> {
+    Ok(crate::guides::get(st.inner(), &id).await?)
+}
+
+#[tauri::command]
+pub async fn guides_shelf(st: St<'_>, game_id: i64) -> CmdResult<crate::guides::Shelf> {
+    let s = st.inner().clone();
+    blocking(move || crate::guides::shelf(&s, game_id)).await
+}
+
+#[tauri::command]
+#[allow(clippy::too_many_arguments)]
+pub async fn guides_pin(st: St<'_>, game_id: i64, id: String, title: String, author: Option<String>, preview: Option<String>, value: bool) -> CmdResult<()> {
+    let s = st.inner().clone();
+    blocking(move || crate::guides::pin(&s, game_id, &id, &title, author.as_deref().unwrap_or(""), preview.as_deref(), value)).await
+}
+
+#[tauri::command]
+#[allow(clippy::too_many_arguments)]
+pub async fn guides_progress(
+    st: St<'_>,
+    game_id: i64,
+    id: String,
+    title: String,
+    author: Option<String>,
+    preview: Option<String>,
+    section: u32,
+    scroll: f64,
+) -> CmdResult<()> {
+    let s = st.inner().clone();
+    blocking(move || crate::guides::set_progress(&s, game_id, &id, &title, author.as_deref().unwrap_or(""), preview.as_deref(), section, scroll)).await
 }
 
 // ───────────────────────────── descargas ─────────────────────────────

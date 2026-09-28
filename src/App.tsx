@@ -17,6 +17,7 @@ import { UpdateAvailable } from "./overlays/UpdateAvailable";
 import { UninstallDialog } from "./overlays/Uninstall";
 import { checkOnLaunch } from "./host/update";
 import { GameEditor } from "./overlays/GameEditor";
+import { GuidesOverlay } from "./overlays/Guides";
 import { Onboarding } from "./overlays/Onboarding";
 import { ProfilePicker } from "./overlays/ProfilePicker";
 import { QuickMenu } from "./overlays/QuickMenu";
@@ -222,6 +223,8 @@ export default function App() {
             return <UpdateAvailable key={key} onClose={onClose} />;
           case "uninstall":
             return <UninstallDialog key={key} id={Number(o.args?.id)} onClose={onClose} />;
+          case "guides":
+            return <GuidesOverlay key={key} args={o.args} onClose={onClose} />;
           case "profiles":
             return (
               <ProfilePicker

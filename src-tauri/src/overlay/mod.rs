@@ -583,7 +583,7 @@ pub fn test(st: &Arc<AppState>) {
         .ok()
         .flatten();
     if let Some((gid, api, t)) = last {
-        notify_achievement(st, gid, &NewUnlock { api_name: api, unlocked_at: t, source: "test".into() });
+        notify_achievement(st, gid, &NewUnlock { api_name: api, unlocked_at: t });
         return;
     }
     notify(
@@ -835,13 +835,9 @@ pub fn set_live_note(st: &AppState, text: &str) -> anyhow::Result<()> {
 
 pub fn session_started(st: &Arc<AppState>, game: &Game, profile_id: i64, started_at: i64, target: Target) {
     let s = st.settings.get();
-    let steam = game.source == "steam";
     let mut keys: Vec<(&'static str, String, hotkey::Action)> = vec![];
-    // En juegos de Steam, si coinciden con los de Steam, mandan los de Steam.
-    let panel_key = (s.overlay_enabled && !s.overlay_hotkey.trim().is_empty() && !(steam && hotkey::is_steam_default(&s.overlay_hotkey)))
-        .then(|| s.overlay_hotkey.clone());
-    let shot_key = (s.overlay_enabled && !s.screenshot_hotkey.trim().is_empty() && !(steam && hotkey::is_steam_screenshot(&s.screenshot_hotkey)))
-        .then(|| s.screenshot_hotkey.clone());
+    let panel_key = (s.overlay_enabled && !s.overlay_hotkey.trim().is_empty()).then(|| s.overlay_hotkey.clone());
+    let shot_key = (s.overlay_enabled && !s.screenshot_hotkey.trim().is_empty()).then(|| s.screenshot_hotkey.clone());
     if let Some(k) = &panel_key {
         let st_p = st.clone();
         keys.push(("panel", k.clone(), Arc::new(move || toggle_panel(&st_p, false))));

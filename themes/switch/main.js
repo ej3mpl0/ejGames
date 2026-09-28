@@ -4,13 +4,14 @@
 import { h, img, initials, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { attachStream } from "/_sdk/kit/media.js";
-import { playtime, relative, year, description, SOURCE_LABEL } from "/_sdk/kit/format.js";
-import { visible, sort, recent, installedFirst } from "/_sdk/kit/library.js";
+import { playtime, relative, year, description } from "/_sdk/kit/format.js";
+import { visible, sort, recent } from "/_sdk/kit/library.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { clock } from "/_sdk/kit/clock.js";
 import { isActive } from "/_sdk/kit/store.js";
 import { createShop } from "./store.js";
+import { createGuideView } from "/_sdk/kit/guides.js";
 
 const ejg = await window.ejg.ready();
 const $ = (s) => document.querySelector(s);
@@ -21,8 +22,7 @@ clock($("#clock"));
 
 const games = () => visible(ejg.library.all);
 function railGames() {
-  const inst = games().filter((g) => g.installed !== false);
-  const all = inst.length ? inst : games();
+  const all = games();
   const rec = recent(all, 30);
   const ids = new Set(rec.map((g) => g.id));
   return [...rec, ...sort(all.filter((g) => !ids.has(g.id)), "added")].slice(0, 14);
@@ -33,14 +33,13 @@ function art(g) {
 }
 
 function stile(g, prev) {
-  const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.favorite}:${ejg.game.isRunning(g.id)}:${g.installed}`;
+  const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.favorite}:${ejg.game.isRunning(g.id)}`;
   if (prev && prev.__sig === sig) return prev;
   const el = h(
     "button",
-    { class: "stile" + (g.installed === false ? " uninstalled" : ""), "data-focus": "", "data-game-id": g.id, onclick: () => launch(g.id), title: g.title },
+    { class: "stile", "data-focus": "", "data-game-id": g.id, onclick: () => launch(g.id), title: g.title },
     art(g),
     g.favorite ? h("span", { class: "fav" }, "★") : null,
-    g.installed === false ? h("span", { class: "dl" }, "⤓") : null,
     ejg.game.isRunning(g.id) ? h("span", { class: "run" }, "En juego") : null,
   );
   el.__sig = sig;
@@ -65,10 +64,10 @@ function renderRail() {
 }
 
 function renderAll() {
-  const list = installedFirst(sort(games(), "title"));
+  const list = sort(games(), "title");
   $("#all-count").textContent = `${list.length} programas`;
   keyed($("#all-grid"), list, (g) => g.id, (g, prev) => {
-    const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.favorite}:${g.installed}`;
+    const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.favorite}`;
     if (prev && prev.__sig === sig) return prev;
     const tile = stile(g);
     const el = h("div", { class: "item" }, tile, h("div", { class: "name" }, g.title));
@@ -90,7 +89,7 @@ async function launch(id) {
 // ─────────────── panel de opciones (X) ───────────────
 let releaseVideo = () => {};
 // Lo que cambia al jugar (horas, logros, «En juego»): se repinta con el panel abierto.
-const startLabel = (g) => (ejg.game.isRunning(g.id) ? "En juego" : g.installed === false ? "Instalar desde la tienda" : "Iniciar");
+const startLabel = (g) => (ejg.game.isRunning(g.id) ? "En juego" : "Iniciar");
 function optionStats(g) {
   const stat = (label, value) => h("div", { class: "stat" }, h("small", null, label), h("b", null, value));
   return [
@@ -112,7 +111,7 @@ async function openOptions(id) {
     { class: "panel", "data-focus-trap": "" },
     cover,
     h("h2", null, g.title),
-    h("div", { class: "sub" }, [g.developer, year(g.releaseDate), SOURCE_LABEL[g.source]].filter(Boolean).join(" · ")),
+    h("div", { class: "sub" }, [g.developer, year(g.releaseDate)].filter(Boolean).join(" · ")),
     h("div", { class: "stats" }, ...optionStats(g)),
     h(
       "div",
@@ -120,6 +119,7 @@ async function openOptions(id) {
       item(startLabel(g), () => (closeOptions(), launch(g.id))),
       item(g.favorite ? "Quitar de favoritos" : "Añadir a favoritos", () => (ejg.game.favorite(g.id), closeOptions())),
       item("Ver tráiler", () => playTrailer(g.id, cover)),
+      item("Guías de la comunidad", () => (closeOptions(), openGuides(g.id))),
       item("Editar datos del programa", () => (closeOptions(), ejg.game.edit(g.id))),
       item("Abrir carpeta", () => ejg.game.openFolder(g.id)),
     ),
@@ -152,12 +152,57 @@ function closeOptions() {
 }
 options.addEventListener("click", (e) => e.target === options && closeOptions());
 
+// ─────────────── guías de la comunidad ───────────────
+let guideView = null;
+let guideFrom = null;
+function openGuides(gameId, guideId = null) {
+  const g = ejg.library.byId(gameId);
+  if (!g) return;
+  if (state.view !== "guides") guideFrom = { view: state.view, focus: focus.current };
+  dropGuides();
+  const root = $("#guides");
+  const box = h("div", { class: "gs-page" });
+  root.replaceChildren(
+    h(
+      "header",
+      { class: "gs-head" },
+      g.media.coverThumb || g.media.icon ? img(g.media.coverThumb || g.media.icon, { class: "gs-icon" }) : null,
+      h("div", null, h("small", null, "Guías de la comunidad"), h("b", null, g.title)),
+    ),
+    box,
+  );
+  setView("guides");
+  guideView = createGuideView({
+    ejg,
+    root: box,
+    focus,
+    gameId,
+    guide: guideId,
+    labels: { title: "Guías", pin: "Guardar", pinned: "Guardada" },
+    onExit: closeGuides,
+    onChange: () => updateHints(),
+  });
+  ejg.sound.play("open");
+}
+function dropGuides() {
+  guideView?.destroy();
+  guideView = null;
+}
+function closeGuides() {
+  const from = guideFrom;
+  guideFrom = null;
+  setView(from?.view && from.view !== "guides" ? from.view : "home", from?.focus?.isConnected ? from.focus : undefined);
+  if (from?.focus?.isConnected) focus.focus(from.focus, { silent: true });
+  return true;
+}
+
 // ─────────────── vistas y navegación ───────────────
 // home | all | shop (eShop) | dls (Gestión de descargas). `target`: qué enfocar al volver al HOME.
 function setView(v, target) {
+  if (v !== "guides") dropGuides();
   state.view = v;
   document.documentElement.dataset.view = v;
-  for (const id of ["home", "all", "shop", "dls"]) $("#" + id).hidden = v !== id;
+  for (const id of ["home", "all", "guides", "shop", "dls"]) $("#" + id).hidden = v !== id;
   if (v === "all") {
     renderAll();
     focus.first($("#all-grid"));
@@ -186,14 +231,21 @@ function selTitle(el) {
   const g = Number(el.dataset.gameId) && ejg.library.byId(Number(el.dataset.gameId));
   t.textContent = g ? g.title : el.classList.contains("allsw") ? "Todos los programas" : "";
 }
+const gv = (a) => !!(guideView && guideView.nav(a));
 const actions = {
   back: () => {
+    if (gv("back")) return true;
     if (!options.hidden) return closeOptions(), true;
     if (shop.back()) return true;
     if (state.view === "all") return setView("home"), true;
     return false;
   },
+  up: () => gv("up"),
+  down: () => gv("down"),
+  lt: () => gv("lt"),
+  rt: () => gv("rt"),
   x: () => {
+    if (gv("x")) return true;
     if (!options.hidden) return true;
     if (shop.x(focus.current)) return true;
     const id = Number(focus.current?.dataset.gameId);
@@ -201,15 +253,16 @@ const actions = {
     return true;
   },
   y: () => {
+    if (gv("y")) return true;
     if (options.hidden && shop.y()) return true;
     const id = Number(focus.current?.dataset.gameId) || state.optionsFor;
     if (id) ejg.game.favorite(id);
     return true;
   },
-  lb: () => shop.cycle(-1),
-  rb: () => shop.cycle(1),
+  lb: () => gv("lb") || shop.cycle(-1),
+  rb: () => gv("rb") || shop.cycle(1),
   menu: () => (ejg.ui.open("menu"), true),
-  view: () => (ejg.ui.open("search"), true),
+  view: () => gv("view") || (ejg.ui.open("search"), true),
 };
 bindNav(focus, actions);
 
@@ -276,8 +329,9 @@ ejg.explore.onEnabled(() => {
   }
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
-ejg.ui.onView(({ view, slug }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId }) => {
   if (!options.hidden) closeOptions();
+  if (view === "guides" && gameId) return openGuides(gameId, guideId);
   if (view === "downloads") return shop.open("downloads");
   if (!ejg.explore.enabled) return;
   shop.open(view === "repack" ? "repack" : "explore", slug);
@@ -296,6 +350,7 @@ function applyWall() {
 }
 
 const refresh = debounce(() => {
+  if (state.view === "guides") return;
   if (state.view === "all") renderAll();
   else renderRail();
   const og = !options.hidden && state.optionsFor && ejg.library.byId(state.optionsFor);
@@ -318,6 +373,7 @@ ejg.on("profile", renderUser);
 
 const hintBar = hints($("#bar"), []);
 function updateHints() {
+  if (state.view === "guides" && guideView) return hintBar.set(guideView.hints());
   if (state.view === "shop" || state.view === "dls" || shop.hasDialog()) return hintBar.set(shop.hints());
   const el = focus.current;
   const d = el?.dataset?.dlId && ejg.downloads.byId(Number(el.dataset.dlId));
@@ -325,7 +381,7 @@ function updateHints() {
   if (el?.closest?.(".circles")) return hintBar.set([["accept", "Aceptar"], ["back", "Atrás"]]);
   const g = Number(el?.dataset?.gameId) && ejg.library.byId(Number(el.dataset.gameId));
   hintBar.set([
-    ["accept", g && g.installed === false ? "Instalar" : "Iniciar"],
+    ["accept", "Iniciar"],
     ["x", "Opciones"],
     ["y", "Favorito"],
     ["back", "Atrás"],

@@ -795,3 +795,33 @@
   margin: 0;
   font-size: 13.5px;
 }
+
+/* ─── guías ─── */
+.sw-panel.is-guides .sw-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sw-panel.is-reading {
+  width: min(960px, 60vw);
+}
+.pn-switch .gd-pane,
+.pn-switch .gd-reader {
+  --gd-fg: var(--sw-text);
+  --gd-muted: var(--sw-dim);
+  --gd-accent: var(--sw-accent);
+  --gd-surface: var(--sw-card);
+  --gd-surface-2: color-mix(in srgb, var(--sw-text) 8%, var(--sw-card));
+  --gd-line: var(--sw-line);
+  --gd-bg: var(--sw-bg);
+  --gd-radius: 10px;
+  --gd-focus: 0 0 0 3px var(--sw-accent);
+  --gd-toc-bg: var(--sw-bg);
+  font-weight: 600;
+}
+.pn-switch .gd-body {
+  font-weight: 500;
+}
+.pn-switch .gd-code {
+  background: color-mix(in srgb, var(--sw-text) 10%, transparent);
+}

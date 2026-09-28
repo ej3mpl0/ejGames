@@ -2,8 +2,7 @@
 //! host, nunca directamente desde un tema). Por orden:
 //! 1. su desinstalador: el de su entrada en Windows o un `unins000.exe`
 //!    (`uninstall.exe`…) en su carpeta;
-//! 2. los de Steam, con `steam://uninstall/<appid>`;
-//! 3. si no tiene nada, su carpeta a la papelera de reciclaje.
+//! 2. si no tiene, su carpeta a la papelera de reciclaje.
 //! Cuando el juego desaparece del disco, se quita de la biblioteca.
 
 use crate::db::{models::Game, repo};
@@ -19,7 +18,7 @@ use std::time::{Duration, Instant};
 pub struct Plan {
     pub game_id: i64,
     pub title: String,
-    /// `uninstaller` | `steam` | `folder`
+    /// `uninstaller` | `folder`
     pub method: String,
     pub dir: Option<String>,
     /// El programa que se abrirá (para enseñarlo en el diálogo).
@@ -29,7 +28,6 @@ pub struct Plan {
 
 enum Action {
     Run { file: String, args: String },
-    Uri(String),
     Recycle(PathBuf),
 }
 
@@ -223,32 +221,12 @@ fn other_dirs(st: &AppState, id: i64) -> Vec<String> {
         .unwrap_or_default()
 }
 
-fn store_label(source: &str) -> &str {
-    match source {
-        "epic" => "Epic Games",
-        "gog" => "GOG Galaxy",
-        "ubisoft" => "Ubisoft Connect",
-        "ea" => "la EA app",
-        other => other,
-    }
-}
-
 fn resolve(st: &AppState, id: i64) -> anyhow::Result<(Game, Plan, Action)> {
     let g = st.db.with(|c| repo::get_game(c, id)).map_err(|_| anyhow::anyhow!("Ese juego ya no está en la biblioteca"))?;
     if st.sessions.is_running(id) {
         bail!("Cierra el juego antes de desinstalarlo.");
     }
     let mut plan = Plan { game_id: id, title: g.title.clone(), method: String::new(), dir: None, program: None, size_bytes: None };
-    match g.source.as_str() {
-        "steam" => {
-            let appid = g.steam_appid.or_else(|| g.source_id.parse().ok()).context("No se sabe el appid de Steam de este juego")?;
-            plan.method = "steam".into();
-            plan.program = Some("Steam".into());
-            return Ok((g, plan, Action::Uri(format!("steam://uninstall/{appid}"))));
-        }
-        "epic" | "gog" | "ubisoft" | "ea" => bail!("Este juego se desinstala desde {}.", store_label(&g.source)),
-        _ => {}
-    }
     let dir = game_dir(&g).context("No se sabe en qué carpeta está este juego")?;
     if !dir.is_dir() {
         bail!("La carpeta del juego ya no existe. Puedes quitarlo de la biblioteca en Editar.");
@@ -276,15 +254,11 @@ pub fn plan(st: &AppState, id: i64) -> anyhow::Result<Plan> {
     resolve(st, id).map(|(_, p, _)| p)
 }
 
-/// Desinstala. Devuelve `started` si abrió un desinstalador o Steam (el juego se
-/// quitará al desaparecer del disco) o `removed` si ya está fuera.
+/// Desinstala. Devuelve `started` si abrió un desinstalador (el juego se quitará
+/// al desaparecer del disco) o `removed` si ya está fuera.
 pub fn run(st: Arc<AppState>, id: i64) -> anyhow::Result<&'static str> {
     let (g, _, action) = resolve(&st, id)?;
     match action {
-        Action::Uri(uri) => {
-            crate::launcher::launch::open_uri(&uri)?;
-            Ok("started")
-        }
         Action::Run { file, args } => {
             let dir = Path::new(&file).parent().map(|p| p.to_string_lossy().into_owned());
             #[cfg(windows)]

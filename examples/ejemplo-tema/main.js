@@ -53,7 +53,6 @@ function tarjeta(g, prev) {
   const firma = `${g.title}|${g.media.coverThumb ?? ""}`;
   const el = prev && prev.dataset.firma === firma ? prev : nuevaTarjeta(g, firma);
   el.classList.toggle("fav", g.favorite);
-  el.classList.toggle("sin-instalar", g.installed === false);
   el.classList.toggle("en-marcha", ejg.game.isRunning(g.id));
   return el;
 }
@@ -155,7 +154,7 @@ function pintarBotones(g) {
     h(
       "button",
       { class: "boton principal", "data-focus": "", "data-accion": "jugar", onclick: () => jugar(g.id) },
-      enMarcha ? "En marcha" : g.installed === false ? "Instalar" : "Jugar",
+      enMarcha ? "En marcha" : "Jugar",
     ),
     h("button", { class: "boton", "data-focus": "", "data-accion": "fav", onclick: () => ejg.game.favorite(g.id) }, g.favorite ? "★ Favorito" : "☆ Favorito"),
     h("button", { class: "boton", "data-focus": "", "data-accion": "editar", onclick: () => ejg.game.edit(g.id) }, "Editar"),

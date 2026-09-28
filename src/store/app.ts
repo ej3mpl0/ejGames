@@ -27,6 +27,7 @@ export type OverlayName =
   | "keyboard"
   | "update"
   | "uninstall"
+  | "guides"
   | "onboarding";
 
 export interface Overlay {

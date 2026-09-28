@@ -4,29 +4,13 @@ import { useEffect, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { ArrowLeft, ArrowRight, Compass, FolderOpen, FolderPlus, Gamepad2, HardDrive, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import { api, errMsg } from "../api/tauri";
-import type { FolderInspection, StoreSummary } from "../api/types";
+import type { FolderInspection } from "../api/types";
 import { Button, TextInput, Toggle, cx } from "../components/ui";
 import { ThemeCard } from "../components/ThemeCard";
 import { useOverlayNav } from "../input/nav";
 import { PROFILE_COLORS, bytes } from "../lib/format";
 import { useApp } from "../store/app";
 import { Hints } from "../components/Hints";
-
-const STORES = [
-  { key: "importSteam", source: "steam", label: "Steam" },
-  { key: "importEpic", source: "epic", label: "Epic Games" },
-  { key: "importGog", source: "gog", label: "GOG Galaxy" },
-  { key: "importUbisoft", source: "ubisoft", label: "Ubisoft Connect" },
-  { key: "importEa", source: "ea", label: "EA app" },
-] as const;
-
-function storeHint(s?: StoreSummary) {
-  if (!s) return "Buscando…";
-  if (!s.detected) return "No está instalada en este PC";
-  const parts = [`${s.installed} ${s.installed === 1 ? "juego instalado" : "juegos instalados"}`];
-  if (s.library) parts.push(`${s.library} en tu biblioteca`);
-  return parts.join(" · ");
-}
 
 export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) {
   const themes = useApp((s) => s.themes);
@@ -36,15 +20,6 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
   const [color, setColor] = useState(PROFILE_COLORS[0]);
   const [theme, setTheme] = useState("steam");
   const [folders, setFolders] = useState<FolderInspection[]>([]);
-  const [stores, setStores] = useState<Record<string, boolean>>({
-    importSteam: true,
-    importEpic: true,
-    importGog: true,
-    importUbisoft: true,
-    importEa: true,
-  });
-  const [uninstalled, setUninstalled] = useState(true);
-  const [summary, setSummary] = useState<StoreSummary[] | null>(null);
   const [busy, setBusy] = useState(false);
   // Descargas: carpeta (por defecto la primera carpeta de juegos) y Explorar.
   const [dlDir, setDlDir] = useState<string | null>(null);
@@ -67,23 +42,6 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
     if (typeof path === "string") setDlDir(path);
   }
 
-  // Detectar tiendas en cuanto se llega al paso de juegos (sin red, rápido).
-  useEffect(() => {
-    if (step !== 2 || summary) return;
-    api
-      .storeSummary()
-      .then((list) => {
-        setSummary(list);
-        // Las tiendas que no están instaladas empiezan desactivadas.
-        setStores((cur) => {
-          const next = { ...cur };
-          for (const s of STORES) next[s.key] = !!list.find((x) => x.source === s.source)?.detected;
-          return next;
-        });
-      })
-      .catch(() => setSummary([]));
-  }, [step]);
-
   async function addFolder() {
     const path = await openDialog({ directory: true, multiple: false, title: "Carpeta con juegos" });
     if (typeof path !== "string") return;
@@ -101,14 +59,11 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
       const p = await api.createProfile(name.trim() || "Jugador", color, theme);
       await api.login(p.id);
       await api.updateSettings({
-        ...stores,
-        importUninstalled: uninstalled,
         firstRunDone: true,
         exploreEnabled: explore,
         downloadDir: explore ? dlDir ?? "" : "",
       });
       for (const f of folders) await api.addFolder(f.path, f.suggestedMode);
-      await api.importStores();
       onDone(p.id);
     } catch (e) {
       toast("error", errMsg(e));
@@ -197,30 +152,24 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
             <div className="grid h-full grid-cols-2 gap-8">
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight">Encuentra tus juegos</h1>
-                <p className="mt-2 text-muted">Importamos lo que tengas instalado en tus tiendas y escaneamos las carpetas que elijas.</p>
-                <div className="mt-6 rounded-[var(--h-radius)] bg-surface-2/70 p-2 ring-1 ring-line">
-                  {STORES.map((s) => {
-                    const info = summary?.find((x) => x.source === s.source);
-                    return (
-                      <Toggle
-                        key={s.key}
-                        label={s.label}
-                        hint={storeHint(summary ? info : undefined)}
-                        checked={stores[s.key]}
-                        disabled={!!summary && !info?.detected}
-                        onChange={(v) => setStores((x) => ({ ...x, [s.key]: v }))}
-                      />
-                    );
-                  })}
-                </div>
-                <div className="mt-3 rounded-[var(--h-radius)] bg-surface-2/70 p-2 ring-1 ring-line">
-                  <Toggle
-                    label="Incluir también los juegos que no tengo instalados"
-                    hint="Aparecen con la opción «Instalar», que abre su tienda. Steam, Epic y GOG."
-                    checked={uninstalled}
-                    onChange={setUninstalled}
-                  />
-                </div>
+                <p className="mt-2 text-muted">
+                  Dinos dónde tienes tus juegos y ejGames se encarga del resto. Si más adelante instalas otro en esas carpetas, aparecerá solo.
+                </p>
+                <ul className="mt-6 space-y-3 rounded-[var(--h-radius)] bg-surface-2/70 p-4 text-sm ring-1 ring-line">
+                  <li className="flex gap-3">
+                    <Gamepad2 size={18} className="mt-0.5 shrink-0 text-accent" />
+                    <span>Cada subcarpeta es un juego: se detecta su .exe, aunque esté en lo más hondo.</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <Sparkles size={18} className="mt-0.5 shrink-0 text-accent" />
+                    <span>Portadas, fondos, descripción y tráileres se descargan solos.</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <ShieldCheck size={18} className="mt-0.5 shrink-0 text-accent" />
+                    <span>Si el juego guarda logros en su carpeta o en la de su emulador, se leen y te avisan en el overlay.</span>
+                  </li>
+                </ul>
+                <p className="mt-3 text-xs text-muted">¿Un juego suelto fuera de estas carpetas? Añádelo luego en Ajustes → Biblioteca.</p>
               </div>
               <div className="flex min-h-0 flex-col">
                 <div className="mb-3 flex items-center justify-between">

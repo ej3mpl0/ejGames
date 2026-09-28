@@ -26,7 +26,6 @@ export function ThemeFrame() {
   const games = useApp((s) => s.games);
   const collections = useApp((s) => s.collections);
   const running = useApp((s) => s.running);
-  const showUninstalled = useApp((s) => s.settings?.importUninstalled !== false);
   const mode = useApp((s) => s.mode);
   const reload = useApp((s) => s.themeReload);
   const overlays = useApp((s) => s.overlays.length);
@@ -127,7 +126,7 @@ export function ThemeFrame() {
   function sendInit() {
     const st = useApp.getState();
     const t = activeTheme(st);
-    const games = st.settings?.importUninstalled === false ? st.games.filter((g) => g.installed) : st.games;
+    const games = st.games;
     sent.current = new Map(games.map((g) => [g.id, g]));
     post({
       type: "init",
@@ -193,14 +192,14 @@ export function ThemeFrame() {
   useEffect(() => {
     const prev = sent.current;
     if (!prev || !beats.current.ready) return;
-    const list = showUninstalled ? games : games.filter((g) => g.installed);
+    const list = games;
     const now = new Map(list.map((g) => [g.id, g]));
     const changed = list.filter((g) => prev.get(g.id) !== g);
     const removed = [...prev.keys()].filter((id) => !now.has(id));
     if (!changed.length && !removed.length) return;
     event("library", changed.length > 150 ? { full: list } : { changed, removed });
     sent.current = now;
-  }, [games, showUninstalled]);
+  }, [games]);
 
   useEffect(() => void (beats.current.ready && event("settings", settings)), [settings]);
   useEffect(() => void (beats.current.ready && event("css", customCss)), [customCss]);

@@ -12,3 +12,4 @@ export * from "./clock.js";
 export * from "./hints.js";
 export * from "./art.js";
 export * from "./store.js";
+export * from "./guides.js";

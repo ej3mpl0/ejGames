@@ -10,8 +10,8 @@ const list = await ejg.game.achievements(id)
 //                              hidden, globalPct, unlockedAt }] }
 ```
 
-Salen de las estadísticas locales de Steam o de los ficheros de los emuladores
-de los juegos sueltos. La primera vez puede tardar un momento, porque descarga
+Salen de los ficheros de los emuladores de los juegos (y, si tienes Steam
+instalado, de sus estadísticas locales). La primera vez puede tardar un momento, porque descarga
 el esquema de Steam; después se cachea una semana. Para pintar un resumen sin
 esperar, usa `game.achievements` de la biblioteca.
 

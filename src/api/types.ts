@@ -246,7 +246,6 @@ export interface Game {
   addedAt: number;
   updatedAt: number;
   installed: boolean;
-  installUri?: string | null;
 }
 
 export interface GameFull {
@@ -369,7 +368,7 @@ export interface ThemeInfo {
   windowControls?: "host" | "theme" | null;
   overlay?: { style?: NoticeStyle } | null;
   /** Vistas propias del tema (sin ellas, el host abre las suyas). */
-  features?: { explore?: boolean } | null;
+  features?: { explore?: boolean; guides?: boolean } | null;
   builtin: boolean;
   dir: string;
   previewUrl?: string | null;
@@ -393,19 +392,12 @@ export interface Settings {
   autoLogin: boolean;
   closeToTray: boolean;
   devMode: boolean;
-  importSteam: boolean;
-  importEpic: boolean;
-  importGog: boolean;
-  importUbisoft: boolean;
-  importEa: boolean;
-  importUninstalled: boolean;
   overlayEnabled: boolean;
   overlayHotkey: string;
   overlayCorner: NoticeCorner | "auto";
   overlayStyle: NoticeStyle | "auto";
   overlaySound: boolean;
   overlayStartHint: boolean;
-  overlaySteamNotify: boolean;
   screenshotHotkey: string;
   screenshotDir: string;
   achievementDirs: string[];
@@ -489,13 +481,6 @@ export interface Stats {
   byGenre: [string, number][];
   librarySize: number;
   neverPlayed: number;
-}
-
-export interface StoreSummary {
-  source: "steam" | "epic" | "gog" | "ubisoft" | "ea";
-  detected: boolean;
-  installed: number;
-  library: number;
 }
 
 export type NavAction =
@@ -657,13 +642,106 @@ export interface DownloadDefaults {
   configured: boolean;
 }
 
+// ───────────────────────────── guías de Steam ─────────────────────────────
+
+export interface GuideSpan {
+  text: string;
+  b?: boolean;
+  i?: boolean;
+  u?: boolean;
+  s?: boolean;
+  spoiler?: boolean;
+  /** Enlace a una web (https). */
+  href?: string;
+  /** Enlace a otra guía: se abre en el lector. */
+  guide?: string;
+}
+
+export type GuideBlock =
+  | { t: "h"; level: 1 | 2 | 3; spans: GuideSpan[] }
+  | { t: "p"; spans: GuideSpan[] }
+  | { t: "list"; ordered: boolean; items: { depth: number; spans: GuideSpan[] }[] }
+  | { t: "quote"; spans: GuideSpan[] }
+  | { t: "code"; text: string }
+  | { t: "img"; src: string; thumb?: boolean }
+  | { t: "table"; head: boolean; rows: GuideSpan[][][] }
+  | { t: "video"; id: string; url: string; thumb: string }
+  | { t: "hr" };
+
+export interface GuideItem {
+  id: string;
+  title: string;
+  desc: string;
+  author: string;
+  stars?: number | null;
+  preview?: string | null;
+  /** Idioma aproximado: es, en, pt, ru, zh… ("" si no se sabe). */
+  lang: string;
+}
+
+export interface GuideList {
+  appid?: number | null;
+  items: GuideItem[];
+  page: number;
+  pages: number;
+  total: number;
+  next?: number | null;
+  filtered: boolean;
+}
+
+export interface GuideQuery {
+  page?: number;
+  sort?: "toprated" | "trend" | "mostrecent";
+  query?: string;
+  category?: string;
+  allLanguages?: boolean;
+}
+
+export interface GuideProgress {
+  section: number;
+  scroll: number;
+  readAt: number;
+}
+
+export interface Guide {
+  id: string;
+  appid?: number | null;
+  title: string;
+  authors: string[];
+  stars?: number | null;
+  ratings?: number | null;
+  published?: string | null;
+  updated?: string | null;
+  preview?: string | null;
+  intro: GuideBlock[];
+  sections: { id: string; title: string; blocks: GuideBlock[] }[];
+  lang: string;
+  url: string;
+  pinned: boolean;
+  progress?: GuideProgress | null;
+}
+
+export interface GuideShelfItem {
+  id: string;
+  title: string;
+  author: string;
+  preview?: string | null;
+  pinned: boolean;
+  progress?: GuideProgress | null;
+}
+
+export interface GuideShelf {
+  pinned: GuideShelfItem[];
+  recent: GuideShelfItem[];
+}
+
 // ───────────────────────────── actualizaciones ─────────────────────────────
 
 /** Qué hará «Desinstalar» (lo decide el núcleo). */
 export interface UninstallPlan {
   gameId: number;
   title: string;
-  method: "uninstaller" | "steam" | "folder";
+  method: "uninstaller" | "folder";
   dir: string | null;
   program: string | null;
   sizeBytes: number | null;

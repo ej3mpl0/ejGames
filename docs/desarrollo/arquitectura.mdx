@@ -11,11 +11,10 @@ dentro de un iframe aislado.
 ```
 src-tauri/src/     núcleo en Rust
   library/         escaneo de carpetas, detección de exes (PE), vigilancia de carpetas
-  import/          Steam (VDF), Epic, GOG, Ubisoft, EA
   metadata/        Steam GetItems, SteamGridDB, IGDB, matcher, cola con rate limit
   media/           almacén de imágenes + miniaturas, proxy/caché de tráileres HLS
   launcher/        ShellExecuteEx, «ejecutar como administrador», tracker de procesos, sesiones, botón Guía
-  achievements/    esquema de Steam, estadísticas locales (KeyValues binario), ficheros de emuladores
+  achievements/    esquema de Steam, ficheros de emuladores y estadísticas locales de Steam (KeyValues binario)
   overlay/         ventana transparente encima del juego, atajo global, avisos y panel
   explore/         fuente de repacks (API de WordPress), lectura de fichas, caché e imágenes por ejg-media
   downloads/       motor torrent (librqbit) perezoso, cola, progreso, instalación y registro del juego

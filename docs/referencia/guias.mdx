@@ -1,0 +1,119 @@
+---
+title: "Guías de la comunidad"
+description: "ejg.guides: las guías de Steam de cada juego, listas para leer en tu tema."
+icon: "book-open"
+---
+
+ejGames trae las **guías de la comunidad de Steam** de cada juego (por el appid del juego:
+el de su emulador o el que encontró al identificarlo). Llegan como **bloques**, nunca como
+HTML: tu tema decide cómo se ve cada título, párrafo, lista, tabla o imagen, y ningún tema
+recibe código de terceros.
+
+Si tu tema pinta sus propias guías, decláralo en `theme.json`:
+
+```json
+"features": { "explore": true, "guides": true }
+```
+
+y el host (el menú rápido o el enlace de una guía) te pedirá que las abras:
+
+```js
+ejg.ui.onView(({ view, gameId, guideId }) => {
+  if (view === "guides") abrirGuias(gameId, guideId); // guideId: abrir ya esa guía (o null)
+});
+```
+
+Sin `features.guides`, el host tiene su propia ventana: ábrela con
+`ejg.ui.open("guides", { id: gameId })`.
+
+## La forma rápida: la vista del kit
+
+`/_sdk/kit/guides.js` trae la vista completa (lista con filtros, guardadas, «seguir leyendo»,
+lector con índice, zoom de imágenes y mando). Tú pones el sitio y el aspecto:
+
+```html
+<link rel="stylesheet" href="/_sdk/kit/guides.css" />
+```
+
+```js
+import { createGuideView } from "/_sdk/kit/guides.js";
+
+const view = createGuideView({
+  ejg,
+  root: document.getElementById("guias"), // un contenedor visible, con altura
+  focus,                                  // tu createFocus()
+  gameId,
+  gameTitle: juego.title,
+  layout: "grid",                          // "list" (filas) | "grid" (tarjetas)
+  guide: guideId,                          // opcional: abrir ya una guía
+  labels: { title: "Ayuda del juego" },    // cualquier texto se puede cambiar
+  onExit: cerrarGuias,                     // «Atrás» desde la lista
+  onChange: () => pistas.set(view.hints()),
+});
+
+// Antes que tu propia navegación: la vista usa primero el mando.
+bindNav(focus, {
+  back: () => view.nav("back") || miAtras(),
+  up: () => view.nav("up"),
+  down: () => view.nav("down"),
+  lb: () => view.nav("lb") || miPestana(-1),
+  rb: () => view.nav("rb") || miPestana(1),
+  x: () => view.nav("x"),
+  y: () => view.nav("y"),
+});
+
+// Al salir (guarda por dónde ibas):
+view.destroy();
+```
+
+En el lector, **arriba/abajo** desplazan el texto, **LB/RB** saltan de sección, **Y** guarda
+la guía, **X** la abre en Steam y **Atrás** vuelve a la lista (o sale, si se abrió directamente).
+
+El aspecto se cambia con variables sobre `.g-view` (`--g-fg`, `--g-muted`, `--g-accent`, `--g-bg`,
+`--g-surface`, `--g-surface-2`, `--g-line`, `--g-radius`, `--g-focus`, `--g-body-font`,
+`--g-body-size`) y, si quieres ir más allá, con reglas sobre sus clases `g-…` (`g-item`,
+`g-chip`, `g-rbar`, `g-section-title`…). Los seis temas de serie son buenos ejemplos: cada
+uno la viste como su plataforma.
+
+## La API
+
+```js
+await ejg.guides.list(gameId, { page: 1, sort: "toprated", query: "", category: "", allLanguages: false });
+// { appid, items: [{ id, title, desc, author, stars, preview, lang }], page, pages, total, next, filtered }
+
+await ejg.guides.get(id);
+// { id, title, authors, stars, ratings, published, updated, preview, intro: Block[],
+//   sections: [{ id, title, blocks: Block[] }], lang, url, pinned, progress }
+
+await ejg.guides.shelf(gameId);            // { pinned: [...], recent: [...] } del perfil
+await ejg.guides.pin(gameId, guia, true);  // guardar (sale primero y se lee sin conexión)
+await ejg.guides.progress(gameId, guia, seccion, 0.4); // por dónde vas (0..1 dentro de la sección)
+ejg.guides.openInBrowser(id);              // la guía en la web de Steam
+ejg.guides.openLink(span.href);            // un enlace de una guía ya leída
+```
+
+- `appid: null` quiere decir que el juego no está identificado en Steam: no hay guías que buscar.
+- `sort`: `toprated` (mejor valoradas), `trend` (populares) o `mostrecent` (más recientes).
+- `category`: una de las categorías de Steam; el kit trae la lista con su nombre en español
+  (`GUIDE_CATEGORIES`).
+- Steam no filtra por idioma sin sesión, así que ejGames lo adivina por el texto: sin
+  `allLanguages` solo salen las de **español e inglés** (y las que no se sabe). Pide la página
+  `next` **de la respuesta** para seguir.
+
+## Los bloques
+
+| `t` | Qué es |
+|---|---|
+| `h` | título dentro de una sección (`level` 1-3) con `spans` |
+| `p` | párrafo; los `"\n"` del texto son saltos de línea |
+| `list` | `ordered` y `items: [{ depth, spans }]` (las sublistas van con `depth` 1, 2…) |
+| `quote` / `code` | cita (`spans`) y código (`text`) |
+| `img` | `src` servido por ejg-media; `thumb`: el autor la puso pequeña, a un lado |
+| `table` | `rows` de celdas (cada celda, `spans`); `head`: la primera fila es cabecera |
+| `video` | vídeo de YouTube: `thumb` y `url` (ábrelo con `openLink`) |
+| `hr` | separador |
+
+Cada `span` es `{ text, b, i, u, s, spoiler, href, guide }`: `href` es una web (ábrela con
+`ejg.guides.openLink(href)`) y `guide`, otra guía (ábrela en tu lector). Si no quieres
+pintarlos a mano, `renderBlocks(blocks, { onLink, onGuide, onImage })` y `renderGuide(guia)`
+del kit los convierten en nodos DOM con clases `g-…`.

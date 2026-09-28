@@ -62,11 +62,7 @@ export function description(text) {
 }
 
 export const SOURCE_LABEL = {
-  steam: "Steam",
-  epic: "Epic Games",
-  gog: "GOG",
-  ubisoft: "Ubisoft Connect",
-  ea: "EA app",
   folder: "Carpeta local",
-  manual: "Manual",
+  manual: "Añadido a mano",
+  repack: "Descargado",
 };

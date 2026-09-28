@@ -87,7 +87,6 @@ button:focus { outline: none; } /* el foco se dibuja con .is-focused */
 .tarjeta.is-focused .caratula { transform: scale(1.03); box-shadow: 0 0 0 3px var(--acento); }
 .tarjeta.is-focused .nombre { color: var(--texto); }
 .tarjeta.fav .caratula::after { content: "★"; position: absolute; top: 6px; right: 9px; color: #ffd166; text-shadow: 0 1px 4px #000; }
-.tarjeta.sin-instalar .caratula img { filter: grayscale(1) brightness(0.7); }
 .tarjeta.en-marcha .nombre::before { content: "● "; color: #4ade80; }
 
 /* Opción "showTitles" (toggle) → atributo data-show-titles="on|off" en <html>. */

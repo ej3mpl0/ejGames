@@ -32,13 +32,11 @@ explica qué va a pasar y pide confirmación.
 - **Si el juego tiene desinstalador**, se abre (el de su entrada en «Aplicaciones
   instaladas» de Windows, o un `unins000.exe` / `uninstall.exe` de su carpeta). Cuando el
   juego desaparece del disco, sale de la biblioteca.
-- **Los de Steam** se desinstalan con Steam.
 - **Si no tiene nada**, su carpeta va a la papelera de reciclaje. Nunca se borra una carpeta
   de la biblioteca, de descargas o del sistema, ni una que tenga dentro otros juegos.
 
-Sirve para los juegos de carpeta, los de repack y los de Steam instalados. Para saber si
-enseñar la opción, usa `canUninstall(juego)` del kit (`/_sdk/kit/library.js`). Epic, GOG,
-Ubisoft y EA se desinstalan desde sus propias aplicaciones.
+Sirve para cualquier juego que siga en su sitio. Para saber si enseñar la opción, usa
+`canUninstall(juego)` del kit (`/_sdk/kit/library.js`).
 
 <Note>
 Al desinstalar, el juego sale de la biblioteca junto con sus horas y su actividad.

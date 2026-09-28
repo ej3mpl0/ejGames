@@ -771,3 +771,44 @@
   border-left: 4px solid var(--cn-accent);
   background: rgba(20, 20, 20, 0.95);
 }
+
+/* ─── guías: la fila crece y ocupa la pantalla ─── */
+.pn-cinema.is-guides .cn-info {
+  display: none;
+}
+.pn-cinema.is-guides .cn-rails {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 56px;
+}
+.cn-rail.is-guides {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+.cn-rail.is-guides .pn-guides {
+  width: min(1100px, 100%);
+}
+.pn-cinema .gd-pane,
+.pn-cinema .gd-reader {
+  --gd-fg: #fff;
+  --gd-muted: var(--cn-dim);
+  --gd-accent: var(--cn-accent);
+  --gd-surface: rgba(35, 35, 35, 0.9);
+  --gd-surface-2: #333;
+  --gd-line: rgba(255, 255, 255, 0.14);
+  --gd-bg: rgba(12, 12, 12, 0.96);
+  --gd-radius: 4px;
+  --gd-focus: 0 0 0 2px #fff;
+  --gd-toc-bg: #141414;
+}
+.pn-cinema .pn-guides {
+  padding: 16px 20px 0;
+  background: rgba(12, 12, 12, 0.92);
+  border-radius: 6px 6px 0 0;
+}

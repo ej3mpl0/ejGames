@@ -45,8 +45,6 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 :root[data-uppercase="on"] .item { text-transform: uppercase; }
 .item .star { color: var(--hi2); margin-left: 10px; }
 .item .run { color: var(--hi); margin-left: 10px; }
-.item .dl { color: var(--dim); margin-left: 10px; }
-.item.uninstalled { color: var(--dim); }
 .item.is-focused, .item:hover { color: var(--bg); background: var(--hi2); text-shadow: none; }
 .item.is-focused::before { content: "▶"; position: absolute; left: 8px; color: var(--bg); animation: blink 0.8s steps(1) infinite; }
 .item.missing { opacity: 0.4; }
@@ -82,3 +80,55 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .empty { padding: 30px; color: var(--hi2); line-height: 2.4; }
 
 @media (prefers-reduced-motion: reduce) { .blink, .blink-slow, .ticker span, .screen { animation: none !important; } }
+
+/* ─── GUÍAS ─── */
+#guides { position: absolute; inset: 0; z-index: 10; background: var(--bg); padding: 34px 48px 20px; }
+#guides[hidden] { display: none; }
+#guides.g-view, #guides .g-view {
+  --g-fg: var(--fg);
+  --g-muted: var(--dim);
+  --g-accent: var(--hi2);
+  --g-bg: var(--bg);
+  --g-surface: color-mix(in srgb, var(--fg) 6%, var(--bg));
+  --g-surface-2: color-mix(in srgb, var(--fg) 14%, var(--bg));
+  --g-line: color-mix(in srgb, var(--dim) 60%, transparent);
+  --g-radius: 0;
+  --g-focus: 0 0 0 2px var(--hi);
+  --g-body-font: Consolas, "Cascadia Mono", monospace;
+  --g-body-size: 15px;
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  text-shadow: none;
+}
+#guides .g-title { color: var(--hi); font-size: calc(var(--fs) * 1.5); font-weight: 400; letter-spacing: 2px; text-shadow: 3px 3px 0 color-mix(in srgb, var(--hi) 30%, transparent), 0 0 12px var(--hi); }
+#guides .g-subtitle { color: var(--hi2); font-size: calc(var(--fs) * 0.8); margin-top: 8px; }
+#guides .g-chip { height: auto; padding: 8px 12px; border: 2px solid var(--hi2); background: none; color: var(--hi2); font-size: calc(var(--fs) * 0.7); }
+#guides .g-chip.is-on, #guides .g-chip.is-focused, #guides .g-chip:hover { background: var(--hi2); color: var(--bg); box-shadow: none; }
+#guides .g-label { color: var(--hi2); font-size: calc(var(--fs) * 0.75); font-weight: 400; letter-spacing: 1px; }
+#guides .g-item { border: 2px solid transparent; background: none; }
+#guides .g-item:hover { background: var(--g-surface); }
+#guides .g-item.is-focused { border-color: var(--hi); background: var(--g-surface); box-shadow: none; }
+#guides .g-item.is-focused .g-item-title::before { content: "▶ "; color: var(--hi); }
+#guides .g-thumb { width: 64px; height: 64px; image-rendering: pixelated; border: 2px solid var(--dim); }
+#guides .g-thumb img { image-rendering: pixelated; }
+#guides .g-item-title { font-size: calc(var(--fs) * 0.72); font-weight: 400; line-height: 1.8; }
+#guides .g-item-desc, #guides .g-item-meta, #guides .g-status { font-family: Consolas, monospace; font-size: 13px; }
+#guides .g-stars { color: var(--hi); }
+#guides .g-lang { border-radius: 0; background: var(--dim); color: var(--bg); }
+#guides .g-more { border: 2px solid var(--hi2); background: none; color: var(--hi2); font-size: calc(var(--fs) * 0.7); }
+#guides .g-more.is-focused { background: var(--hi2); color: var(--bg); box-shadow: none; }
+#guides .g-rbar { border-bottom: 2px dashed var(--dim); }
+#guides .g-rtitle b { color: var(--hi); font-size: calc(var(--fs) * 0.95); font-weight: 400; line-height: 1.7; }
+#guides .g-rtitle small { font-family: Consolas, monospace; font-size: 13px; }
+#guides .g-rbtn { height: auto; padding: 8px 10px; border: 2px solid var(--hi2); background: none; color: var(--hi2); font-size: calc(var(--fs) * 0.65); }
+#guides .g-rbtn.is-focused, #guides .g-rbtn:hover { background: var(--hi2); color: var(--bg); box-shadow: none; }
+#guides .g-rbody { line-height: 1.7; }
+#guides .g-section-title { font-family: "Press Start 2P", Consolas, monospace; font-weight: 400; font-size: calc(var(--fs) * 0.9); color: var(--hi2); background: var(--bg); border-bottom: 2px dashed var(--dim); line-height: 1.8; }
+#guides .g-h { font-family: "Press Start 2P", Consolas, monospace; font-weight: 400; font-size: calc(var(--fs) * 0.75); color: var(--hi); line-height: 1.8; }
+#guides .g-img, #guides .g-video img { image-rendering: auto; border: 2px solid var(--dim); border-radius: 0; }
+#guides .g-quote { border-left-color: var(--hi); }
+#guides .g-toc-box { border-left: 2px solid var(--hi2); }
+#guides .g-toc-item { font-size: calc(var(--fs) * 0.65); line-height: 1.8; }
+#guides .g-toc-item.is-on, #guides .g-toc-item.is-focused { background: var(--hi2); color: var(--bg); box-shadow: none; }
+#guides .g-end { color: var(--hi); font-family: "Press Start 2P", Consolas, monospace; font-size: calc(var(--fs) * 0.7); }

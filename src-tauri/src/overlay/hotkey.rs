@@ -51,16 +51,6 @@ fn key_code(k: &str) -> Option<u32> {
     })
 }
 
-/// ¿Es el atajo del overlay de Steam? (en juegos de Steam no se registra).
-pub fn is_steam_default(spec: &str) -> bool {
-    parse(spec) == Some((0x4, 0x09))
-}
-
-/// ¿Es el atajo de capturas de Steam (F12)?
-pub fn is_steam_screenshot(spec: &str) -> bool {
-    parse(spec) == Some((0, 0x7B))
-}
-
 pub struct Guard {
     thread_id: u32,
 }
@@ -319,9 +309,5 @@ mod tests {
         assert_eq!(parse("Alt+`"), Some((0x1, 0xC0)));
         assert_eq!(parse("Ctrl+"), None);
         assert_eq!(parse("Ctrl+Foo"), None);
-        assert!(is_steam_default("shift+tab"));
-        assert!(!is_steam_default("Ctrl+Tab"));
-        assert!(is_steam_screenshot("f12"));
-        assert!(!is_steam_screenshot("Ctrl+F12"));
     }
 }

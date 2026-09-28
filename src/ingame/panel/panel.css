@@ -77,3 +77,16 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Guías de Steam dentro de un panel: ocupan todo el hueco de su sección. */
+.pn-guides {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.pn-root .gd-body {
+  user-select: text;
+}

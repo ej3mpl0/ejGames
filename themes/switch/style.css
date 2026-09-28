@@ -50,9 +50,6 @@ img { display: block; }
 :root[data-pulse="on"] .stile.is-focused::after { animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { border-color: color-mix(in srgb, var(--accent) 45%, #fff); } }
 .stile .fav { position: absolute; z-index: 2; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(255, 255, 255, 0.92); color: #f5b400; display: grid; place-items: center; font-size: 16px; }
-.stile.uninstalled .art { filter: saturate(0.25) brightness(0.8); opacity: 0.85; }
-.stile.uninstalled.is-focused .art, .stile.uninstalled:hover .art { filter: none; opacity: 1; }
-.stile .dl { position: absolute; z-index: 2; top: 8px; left: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(255, 255, 255, 0.92); color: #333; display: grid; place-items: center; font-size: 16px; font-weight: 800; }
 .stile .run { position: absolute; z-index: 2; bottom: 8px; left: 8px; padding: 2px 10px; border-radius: 99px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 800; }
 .stile.allsw { display: grid; place-items: center; background: var(--card); color: var(--muted); }
 .stile.allsw .art { display: grid; place-items: center; align-content: center; gap: 10px; font-weight: 700; }
@@ -99,3 +96,50 @@ img { display: block; }
 .panel .stat b { font-size: 18px; }
 
 .empty { text-align: center; color: var(--muted); padding: 40px; font-weight: 700; }
+
+/* ─── guías de la comunidad ─── */
+#guides { height: calc(100% - 96px - 62px); display: flex; flex-direction: column; padding: 0 60px; }
+#guides[hidden] { display: none; }
+.gs-head { display: flex; align-items: center; gap: 16px; padding: 4px 0 16px; border-bottom: 2px solid var(--line); margin-bottom: 14px; }
+.gs-icon { width: 56px; height: 56px; border-radius: var(--round); object-fit: cover; }
+.gs-head small { display: block; color: var(--title); font-weight: 800; font-size: 15px; }
+.gs-head b { font-size: 26px; font-weight: 800; }
+.gs-page { position: relative; flex: 1; min-height: 0; }
+.gs-page .g-view {
+  --g-fg: var(--fg);
+  --g-muted: var(--muted);
+  --g-accent: var(--title);
+  --g-bg: var(--bg);
+  --g-surface: var(--card);
+  --g-surface-2: color-mix(in srgb, var(--fg) 7%, var(--card));
+  --g-line: var(--line);
+  --g-radius: var(--round);
+  --g-focus: 0 0 0 4px var(--accent), 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent);
+  --g-body-size: 17px;
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  font-weight: 700;
+}
+.gs-page .g-head { display: none; }
+.gs-page .g-chip { height: 40px; border-radius: 20px; background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); font-weight: 800; }
+.gs-page .g-chip.is-on { background: var(--accent); color: #fff; }
+.gs-page .g-label { color: var(--title); font-weight: 800; font-size: 15px; letter-spacing: 0; text-transform: none; }
+.gs-page .g-item { background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }
+.gs-page .g-item:hover { background: var(--card); }
+.gs-page .g-item.is-focused { background: var(--card); }
+:root[data-pulse="on"] .gs-page .g-item.is-focused { animation: gs-pulse 1.6s ease-in-out infinite; }
+@keyframes gs-pulse { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent); } }
+.gs-page .g-item-title { font-weight: 800; }
+.gs-page .g-item-desc, .gs-page .g-item-meta { font-weight: 600; }
+.gs-page .g-stars { color: #f2a516; }
+.gs-page .g-readerview { background: var(--card); border-radius: calc(var(--round) * 2); padding: 18px 24px 0; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12); }
+.gs-page .g-rbtn { height: 40px; border-radius: 20px; background: var(--bg); font-weight: 800; }
+.gs-page .g-rbtn.is-focused { background: var(--accent); color: #fff; box-shadow: none; }
+.gs-page .g-rtitle b { font-weight: 800; font-size: 21px; }
+.gs-page .g-rbody { font-weight: 600; line-height: 1.65; }
+.gs-page .g-section-title { background: var(--card); color: var(--title); font-weight: 800; border-bottom-width: 2px; }
+.gs-page .g-intro, .gs-page .g-quote { background: var(--bg); }
+.gs-page .g-code { background: color-mix(in srgb, var(--fg) 8%, var(--bg)); }
+.gs-page .g-toc-box { background: var(--card); }
+.gs-page .g-zoom-close { color: #fff !important; }

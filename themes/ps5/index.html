@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>PS5</title>
+    <link rel="stylesheet" href="/_sdk/kit/guides.css" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="store.css" />
     <script type="module" src="main.js"></script>
@@ -39,6 +40,7 @@
               <button class="play" data-focus id="play">Jugar</button>
               <button class="more" data-focus id="edit" title="Opciones (X)">···</button>
               <button class="more fav" data-focus id="fav" title="Favorito (Y)">★</button>
+              <button class="more help" data-focus id="help" title="Ayuda del juego"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z" /><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5" /></svg></button>
             </div>
             <div class="stats" id="stats"></div>
             <p class="blurb" id="blurb"></p>
@@ -56,6 +58,10 @@
       </section>
     </main>
     <section id="downloads" class="dq-layer" data-focus-trap hidden></section>
+    <section id="guides" class="gh-layer" data-focus-trap hidden>
+      <div class="gh-bg" id="gh-bg"></div>
+      <div class="gh-inner" id="gh-inner"></div>
+    </section>
     <footer class="hints" id="hints"></footer>
     <div id="player" hidden></div>
     <div id="viewer" hidden></div>

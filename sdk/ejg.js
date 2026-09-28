@@ -286,10 +286,10 @@
       set: function (key, value) { return call("storage.set", { key: key, value: value === undefined ? null : value }); },
     },
     ui: {
-      /** settings | game | profiles | search | add-folder | stats | theme | collections | menu | explore | downloads */
+      /** settings | game | profiles | search | add-folder | stats | theme | collections | menu | explore | downloads | guides ({id: gameId}) */
       open: function (name, args) { return call("ui.open", { name: name, args: args || null }); },
       toast: function (message, kind) { return call("ui.toast", { message: message, kind: kind || "info" }); },
-      /** El host pide abrir una vista del tema: fn({view: "explore"|"downloads"|"repack", slug?}). */
+      /** El host pide abrir una vista del tema: fn({view: "explore"|"downloads"|"repack"|"guides", slug?, gameId?, guideId?}). */
       onView: function (fn) { return on("ui:view", fn); },
       /** Teclado en pantalla del host (para escribir con el mando). Resuelve con el texto o null. */
       keyboard: function (opts) { return call("ui.keyboard", opts || {}); },
@@ -311,6 +311,27 @@
       details: function (slug) { return call("explore.details", { slug: slug }); },
       /** Abre la ficha en la web oficial (navegador del sistema). */
       openPage: function (slug) { return call("explore.openPage", { slug: slug }); },
+    },
+    guides: {
+      /** Guías de la comunidad de Steam de un juego: {appid, items, page, pages, total, next, filtered}.
+       *  query: {page, sort: "toprated"|"trend"|"mostrecent", query, category, allLanguages}. */
+      list: function (gameId, query) { return call("guides.list", { gameId: gameId, query: query || {} }); },
+      /** Una guía entera en bloques (sin HTML): {title, authors, intro, sections: [{title, blocks}], pinned, progress…}. */
+      get: function (id) { return call("guides.get", { id: String(id) }); },
+      /** Guardadas y leídas hace poco de un juego: {pinned, recent}. */
+      shelf: function (gameId) { return call("guides.shelf", { gameId: gameId }); },
+      /** Guardar (o no) una guía: sale primero y se puede leer sin conexión. */
+      pin: function (gameId, guide, value) {
+        return call("guides.pin", { gameId: gameId, id: String(guide.id), title: guide.title || "", author: guide.author || (guide.authors || [])[0] || "", preview: guide.preview || null, value: value !== false });
+      },
+      /** Por dónde vas (sección y 0..1 dentro de ella). */
+      progress: function (gameId, guide, section, scroll) {
+        return call("guides.progress", { gameId: gameId, id: String(guide.id), title: guide.title || "", author: guide.author || (guide.authors || [])[0] || "", preview: guide.preview || null, section: section || 0, scroll: scroll || 0 });
+      },
+      /** La guía en la web de Steam (navegador del sistema). */
+      openInBrowser: function (id) { return call("guides.openInBrowser", { id: String(id) }); },
+      /** Un enlace de una guía ya leída (span.href o el url de un vídeo). */
+      openLink: function (href) { return call("guides.openLink", { href: href }); },
     },
     downloads: {
       /** Lista en memoria (se actualiza sola, como mucho una vez por segundo). */

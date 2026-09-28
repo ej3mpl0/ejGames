@@ -8,14 +8,23 @@ use parking_lot::Mutex;
 use rusqlite::Connection;
 use std::path::Path;
 
-const MIGRATIONS: &[&str] = &[
-    include_str!("../../migrations/001_init.sql"),
-    include_str!("../../migrations/002_owned.sql"),
-    include_str!("../../migrations/003_achievements.sql"),
-    include_str!("../../migrations/004_review_reset.sql"),
-    include_str!("../../migrations/005_scan_fixes.sql"),
-    include_str!("../../migrations/006_downloads.sql"),
-    include_str!("../../migrations/007_overlay.sql"),
+/// Un paso de migración: SQL o, si hace falta lógica (rutas…), una función.
+enum Migration {
+    Sql(&'static str),
+    Rust(fn(&Connection) -> rusqlite::Result<()>),
+}
+
+const MIGRATIONS: &[Migration] = &[
+    Migration::Sql(include_str!("../../migrations/001_init.sql")),
+    Migration::Sql(include_str!("../../migrations/002_owned.sql")),
+    Migration::Sql(include_str!("../../migrations/003_achievements.sql")),
+    Migration::Sql(include_str!("../../migrations/004_review_reset.sql")),
+    Migration::Sql(include_str!("../../migrations/005_scan_fixes.sql")),
+    Migration::Sql(include_str!("../../migrations/006_downloads.sql")),
+    Migration::Sql(include_str!("../../migrations/007_overlay.sql")),
+    // 0.5.0: fuera los juegos de tiendas.
+    Migration::Rust(repo::migrate_local_only),
+    Migration::Sql(include_str!("../../migrations/009_guides.sql")),
 ];
 
 pub struct Db {
@@ -44,8 +53,11 @@ impl Db {
         let version: usize = conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
         if version < MIGRATIONS.len() {
             let tx = conn.transaction()?;
-            for sql in &MIGRATIONS[version..] {
-                tx.execute_batch(sql)?;
+            for m in &MIGRATIONS[version..] {
+                match m {
+                    Migration::Sql(sql) => tx.execute_batch(sql)?,
+                    Migration::Rust(f) => f(&tx)?,
+                }
             }
             tx.pragma_update(None, "user_version", MIGRATIONS.len())?;
             tx.commit()?;

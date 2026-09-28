@@ -5,6 +5,21 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.5.0
+
+**Solo juegos locales**
+- ejGames deja de importar juegos de Steam, Epic, GOG, Ubisoft Connect y EA app: la biblioteca es lo que tienes en tus carpetas, los `.exe` que añades a mano y lo que instalas desde Descargas.
+- Al actualizar, los juegos de tiendas que estaban dentro de una de tus carpetas pasan a ser juegos de carpeta y conservan sus horas, logros y notas. Los demás salen de la biblioteca (no se borra nada del disco).
+- Fuera los filtros «Sin instalar» y los botones «Instalar desde la tienda» de los temas. En su lugar, filtros de **Jugados** y **Sin jugar** para encontrar lo pendiente.
+
+**Guías de la comunidad**
+- Las guías de Steam de cada juego, dentro de ejGames: mejor valoradas, populares o más recientes, por categoría (logros, paso a paso, secretos, mapas…) y con buscador. Por defecto, las de español e inglés.
+- Lector propio con índice de secciones, imágenes a pantalla completa, spoilers y vídeos, que se maneja con mando (arriba/abajo para leer, LB/RB para cambiar de sección).
+- **Guarda** las que te sirvan: salen primero y se leen sin conexión. Cada guía recuerda por dónde ibas y aparece en «Seguir leyendo».
+- **En el overlay**, en una pestaña nueva de cada panel: consulta la guía sin salir del juego.
+- Cada tema, a su manera: «Guías» en la barra del juego y una tarjeta como la de Steam, «Ayuda del juego» en PS5, una fila de guías en la ficha de Xbox y de Cine, «Guías de la comunidad» en las opciones de Switch y «GUIDES» en Retro.
+- Para temas: `ejg.guides` y, en el kit, `createGuideView` (lista y lector listos para montar) con `/_sdk/kit/guides.css`. Está en la referencia.
+
 ## 0.4.0
 
 **Overlay dentro del juego, rehecho**

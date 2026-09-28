@@ -16,10 +16,10 @@ releaseDate, genres[], tags[], rating, favorite, hidden, missing, installed,
 playtime` (segundos)`, lastPlayed` (Unix)`, launchCount, userRating, collections[],
 running`, `media` y, si el juego tiene logros, `achievements: { unlocked, total }`.
 
-`installed: false` son juegos que tienes en Steam, Epic o GOG pero no están
-instalados. `ejg.game.launch(id)` con ellos abre su tienda para instalarlos, así
-que muestra **Instalar** en vez de **Jugar**. Para filtrar:
-`visible(games, { installed: "installed" | "uninstalled" | "all" })`.
+`source` dice de dónde salió: `folder` (una carpeta de la biblioteca), `manual`
+(un `.exe` añadido a mano) o `repack` (instalado desde Descargas). Desde la 0.5.0
+ejGames ya no importa juegos de tiendas, así que `installed` siempre es `true`
+(se mantiene para no romper temas antiguos).
 
 `media` contiene:
 

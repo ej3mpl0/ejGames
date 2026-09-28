@@ -27,12 +27,7 @@ export function UninstallDialog({ id, onClose }: { id: number; onClose: () => vo
     try {
       const r = await api.uninstallGame(id);
       if (r === "started") {
-        toast(
-          "info",
-          plan.method === "steam"
-            ? `Steam se encarga de desinstalar «${plan.title}»`
-            : `Se ha abierto el desinstalador de «${plan.title}». Al terminar, desaparecerá de tu biblioteca.`,
-        );
+        toast("info", `Se ha abierto el desinstalador de «${plan.title}». Al terminar, desaparecerá de tu biblioteca.`);
       }
       onClose();
     } catch (e) {
@@ -44,9 +39,7 @@ export function UninstallDialog({ id, onClose }: { id: number; onClose: () => vo
   const size = plan?.sizeBytes ? ` (${bytes(plan.sizeBytes)})` : "";
   const text = !plan
     ? ""
-    : plan.method === "steam"
-      ? "Se abrirá Steam para desinstalarlo."
-      : plan.method === "uninstaller"
+    : plan.method === "uninstaller"
         ? `Se abrirá su desinstalador (${plan.program}). Cuando termine, ejGames lo quitará de tu biblioteca junto con sus horas.`
         : `Este juego no trae desinstalador: su carpeta${size} irá a la papelera de reciclaje y el juego saldrá de tu biblioteca junto con sus horas.`;
 

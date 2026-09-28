@@ -3,7 +3,8 @@
 // de herramientas. A la derecha, lo que suena y cómo va el PC.
 
 import { useState, type ReactNode } from "react";
-import { Activity, Download, Gamepad2, Image as ImageIcon, Music2, NotebookPen, Power, Trophy } from "lucide-react";
+import { Activity, BookOpen, Download, Gamepad2, Image as ImageIcon, Music2, NotebookPen, Power, Trophy } from "lucide-react";
+import { GuidesPane } from "../../components/guide";
 import { Hints } from "../../components/Hints";
 import { useOverlayNav } from "../../input/nav";
 import { useApp } from "../../store/app";
@@ -28,10 +29,11 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hoursLabel, Img, PadIcon, pctNum, shortDate } from "./parts";
 import "./steam.css";
 
-type Tab = "ach" | "shots" | "notes" | "music" | "perf" | "dl";
+type Tab = "ach" | "guides" | "shots" | "notes" | "music" | "perf" | "dl";
 
 const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: "ach", label: "Logros", icon: <Trophy /> },
+  { id: "guides", label: "Guías", icon: <BookOpen /> },
   { id: "shots", label: "Capturas", icon: <ImageIcon /> },
   { id: "notes", label: "Notas", icon: <NotebookPen /> },
   { id: "music", label: "Música", icon: <Music2 /> },
@@ -130,6 +132,15 @@ export function SteamPanel({ p }: { p: Panel }) {
       body = (
         <Window title="Logros">
           <Achievements p={p} />
+        </Window>
+      );
+      break;
+    case "guides":
+      body = (
+        <Window title="Guías de la comunidad">
+          <div className="pn-guides">
+            <GuidesPane gameId={d.gameId} onMenu={p.actions.close} />
+          </div>
         </Window>
       );
       break;

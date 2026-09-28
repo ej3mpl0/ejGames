@@ -121,18 +121,6 @@ pub async fn play(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow::
 
 async fn play_inner(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow::Result<()> {
     let (game, profile) = st.db.with(|c| Ok((repo::get_game(c, game_id)?, repo::get_profile(c, profile_id)?)))?;
-    if !game.installed {
-        let uri = game
-            .install_uri
-            .clone()
-            .or_else(|| game.steam_appid.map(|a| format!("steam://install/{a}")))
-            .ok_or_else(|| anyhow::anyhow!("No se sabe cómo instalar este juego"))?;
-        use tauri_plugin_opener::OpenerExt;
-        st.app.opener().open_url(uri, None::<&str>).map_err(|e| anyhow::anyhow!("{e}"))?;
-        crate::events::toast(st, "info", format!("Abriendo la tienda para instalar {}…", game.title));
-        crate::events::game_state(st, game_id, "installing", None);
-        return Ok(());
-    }
     let g2 = game.clone();
     let launched = tauri::async_runtime::spawn_blocking(move || launch::launch(&g2)).await??;
     st.db.with(|c| repo::bump_launch(c, profile_id, game_id))?;
@@ -259,9 +247,7 @@ impl Track {
             crate::achievements::watch(st.clone(), game_id, profile_id, pad_stop.clone());
             if st.settings.get().gamepad_home_button {
                 let st_pad = st.clone();
-                // En juegos de Steam el botón Guía es del overlay de Steam.
-                let guide = self.game.source != "steam";
-                gamepad_home::spawn(pad_stop.clone(), guide, move |ev| crate::overlay::pad_event(&st_pad, ev));
+                gamepad_home::spawn(pad_stop.clone(), move |ev| crate::overlay::pad_event(&st_pad, ev));
             }
         });
         pad_stop.store(true, Ordering::Relaxed);

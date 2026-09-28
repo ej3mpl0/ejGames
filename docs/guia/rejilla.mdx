@@ -57,7 +57,6 @@ function tarjeta(g, prev) {
   const firma = `${g.title}|${g.media.coverThumb ?? ""}`;
   const el = prev && prev.dataset.firma === firma ? prev : nuevaTarjeta(g, firma);
   el.classList.toggle("fav", g.favorite);
-  el.classList.toggle("sin-instalar", g.installed === false);
   return el;
 }
 
@@ -93,13 +92,13 @@ Unas cuantas ideas de este código:
   imagen grande. En listas y rejillas, siempre miniaturas.
 - **La «firma»** es el truco para no rehacer tarjetas: si el nombre y la
   carátula son los mismos, se reutiliza la anterior y solo se cambian las clases
-  (favorito, sin instalar). Cuando llega la carátula de un juego recién añadido,
+  (favorito). Cuando llega la carátula de un juego recién añadido,
   la firma cambia y se crea una tarjeta nueva.
 - **Sin carátula** se ven las iniciales (`initials("Hollow Knight")` → `HK`)
   sobre un degradado cuyo color sale del nombre (`hueOf()`), y la imagen se
   queda invisible hasta que carga.
 - **`ejg.game.launch(id)`** lanza el juego (el sonido de lanzar lo pone
-  ejGames). Con un juego sin instalar abre su tienda para instalarlo. Si falla,
+  ejGames). Si falla,
   la promesa se rechaza y lo enseñamos con **`ejg.ui.toast(texto, "error")`**.
 - **`ejg.ui.open("add-folder")`** abre la pantalla del launcher para añadir
   carpetas de juegos. Hay más: `"settings"`, `"search"`, `"menu"`, `"stats"`,
@@ -142,7 +141,6 @@ Y el CSS de la rejilla (añádelo a `style.css`):
 .nombre { font-size: 0.9em; color: var(--tenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .tarjeta.fav .caratula::after { content: "★"; position: absolute; top: 6px; right: 9px; color: #ffd166; text-shadow: 0 1px 4px #000; }
-.tarjeta.sin-instalar .caratula img { filter: grayscale(1) brightness(0.7); }
 .vacia { grid-column: 1 / -1; padding: 60px 0; text-align: center; color: var(--tenue); }
 ```
 

@@ -16,7 +16,8 @@ export interface Game {
   id: number;
   title: string;
   sortTitle: string;
-  source: "folder" | "steam" | "epic" | "gog" | "ea" | "ubisoft" | "manual";
+  /** folder: carpeta de la biblioteca · manual: .exe añadido a mano · repack: instalado desde Descargas. */
+  source: "folder" | "manual" | "repack";
   engine?: string;
   shortDescription?: string;
   developer?: string;
@@ -27,7 +28,7 @@ export interface Game {
   rating?: number;
   metaStatus: "pending" | "matched" | "review" | "manual" | "failed";
   missing: boolean;
-  /** false = lo tienes en la tienda pero no está instalado (launch() abre la tienda para instalarlo). */
+  /** Siempre true desde la 0.5.0 (ya no hay juegos de tiendas sin instalar). */
   installed: boolean;
   addedAt: number;
   favorite: boolean;
@@ -263,6 +264,103 @@ export interface Download {
   filesDeleted: boolean;
 }
 
+// ───────────── Guías de Steam ─────────────
+
+/** Trozo de texto con estilo. `href`: web (ábrela con guides.openLink); `guide`: otra guía (ábrela en tu lector). */
+export interface GuideSpan {
+  text: string;
+  b?: boolean;
+  i?: boolean;
+  u?: boolean;
+  s?: boolean;
+  /** Oculto hasta que se pulsa. */
+  spoiler?: boolean;
+  href?: string;
+  guide?: string;
+}
+
+/** Bloques de una guía. Nunca llega HTML: el tema decide cómo se ve cada uno. Los "
+" del texto son saltos de línea. */
+export type GuideBlock =
+  | { t: "h"; level: 1 | 2 | 3; spans: GuideSpan[] }
+  | { t: "p"; spans: GuideSpan[] }
+  | { t: "list"; ordered: boolean; items: { depth: number; spans: GuideSpan[] }[] }
+  | { t: "quote"; spans: GuideSpan[] }
+  | { t: "code"; text: string }
+  /** `thumb`: el autor la puso pequeña, a un lado. */
+  | { t: "img"; src: string; thumb?: boolean }
+  | { t: "table"; head: boolean; rows: GuideSpan[][][] }
+  /** Vídeo de YouTube: miniatura y enlace (ábrelo con guides.openLink(url)). */
+  | { t: "video"; id: string; url: string; thumb: string }
+  | { t: "hr" };
+
+export interface GuideItem {
+  id: string;
+  title: string;
+  desc: string;
+  author: string;
+  /** 0-5; sin valoración aún: null. */
+  stars?: number | null;
+  preview?: string | null;
+  /** Idioma aproximado: es, en, pt, fr, de, it, pl, tr, ru, uk, zh, ja, ko… ("" si no se sabe). */
+  lang: string;
+}
+
+export interface GuideList {
+  /** null: el juego no está identificado en Steam (no hay guías que buscar). */
+  appid?: number | null;
+  items: GuideItem[];
+  page: number;
+  pages: number;
+  total: number;
+  /** Página que pedir para seguir (null: no hay más). */
+  next?: number | null;
+  /** Solo español e inglés (sin allLanguages): `total` cuenta todas. */
+  filtered: boolean;
+}
+
+export interface GuideQuery {
+  page?: number;
+  sort?: "toprated" | "trend" | "mostrecent";
+  query?: string;
+  /** Una categoría de Steam (ver GUIDE_CATEGORIES en /_sdk/kit/guides.js). */
+  category?: string;
+  allLanguages?: boolean;
+}
+
+export interface GuideProgress {
+  section: number;
+  /** 0..1 dentro de la sección. */
+  scroll: number;
+  readAt: number;
+}
+
+export interface Guide {
+  id: string;
+  title: string;
+  authors: string[];
+  stars?: number | null;
+  ratings?: number | null;
+  published?: string | null;
+  updated?: string | null;
+  preview?: string | null;
+  intro: GuideBlock[];
+  sections: { id: string; title: string; blocks: GuideBlock[] }[];
+  lang: string;
+  url: string;
+  pinned: boolean;
+  progress?: GuideProgress | null;
+}
+
+export interface GuideShelfItem {
+  id: string;
+  title: string;
+  author: string;
+  preview?: string | null;
+  pinned: boolean;
+  progress?: GuideProgress | null;
+}
+
 export interface InitData {
   sdk: number;
   theme: { id: string; name: string; settings: any[] };
@@ -297,7 +395,7 @@ export interface Ejg {
   };
   game: {
     details(id: number): Promise<GameDetails>;
-    /** Logros (Steam o emuladores locales). Puede tardar la primera vez: descarga el esquema. */
+    /** Logros (ficheros del emulador del juego, con nombres e iconos de Steam). Puede tardar la primera vez: descarga el esquema. */
     achievements(id: number): Promise<AchievementList>;
     launch(id: number): Promise<void>;
     favorite(id: number, value?: boolean): Promise<void>;
@@ -307,8 +405,7 @@ export interface Ejg {
     openFolder(id: number): Promise<void>;
     /**
      * Abre el diálogo «Desinstalar» del host, que enseña qué pasará (desinstalador
-     * del juego, Steam o carpeta a la papelera) y pide confirmación. Vale para los
-     * juegos de carpeta, de repack y de Steam instalados.
+     * del juego o carpeta a la papelera) y pide confirmación.
      */
     uninstall(id: number): Promise<void>;
     isRunning(id: number): boolean;
@@ -318,10 +415,10 @@ export interface Ejg {
   stats: { get(days?: number): Promise<any>; recent(limit?: number): Promise<any[]> };
   storage: { getAll(): Promise<Record<string, any>>; get(key: string): Promise<any>; set(key: string, value: any): Promise<void> };
   ui: {
-    open(name: "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads", args?: any): Promise<void>;
+    open(name: "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads" | "guides", args?: any): Promise<void>;
     toast(message: string, kind?: "info" | "ok" | "error"): Promise<void>;
     /** El host pide abrir una vista del tema (menú rápido, Ctrl+E, Ctrl+J, el indicador de descargas…). */
-    onView(fn: (e: { view: "explore" | "downloads" | "repack"; slug?: string }) => void): () => void;
+    onView(fn: (e: { view: "explore" | "downloads" | "repack" | "guides"; slug?: string; gameId?: number; guideId?: string | null }) => void): () => void;
     /** Teclado en pantalla del host: el texto escrito o null si se cancela. */
     keyboard(opts?: { title?: string; value?: string; placeholder?: string; maxLength?: number }): Promise<string | null>;
   };
@@ -336,6 +433,15 @@ export interface Ejg {
     details(slug: string): Promise<RepackDetails>;
     /** Abre la ficha en la web de la fuente (navegador del sistema). */
     openPage(slug: string): Promise<void>;
+  };
+  guides: {
+    list(gameId: number, query?: GuideQuery): Promise<GuideList>;
+    get(id: string): Promise<Guide>;
+    shelf(gameId: number): Promise<{ pinned: GuideShelfItem[]; recent: GuideShelfItem[] }>;
+    pin(gameId: number, guide: { id: string; title: string; author?: string; authors?: string[]; preview?: string | null }, value?: boolean): Promise<void>;
+    progress(gameId: number, guide: { id: string; title: string; author?: string; authors?: string[] }, section: number, scroll: number): Promise<void>;
+    openInBrowser(id: string): Promise<void>;
+    openLink(href: string): Promise<void>;
   };
   downloads: {
     readonly all: Download[];

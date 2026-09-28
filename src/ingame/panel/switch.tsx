@@ -2,7 +2,8 @@
 // fila de iconos redondos de colores del menú HOME y el borde cian que late.
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Activity, Download, Image as ImageIcon, Music2, NotebookPen, Power, Trophy } from "lucide-react";
+import { Activity, BookOpen, Download, Image as ImageIcon, Music2, NotebookPen, Power, Trophy } from "lucide-react";
+import { GuidesPane } from "../../components/guide";
 import { Hints } from "../../components/Hints";
 import { useOverlayNav } from "../../input/nav";
 import {
@@ -26,11 +27,12 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hoursLabel, Img } from "./parts";
 import "./switch.css";
 
-type Sec = "album" | "ach" | "notes" | "music" | "system" | "dl";
+type Sec = "album" | "ach" | "guides" | "notes" | "music" | "system" | "dl";
 
 const SECTIONS: { id: Sec; label: string; icon: ReactNode; color: string }[] = [
   { id: "album", label: "Álbum", icon: <ImageIcon />, color: "#2e9bf0" },
   { id: "ach", label: "Logros", icon: <Trophy />, color: "#f2a516" },
+  { id: "guides", label: "Guías", icon: <BookOpen />, color: "#8c5ae8" },
   { id: "notes", label: "Notas", icon: <NotebookPen />, color: "#3cbf6a" },
   { id: "music", label: "Música", icon: <Music2 />, color: "#ef5c8e" },
   { id: "system", label: "Sistema", icon: <Activity />, color: "#8f8f95" },
@@ -72,6 +74,8 @@ function Achievements({ p }: { p: Panel }) {
 export function SwitchPanel({ p }: { p: Panel }) {
   const [sec, setSec] = useState<Sec>(p.ach.total ? "ach" : "album");
   const [viewer, setViewer] = useState<number | null>(null);
+  // Leyendo una guía, el menú se ensancha.
+  const [reading, setReading] = useState(false);
   const ref = useOverlayNav<HTMLDivElement>({
     onBack: () => (p.confirmQuit ? p.actions.cancelQuit() : viewer != null ? setViewer(null) : p.actions.close()),
     extra: { x: p.actions.screenshot, y: p.actions.launcher, menu: p.actions.close },
@@ -101,6 +105,13 @@ export function SwitchPanel({ p }: { p: Panel }) {
     case "ach":
       body = <Achievements p={p} />;
       break;
+    case "guides":
+      body = (
+        <div className="pn-guides">
+          <GuidesPane gameId={d.gameId} onMenu={p.actions.close} onReading={setReading} />
+        </div>
+      );
+      break;
     case "notes":
       body = <NotesEditor k="sw" p={p} />;
       break;
@@ -123,7 +134,7 @@ export function SwitchPanel({ p }: { p: Panel }) {
 
   return (
     <div ref={ref} className={cls("pn-switch", dark && "is-dark")} style={style} onMouseDown={(e) => e.target === e.currentTarget && p.actions.close()}>
-      <aside className="sw-panel">
+      <aside className={cls("sw-panel", sec === "guides" && "is-guides", sec === "guides" && reading && "is-reading")}>
         <header className="sw-top">
           <span className="sw-time">{clock(p.now)}</span>
           <span className="sw-status">

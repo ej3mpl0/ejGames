@@ -126,10 +126,6 @@ pub fn to_new_game(a: &DirAnalysis, folder_id: Option<i64>) -> Option<NewGame> {
             .iter()
             .map(|c| (c.path.to_string_lossy().to_string(), c.score))
             .collect(),
-        imported_playtime: None,
-        imported_last_played: None,
-        owned_only: false,
-        install_uri: None,
     })
 }
 

@@ -1,6 +1,6 @@
 ---
 title: "Qué hace"
-description: "Todo lo que trae ejGames: biblioteca, tiendas, descargas, logros, overlay, temas y más."
+description: "Todo lo que trae ejGames: biblioteca, descargas, logros, overlay, temas y más."
 icon: "gamepad"
 ---
 
@@ -8,11 +8,8 @@ icon: "gamepad"
 
 - **Añade carpetas** y ejGames detecta cada juego y su `.exe` bueno. Descarta instaladores, redistribuibles y crash
   handlers, y reconoce Unity, Unreal, Godot, GameMaker, RPG Maker, Ren'Py, EasyAntiCheat y BattlEye.
-- **Importa lo instalado** en Steam (con tus horas y la fecha de la última partida), Epic, GOG, Ubisoft Connect y EA
-  app. Cada juego se lanza con su propia tienda.
-- **También lo que no tienes instalado** (Steam, Epic y GOG): toda tu biblioteca con filtros *Instalados / Sin
-  instalar* y un botón **Instalar** que abre la tienda. Ubisoft y EA no guardan tu biblioteca en local, así que de
-  ellas solo salen los instalados.
+- **Solo juegos locales**: lo que tienes en tus carpetas, los `.exe` sueltos que añadas a mano y lo que instales desde
+  Descargas. Si instalas un juego nuevo en una de tus carpetas, aparece solo.
 - **Perfiles locales** estilo consola, con avatar, PIN opcional, tema propio, favoritos, colecciones (manuales e
   inteligentes) y horas.
 - **Horas y estadísticas**: sesiones, horas por día, semana y hora del día, rachas, más jugados y géneros.
@@ -55,10 +52,9 @@ Se abre desde el menú rápido, con **Ctrl+E** (Explorar) y **Ctrl+J** (Descarga
 
 También de los juegos que solo tienen el `.exe`:
 
-- **Steam:** se leen de las estadísticas que Steam guarda en tu PC, sin cuenta ni clave.
-- **Juegos sueltos:** si traen un emulador de la API de Steam (Goldberg, GSE y similares), se leen sus
-  `achievements.ini` / `achievements.json`. El appid sale de `steam_appid.txt` o de la configuración del emulador.
-- En los dos casos, los nombres en español, los iconos y la rareza vienen de Steam.
+- Si el juego trae un emulador de la API de Steam (Goldberg, GSE y similares), se leen sus `achievements.ini` /
+  `achievements.json`. El appid sale de `steam_appid.txt` o de la configuración del emulador.
+- Los nombres en español, los iconos y la rareza vienen de Steam, sin cuenta ni clave.
 
 ## Overlay dentro del juego
 

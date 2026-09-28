@@ -33,17 +33,9 @@ pub struct Settings {
     pub auto_login: bool,
     pub close_to_tray: bool,
     pub dev_mode: bool,
-    pub import_steam: bool,
-    pub import_epic: bool,
-    pub import_gog: bool,
-    pub import_ubisoft: bool,
-    pub import_ea: bool,
-    /// Traer también los juegos comprados que no están instalados.
-    pub import_uninstalled: bool,
     /// Overlay dentro del juego (avisos de logros + panel).
     pub overlay_enabled: bool,
-    /// Atajo del panel del overlay ("Shift+Tab"; en juegos de Steam no se
-    /// registra si coincide con el de Steam).
+    /// Atajo del panel del overlay ("Shift+Tab").
     pub overlay_hotkey: String,
     /// Dónde salen los avisos: auto (la del estilo) | top-left | top-center |
     /// top-right | bottom-left | bottom-center | bottom-right.
@@ -54,10 +46,7 @@ pub struct Settings {
     pub overlay_sound: bool,
     /// Aviso al empezar la partida con el atajo del overlay.
     pub overlay_start_hint: bool,
-    /// Avisar también de logros de Steam (Steam ya los muestra en su overlay).
-    pub overlay_steam_notify: bool,
-    /// Atajo de las capturas de pantalla ("F12"; "" = sin atajo). En juegos de
-    /// Steam no se registra si coincide con el de Steam.
+    /// Atajo de las capturas de pantalla ("F12"; "" = sin atajo).
     pub screenshot_hotkey: String,
     /// Carpeta de las capturas ("" = Imágenes\ejGames). Una subcarpeta por juego.
     pub screenshot_dir: String,
@@ -122,19 +111,12 @@ impl Default for Settings {
             auto_login: true,
             close_to_tray: true,
             dev_mode: false,
-            import_steam: true,
-            import_epic: true,
-            import_gog: true,
-            import_ubisoft: true,
-            import_ea: true,
-            import_uninstalled: true,
             overlay_enabled: true,
             overlay_hotkey: "Shift+Tab".into(),
             overlay_corner: "auto".into(),
             overlay_style: "auto".into(),
             overlay_sound: true,
             overlay_start_hint: true,
-            overlay_steam_notify: false,
             screenshot_hotkey: "F12".into(),
             screenshot_dir: String::new(),
             achievement_dirs: vec![],

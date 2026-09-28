@@ -4,10 +4,11 @@
 import { h, img, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { attachStream } from "/_sdk/kit/media.js";
-import { playtime, relative, year, description, SOURCE_LABEL } from "/_sdk/kit/format.js";
+import { playtime, relative, year, description } from "/_sdk/kit/format.js";
 import { visible, sort, recent, favorites, byGenre } from "/_sdk/kit/library.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
+import { createGuideView, starsText } from "/_sdk/kit/guides.js";
 import { percent, speed } from "/_sdk/kit/store.js";
 import { createStore } from "./store.js";
 
@@ -22,14 +23,9 @@ const randomSeed = Math.random();
 const PLAY = '<svg viewBox="0 0 24 24"><path d="M6 4v16l14-8z"/></svg>';
 const INFO = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>';
 const games = () => visible(ejg.library.all);
-const installed = () => {
-  const inst = games().filter((g) => g.installed !== false);
-  return inst.length ? inst : games();
-};
-const DL = '<svg viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>';
 
 function pickFeatured() {
-  const all = installed();
+  const all = games();
   if (!all.length) return null;
   const withArt = all.filter((g) => g.media.hero || g.media.heroThumb);
   const pool = withArt.length ? withArt : all;
@@ -43,7 +39,7 @@ function pickFeatured() {
 }
 
 // ─────────────── lo que cambia al jugar ───────────────
-const playLabel = (g) => (ejg.game.isRunning(g.id) ? "En juego" : g.installed === false ? "Instalar" : "Jugar");
+const playLabel = (g) => (ejg.game.isRunning(g.id) ? "En juego" : "Jugar");
 
 function heroMeta(g) {
   return h(
@@ -51,7 +47,7 @@ function heroMeta(g) {
     { class: "hero-meta" },
     g.rating ? h("span", { class: "match" }, `${g.rating}% de acierto`) : null,
     g.releaseDate ? h("span", null, year(g.releaseDate)) : null,
-    h("span", { class: "pill" }, SOURCE_LABEL[g.source] || g.source),
+    g.genres?.[0] ? h("span", { class: "pill" }, g.genres[0]) : null,
     g.playtime ? h("span", null, playtime(g.playtime)) : null,
     g.achievements ? h("span", null, `🏆 ${g.achievements.unlocked}/${g.achievements.total}`) : null,
   );
@@ -63,7 +59,7 @@ function sheetMeta(g) {
     { class: "hero-meta" },
     g.rating ? h("span", { class: "match" }, `${g.rating}% de acierto`) : null,
     h("span", null, year(g.releaseDate)),
-    h("span", { class: "pill" }, SOURCE_LABEL[g.source] || g.source),
+    g.genres?.[0] ? h("span", { class: "pill" }, g.genres[0]) : null,
     h("span", null, g.playtime ? `${playtime(g.playtime)} jugadas · ${relative(g.lastPlayed)}` : "Sin jugar"),
     g.achievements ? h("span", null, `🏆 ${g.achievements.unlocked}/${g.achievements.total}`) : null,
   );
@@ -80,7 +76,7 @@ function renderHero() {
   if (!g) {
     $("#hero").style.display = "none";
     rowsEl.replaceChildren(
-      h("div", { class: "empty" }, h("h1", null, "Aquí irán tus juegos"), h("p", null, "Añade una carpeta o importa tus tiendas y ejGames se encarga del resto."), h("button", { class: "hbtn play", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, "Añadir juegos")),
+      h("div", { class: "empty" }, h("h1", null, "Aquí irán tus juegos"), h("p", null, "Añade la carpeta donde tienes tus juegos y ejGames se encarga del resto."), h("button", { class: "hbtn play", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, "Añadir juegos")),
     );
     return;
   }
@@ -107,7 +103,7 @@ function renderHero() {
     h(
       "div",
       { class: "hero-actions", "data-focus-group": "hero" },
-      h("button", { class: "hbtn play", "data-focus": "", id: "hero-play", onclick: () => launch(g.id), html: `${g.installed === false ? DL : PLAY}<span>${playLabel(g)}</span>` }),
+      h("button", { class: "hbtn play", "data-focus": "", id: "hero-play", onclick: () => launch(g.id), html: `${PLAY}<span>${playLabel(g)}</span>` }),
       h("button", { class: "hbtn info", "data-focus": "", onclick: () => openModal(g.id), html: `${INFO}<span>Más información</span>` }),
     ),
   );
@@ -148,14 +144,13 @@ function toggleMute() {
 // ─────────────── filas ───────────────
 function card(g, prev, opts = {}) {
   const portrait = ejg.settings.cardStyle === "portrait";
-  const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.media.logo}:${portrait}:${ejg.game.isRunning(g.id)}:${g.installed}:${opts.progress ? g.playtime : ""}`;
+  const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.media.logo}:${portrait}:${ejg.game.isRunning(g.id)}:${opts.progress ? g.playtime : ""}`;
   if (prev && prev.__sig === sig) return prev;
   const el = h(
     "button",
-    { class: "card" + (g.installed === false ? " uninstalled" : ""), "data-focus": "", "data-game-id": g.id, onclick: () => openModal(g.id), title: g.title },
+    { class: "card", "data-focus": "", "data-game-id": g.id, onclick: () => openModal(g.id), title: g.title },
     h("div", { class: "art" }, artFor(g, portrait ? "portrait" : "landscape")),
     ejg.game.isRunning(g.id) ? h("span", { class: "tag" }, "EN JUEGO") : null,
-    g.installed === false ? h("span", { class: "dl", html: DL }) : null,
     opts.progress && g.playtime ? h("div", { class: "bar" }, h("i", { style: { width: `${Math.min(100, 12 + Math.log2(1 + g.playtime / 3600) * 14)}%` } })) : null,
   );
   el.__sig = sig;
@@ -170,9 +165,8 @@ function row(id, title, list, opts) {
 }
 
 function renderRows() {
-  const all = installed();
+  const all = games();
   if (!all.length) return;
-  const toInstall = games().filter((g) => g.installed === false);
   const rec = recent(all, 20);
   const rows = [
     row("row-rec", "Seguir jugando", rec, { progress: true }),
@@ -181,9 +175,6 @@ function renderRows() {
     row("row-unplayed", "Aún sin estrenar", sort(all.filter((g) => !g.playtime), "rating").slice(0, 20)),
     row("row-top", "Mejor valorados", sort(all.filter((g) => g.rating), "rating").slice(0, 20)),
   ];
-  if (toInstall.length && all !== toInstall) {
-    rows.push(row("row-install", "En tu biblioteca, por instalar", [...recent(toInstall, 20), ...sort(toInstall.filter((g) => !g.lastPlayed), "rating")].slice(0, 30)));
-  }
   if (ejg.settings.genreRows !== false) byGenre(all, 3).slice(0, 6).forEach((grp) => rows.push(row(`row-g-${grp.name}`, grp.name, grp.games)));
   rows.push(row("row-all", "Toda tu biblioteca", sort(all, "title")));
   rowsEl.replaceChildren(...rows.filter(Boolean));
@@ -209,10 +200,11 @@ async function openModal(id) {
       h(
         "div",
         { class: "hero-actions", "data-focus-group": "sheet-actions" },
-        h("button", { class: "hbtn play", "data-focus": "", id: "m-play", onclick: () => launch(g.id), html: `${g.installed === false ? DL : PLAY}<span>${playLabel(g)}</span>` }),
+        h("button", { class: "hbtn play", "data-focus": "", id: "m-play", onclick: () => launch(g.id), html: `${PLAY}<span>${playLabel(g)}</span>` }),
         favBtn,
         h("button", { class: "round", "data-focus": "", title: "Editar (X)", onclick: () => ejg.game.edit(g.id) }, "✎"),
         h("button", { class: "round", "data-focus": "", title: "Carpeta", onclick: () => ejg.game.openFolder(g.id) }, "📁"),
+        h("button", { class: "round", "data-focus": "", title: "Guías de la comunidad", onclick: () => openGuides(g.id) }, "📖"),
       ),
     ),
   );
@@ -236,7 +228,9 @@ async function openModal(id) {
     ),
   );
   const eps = h("div", { class: "eps", "data-focus-group": "eps" });
-  const sheet = h("div", { class: "sheet", "data-focus-trap": "" }, sheetHero, body, h("h3", { class: "sec" }, "Tráileres y capturas"), eps);
+  const guideRow = h("div", { class: "cg-row-wrap" });
+  const sheet = h("div", { class: "sheet", "data-focus-trap": "" }, sheetHero, body, h("h3", { class: "sec" }, "Tráileres y capturas"), eps, guideRow);
+  loadGuideRow(g.id, guideRow);
   modal.replaceChildren(sheet);
   modal.hidden = false;
   modal.scrollTop = 0;
@@ -281,6 +275,74 @@ function closeModal(quiet) {
 }
 modal.addEventListener("click", (e) => e.target === modal && closeModal());
 
+// ─────────────── guías de la comunidad ───────────────
+let guideView = null;
+let guideReturn = null;
+const guidesEl = $("#guides");
+
+function openGuides(gameId, guideId = null) {
+  const g = ejg.library.byId(gameId);
+  if (!g) return;
+  heroRelease();
+  modalRelease();
+  if (!guideView) guideReturn = focus.current;
+  guideView?.destroy();
+  const art = g.media.hero || g.media.heroThumb || g.media.header;
+  $("#cg-bg").style.backgroundImage = art ? `url("${art}")` : "";
+  guidesEl.hidden = false;
+  guideView = createGuideView({
+    ejg,
+    root: $("#cg-inner"),
+    focus,
+    gameId,
+    gameTitle: g.title,
+    layout: "grid",
+    guide: guideId,
+    labels: { title: "Guías", saved: "Mi lista", continue: "Seguir viendo", community: "De la comunidad", pin: "+ Mi lista", pinned: "✓ En mi lista" },
+    onExit: closeGuides,
+    onChange: () => updateHints(),
+  });
+  ejg.sound.play("open");
+}
+
+function closeGuides() {
+  if (!guideView) return false;
+  guideView.destroy();
+  guideView = null;
+  guidesEl.hidden = true;
+  const back = guideReturn?.isConnected ? guideReturn : null;
+  guideReturn = null;
+  if (back) focus.focus(back, { silent: true });
+  updateHints();
+  return true;
+}
+
+/** Fila «Guías» en la ficha, como una fila más del catálogo. */
+async function loadGuideRow(id, wrap) {
+  const [shelf, list] = await Promise.all([ejg.guides.shelf(id).catch(() => null), ejg.guides.list(id, {}).catch(() => null)]);
+  if (state.modalId !== id || !list || list.appid == null) return;
+  const mine = [...(shelf?.pinned || []), ...(shelf?.recent || [])].slice(0, 4);
+  const top = list.items.filter((x) => !mine.some((m) => m.id === x.id)).slice(0, 10 - mine.length);
+  const ep = (it, sub) =>
+    h(
+      "button",
+      { class: "ep cg-ep", "data-focus": "", onclick: () => openGuides(id, it.id) },
+      it.preview ? img(it.preview) : null,
+      h("span", null, it.title),
+      h("small", null, sub),
+    );
+  wrap.replaceChildren(
+    h("h3", { class: "sec" }, "Guías de la comunidad"),
+    h(
+      "div",
+      { class: "eps", "data-focus-group": "guides" },
+      ...mine.map((x) => ep(x, x.pinned ? "✓ En mi lista" : `Seguir viendo${x.progress ? ` · parte ${x.progress.section + 1}` : ""}`)),
+      ...top.map((x) => ep(x, [starsText(x.stars), x.author].filter(Boolean).join(" · "))),
+      h("button", { class: "ep cg-all", "data-focus": "", onclick: () => openGuides(id) }, h("b", null, "Ver todas"), h("small", null, `${list.total.toLocaleString("es")} guías`)),
+    ),
+  );
+}
+
 async function launch(id) {
   if (ejg.game.isRunning(id)) return;
   heroRelease();
@@ -307,8 +369,10 @@ const focus = createFocus({
     }
   },
 });
+const gv = (a) => !!(guideView && guideView.nav(a));
 bindNav(focus, {
   back: () => {
+    if (gv("back")) return true;
     if (shop.back()) return true;
     if (!modal.hidden) return closeModal(), true;
     if (state.view !== "home") return setView(state.view === "downloads" && state.prevView === "explore" ? "explore" : "home"), true;
@@ -320,28 +384,35 @@ bindNav(focus, {
     }
     return false;
   },
+  up: () => gv("up"),
+  down: () => gv("down"),
+  lt: () => gv("lt"),
+  rt: () => gv("rt"),
   y: () => {
+    if (gv("y")) return true;
     if (state.view !== "home") return state.view === "explore" && !shop.layer() && shop.search(), true;
     const id = state.modalId || Number(focus.current?.dataset.gameId);
     if (id) ejg.game.favorite(id);
     return true;
   },
   x: () => {
+    if (gv("x")) return true;
     if (state.view !== "home") return false;
     const id = state.modalId || Number(focus.current?.dataset.gameId);
     if (id) ejg.game.edit(id);
     return true;
   },
   menu: () => (ejg.ui.open("menu"), true),
-  view: () => (state.view === "home" ? ejg.ui.open("search") : shop.layer() || shop.search(), true),
+  view: () => gv("view") || (state.view === "home" ? ejg.ui.open("search") : shop.layer() || shop.search(), true),
   // Al final de una fila, la derecha no salta a otra fila.
   right: () => {
+    if (guideView) return false;
     const t = focus.current?.closest(".track");
     const items = t ? t.querySelectorAll("[data-focus]") : [];
     return !!t && items[items.length - 1] === focus.current;
   },
-  lb: () => (shop.layer() || !modal.hidden || stepView(-1), true),
-  rb: () => (shop.layer() || !modal.hidden || stepView(1), true),
+  lb: () => gv("lb") || guideView || (shop.layer() || !modal.hidden || stepView(-1), true),
+  rb: () => gv("rb") || guideView || (shop.layer() || !modal.hidden || stepView(1), true),
 });
 ejg.on("focus-return", () => focus.restore());
 
@@ -425,7 +496,9 @@ ejg.explore.onEnabled(() => {
   updateDownloadsUi();
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
-ejg.ui.onView(({ view, slug }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId }) => {
+  if (view === "guides" && gameId) return openGuides(gameId, guideId);
+  closeGuides();
   if (view === "downloads") return setView("downloads");
   if (!ejg.explore.enabled) return;
   setView("explore");
@@ -494,6 +567,7 @@ ejg.on("profile", renderProfile);
 
 const hintBar = hints($("#hints"), []);
 function updateHints() {
+  if (guideView) return hintBar.set(guideView.hints());
   const layer = shop.layer();
   hintBar.set(
     layer === "ask" || layer === "dialog"

@@ -933,3 +933,27 @@
     display: none;
   }
 }
+
+/* ─── guías ─── */
+.pn-steam .gd-pane,
+.pn-steam .gd-reader {
+  --gd-fg: var(--sx-text);
+  --gd-muted: var(--sx-dim);
+  --gd-accent: var(--sx-blue-2);
+  --gd-surface: var(--sx-row);
+  --gd-surface-2: var(--sx-hover);
+  --gd-line: var(--sx-line);
+  --gd-bg: var(--sx-win);
+  --gd-radius: 2px;
+  --gd-toc-bg: var(--sx-win-bar);
+}
+.pn-steam .gd-row.is-focused,
+.pn-steam .gd-chip.is-focused,
+.pn-steam .gd-more.is-focused {
+  box-shadow: none;
+  background: var(--sx-hover);
+  outline: 1px solid var(--sx-blue-2);
+}
+.pn-steam .gd-row-title {
+  color: #fff;
+}

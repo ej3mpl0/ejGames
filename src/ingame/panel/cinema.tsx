@@ -3,6 +3,7 @@
 // progreso (los logros) y abajo una fila de pestañas como la de episodios.
 
 import { useState, type CSSProperties, type ReactNode } from "react";
+import { GuidesPane } from "../../components/guide";
 import { Hints } from "../../components/Hints";
 import { useOverlayNav } from "../../input/nav";
 import { useApp } from "../../store/app";
@@ -28,12 +29,13 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hms, hoursLabel, Img } from "./parts";
 import "./cinema.css";
 
-type Row = "ach" | "shots" | "notes" | "music" | "perf" | "dl";
+type Row = "ach" | "guides" | "shots" | "notes" | "music" | "perf" | "dl";
 
 export function CinemaPanel({ p }: { p: Panel }) {
   const d = p.data;
   const rows: { id: Row; label: string }[] = [
     ...(p.ach.total ? [{ id: "ach" as Row, label: "Logros" }] : []),
+    { id: "guides", label: "Guías" },
     { id: "shots", label: "Capturas" },
     { id: "notes", label: "Notas" },
     { id: "music", label: "Música" },
@@ -75,6 +77,13 @@ export function CinemaPanel({ p }: { p: Panel }) {
         <NoAchievements k="cn" />
       );
       break;
+    case "guides":
+      rail = (
+        <div className="pn-guides">
+          <GuidesPane gameId={d.gameId} onMenu={p.actions.close} />
+        </div>
+      );
+      break;
     case "shots":
       rail = (
         <div className="cn-shots-row">
@@ -112,7 +121,7 @@ export function CinemaPanel({ p }: { p: Panel }) {
   }
 
   return (
-    <div ref={ref} className="pn-cinema" style={style}>
+    <div ref={ref} className={cls("pn-cinema", row === "guides" && "is-guides")} style={style}>
       {/* El «fotograma congelado» es el propio juego: solo se oscurece. */}
       <div className="cn-shade" />
 

@@ -101,9 +101,6 @@ main { position: relative; z-index: 2; height: calc(100% - 76px); }
 .lcard .t { margin-top: 10px; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
 .lcard.is-focused .art, .lcard:hover .art { box-shadow: 0 0 0 3px #fff, 0 16px 40px rgba(0, 0, 0, 0.6); transform: scale(1.04); }
 .lcard.is-focused .t { color: #fff; }
-.lcard.uninstalled .art { filter: saturate(0.3) brightness(0.7); }
-.lcard.uninstalled.is-focused .art, .lcard.uninstalled:hover .art { filter: none; }
-.play.install { background: rgba(255, 255, 255, 0.18); color: #fff; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7); }
 
 .hints { position: fixed; z-index: 3; right: var(--pad); bottom: 22px; display: flex; gap: 22px; font-size: 13px; color: var(--muted); }
 .hints .ejg-glyph { color: #fff; }
@@ -119,3 +116,55 @@ main { position: relative; z-index: 2; height: calc(100% - 76px); }
 .empty h1 { font-weight: 300; font-size: 40px; margin: 0 0 12px; }
 .empty p { color: var(--muted); font-size: 18px; }
 .empty .play { margin-top: 20px; }
+
+/* ─── ayuda del juego (guías) ─── */
+.more.help svg { width: 22px; height: 22px; margin: auto; }
+.mcard.help-card { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; padding: 14px; background: linear-gradient(135deg, rgba(0, 112, 209, 0.55), rgba(20, 30, 60, 0.85)); }
+.mcard.help-card .help-ico { position: absolute; top: 14px; left: 14px; width: 38px; height: 38px; border-radius: 50%; background: rgba(255, 255, 255, 0.18); display: grid; place-items: center; }
+.mcard.help-card .help-ico svg { width: 20px; height: 20px; }
+.mcard.help-card .lbl { position: static; font-size: 16px; font-weight: 500; }
+.mcard.help-card .sub { font-size: 12.5px; color: var(--muted); }
+
+.gh-layer { position: fixed; inset: 0; z-index: 8; background: #080a0f; animation: fade 0.22s ease; }
+.gh-layer[hidden] { display: none; }
+.gh-bg { position: absolute; inset: 0; background: center 20% / cover no-repeat; opacity: 0.35; filter: blur(40px) saturate(1.2); transform: scale(1.1); }
+.gh-inner { position: absolute; inset: 0 0 70px; padding: 44px var(--pad) 0; }
+:root[data-panel="guides"] .hints { z-index: 9; }
+.gh-inner .g-view {
+  --g-fg: #fff;
+  --g-muted: rgba(255, 255, 255, 0.62);
+  --g-accent: #4aa3ff;
+  --g-bg: rgba(16, 18, 26, 0.98);
+  --g-surface: rgba(255, 255, 255, 0.07);
+  --g-surface-2: rgba(255, 255, 255, 0.14);
+  --g-line: rgba(255, 255, 255, 0.12);
+  --g-radius: 14px;
+  --g-focus: 0 0 0 3px #fff;
+  --g-body-size: 17px;
+  height: 100%;
+  max-width: 1280px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.gh-inner .g-title { font-size: 36px; font-weight: 300; }
+.gh-inner .g-subtitle { font-size: 16px; }
+.gh-inner .g-chip { height: 40px; padding: 0 18px; border-radius: 20px; background: rgba(255, 255, 255, 0.1); font-size: 15px; }
+.gh-inner .g-chip.is-on { background: #fff; color: #111; }
+.gh-inner .g-label { font-size: 15px; font-weight: 400; letter-spacing: 0; text-transform: none; color: #fff; margin-top: 22px; }
+.gh-inner .g-items { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; padding: 6px 4px 30px; }
+.gh-inner .g-item { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+.gh-inner .g-item.is-focused { transform: scale(1.03); background: rgba(255, 255, 255, 0.14); box-shadow: 0 0 0 3px #fff, 0 16px 40px rgba(0, 0, 0, 0.6); }
+.gh-inner .g-item-item { padding: 0 0 14px; overflow: hidden; }
+.gh-inner .g-item-item .g-thumb { border-radius: 0; }
+.gh-inner .g-item-item .g-item-main { padding: 0 14px; }
+.gh-inner .g-item-title { font-size: 16px; font-weight: 500; }
+.gh-inner .g-shelf { flex-direction: row; flex-wrap: wrap; }
+.gh-inner .g-shelf .g-label { flex-basis: 100%; }
+.gh-inner .g-item-shelf { width: min(420px, 100%); }
+.gh-inner .g-readerview { max-width: 1000px; margin: 0 auto; background: rgba(28, 30, 38, 0.96); border-radius: 18px; padding: 22px 28px 0; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6); }
+.gh-inner .g-rtitle b { font-size: 24px; font-weight: 400; }
+.gh-inner .g-rbtn { height: 40px; padding: 0 18px; border-radius: 20px; background: rgba(255, 255, 255, 0.12); }
+.gh-inner .g-rbtn.is-focused { background: #fff; color: #111; box-shadow: none; }
+.gh-inner .g-rbody { line-height: 1.7; }
+.gh-inner .g-section-title { font-size: 22px; font-weight: 400; background: rgba(28, 30, 38, 0.98); }
+.gh-inner .g-toc-box { border-radius: 18px 0 0 18px; }

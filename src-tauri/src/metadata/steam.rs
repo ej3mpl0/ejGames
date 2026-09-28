@@ -95,45 +95,6 @@ impl Steam {
         Ok(out)
     }
 
-    /// Tipo (0 = juego, 4 = DLC…) y nombre de muchos appids, sin arte (rápido).
-    pub async fn app_types(
-        &self,
-        http: &reqwest::Client,
-        appids: &[i64],
-        lang: &str,
-        cc: &str,
-    ) -> anyhow::Result<HashMap<i64, (i64, String)>> {
-        let mut out = HashMap::new();
-        for chunk in appids.chunks(100) {
-            let input = json!({
-                "ids": chunk.iter().map(|a| json!({"appid": a})).collect::<Vec<_>>(),
-                "context": {"language": lang, "country_code": cc},
-                "data_request": {}
-            })
-            .to_string();
-            let r = ratelimit::get(http, &self.items_limit, || {
-                http.get("https://api.steampowered.com/IStoreBrowseService/GetItems/v1/")
-                    .query(&[("input_json", input.as_str())])
-            })
-            .await?;
-            let v: Value = r.json().await?;
-            let items = v.pointer("/response/store_items").and_then(Value::as_array).cloned().unwrap_or_default();
-            for it in items {
-                let Some(id) = it.get("appid").and_then(Value::as_i64).or_else(|| it.get("id").and_then(Value::as_i64)) else {
-                    continue;
-                };
-                let ok = it.get("success").and_then(Value::as_i64) == Some(1);
-                let ty = if ok { it.get("type").and_then(Value::as_i64).unwrap_or(-1) } else { -1 };
-                let name = it.get("name").and_then(Value::as_str).unwrap_or_default().to_string();
-                out.insert(id, (ty, name));
-            }
-            for id in chunk {
-                out.entry(*id).or_insert((-1, String::new()));
-            }
-        }
-        Ok(out)
-    }
-
     pub async fn tag_names(&self, http: &reqwest::Client, lang: &str) -> anyhow::Result<HashMap<i64, String>> {
         let r = ratelimit::get(http, &self.items_limit, || {
             http.get("https://api.steampowered.com/IStoreService/GetTagList/v1/").query(&[("language", lang)])

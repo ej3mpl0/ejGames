@@ -3,7 +3,8 @@
 // panel a la derecha (como la de trofeos).
 
 import { useRef, useState, type ReactNode } from "react";
-import { Activity, Download, Gamepad2, Image as ImageIcon, Music2, NotebookPen, Power, Volume2 } from "lucide-react";
+import { Activity, BookOpen, Download, Gamepad2, Image as ImageIcon, Music2, NotebookPen, Power, Volume2 } from "lucide-react";
+import { GuidesPane } from "../../components/guide";
 import { Hints } from "../../components/Hints";
 import { focusNav, useOverlayNav } from "../../input/nav";
 import {
@@ -27,7 +28,7 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, CupIcon, downloadLine, dur, hoursLabel, Img, pctNum, shortDate } from "./parts";
 import "./playstation.css";
 
-type Sheet = "game" | "trophies" | "shots" | "music" | "notes" | "perf" | "dl";
+type Sheet = "game" | "trophies" | "help" | "shots" | "music" | "notes" | "perf" | "dl";
 
 type Grade = "platinum" | "gold" | "silver" | "bronze";
 const GRADES: Grade[] = ["platinum", "gold", "silver", "bronze"];
@@ -169,6 +170,14 @@ export function PlayStationPanel({ p }: { p: Panel }) {
       ),
     },
     trophies: { title: "Trofeos", body: <Trophies p={p} /> },
+    help: {
+      title: "Ayuda del juego",
+      body: (
+        <div className="pn-guides">
+          <GuidesPane gameId={d.gameId} onMenu={p.actions.close} />
+        </div>
+      ),
+    },
     shots: {
       title: "Capturas",
       body: (
@@ -212,7 +221,7 @@ export function PlayStationPanel({ p }: { p: Panel }) {
       <div className="ps5-shade" onMouseDown={() => (sheet ? setSheet(null) : p.actions.close())} />
 
       {sheet && (
-        <section className="ps5-sheet" data-focus-trap key={sheet} ref={focusFirst}>
+        <section className={cls("ps5-sheet", sheet === "help" && "is-wide")} data-focus-trap key={sheet} ref={focusFirst}>
           <header className="ps5-sheet-head">
             <h2>{SHEETS[sheet].title}</h2>
             <Hints items={[["back", "Atrás"]]} />
@@ -251,6 +260,10 @@ export function PlayStationPanel({ p }: { p: Panel }) {
             ) : (
               <span className="ps5-card-sub">Sin trofeos detectados</span>
             )}
+          </Card>
+          <Card id="help" open={setSheet} title="Ayuda del juego" className="is-help">
+            <BookOpen className="ps5-card-icon" />
+            <span className="ps5-card-sub is-bottom">Guías de la comunidad de Steam</span>
           </Card>
           <Card id="shots" open={setSheet} title="Capturas" className="is-shots">
             {lastShot ? <img src={lastShot.thumb} className="ps5-card-bg" alt="" draggable={false} /> : null}
@@ -309,6 +322,7 @@ export function PlayStationPanel({ p }: { p: Panel }) {
           <div className="ps5-icons">
             {icon("Abrir ejGames", <Gamepad2 />, p.actions.launcher)}
             {icon("Hacer captura", <ImageIcon />, p.actions.screenshot)}
+            {icon("Ayuda del juego", <BookOpen />, () => setSheet("help"))}
             {icon("Música", <Music2 />, () => setSheet("music"))}
             {icon("Sonido", <Volume2 />, () => setSheet("music"))}
             {icon("Notas", <NotebookPen />, () => setSheet("notes"))}

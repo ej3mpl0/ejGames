@@ -1,6 +1,6 @@
 [package]
 name = "ejgames"
-version = "0.4.0"
+version = "0.5.0"
 description = "ejGames — launcher de juegos personalizable"
 authors = ["ej"]
 license = "MIT"
@@ -47,6 +47,9 @@ hmac = "0.12"
 url = "2.5"
 percent-encoding = "2.3"
 zip = { version = "2", default-features = false, features = ["deflate"] }
+# Guías de Steam: su HTML se recorre y se convierte en bloques seguros (sin HTML).
+scraper = { version = "0.24", default-features = false }
+ego-tree = "0.10"
 gilrs = { version = "0.11", default-features = false, features = ["xinput"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

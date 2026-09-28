@@ -1,4 +1,4 @@
-//! Lanzar juegos: URI de tienda o exe vía ShellExecuteExW (maneja UAC/"runas";
+//! Lanzar juegos: una URI propia del juego o su exe vía ShellExecuteExW (maneja UAC/"runas";
 //! CreateProcess falla con el error 740 en juegos que piden admin). Los exes que
 //! solo son administrador por la marca de compatibilidad de Windows se lanzan
 //! sin elevar (ver `admin`).
@@ -86,15 +86,6 @@ fn shell_execute(verb: &str, file: &str, params: &str, dir: Option<&str>) -> any
     Ok(shell_execute_process(verb, file, params, dir)?.map(|p| p.pid()).filter(|pid| *pid != 0))
 }
 
-/// Abre una URI (`steam://…`) con su programa.
-pub fn open_uri(uri: &str) -> anyhow::Result<()> {
-    #[cfg(windows)]
-    shell_execute("open", uri, "", None)?;
-    #[cfg(not(windows))]
-    let _ = uri;
-    Ok(())
-}
-
 pub enum InstallerError {
     /// El usuario dijo que no al permiso de administrador.
     Cancelled,
@@ -133,7 +124,7 @@ fn spawn_as_invoker(exe: &str, args: &str, dir: Option<&str>, layers: &str) -> s
 }
 
 pub fn launch(g: &Game) -> anyhow::Result<Launched> {
-    // Las tiendas con URI (Steam, Epic, Ubisoft, EA) se lanzan por su cliente.
+    // Con URI de lanzamiento (un launcher propio del juego), por su programa.
     if let Some(uri) = g.launch_uri.as_deref().filter(|u| !u.is_empty()) {
         #[cfg(windows)]
         shell_execute("open", uri, "", None)?;

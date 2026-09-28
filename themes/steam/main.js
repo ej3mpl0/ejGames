@@ -10,6 +10,7 @@ import { visible, sort, search, inCollection, canUninstall, SORTS } from "/_sdk/
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { downloadLabel, percent, speed } from "/_sdk/kit/store.js";
+import { createGuideView, starsText } from "/_sdk/kit/guides.js";
 import { createStore } from "./store.js";
 
 const ejg = await window.ejg.ready();
@@ -27,7 +28,7 @@ const state = {
   collection: null, // id de colección o "fav"
   prev: [], // vistas anteriores de la biblioteca, para «Atrás»
   filter: "",
-  chip: saved.chip || "all",
+  chip: ["all", "played", "unplayed", "fav"].includes(saved.chip) ? saved.chip : "all",
   sort: saved.sort || "title",
   sideSort: saved.sideSort || "title",
   collapsed: new Set(saved.collapsed || []),
@@ -55,24 +56,33 @@ const svg = (name) => {
 // ─────────────── foco y mando ───────────────
 const focus = createFocus({ root: document.body });
 const isShop = () => state.tab === "store" || state.tab === "downloads";
+/** Guías abiertas: su vista usa primero el mando (leer, secciones, guardar…). */
+const inGuides = () => state.tab === "library" && state.view === "guides" && guideView;
+const gv = (action) => !!(inGuides() && guideView.nav(action));
 bindNav(focus, {
   back: () => back(),
+  up: () => gv("up"),
+  down: () => gv("down"),
+  lt: () => gv("lt"),
+  rt: () => gv("rt"),
   y: () => {
+    if (gv("y")) return true;
     if (state.tab === "store") return shop.search(), true;
     const id = focusedGameId() ?? (state.view === "game" ? state.gameId : null);
     if (id && !isShop()) ejg.game.favorite(id);
     return !!id;
   },
   x: () => {
+    if (gv("x")) return true;
     if (isShop()) return false;
     const id = focusedGameId() ?? (state.view === "game" ? state.gameId : null);
     if (id) ejg.game.edit(id);
     return !!id;
   },
   menu: () => (ejg.ui.open("menu"), true),
-  view: () => (ejg.ui.open("search"), true),
-  lb: () => (menu || shop.hasDialog() || switchTab(-1), true),
-  rb: () => (menu || shop.hasDialog() || switchTab(1), true),
+  view: () => gv("view") || (ejg.ui.open("search"), true),
+  lb: () => gv("lb") || (menu || shop.hasDialog() || switchTab(-1), true),
+  rb: () => gv("rb") || (menu || shop.hasDialog() || switchTab(1), true),
   left: () => (!lightbox.hidden ? (stepLightbox(-1), true) : false),
   right: () => (!lightbox.hidden ? (stepLightbox(1), true) : false),
 });
@@ -152,11 +162,11 @@ window.addEventListener("resize", () => closeMenu(true));
 
 // ─────────────── datos ───────────────
 const games = () => visible(ejg.library.all);
-const CHIPS = { all: "Juegos", installed: "Listos para jugar", uninstalled: "Sin instalar", fav: "Favoritos" };
+const CHIPS = { all: "Juegos", played: "Jugados", unplayed: "Sin jugar", fav: "Favoritos" };
 function chipped(list) {
   if (state.chip === "fav") return list.filter((g) => g.favorite);
-  if (state.chip === "installed") return list.filter((g) => g.installed !== false && !g.missing);
-  if (state.chip === "uninstalled") return list.filter((g) => g.installed === false);
+  if (state.chip === "played") return list.filter((g) => g.playtime > 0 || g.lastPlayed);
+  if (state.chip === "unplayed") return list.filter((g) => !g.playtime && !g.lastPlayed);
   return list;
 }
 function filtered(sortKey = state.sort) {
@@ -185,13 +195,13 @@ function placeholder(g) {
 
 function sideItem(g, prev) {
   const running = isRunning(g.id);
-  const key = `${g.id}:${g.title}:${g.media.icon}:${running}:${g.missing}:${g.installed}:${state.gameId === g.id && state.view === "game"}`;
+  const key = `${g.id}:${g.title}:${g.media.icon}:${running}:${g.missing}:${state.gameId === g.id && state.view === "game"}`;
   if (prev && prev.__sig === key) return prev;
   const icon = g.media.icon || g.media.coverThumb;
   const el = h(
     "button",
     {
-      class: "side-item" + (g.missing ? " missing" : "") + (g.installed === false ? " uninstalled" : "") + (running ? " running" : ""),
+      class: "side-item" + (g.missing ? " missing" : "") + (running ? " running" : ""),
       "data-focus": "",
       "data-game-id": g.id,
       "aria-current": state.gameId === g.id && state.view === "game" ? "true" : null,
@@ -209,12 +219,12 @@ function sideItem(g, prev) {
 /** Cápsula vertical de la biblioteca (600×900 en Steam). */
 function capsule(g, prev) {
   const running = isRunning(g.id);
-  const key = `${g.id}:${g.title}:${g.media.coverThumb}:${g.media.heroThumb}:${running}:${g.playtime}:${g.missing}:${g.installed}`;
+  const key = `${g.id}:${g.title}:${g.media.coverThumb}:${g.media.heroThumb}:${running}:${g.playtime}:${g.missing}`;
   if (prev && prev.__sig === key) return prev;
   const el = h(
     "button",
     {
-      class: "cap" + (g.missing ? " missing" : "") + (g.installed === false ? " uninstalled" : ""),
+      class: "cap" + (g.missing ? " missing" : ""),
       "data-focus": "",
       "data-game-id": g.id,
       onclick: () => openGame(g.id),
@@ -226,7 +236,7 @@ function capsule(g, prev) {
       "div",
       { class: "cap-hover" },
       h("b", null, g.title),
-      h("span", null, g.installed === false ? "Sin instalar" : g.playtime ? `${playtime(g.playtime)} jugadas` : "Sin jugar"),
+      h("span", null, g.playtime ? `${playtime(g.playtime)} jugadas` : "Sin jugar"),
     ),
     h("div", { class: "cap-title" }, g.title),
   );
@@ -316,7 +326,7 @@ sideRecent.addEventListener("click", () => {
   renderSidebar();
 });
 sideReady.addEventListener("click", () => {
-  state.chip = state.chip === "installed" ? "all" : "installed";
+  state.chip = state.chip === "played" ? "all" : "played";
   saveState();
   render();
 });
@@ -347,7 +357,7 @@ function renderSidebar() {
   const list = filtered(state.sideSort);
   sideDrop.replaceChildren(h("span", null, CHIPS[state.chip]), h("small", null, `(${list.length})`), svg("caret"));
   sideRecent.classList.toggle("on", state.sideSort === "recent");
-  sideReady.classList.toggle("on", state.chip === "installed");
+  sideReady.classList.toggle("on", state.chip === "played");
   $("#side-home").classList.toggle("on", state.view === "home");
   $("#side-cols").classList.toggle("on", state.view === "collections" || state.view === "collection");
   const favs = !state.filter && state.chip === "all" ? list.filter((g) => g.favorite) : [];
@@ -407,7 +417,7 @@ function emptyLibrary() {
     "div",
     { class: "empty" },
     h("h2", null, "Tu biblioteca está vacía"),
-    h("p", null, "Añade la carpeta donde tienes tus juegos o importa los de tus tiendas."),
+    h("p", null, "Añade la carpeta donde tienes tus juegos: cada subcarpeta se convierte en un juego, con su arte y sus logros."),
     h("button", { class: "btn-steam", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, "Añadir un juego"),
   );
 }
@@ -516,18 +526,17 @@ let detailsToken = 0;
 
 function playButton(g) {
   const running = isRunning(g.id);
-  const install = g.installed === false;
   const btn = h(
     "button",
     {
-      class: "play" + (running ? " running" : "") + (install ? " install" : ""),
+      class: "play" + (running ? " running" : ""),
       "data-focus": "",
       id: "play",
       disabled: g.missing || null,
       onclick: async () => {
         if (isRunning(g.id)) return;
         btn.classList.add("launching");
-        btn.lastChild.textContent = install ? "ABRIENDO TIENDA…" : "INICIANDO…";
+        btn.lastChild.textContent = "INICIANDO…";
         try {
           await ejg.game.launch(g.id);
         } catch (e) {
@@ -536,8 +545,8 @@ function playButton(g) {
         setTimeout(() => updatePlayButton(), 2500);
       },
     },
-    svg(install ? "download" : "play"),
-    h("span", null, g.missing ? "NO ENCONTRADO" : running ? "EN MARCHA" : install ? "INSTALAR" : "JUGAR"),
+    svg("play"),
+    h("span", null, g.missing ? "NO ENCONTRADO" : running ? "EN MARCHA" : "JUGAR"),
   );
   return btn;
 }
@@ -554,7 +563,7 @@ function updatePlayButton() {
 
 // Lo que cambia al terminar una partida: horas, última sesión y logros. Se
 // repinta solo eso (sin recargar el banner ni el tráiler).
-const statsKey = (g) => `${g.id}|${g.playtime}|${g.lastPlayed}|${g.achievements?.unlocked}/${g.achievements?.total}|${g.installed}`;
+const statsKey = (g) => `${g.id}|${g.playtime}|${g.lastPlayed}|${g.achievements?.unlocked}/${g.achievements?.total}`;
 let renderedStats = "";
 let achSlot = null;
 let activitySlot = null;
@@ -563,7 +572,6 @@ function gameStats(g) {
   const stat = (label, value, extra) => h("div", { class: "stat" }, h("small", null, label), h("span", null, value), extra || null);
   const a = g.achievements;
   return [
-    g.installed === false ? stat("Estado", `Sin instalar · ${SOURCE_LABEL[g.source] || g.source}`) : null,
     stat("Última sesión", g.lastPlayed ? relative(g.lastPlayed) : "Nunca"),
     stat("Tiempo de juego", playtime(g.playtime)),
     a ? stat("Logros", `${a.unlocked}/${a.total}`, h("div", { class: "stat-bar" }, h("i", { style: { width: `${a.total ? (a.unlocked / a.total) * 100 : 0}%` } }))) : null,
@@ -665,6 +673,7 @@ async function renderGame(id) {
   const gnav = h(
     "div",
     { class: "game-nav", "data-focus-group": "gnav" },
+    link("Guías", () => openGuides(g.id)),
     link("Explorar archivos locales", () => ejg.game.openFolder(g.id)),
     link("Propiedades", () => ejg.game.edit(g.id)),
     link("Estadísticas", () => ejg.ui.open("stats")),
@@ -673,7 +682,8 @@ async function renderGame(id) {
   const left = h("div", { class: "g-left" }, h("div", { class: "card" }, h("h3", null, "Acerca del juego"), h("div", { class: "skel" }), h("div", { class: "skel" }), h("div", { class: "skel", style: { width: "60%" } })));
   achSlot = h("div");
   activitySlot = h("div");
-  const right = h("div", { class: "g-right" }, achSlot);
+  const guideSlot = h("div");
+  const right = h("div", { class: "g-right" }, achSlot, guideSlot);
   const body = h("div", { class: "game-body" }, left, right);
   const bg = h("div", { class: "game-bg", style: heroUrl ? { backgroundImage: `url("${g.media.heroThumb || heroUrl}")` } : {} });
   main.replaceChildren(h("div", { class: "game" }, bg, hero, playbar, gnav, body));
@@ -755,6 +765,7 @@ async function renderGame(id) {
   }
 
   loadAchievements(id, token);
+  loadGuidesCard(id, token, guideSlot);
 
   // Columna lateral: información y etiquetas.
   const rows = [
@@ -768,6 +779,90 @@ async function renderGame(id) {
   right.append(h("div", { class: "card info-card" }, h("h3", null, "Información"), ...rows.map(([k, v]) => h("div", { class: "info-row" }, h("span", null, k), h("span", null, String(v))))));
   const tags = [...new Set([...(d.genres || []), ...(d.tags || [])])].slice(0, 14);
   if (tags.length) right.append(h("div", { class: "card" }, h("h3", null, "Etiquetas"), h("div", { class: "tags" }, ...tags.map((t) => h("span", { class: "tag" }, t)))));
+}
+
+// ─────────────── guías de la comunidad ───────────────
+let guideView = null;
+let guideRoot = null;
+
+function openGuides(gameId, guideId = null) {
+  pushView("guides", { gameId, guideId });
+  render();
+}
+
+/** La página de guías: la del juego, con su arte difuminado detrás. */
+function renderGuides() {
+  if (guideView && guideRoot?.isConnected && guideRoot.dataset.game === String(state.gameId)) return;
+  dropGuides();
+  const g = ejg.library.byId(state.gameId);
+  if (!g) return back();
+  const art = g.media.hero || g.media.heroThumb || g.media.header;
+  guideRoot = h("div", { class: "guides-body", "data-game": g.id });
+  main.replaceChildren(
+    h(
+      "div",
+      { class: "guides-page" },
+      h("div", { class: "guides-bg", style: art ? { backgroundImage: `url("${art}")` } : {} }),
+      h(
+        "div",
+        { class: "guides-top" },
+        h("button", { class: "guides-game", "data-focus": "", onclick: () => back() }, g.media.icon ? img(g.media.icon) : null, h("span", null, g.title)),
+        h("span", { class: "guides-crumb" }, "›  Guías"),
+      ),
+      guideRoot,
+    ),
+  );
+  main.scrollTop = 0;
+  guideView = createGuideView({
+    ejg,
+    root: guideRoot,
+    focus,
+    gameId: g.id,
+    guide: state.guideId || null,
+    labels: { title: "Guías de la comunidad", browser: "Ver en Steam" },
+    onExit: () => back(),
+    onChange: () => updateHints(),
+  });
+  state.guideId = null;
+}
+
+function dropGuides() {
+  guideView?.destroy();
+  guideView = null;
+  guideRoot = null;
+}
+
+/** Tarjeta de la ficha: las guías guardadas y las mejor valoradas. */
+async function loadGuidesCard(id, token, slot) {
+  const [shelf, list] = await Promise.all([ejg.guides.shelf(id).catch(() => null), ejg.guides.list(id, {}).catch(() => null)]);
+  if (token !== detailsToken || !list || list.appid == null) return;
+  // Lo tuyo primero (guardadas y la que dejaste a medias) y luego las mejor valoradas.
+  const mine = [...(shelf?.pinned || []).slice(0, 2).map((x) => [x, "saved"]), ...(shelf?.recent || []).slice(0, 1).map((x) => [x, "recent"])];
+  const top = list.items.filter((x) => !mine.some(([m]) => m.id === x.id)).slice(0, Math.max(1, 4 - mine.length));
+  const sub = (it, kind) =>
+    kind === "saved"
+      ? "★ Guardada"
+      : kind === "recent"
+        ? `Seguir leyendo${it.progress ? ` · sección ${it.progress.section + 1}` : ""}`
+        : [starsText(it.stars), it.author].filter(Boolean).join(" · ");
+  const entry = (it, kind) =>
+    h(
+      "button",
+      { class: "guide-row" + (kind ? " is-" + kind : ""), "data-focus": "", onclick: () => openGuides(id, it.id) },
+      it.preview ? img(it.preview) : h("span", { class: "guide-ph" }, "📖"),
+      h("span", { class: "guide-txt" }, h("b", null, it.title), h("small", null, sub(it, kind))),
+    );
+  const rows = [...mine.map(([x, kind]) => entry(x, kind)), ...top.map((x) => entry(x, null))];
+  if (!rows.length) return;
+  slot.replaceChildren(
+    h(
+      "div",
+      { class: "card guides-card", "data-focus-group": "guides-card" },
+      h("h3", null, "Guías de la comunidad", list.total ? h("span", { class: "n" }, ` ${list.total.toLocaleString("es")}`) : null),
+      ...rows,
+      h("button", { class: "gnav-link guides-all", "data-focus": "", onclick: () => openGuides(id) }, "Ver todas las guías"),
+    ),
+  );
 }
 
 // ─────────────── logros ───────────────
@@ -855,6 +950,7 @@ lightbox.addEventListener("click", closeLightbox);
 
 // ─────────────── navegación ───────────────
 function stopMedia() {
+  dropGuides();
   heroRelease();
   heroRelease = () => {};
   trailer?.destroy();
@@ -898,6 +994,8 @@ function goLibrary(view) {
 function back() {
   if (!lightbox.hidden) return closeLightbox(), true;
   if (closeMenu()) return true;
+  // En una guía: vuelve a la lista (o a la ficha, si se abrió desde ella).
+  if (inGuides() && guideView.mode === "reader") return guideView.nav("back");
   if (shop.back()) return true;
   if (state.tab !== "library") return false;
   const p = state.prev.pop();
@@ -960,6 +1058,7 @@ function render() {
   }
   renderSidebar();
   if (state.view === "game") renderGame(state.gameId);
+  else if (state.view === "guides") renderGuides();
   else if (state.view === "collections") renderCollections();
   else if (state.view === "collection") renderCollection();
   else renderHome();
@@ -1036,7 +1135,8 @@ ejg.explore.onEnabled(() => {
   else updateDownloadsUi();
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
-ejg.ui.onView(({ view, slug }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId }) => {
+  if (view === "guides" && gameId) return openGuides(gameId, guideId);
   if (view === "downloads") return goTab("downloads");
   if (!ejg.explore.enabled) return;
   goTab("store");
@@ -1106,6 +1206,8 @@ filterInput.addEventListener("keydown", (e) => {
 // ─────────────── eventos del host ───────────────
 const rerender = debounce(() => {
   if (isShop()) return updateDownloadsUi();
+  // Leyendo guías no se repinta la página (se perdería la posición).
+  if (state.view === "guides") return renderSidebar();
   if (state.view === "game") {
     // En la página de juego solo refrescamos lo que cambia (evita recargar el tráiler).
     renderSidebar();
@@ -1143,7 +1245,9 @@ function updateHints() {
       ? [["accept", "Abrir"], ["y", "Buscar"], ["back", "Volver"], ["lb", "Pestañas"], ["menu", "Menú"]]
       : state.tab === "downloads"
         ? [["accept", "Elegir"], ["lb", "Pestañas"], ["menu", "Menú"]]
-        : state.view === "game"
+        : state.view === "guides" && guideView
+          ? guideView.hints()
+          : state.view === "game"
           ? [["accept", "Elegir"], ["back", "Atrás"], ["y", "Favorito"], ["x", "Propiedades"]]
           : [["accept", "Abrir"], ["y", "Favorito"], ["x", "Propiedades"], ["lb", "Pestañas"], ["menu", "Menú"]],
   );

@@ -150,7 +150,7 @@ pub async fn register(st: &Arc<AppState>, row: &DownloadRow, dir: &Path) -> anyh
         tx.commit()?;
         Ok(r)
     })?;
-    let (id, is_new) = res.ok_or_else(|| anyhow::anyhow!("Ese juego ya está en tu biblioteca desde una tienda"))?;
+    let (id, is_new) = res.ok_or_else(|| anyhow::anyhow!("Esa carpeta ya es de otro juego de tu biblioteca"))?;
     if is_new {
         crate::services::after_new_games(st, vec![(id, g.exe_path.clone())]).await;
     } else {

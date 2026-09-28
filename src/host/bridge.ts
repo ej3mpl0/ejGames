@@ -4,6 +4,7 @@
 import { api } from "../api/tauri";
 import { useApp, activeTheme, type OverlayName } from "../store/app";
 import { installDownload, locateInstall, openExplore, openKeyboard, pickFolder } from "./downloads";
+import { getGuide, openGuideInBrowser, openGuideLink, validGuideId } from "./guides";
 import { playSound } from "./sounds";
 import { toggleBigPicture } from "./window";
 
@@ -25,6 +26,16 @@ const UI_NAMES: Record<string, OverlayName> = {
   menu: "menu",
   explore: "explore",
   downloads: "downloads",
+  guides: "guides",
+};
+
+const GUIDE_SORTS = ["toprated", "trend", "mostrecent"];
+
+/** Juego de la biblioteca (un tema solo puede pedir guías de los suyos). */
+const libGame = (v: unknown): number => {
+  const id = num(v);
+  if (!useApp.getState().games.some((g) => g.id === id)) throw new Error("juego desconocido");
+  return id;
 };
 
 const str = (v: unknown, max = 300): string => {
@@ -108,6 +119,7 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
       playSound("open");
       const args = params?.args && typeof params.args === "object" ? params.args : null;
       if (name === "add-folder") st.open("settings", { tab: "library", addFolder: true });
+      else if (name === "guides") st.open("guides", { id: libGame(args?.id), guide: args?.guide == null ? null : validGuideId(args.guide) });
       else if (name === "theme") st.open("settings", { tab: "appearance" });
       else if (name === "explore" || name === "downloads") st.open(name, { view: name, ...(args ?? {}) });
       else st.open(name, args);
@@ -147,6 +159,43 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
     case "explore.openPage":
       // Solo la ficha de la web oficial (se construye aquí, no la manda el tema).
       return api.openExternal(`https://fitgirl-repacks.site/${slug(params?.slug)}/`);
+    case "guides.list": {
+      const q = params?.query && typeof params.query === "object" ? params.query : {};
+      return api.guidesList(libGame(params?.gameId), {
+        page: q.page == null ? 1 : Math.max(1, Math.min(1000, num(q.page))),
+        sort: GUIDE_SORTS.includes(q.sort) ? q.sort : "toprated",
+        query: str(q.query ?? "", 100),
+        category: str(q.category ?? "", 40),
+        allLanguages: !!q.allLanguages,
+      });
+    }
+    case "guides.get":
+      return getGuide(validGuideId(params?.id));
+    case "guides.shelf":
+      return api.guidesShelf(libGame(params?.gameId));
+    case "guides.pin":
+      return api.guidesPin(
+        libGame(params?.gameId),
+        validGuideId(params?.id),
+        str(params?.title ?? "", 200),
+        str(params?.author ?? "", 80),
+        params?.preview == null ? null : str(params.preview, 120),
+        params?.value !== false,
+      );
+    case "guides.progress":
+      return api.guidesProgress(
+        libGame(params?.gameId),
+        validGuideId(params?.id),
+        str(params?.title ?? "", 200),
+        str(params?.author ?? "", 80),
+        params?.preview == null ? null : str(params.preview, 120),
+        Math.max(0, Math.min(10000, Math.floor(num(params?.section ?? 0)))),
+        Math.max(0, Math.min(1, Number(params?.scroll) || 0)),
+      );
+    case "guides.openInBrowser":
+      return openGuideInBrowser(validGuideId(params?.id));
+    case "guides.openLink":
+      return openGuideLink(str(params?.href, 2000));
     case "downloads.list":
       return st.downloads;
     case "downloads.defaults":

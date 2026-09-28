@@ -13,6 +13,47 @@ pub struct SchemaBit {
     pub def: Def,
 }
 
+/// Carpeta del cliente de Steam (si está instalado).
+pub fn steam_root() -> Option<PathBuf> {
+    #[cfg(windows)]
+    {
+        use winreg::enums::*;
+        use winreg::RegKey;
+        let from_hkcu = RegKey::predef(HKEY_CURRENT_USER)
+            .open_subkey("Software\\Valve\\Steam")
+            .and_then(|k| k.get_value::<String, _>("SteamPath"))
+            .ok();
+        let from_hklm = || {
+            RegKey::predef(HKEY_LOCAL_MACHINE)
+                .open_subkey("SOFTWARE\\WOW6432Node\\Valve\\Steam")
+                .and_then(|k| k.get_value::<String, _>("InstallPath"))
+                .ok()
+        };
+        let p = from_hkcu.or_else(from_hklm).map(|s| PathBuf::from(s.replace('/', "\\")));
+        if let Some(p) = p.filter(|p| p.is_dir()) {
+            return Some(p);
+        }
+    }
+    let fallback = PathBuf::from("C:\\Program Files (x86)\\Steam");
+    fallback.is_dir().then_some(fallback)
+}
+
+/// Usuario de Steam más reciente (el de `localconfig.vdf` modificado más tarde):
+/// (account id, carpeta `userdata/<id>`).
+pub fn active_user(root: &Path) -> Option<(u32, PathBuf)> {
+    let mut best: Option<(std::time::SystemTime, u32, PathBuf)> = None;
+    for e in std::fs::read_dir(root.join("userdata")).ok()?.filter_map(Result::ok) {
+        let Some(id) = e.file_name().to_str().and_then(|n| n.parse::<u32>().ok()).filter(|id| *id > 0) else { continue };
+        let f = e.path().join("config").join("localconfig.vdf");
+        if let Ok(m) = std::fs::metadata(&f).and_then(|m| m.modified()) {
+            if best.as_ref().map(|(t, ..)| m > *t).unwrap_or(true) {
+                best = Some((m, id, e.path()));
+            }
+        }
+    }
+    best.map(|(_, id, p)| (id, p))
+}
+
 fn stats_dir(root: &Path) -> PathBuf {
     root.join("appcache").join("stats")
 }

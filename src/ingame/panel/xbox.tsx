@@ -2,7 +2,8 @@
 // iconos arriba, listas de rectángulos y el foco blanco y grueso de la consola.
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Activity, Download, Gamepad2, House, Image as ImageIcon, Music2, NotebookPen, Trophy } from "lucide-react";
+import { Activity, BookOpen, Download, Gamepad2, House, Image as ImageIcon, Music2, NotebookPen, Trophy } from "lucide-react";
+import { GuidesPane } from "../../components/guide";
 import { Hints } from "../../components/Hints";
 import { useOverlayNav } from "../../input/nav";
 import {
@@ -25,11 +26,12 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hoursLabel, Img, PadIcon, pctNum, shortDate } from "./parts";
 import "./xbox.css";
 
-type Tab = "home" | "ach" | "shots" | "media" | "notes" | "perf" | "dl";
+type Tab = "home" | "ach" | "guides" | "shots" | "media" | "notes" | "perf" | "dl";
 
 const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: "home", label: "Inicio", icon: <House /> },
   { id: "ach", label: "Logros", icon: <Trophy /> },
+  { id: "guides", label: "Guías", icon: <BookOpen /> },
   { id: "shots", label: "Capturas", icon: <ImageIcon /> },
   { id: "media", label: "Música y audio", icon: <Music2 /> },
   { id: "notes", label: "Notas", icon: <NotebookPen /> },
@@ -153,6 +155,8 @@ function Achievements({ p }: { p: Panel }) {
 export function XboxPanel({ p }: { p: Panel }) {
   const [tab, setTab] = useState<Tab>("home");
   const [viewer, setViewer] = useState<number | null>(null);
+  // Leyendo una guía, la Guía se ensancha.
+  const [reading, setReading] = useState(false);
   const ref = useOverlayNav<HTMLDivElement>({
     onBack: () => (p.confirmQuit ? p.actions.cancelQuit() : viewer != null ? setViewer(null) : tab !== "home" ? setTab("home") : p.actions.close()),
     extra: { x: p.actions.screenshot, y: p.actions.launcher, menu: p.actions.close },
@@ -168,6 +172,13 @@ export function XboxPanel({ p }: { p: Panel }) {
       break;
     case "ach":
       body = <Achievements p={p} />;
+      break;
+    case "guides":
+      body = (
+        <div className="pn-guides">
+          <GuidesPane gameId={d.gameId} onMenu={p.actions.close} onReading={setReading} />
+        </div>
+      );
       break;
     case "shots":
       body = (
@@ -206,7 +217,7 @@ export function XboxPanel({ p }: { p: Panel }) {
 
   return (
     <div ref={ref} className="pn-xbox" style={style} onMouseDown={(e) => e.target === e.currentTarget && p.actions.close()}>
-      <aside className="xb-guide">
+      <aside className={cls("xb-guide", tab === "guides" && "is-guides", tab === "guides" && reading && "is-reading")}>
         <header className="xb-top">
           <div className="xb-me">
             {p.art.icon ? <Img src={p.art.icon} className="xb-me-pic" /> : <Gamepad2 className="xb-me-pic ph" />}

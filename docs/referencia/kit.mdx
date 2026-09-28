@@ -15,6 +15,7 @@ import { visible, sort, recent, favorites, byGenre, search, inCollection, canUni
 import { clock } from "/_sdk/kit/clock.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints, glyph } from "/_sdk/kit/hints.js";
+import { createGuideView, createGuides, renderGuide, renderBlocks, GUIDE_CATEGORIES } from "/_sdk/kit/guides.js";
 ```
 
 * **`createFocus` + `bindNav`**: navegación espacial con mando. Marca lo navegable
@@ -35,6 +36,9 @@ import { hints, glyph } from "/_sdk/kit/hints.js";
 * **`keyed(contenedor, lista, clave, render)`**: reutiliza nodos al redibujar,
   así el foco no salta y va rápido con cientos de juegos.
 * **`createBackdrop`**: fondo con fundido entre imágenes y vídeo encima.
+* **`createGuideView`**: las guías de la comunidad de Steam de un juego, con lista,
+  lector y mando, listas para montar en tu tema (con `/_sdk/kit/guides.css`). Ver
+  [Guías de la comunidad](/referencia/guias).
 
 Esqueleto mínimo:
 

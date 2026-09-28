@@ -26,11 +26,6 @@ export function relative(ts?: number | null) {
 }
 
 export const SOURCE_LABEL: Record<string, string> = {
-  steam: "Steam",
-  epic: "Epic Games",
-  gog: "GOG",
-  ubisoft: "Ubisoft Connect",
-  ea: "EA app",
   folder: "Carpeta local",
   manual: "Manual",
   repack: "Repack",

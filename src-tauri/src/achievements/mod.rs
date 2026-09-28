@@ -71,7 +71,6 @@ pub struct AchSummary {
 pub struct NewUnlock {
     pub api_name: String,
     pub unlocked_at: i64,
-    pub source: String,
 }
 
 /// "ACH_FIRST_STEPS" → "First Steps" (cuando no hay esquema).
@@ -169,8 +168,7 @@ fn steam_user() -> SteamUser {
             return v.clone();
         }
     }
-    let v = crate::import::steam::steam_root()
-        .and_then(|r| crate::import::steam::active_user(&r).map(|(acc, _)| (r, acc)));
+    let v = steam_local::steam_root().and_then(|r| steam_local::active_user(&r).map(|(acc, _)| (r, acc)));
     *g = Some((Instant::now(), v.clone()));
     v
 }
@@ -215,19 +213,24 @@ fn install_scan(st: &AppState, g: &Game, max_age: Duration) -> emu::InstallScan 
     s
 }
 
+/// Appid de Steam del juego: manda el del emulador (el de los metadatos puede
+/// ser otra edición). Uno de una coincidencia dudosa ("review") no vale: saldrían
+/// los logros, las guías… de otro juego.
+fn appid_from(scan: &emu::InstallScan, g: &Game) -> Option<i64> {
+    scan.appid.or(g.steam_appid.filter(|_| g.meta_status != "review"))
+}
+
+/// Appid de Steam de un juego (logros, guías, perfil online). Usa la búsqueda
+/// en la carpeta del juego guardada (hasta una semana).
+pub fn appid_of(st: &AppState, g: &Game) -> Option<i64> {
+    appid_from(&install_scan(st, g, Duration::from_secs(7 * 86400)), g)
+}
+
 pub fn sources(st: &AppState, g: &Game, scan_age: Duration) -> Sources {
-    let is_steam = g.source == "steam";
-    let scan = if is_steam { Default::default() } else { install_scan(st, g, scan_age) };
-    // En juegos sueltos manda el appid del emulador (el de los metadatos puede
-    // ser otra edición); en Steam, el de la tienda. Uno de una coincidencia
-    // dudosa ("review") no vale: saldrían los logros de otro juego.
-    let appid = if is_steam {
-        g.steam_appid.or_else(|| g.source_id.parse().ok())
-    } else {
-        scan.appid.or(g.steam_appid.filter(|_| g.meta_status != "review"))
-    };
+    let scan = install_scan(st, g, scan_age);
+    let appid = appid_from(&scan, g);
     let mut emu_files = vec![];
-    if let (Some(a), false) = (appid, is_steam) {
+    if let Some(a) = appid {
         emu_files = emu::find_in_roots(a, &emu::roots(&st.settings.get().achievement_dirs));
         for f in &scan.files {
             if !emu_files.contains(f) {
@@ -309,7 +312,7 @@ fn store_unlocks(
         for (api, t, src) in unlocks {
             let t = if *t > 0 { *t } else { now };
             if ins.execute(params![game_id, api, t, src, profile])? == 1 {
-                out.push(NewUnlock { api_name: api.clone(), unlocked_at: t, source: src.to_string() });
+                out.push(NewUnlock { api_name: api.clone(), unlocked_at: t });
             }
         }
     }
@@ -549,31 +552,17 @@ pub async fn refresh(st: &Arc<AppState>, game_id: i64, profile: Option<i64>, sca
     Ok(new)
 }
 
-/// Al arrancar: juegos instalados y los de Steam con estadísticas locales.
+/// Al arrancar: todos los juegos que siguen en su sitio.
 pub async fn refresh_library(st: &Arc<AppState>) {
-    let steam = steam_user();
-    let ids: Vec<(i64, bool)> = st
+    let ids: Vec<i64> = st
         .db
         .with(|c| {
-            let mut q = c.prepare("SELECT id, installed, source, steam_appid FROM games WHERE missing = 0")?;
-            let rows = q.query_map([], |r| {
-                Ok((r.get::<_, i64>(0)?, r.get::<_, bool>(1)?, r.get::<_, String>(2)?, r.get::<_, Option<i64>>(3)?))
-            })?;
-            Ok(rows
-                .filter_map(Result::ok)
-                .filter(|(_, installed, source, appid)| {
-                    *installed
-                        || (source == "steam"
-                            && appid
-                                .zip(steam.as_ref())
-                                .map(|(a, (root, acc))| steam_local::user_stats_file(root, *acc, a).exists())
-                                .unwrap_or(false))
-                })
-                .map(|(id, installed, ..)| (id, installed))
-                .collect())
+            let mut q = c.prepare("SELECT id FROM games WHERE missing = 0")?;
+            let rows = q.query_map([], |r| r.get::<_, i64>(0))?;
+            Ok(rows.filter_map(Result::ok).collect())
         })
         .unwrap_or_default();
-    for (id, _) in ids {
+    for id in ids {
         if st.sessions.any() && st.saver_active.load(Ordering::Relaxed) {
             // Jugando en modo ahorro: no molestar.
             tokio::time::sleep(Duration::from_secs(30)).await;
@@ -618,11 +607,8 @@ pub fn watch(st: Arc<AppState>, game_id: i64, profile: i64, stop: Arc<AtomicBool
             match sync_with(&st, game_id, Some(profile), src) {
                 Ok(new) if !new.is_empty() => {
                     crate::events::library_changed(&st, vec![game_id]);
-                    let steam_notify = st.settings.get().overlay_steam_notify;
                     for n in new {
-                        if n.source != "steam" || steam_notify || g.source != "steam" {
-                            crate::overlay::notify_achievement(&st, game_id, &n);
-                        }
+                        crate::overlay::notify_achievement(&st, game_id, &n);
                     }
                 }
                 Ok(_) => {}
@@ -636,22 +622,20 @@ pub fn watch(st: Arc<AppState>, game_id: i64, profile: i64, stop: Arc<AtomicBool
                 }
                 std::thread::sleep(Duration::from_millis(250));
             }
-            if g.source != "steam" {
-                // Ficheros nuevos: en las carpetas de los emuladores cada vez
-                // (barato). La del juego solo se vuelve a recorrer (cada 5 min)
-                // mientras no se sepa dónde guarda los logros.
-                if src.emu_files.is_empty() && last_scan.elapsed() > Duration::from_secs(300) {
-                    src = sources(&st, &g, Duration::ZERO);
-                    last_scan = Instant::now();
-                } else {
-                    let mut files = emu::find_in_roots(appid, &roots);
-                    for f in &src.install_files {
-                        if !files.contains(f) {
-                            files.push(f.clone());
-                        }
+            // Ficheros nuevos: en las carpetas de los emuladores cada vez
+            // (barato). La del juego solo se vuelve a recorrer (cada 5 min)
+            // mientras no se sepa dónde guarda los logros.
+            if src.emu_files.is_empty() && last_scan.elapsed() > Duration::from_secs(300) {
+                src = sources(&st, &g, Duration::ZERO);
+                last_scan = Instant::now();
+            } else {
+                let mut files = emu::find_in_roots(appid, &roots);
+                for f in &src.install_files {
+                    if !files.contains(f) {
+                        files.push(f.clone());
                     }
-                    src.emu_files = files;
                 }
+                src.emu_files = files;
             }
             check(&src, &mut sig);
         }

@@ -5,7 +5,7 @@ mod discord;
 mod downloads;
 mod events;
 mod explore;
-mod import;
+mod guides;
 mod launcher;
 mod library;
 mod lifecycle;
@@ -137,8 +137,6 @@ pub fn run() {
             commands::add_folder,
             commands::remove_folder,
             commands::rescan,
-            commands::store_summary,
-            commands::import_stores,
             commands::refresh_metadata,
             commands::search_metadata,
             commands::apply_match,
@@ -190,6 +188,11 @@ pub fn run() {
             commands::explore_browse,
             commands::explore_genres,
             commands::explore_details,
+            commands::guides_list,
+            commands::guides_get,
+            commands::guides_shelf,
+            commands::guides_pin,
+            commands::guides_progress,
             commands::downloads_list,
             commands::downloads_defaults,
             commands::downloads_prepare,
@@ -282,7 +285,6 @@ pub fn run() {
                 downloads::startup(&st_bg).await;
                 let first_run_done = st_bg.settings.get().first_run_done;
                 if first_run_done {
-                    let _ = services::import_stores(&st_bg, None).await;
                     let _ = services::scan_all(&st_bg, true).await;
                 }
                 if let Ok(pending) = st_bg.db.with(|c| db::repo::games_by_status(c, &["pending"])) {

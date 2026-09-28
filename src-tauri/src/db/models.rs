@@ -19,7 +19,7 @@ pub struct LibraryFolder {
     pub game_count: i64,
 }
 
-/// Juego detectado por el escáner o un importador de tiendas.
+/// Juego detectado por el escáner, añadido a mano o instalado desde Descargas.
 #[derive(Debug, Clone, Default)]
 pub struct NewGame {
     pub title: String,
@@ -35,13 +35,6 @@ pub struct NewGame {
     pub engine: Option<String>,
     pub steam_appid: Option<i64>,
     pub exe_candidates: Vec<(String, f32)>,
-    /// Horas importadas de la tienda (segundos), si las hay.
-    pub imported_playtime: Option<i64>,
-    pub imported_last_played: Option<i64>,
-    /// Lo tienes en la tienda pero no está instalado.
-    pub owned_only: bool,
-    /// URI para instalarlo desde su tienda.
-    pub install_uri: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -80,7 +73,6 @@ pub struct Game {
     pub added_at: i64,
     pub updated_at: i64,
     pub installed: bool,
-    pub install_uri: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

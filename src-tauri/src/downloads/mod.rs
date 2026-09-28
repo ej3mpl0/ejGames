@@ -73,6 +73,9 @@ pub struct Downloads {
     pub live: Mutex<HashMap<i64, Live>>,
     /// Estado de "jugando" que vio el planificador por última vez.
     playing: AtomicBool,
+    /// Desde el overlay: seguir descargando en esta partida aunque el ajuste
+    /// diga que se pausen (se olvida al acabar de jugar).
+    pub allow_while_playing: AtomicBool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -314,6 +317,7 @@ pub async fn prepare_magnet(st: &Arc<AppState>, magnet: &str, title: &str) -> an
             capsule: None,
             capsule_big: None,
             library: None,
+            tags: vec![],
             status: Default::default(),
         },
         screenshots: vec![],

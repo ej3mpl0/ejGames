@@ -29,9 +29,34 @@ ejg.explore.enabled              // el usuario tiene Explorar activado
 ejg.explore.onEnabled((on) => …)
 await ejg.explore.home()         // { sections: [{ id: "today"|"week"|"month"|"latest", title, items }] }
 await ejg.explore.search("elden", 1)   // { query, items, page, pages, total }; sin texto: novedades
+await ejg.explore.genres()       // [{ id, name, group: "genre" | "view" | "setting" }]
+await ejg.explore.browse(filtros, 1)   // el catálogo entero con filtros (mismo formato que search)
 await ejg.explore.details(slug)  // ficha: screenshots [{thumb, full}], features, installSize, description
 ejg.explore.openPage(slug)       // abre la ficha en la web de la fuente
 ```
+
+## El catálogo con filtros
+
+`browse(filtros, página)` recorre todo el catálogo:
+
+```js
+await ejg.explore.browse({
+  query: "",                 // texto en el título
+  genres: [47, 59],          // hasta 4 ids de genres(); salen los que tienen todos
+  sort: "date",              // "date" (novedades) | "modified" (actualizados hace poco) | "title" (A-Z)
+  maxGb: 25,                 // tamaño máximo de la descarga (null: cualquiera)
+  hideOwned: true,           // sin los que ya están en la biblioteca o en descargas
+}, 1);
+```
+
+Con `maxGb` o `hideOwned` se filtra en el launcher, así que una respuesta puede leer
+varias páginas de la web: pide la siguiente con `page + 1` **de la respuesta** (no la
+tuya) y, si `filtered` es `true`, el `total` es una estimación.
+
+`genres()` da los géneros en español con su grupo: `genre` (géneros), `view`
+(perspectiva: primera persona, isométrico…) y `setting` (ambientación: fantasía,
+cyberpunk…). Cada `Repack` trae sus ids en `tags`, así que en una ficha puedes
+llevar al catálogo filtrado por sus géneros.
 
 Cada elemento (`Repack`) trae `title`, `version`, `cover` (portada vertical,
 miniatura), `coverFull`, `hero` (captura grande; puede faltar), `genres`,
@@ -90,6 +115,15 @@ pantalla), `repackAction` (qué botón toca: Descargar, Instalar, Jugar…),
 inglés: «Open world» → «Mundo abierto») y los formatos `bytes`, `speed`, `eta`,
 `percent` y `sizeText` («from 18 GB» → «desde 18 GB»). El tema Steam lo usa todo
 (`themes/steam/store.js`).
+
+Para el catálogo, `createExplore` tiene `loadGenres()`, `browse(cambios, espera)`
+(mezcla los cambios con los filtros que hay y vuelve a la primera página),
+`browseMore()`, `toggleGenre(id)` (`false` si ya hay cuatro), `clearFilters()` y
+`similar(repack)` (juegos parecidos: los que comparten sus dos primeros géneros), con
+el estado en `state.catalog` (`filters`, `items`, `page`, `pages`, `total`,
+`filtered`, `loading`, `error`) y `state.genres`. Además exporta `SORTS`, `SIZES`,
+`GENRE_GROUPS`, `MAX_GENRES`, `emptyFilters`, `filterCount` y `describeFilters`
+(«Rol · Mundo abierto · Hasta 25 GB»).
 
 Dentro del iframe no funcionan `confirm()`, `alert()` ni `window.open()`: pinta
 tus propios diálogos.

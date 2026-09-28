@@ -191,3 +191,20 @@ canvas { image-rendering: pixelated; }
 
 .s-downloading .d-st::before { font-size: 1.3em; line-height: 1; }
 @media (prefers-reduced-motion: reduce) { .s-arrow, .s-caret, .dots::after, .d-st, .d-st::before, .bar i, .st-ico, .cart-lbl::before { animation: none !important; } }
+
+/* ─── TODO: opciones de recreativa (GÉNERO ◀ ROL ▶) ─── */
+.s-opts { display: flex; flex-direction: column; margin: 0 0 14px; padding: 8px 0; border: 2px solid var(--dim); font-size: calc(var(--fs) * 0.78); }
+.s-opts[hidden] { display: none; }
+.s-opt { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 5px 12px 5px 34px; }
+.s-opt-k { color: var(--dim); }
+.s-opt-v { display: flex; align-items: center; gap: 12px; }
+.s-opt-v b { font-weight: 400; color: var(--hi2); min-width: 10ch; text-align: center; }
+.s-opt-v i { font-style: normal; color: var(--dim); visibility: hidden; }
+.s-opt.is-focused, .s-opt:hover { background: var(--hi2); text-shadow: none; }
+.s-opt.is-focused .s-opt-k, .s-opt.is-focused .s-opt-v b, .s-opt:hover .s-opt-k, .s-opt:hover .s-opt-v b { color: var(--bg); }
+.s-opt.is-focused .s-opt-v i { visibility: visible; color: var(--bg); animation: blink 0.8s steps(1) infinite; }
+.s-opt.is-focused::before { content: "▶"; position: absolute; left: 10px; color: var(--bg); animation: blink 0.8s steps(1) infinite; }
+.rpg-genres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 12px; }
+.rpg-genres .rpg-btn { position: relative; text-align: left; padding: 2px 8px 2px 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rpg-genres .rpg-btn.on { color: var(--hi); }
+.f-similar { border: 0; padding: 0; }

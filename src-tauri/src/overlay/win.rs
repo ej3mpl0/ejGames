@@ -188,6 +188,8 @@ enum Wave {
     Bell,
     Triangle,
     Square,
+    /// Ruido blanco (el obturador de las capturas).
+    Noise,
 }
 
 const fn v(at: f32, dur: f32, f0: f32, wave: Wave, gain: f32, decay: f32) -> Voice {
@@ -270,6 +272,10 @@ fn render(voices: &[Voice]) -> Vec<f32> {
                         -0.6
                     }
                 }
+                Wave::Noise => {
+                    let n = ((s0 + i) as u32).wrapping_mul(1_103_515_245).wrapping_add(12_345).rotate_right(13);
+                    (n & 0xffff) as f32 / 32_768.0 - 1.0
+                }
             };
             samples[s0 + i] += x.gain * env * w;
         }
@@ -309,6 +315,38 @@ fn chime(style: &str, rare: bool) -> &'static [u8] {
     cache.entry((style.to_string(), rare)).or_insert_with(|| Box::leak(wav(&render(&voices(style, rare))).into_boxed_slice()))
 }
 
+/// Obturador de las capturas: dos chasquidos de ruido y un golpe grave.
+pub fn play_shutter() {
+    static WAV: OnceLock<Vec<u8>> = OnceLock::new();
+    let wav = WAV.get_or_init(|| {
+        wav(&render(&[
+            v(0.0, 0.035, 0.0, Wave::Noise, 1.0, 0.008),
+            v(0.0, 0.07, 170.0, Wave::Soft, 0.35, 0.02),
+            v(0.07, 0.05, 0.0, Wave::Noise, 0.7, 0.012),
+        ]))
+    });
+    unsafe {
+        let _ = PlaySoundW(PCWSTR(wav.as_ptr() as *const u16), None, SND_MEMORY | SND_ASYNC | SND_NODEFAULT);
+    }
+}
+
+/// Termina estos procesos. Devuelve cuántos se cerraron.
+pub fn terminate(pids: &[u32]) -> usize {
+    use windows::Win32::Foundation::CloseHandle;
+    use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
+    let mut done = 0;
+    for pid in pids {
+        unsafe {
+            let Ok(h) = OpenProcess(PROCESS_TERMINATE, false, *pid) else { continue };
+            if TerminateProcess(h, 1).is_ok() {
+                done += 1;
+            }
+            let _ = CloseHandle(h);
+        }
+    }
+    done
+}
+
 pub fn play_chime(style: &str, rare: bool) {
     let wav = chime(style, rare);
     unsafe {
@@ -330,6 +368,8 @@ pub fn covers(hwnd: isize, r: Rect) -> bool {
 mod tests {
     #[test]
     fn chimes_are_valid_wavs() {
+        let shutter = super::wav(&super::render(&[super::v(0.0, 0.035, 0.0, super::Wave::Noise, 1.0, 0.008)]));
+        assert_eq!(&shutter[..4], b"RIFF");
         for style in ["steam", "playstation", "xbox", "switch", "cinema", "retro", "ejgames"] {
             for rare in [false, true] {
                 let w = super::chime(style, rare);

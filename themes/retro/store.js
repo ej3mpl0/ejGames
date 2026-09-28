@@ -1,6 +1,7 @@
-// SHOP y DOWNLOADS del tema Retro: menú de cartuchos con cursor ▶, ficha a
-// pantalla completa, diálogo de RPG y cola con barras de bloques. La lógica
-// común está en /_sdk/kit/store.js.
+// SHOP y DOWNLOADS del tema Retro: menú de cartuchos con cursor ▶, «TODO» (el
+// catálogo entero con opciones de recreativa: GÉNERO ◀ ROL ▶), ficha a
+// pantalla completa con «MÁS COMO ESTE», diálogo de RPG y cola con barras de
+// bloques. La lógica común está en /_sdk/kit/store.js.
 
 import { h, keyed } from "/_sdk/kit/dom.js";
 import { date } from "/_sdk/kit/format.js";
@@ -19,6 +20,9 @@ import {
   repackAction,
   askQuery,
   genreLabel,
+  emptyFilters,
+  SORTS,
+  SIZES,
 } from "/_sdk/kit/store.js";
 import { pixelate } from "./pixel.js";
 
@@ -27,6 +31,7 @@ const SECTIONS = [
   ["week", "SEMANA", "POPULARES DE LA SEMANA", "★ TOP SEMANA"],
   ["month", "MES", "POPULARES DEL MES", "★ TOP MES"],
   ["latest", "NUEVOS", "NOVEDADES", "NEW!"],
+  ["all", "TODO", "TODOS LOS JUEGOS", "CATÁLOGO"],
   ["search", "BUSCAR", "BUSCAR", "RESULTADO"],
 ];
 const STATE = {
@@ -58,7 +63,9 @@ function stateText(d) {
 
 export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, tab, goTab, onChange }) {
   const store = createExplore(ejg, () => {
-    if (tab() === "shop") fillList();
+    if (tab() !== "shop") return;
+    fillOptions();
+    fillList();
   });
   const view = { sec: "today", ficha: null, detail: null, error: "", back: null };
   const latest = { items: null, page: 1, pages: Infinity, loading: false, error: "" };
@@ -101,6 +108,20 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
   // ─────────────── SHOP ───────────────
   function sectionData() {
     const s = store.state;
+    if (view.sec === "all") {
+      const c = s.catalog;
+      const g = c.filters.genres.length ? c.filters.genres.map(genreName).join(" + ") : "";
+      return {
+        items: c.items,
+        loading: c.loading,
+        error: c.error,
+        more: c.page > 0 && c.page < c.pages,
+        title: g ? up(g) : "TODOS LOS JUEGOS",
+        total: c.total,
+        approx: c.filtered && c.page < c.pages,
+        empty: "NINGÚN CARTUCHO CON ESAS OPCIONES",
+      };
+    }
     if (view.sec === "search") {
       return {
         items: s.results,
@@ -150,7 +171,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     for (const r of d.items) bySlug.set(r.slug, r);
     ui.head.replaceChildren(
       h("span", null, d.title),
-      h("span", null, d.loading && !d.items.length ? "CARGANDO…" : `${d.total || d.items.length} JUEGOS`),
+      h("span", null, d.loading && !d.items.length ? "CARGANDO…" : `${d.approx ? "~" : ""}${d.total || d.items.length} JUEGOS`),
     );
     keyed(ui.list, d.items, (r) => r.slug, (r, prev) => {
       if (prev) {
@@ -198,6 +219,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
   async function more(had) {
     moreAt = had;
     if (view.sec === "search") return store.more();
+    if (view.sec === "all") return store.browseMore();
     if (latest.loading) return;
     latest.loading = true;
     latest.error = "";
@@ -242,12 +264,87 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     ticker([r.fullTitle, r.companies, r.languages].filter(Boolean).join(" · "));
   }
 
+  // ─────────────── TODO: el catálogo con opciones de recreativa ───────────────
+  const genreName = (id) => store.state.genres.find((g) => g.id === id)?.name || "";
+  const cyc = (list, i, d) => list[(i + d + list.length) % list.length];
+
+  /** Opciones: [clave, nombre, valor, cambiar(d)] (izquierda/derecha cambian el valor). */
+  function options() {
+    const f = store.state.catalog.filters;
+    const genres = [null, ...store.state.genres.map((g) => g.id)];
+    const g0 = f.genres[0] ?? null;
+    const sortI = Math.max(0, SORTS.findIndex((o) => o.id === f.sort));
+    const sizeI = Math.max(0, SIZES.findIndex((o) => o.gb === (f.maxGb || null)));
+    return [
+      ["genre", "GÉNERO", g0 ? genreName(g0) : "TODOS", (d) => store.browse({ genres: [cyc(genres, genres.indexOf(g0), d)].filter((x) => x != null) })],
+      ["sort", "ORDEN", SORTS[sortI].label, (d) => store.browse({ sort: cyc(SORTS, sortI, d).id })],
+      ["size", "TAMAÑO", SIZES[sizeI].gb ? SIZES[sizeI].label.replace(/^Hasta /, "≤ ") : "CUALQUIERA", (d) => store.browse({ maxGb: cyc(SIZES, sizeI, d).gb })],
+      ["owned", "OCULTAR LOS MÍOS", f.hideOwned ? "SÍ" : "NO", () => store.browse({ hideOwned: !f.hideOwned })],
+    ];
+  }
+
+  function fillOptions() {
+    if (!ui) return;
+    ui.opts.hidden = view.sec !== "all";
+    if (view.sec !== "all") return;
+    const had = focus.current && ui.opts.contains(focus.current) ? focus.current.dataset.opt : null;
+    ui.opts.replaceChildren(
+      ...options().map(([k, label, value, change]) =>
+        h(
+          "button",
+          { class: "s-opt", "data-focus": "", "data-opt": k, onclick: () => (k === "genre" ? pickGenre() : change(1)) },
+          h("span", { class: "s-opt-k" }, label),
+          h("span", { class: "s-opt-v" }, h("i", null, "◀"), h("b", null, up(value)), h("i", null, "▶")),
+        ),
+      ),
+    );
+    ui.opts.__change = (k, d) => options().find((o) => o[0] === k)?.[3](d);
+    if (had) focus.focus(ui.opts.querySelector(`[data-opt="${had}"]`), { silent: true, noScroll: true });
+  }
+
+  /** A sobre GÉNERO: la lista entera en una ventana de RPG. */
+  function pickGenre() {
+    const cur = store.state.catalog.filters.genres[0] ?? null;
+    const prev = focus.current;
+    const done = (id) => {
+      w.layer.remove();
+      askOpen = null;
+      if (id !== undefined) store.browse({ genres: id == null ? [] : [id] });
+      if (prev?.isConnected) focus.focus(prev, { silent: true });
+      refreshHints();
+    };
+    const btn = (id, label) => h("button", { class: "rpg-btn" + (id === cur ? " on" : ""), "data-focus": "", onclick: () => done(id) }, up(label));
+    const w = rpgWindow("GÉNERO", h("div", { class: "rpg-genres" }, btn(null, "Todos"), ...store.state.genres.map((g) => btn(g.id, g.name))));
+    askOpen = () => done(undefined);
+    focus.focus(w.body.querySelector(".rpg-btn.on") || w.body.querySelector("[data-focus]"), { instant: true, silent: true });
+    ejg.sound.play("open");
+    refreshHints();
+  }
+
+  /** TODO con estas opciones (las demás, de serie). */
+  function openAll(filters = null) {
+    store.loadGenres();
+    const c = store.state.catalog;
+    if (filters) store.browse({ ...emptyFilters(), ...filters });
+    else if (!c.page && !c.loading) store.browse({});
+    if (view.ficha) closeFicha();
+    if (tab() !== "shop") goTab("shop");
+    setSection("all");
+    focus.focus(ui.opts.querySelector("[data-focus]"), { instant: true });
+  }
+
   function setSection(id, { toList = false } = {}) {
     view.sec = id;
     moreAt = -1;
+    if (id === "all") {
+      store.loadGenres();
+      const c = store.state.catalog;
+      if (!c.page && !c.loading) store.browse({});
+    }
     if (!ui) return;
     ui.secs.querySelectorAll(".s-sec").forEach((b) => b.classList.toggle("on", b.dataset.sec === id));
     ui.search.hidden = id !== "search";
+    fillOptions();
     ui.list.replaceChildren();
     ui.list.scrollTop = 0;
     fillList();
@@ -308,6 +405,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
       },
     });
     const search = h("label", { class: "s-search", hidden: view.sec !== "search" }, h("span", null, "BUSCAR>"), input, h("span", { class: "s-caret" }, "█"));
+    const opts = h("div", { class: "s-opts", "data-focus-group": "opts", hidden: view.sec !== "all" });
     const head = h("div", { class: "s-head" });
     const list = h("ol", { class: "list s-list", "data-focus-group": "shop-list" });
     const hero = h("canvas", { width: 16, height: 9 });
@@ -322,8 +420,9 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
       h("div", { class: "s-mid" }, h("div", { class: "art s-art" }, cover), info),
       h("div", { class: "s-none" }, h("span", { class: "blink-slow" }, "INSERT CARTRIDGE")),
     );
-    ui = { secs, search, input, head, list, hero, heroBox, badge, cover, info, card };
-    root.replaceChildren(h("div", { class: "shop" }, h("div", { class: "s-left" }, secs, search, head, list), card));
+    ui = { secs, search, opts, input, head, list, hero, heroBox, badge, cover, info, card };
+    root.replaceChildren(h("div", { class: "shop" }, h("div", { class: "s-left" }, secs, search, opts, head, list), card));
+    fillOptions();
     fillList();
     const first = list.querySelector("[data-focus]") || secs.querySelector(".on");
     if (first) focus.focus(first, { instant: true, silent: true });
@@ -456,6 +555,11 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
           btn,
           act.hint ? h("p", { class: "f-hint" }, up(act.hint)) : null,
           d.url ? h("button", { class: "pbtn wide", "data-focus": "", onclick: () => ejg.explore.openPage(d.slug) }, "VER EN FITGIRL ↗") : null,
+          ...(d.tags || [])
+            .map((t) => store.state.genres.find((g) => g.id === t && g.group === "genre"))
+            .filter(Boolean)
+            .slice(0, 3)
+            .map((g) => h("button", { class: "pbtn wide", "data-focus": "", onclick: () => openAll({ genres: [g.id] }) }, `MÁS DE ${up(g.name)} ▶`)),
         ),
         h("div", { class: "f-data" }, h("h3", { class: "f-h" }, "▶ DATOS"), table),
         shots.length ? h("div", { class: "f-shots" }, h("h3", { class: "f-h" }, `▶ CAPTURAS (${shots.length})`), h("div", { class: "f-screen" }, screenC), thumbs) : null,
@@ -465,6 +569,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
         { class: "f-bottom" },
         d.features.length ? h("div", null, h("h3", { class: "f-h" }, "▶ CARACTERÍSTICAS"), h("ul", { class: "f-feat" }, ...d.features.map((f) => h("li", null, f)))) : null,
         d.description ? h("div", null, h("h3", { class: "f-h" }, "▶ DESCRIPCIÓN"), desc) : null,
+        similarList(d),
       ),
     );
     requestAnimationFrame(() => {
@@ -475,6 +580,26 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     focus.focus(btn, { instant: true, silent: true });
     ticker([d.fullTitle, d.companies, d.languages].filter(Boolean).join(" · "));
     shopHints();
+  }
+
+  /** «MÁS COMO ESTE»: una lista de cartuchos como la de la tienda. */
+  function similarList(d) {
+    const list = h("ol", { class: "list f-similar", "data-focus-group": "similar" }, h("li", { class: "s-msg" }, "CARGANDO", h("span", { class: "dots" })));
+    const box = h("div", null, h("h3", { class: "f-h" }, "▶ MÁS COMO ESTE"), list);
+    store.similar(d, 10).then((items) => {
+      if (view.ficha !== d.slug) return;
+      if (!items.length) return box.remove();
+      list.replaceChildren(
+        ...items.map((r) =>
+          h(
+            "li",
+            null,
+            h("button", { class: "item s-item", "data-focus": "", onclick: () => openRepack(r.slug) }, h("span", { class: "s-t" }, r.title), h("span", { class: "s-size" }, shortSize(r.repackSize))),
+          ),
+        ),
+      );
+    });
+    return box;
   }
 
   // ─────────────── diálogo de RPG ───────────────
@@ -927,6 +1052,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
   return {
     render() {
       if (view.ficha) closeFicha();
+      store.loadGenres();
       if (tab() === "downloads") {
         ui = null;
         paintDownloads();
@@ -946,6 +1072,11 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     nav(dir) {
       if (tab() !== "shop" || view.ficha || dialog || askOpen) return false;
       const c = focus.current;
+      if (c?.dataset.opt && ui?.opts.__change) {
+        ejg.sound.play("move");
+        ui.opts.__change(c.dataset.opt, dir === "left" ? -1 : 1);
+        return true;
+      }
       if (!c || !(c.classList.contains("s-item") || c.classList.contains("s-more"))) return false;
       stepSection(dir === "left" ? -1 : 1);
       return true;

@@ -45,6 +45,9 @@ pub struct Achievement {
     pub hidden: bool,
     pub global_pct: Option<f64>,
     pub unlocked_at: Option<i64>,
+    /// Puntos al estilo Xbox (ver `score`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Default)]
@@ -363,6 +366,7 @@ pub fn list(c: &Connection, game_id: i64) -> rusqlite::Result<AchList> {
                     hidden,
                     global_pct: r.get(7)?,
                     unlocked_at,
+                    score: None,
                 },
             ))
         })?
@@ -389,7 +393,12 @@ pub fn list(c: &Connection, game_id: i64) -> rusqlite::Result<AchList> {
             hidden: false,
             global_pct: None,
             unlocked_at: Some(t),
+            score: None,
         });
+    }
+    let defs: Vec<(String, Option<f64>)> = items.iter().map(|i| (i.api_name.clone(), i.global_pct)).collect();
+    for it in items.iter_mut() {
+        it.score = score_of(&defs, &it.api_name);
     }
     let unlocked = items.iter().filter(|i| i.unlocked_at.is_some()).count() as i64;
     Ok(AchList { game_id, appid, total: items.len() as i64, unlocked, items })

@@ -47,6 +47,30 @@ tira.addEventListener("click", () => ejg.downloads.open("downloads"));
 `downloadLabel(d)` da un texto corto para cualquier estado («En pausa mientras
 juegas», «Listo para instalar», «Instalando…»).
 
+## Descubrir juegos
+
+`ejg.explore.browse()` da el catálogo entero con filtros (géneros, orden, tamaño y
+«ocultar los que ya tengo») y `ejg.explore.genres()`, los géneros en español. Con el
+kit es casi gratis:
+
+```js
+import { createExplore, SORTS } from "/_sdk/kit/store.js";
+
+const tienda = createExplore(ejg, pintar);
+tienda.loadGenres();
+tienda.browse({ genres: [47], sort: "date" }); // Rol, lo último primero
+// Más al llegar abajo:
+lista.addEventListener("scroll", () => lista.scrollTop + lista.clientHeight > lista.scrollHeight - 400 && tienda.browseMore());
+
+function pintar(s) {
+  const c = s.catalog; // { filters, items, total, filtered, loading, error, … }
+  // …pinta c.items y unos botones con s.genres que llamen a tienda.toggleGenre(id)
+}
+```
+
+En una ficha, `tienda.similar(repack)` da juegos parecidos para una fila «Más como
+este».
+
 ## Tu propia tienda
 
 Si quieres que la tienda y la cola tengan el aspecto de tu tema, declara en

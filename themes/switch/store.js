@@ -1,6 +1,8 @@
 // Nintendo eShop y Gestión de descargas del tema Switch: cabecera naranja con
-// menú lateral y mosaicos, ficha, diálogos de sistema y la lista de descargas
-// con su panel de opciones. La lógica común está en /_sdk/kit/store.js.
+// menú lateral y mosaicos, «Explorar» (todo el catálogo con sus filtros en
+// filas de ajustes), ficha con «Más como este», diálogos de sistema y la lista
+// de descargas con su panel de opciones. La lógica común está en
+// /_sdk/kit/store.js.
 
 import { h, img, keyed, debounce, hueOf } from "/_sdk/kit/dom.js";
 import { date } from "/_sdk/kit/format.js";
@@ -18,6 +20,12 @@ import {
   repackAction,
   askQuery,
   genreLabel,
+  emptyFilters,
+  filterCount,
+  SORTS,
+  SIZES,
+  GENRE_GROUPS,
+  MAX_GENRES,
 } from "/_sdk/kit/store.js";
 
 export const I = {
@@ -35,7 +43,25 @@ export const I = {
   alert: '<svg viewBox="0 0 24 24"><path d="M12 7.5v5.5m0 3.5h.01"/></svg>',
   check: '<svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
   plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  grid: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>',
+  chev: '<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>',
 };
+
+/** Géneros de la portada: id y color de su tarjeta (los de la eShop son vivos). */
+const GENRE_CARDS = [
+  [55, "#e60012"],
+  [47, "#8e44d8"],
+  [51, "#ff7d00"],
+  [59, "#1fa84f"],
+  [84, "#00a3d9"],
+  [95, "#f2b705"],
+  [66, "#2f6fdb"],
+  [70, "#e5007e"],
+  [71, "#00a39a"],
+  [54, "#4a4a55"],
+  [65, "#7a9c16"],
+  [214, "#5b3fd1"],
+];
 const icon = (n, cls = "ico") => h("span", { class: cls, html: I[n] });
 
 // Estados de una descarga que aún no ha terminado (todo menos «instalado»).
@@ -50,19 +76,20 @@ export function stateText(d) {
 
 export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, onChange, onHints }) {
   const store = createExplore(ejg, onStore);
-  // view.name: front | popular | latest | search | detail
+  // view.name: front | popular | catalog | search | detail
   const view = { name: "front", prev: "front", slug: null, detail: null, detailError: "", scroll: 0, auto: false };
   let dialog = null; // diálogo de descarga
   let askOpen = null; // pregunta abierta (cierra con null)
   let panel = null; // panel de opciones de una descarga
   let dlBack = "home"; // a dónde vuelve «Gestión de descargas»
   let dlFrom = null;
+  let picker = null; // selector de un filtro de «Explorar»
 
   // ─────────────── esqueleto de la eShop ───────────────
   const MENU = [
     ["search", "Buscar", "search"],
     ["front", "Destacados", "star"],
-    ["latest", "Novedades", "spark"],
+    ["catalog", "Explorar", "grid"],
     ["popular", "Populares", "trend"],
     ["downloads", "Descargas", "down"],
   ];
@@ -149,7 +176,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
   function menu(id) {
     if (id === "downloads") return openDownloads(null, "shop");
     if (id === "search") return startSearch();
-    if (id === "latest") return browseLatest(1);
+    if (id === "catalog") return openCatalog();
     view.name = id;
     paint();
     if (!focus.first(mainEl)) view.auto = true;
@@ -157,7 +184,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
 
   /** LB/RB: sección anterior/siguiente del menú lateral. */
   function cycle(d) {
-    const order = ["front", "latest", "popular"];
+    const order = ["front", "catalog", "popular"];
     const i = order.indexOf(view.name);
     menu(order[(Math.max(0, i) + d + order.length) % order.length]);
   }
@@ -171,6 +198,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     const out = [];
     const top = ((byId.today || byId.week)?.items || []).filter((r) => r.hero).slice(0, 8);
     if (top.length) out.push(section("Destacados", h("div", { class: "es-feats", "data-focus-group": "feat" }, ...top.map(feature))));
+    if (s.genres.length) out.push(section("Buscar por género", genreCards(), pill("Ver todo", "", () => openCatalog({}), "all-genres")));
     for (const id of ["week", "month"]) {
       const sec = byId[id];
       if (!sec?.items.length) continue;
@@ -181,7 +209,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     if (byId.latest?.items.length) {
       const row = h("div", { class: "es-row", "data-focus-group": "row-latest" });
       tiles(row, byId.latest.items.slice(0, 14));
-      row.append(h("button", { class: "es-tile es-moretile", "data-focus": "", onclick: () => browseLatest(1) }, h("div", { class: "es-art" }, icon("plus"), h("span", null, "Ver más")), h("b", { class: "es-name" }, "Todas las novedades")));
+      row.append(h("button", { class: "es-tile es-moretile", "data-focus": "", onclick: () => openCatalog({ sort: "date" }) }, h("div", { class: "es-art" }, icon("plus"), h("span", null, "Ver más")), h("b", { class: "es-name" }, "Todas las novedades")));
       out.push(section("Novedades", row));
     }
     return h("div", { class: "es-page" }, ...out);
@@ -225,43 +253,134 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     return box;
   }
 
-  // «Novedades»: la búsqueda sin texto devuelve lo último publicado.
-  let latest = null;
-  let latestBox = null;
-  async function browseLatest(page = 1) {
-    view.name = "latest";
-    if (page === 1) {
-      latest = null;
-      paint();
-      view.auto = true;
-    } else {
-      latest = { ...latest, busy: true };
-      fillLatest();
+  // ─────────────── explorar: todo el catálogo ───────────────
+  const genreName = (id) => store.state.genres.find((g) => g.id === id)?.name || "";
+
+  function genreCards() {
+    const row = h("div", { class: "es-row es-genres", "data-focus-group": "row-genres" });
+    for (const [id, color] of GENRE_CARDS) {
+      const name = genreName(id);
+      if (name) row.append(h("button", { class: "es-genre", "data-focus": "", "data-key": `g-${id}`, style: `--c: ${color}`, onclick: () => openCatalog({ genres: [id] }) }, h("b", null, name)));
     }
-    try {
-      const r = await ejg.explore.search("", page);
-      latest = page > 1 && latest ? { ...r, items: latest.items.concat(r.items) } : r;
-    } catch (e) {
-      latest = { items: latest?.items || [], page, pages: page, error: e.message || String(e) };
-    }
-    if (view.name !== "latest" || where() !== "shop") return;
-    fillLatest();
-    if (view.auto && !mainEl.contains(focus.current)) focus.first(mainEl);
-    view.auto = false;
+    return row;
   }
-  function latestPage() {
-    latestBox = resultsBox();
-    const count = h("span", { class: "es-total" });
-    latestBox.count = count;
-    const page = h("div", { class: "es-page" }, section("Novedades", latestBox, count));
-    fillLatest();
+
+  /** «Explorar». `filters`: empezar con estos (los demás, vacíos). */
+  function openCatalog(filters = null) {
+    if (where() !== "shop") show("shop");
+    const c = store.state.catalog;
+    store.loadGenres();
+    if (filters) store.browse({ ...emptyFilters(), ...filters });
+    else if (!c.page && !c.loading) store.browse({});
+    view.name = "catalog";
+    paint();
+    mainEl.scrollTop = 0;
+    focus.focus(mainEl.querySelector('[data-key="f-sort"]'), { silent: true });
+  }
+
+  let catBox = null;
+  let catRows = null;
+  function catalogPage() {
+    catBox = resultsBox();
+    catBox.count = h("span", { class: "es-total" });
+    catRows = h("div", { class: "es-set", "data-focus-group": "filters" });
+    const page = h("div", { class: "es-page" }, section("Explorar", catRows), section("Programas", catBox, catBox.count));
+    fillCatalog();
     return page;
   }
-  function fillLatest() {
-    if (!latestBox) return;
-    const l = latest || { items: [], busy: true };
-    latestBox.fill({ items: l.items, busy: !latest || l.busy, error: l.error, hasMore: l.page < l.pages, onMore: () => browseLatest(l.page + 1), none: "No hay novedades." });
-    latestBox.count.textContent = l.total ? `${l.total} programas` : "";
+
+  /** Filtros como filas de la configuración de la consola: nombre a la izquierda y valor a la derecha. */
+  function fillCatalog() {
+    if (!catBox) return;
+    const c = store.state.catalog;
+    const f = c.filters;
+    const key = focus.current && catRows.contains(focus.current) ? focus.current.dataset.key : null;
+    const row = (k, label, value, fn, extra) =>
+      h("button", { class: "es-setrow", "data-focus": "", "data-key": k, onclick: fn }, h("span", null, label), h("b", null, value), extra || icon("chev"));
+    const toggle = h("i", { class: "sw-toggle" + (f.hideOwned ? " on" : "") });
+    catRows.replaceChildren(
+      row("f-sort", "Ordenar", SORTS.find((o) => o.id === f.sort)?.label || "", () => openPicker("sort")),
+      row("f-genre", "Género", f.genres.length ? f.genres.map(genreName).join(", ") : "Todos", () => openPicker("genre")),
+      row("f-size", "Tamaño de la descarga", SIZES.find((o) => o.gb === (f.maxGb || null))?.label || "", () => openPicker("size")),
+      row("f-owned", "Ocultar los que ya tengo", f.hideOwned ? "Sí" : "No", () => store.browse({ hideOwned: !f.hideOwned }), toggle),
+      filterCount(f) ? h("div", { class: "es-set-foot" }, pill("Quitar los filtros", "", () => store.clearFilters(), "f-clear")) : null,
+    );
+    if (key) {
+      const el = catRows.querySelector(`[data-key="${key}"]`) || catRows.querySelector("[data-focus]");
+      if (el && el !== focus.current) focus.focus(el, { silent: true, noScroll: true });
+    }
+    catBox.fill({
+      items: c.items,
+      busy: c.loading,
+      error: c.error,
+      hasMore: c.page > 0 && c.page < c.pages,
+      onMore: () => store.browseMore(),
+      none: "No se ha encontrado ningún programa con estos filtros.",
+    });
+    catBox.count.textContent = c.loading && !c.items.length ? "" : `${c.filtered && c.page < c.pages ? "unos " : ""}${c.total.toLocaleString("es")} programas`;
+    fillPicker();
+  }
+
+  // Más al llegar abajo (rueda o ratón).
+  mainEl.addEventListener(
+    "scroll",
+    () => {
+      if (view.name === "catalog" && mainEl.scrollTop + mainEl.clientHeight > mainEl.scrollHeight - 700) store.browseMore();
+    },
+    { passive: true },
+  );
+
+  /** Selector de un filtro: el diálogo de sistema con la lista de opciones. */
+  function openPicker(kind) {
+    const list = h("div", { class: "dd-chks one", "data-focus-group": "picker" });
+    const title = { sort: "Ordenar", genre: `Género (hasta ${MAX_GENRES})`, size: "Tamaño de la descarga" }[kind];
+    const ok = h("button", { class: "sw-btn", "data-focus": "", onclick: () => closePicker() }, "Aceptar");
+    const layer = h("div", { class: "sw-layer", "data-focus-trap": "" }, h("div", { class: "sw-dlg" }, h("div", { class: "sw-dlg-body" }, h("h2", { class: "sw-dlg-h" }, title), list), h("div", { class: "sw-dlg-foot" }, ok)));
+    document.body.append(layer);
+    picker = { kind, layer, list, prev: focus.current };
+    fillPicker();
+    focus.focus(list.querySelector(".dd-chk.on") || list.querySelector("[data-focus]"), { instant: true, silent: true });
+    ejg.sound.play("open");
+    hintsChanged();
+  }
+
+  function fillPicker() {
+    if (!picker) return;
+    const f = store.state.catalog.filters;
+    const key = focus.current && picker.list.contains(focus.current) ? focus.current.dataset.key : null;
+    const opt = (k, label, on, fn, radio) =>
+      h("button", { class: "dd-chk" + (radio ? " radio" : "") + (on ? " on" : ""), "data-focus": "", "data-key": k, onclick: fn }, h("span", null, label), h("i", { html: I.check }));
+    let items;
+    if (picker.kind === "sort") items = SORTS.map((o) => opt(`p-${o.id}`, o.label, f.sort === o.id, () => (store.browse({ sort: o.id }), closePicker()), true));
+    else if (picker.kind === "size") items = SIZES.map((o) => opt(`p-${o.gb ?? 0}`, o.label, (f.maxGb || null) === o.gb, () => (store.browse({ maxGb: o.gb }), closePicker()), true));
+    else
+      items = GENRE_GROUPS.flatMap((grp) => {
+        const list = store.state.genres.filter((g) => g.group === grp.id);
+        return [
+          h("h4", { class: "dd-sub" }, grp.label),
+          ...list.map((g) =>
+            opt(`p-g${g.id}`, g.name, f.genres.includes(g.id), () => {
+              if (!store.toggleGenre(g.id)) ejg.ui.toast(`Como mucho ${MAX_GENRES} géneros a la vez`, "info");
+            }),
+          ),
+        ];
+      });
+    picker.list.replaceChildren(...items);
+    if (key) {
+      const el = picker.list.querySelector(`[data-key="${key}"]`);
+      if (el && el !== focus.current) focus.focus(el, { silent: true, noScroll: true });
+    }
+  }
+
+  function closePicker() {
+    if (!picker) return false;
+    const { layer, kind } = picker;
+    layer.remove();
+    picker = null;
+    const el = mainEl.querySelector(`[data-key="f-${kind}"]`);
+    if (el) focus.focus(el, { silent: true, noScroll: true });
+    hintsChanged();
+    return true;
   }
 
   // ─────────────── búsqueda ───────────────
@@ -418,7 +537,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
           { class: "fi-side" },
           h("h1", null, d.title),
           d.companies ? h("div", { class: "fi-pub" }, d.companies) : null,
-          d.genres.length ? h("div", { class: "fi-chips" }, ...d.genres.slice(0, 5).map((g) => h("span", null, genreLabel(g)))) : null,
+          chips(d),
           facts.length ? h("div", { class: "fi-facts" }, ...facts.map(([k, v]) => h("div", null, h("span", null, k), h("b", null, v)))) : null,
           h(
             "div",
@@ -442,7 +561,33 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
         ),
         h("div", { class: "fi-card", "data-focus": "" }, h("h3", null, "Información"), ...info.map(([k, v]) => h("div", { class: "fi-row" }, h("span", null, k), h("b", null, v)))),
       ),
+      similarSec(d),
     );
+  }
+
+  /** Géneros de la ficha: los conocidos llevan a «Explorar» filtrado por ellos. */
+  function chips(d) {
+    const known = (d.tags || []).map((t) => store.state.genres.find((g) => g.id === t)).filter(Boolean);
+    if (known.length) {
+      return h(
+        "div",
+        { class: "fi-chips", "data-focus-group": "fi-chips" },
+        ...known.slice(0, 5).map((g) => h("button", { class: "fi-chip", "data-focus": "", "data-key": `fg-${g.id}`, onclick: () => openCatalog({ genres: [g.id] }) }, g.name)),
+      );
+    }
+    return d.genres.length ? h("div", { class: "fi-chips" }, ...d.genres.slice(0, 5).map((g) => h("span", null, genreLabel(g)))) : null;
+  }
+
+  function similarSec(d) {
+    const row = h("div", { class: "es-row", "data-focus-group": "row-similar" }, spinner());
+    const sec = h("div", { class: "fi-similar" }, section("Más como este", row));
+    store.similar(d, 14).then((list) => {
+      if (view.slug !== d.slug) return;
+      if (!list.length) return sec.remove();
+      row.replaceChildren();
+      tiles(row, list);
+    });
+    return sec;
   }
 
   // ─────────────── diálogos de sistema ───────────────
@@ -843,6 +988,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
   }
 
   function closeAll() {
+    closePicker();
     askOpen?.();
     closeDialog();
     closePanel();
@@ -901,6 +1047,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
   function onStore() {
     if (where() !== "shop") return;
     if (view.name === "search") return fillResults();
+    if (view.name === "catalog") return fillCatalog();
     if (view.name === "front" || view.name === "popular") {
       paint(true);
       if (view.auto && store.state.home && !mainEl.contains(focus.current)) focus.first(mainEl);
@@ -917,8 +1064,8 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     const on = detail ? view.prev : view.name;
     side.querySelectorAll(".es-mi").forEach((b) => b.classList.toggle("on", b.dataset.menu === on));
     if (view.name !== "search") searchBox = null;
-    if (view.name !== "latest") latestBox = null;
-    const content = detail ? detailPage() : view.name === "search" ? searchPage() : view.name === "latest" ? latestPage() : view.name === "popular" ? popular() : front();
+    if (view.name !== "catalog") catBox = null;
+    const content = detail ? detailPage() : view.name === "search" ? searchPage() : view.name === "catalog" ? catalogPage() : view.name === "popular" ? popular() : front();
     mainEl.replaceChildren(content);
     if (keepFocus && prev && !prev.isConnected) {
       const again = (key && mainEl.querySelector(`[data-key="${key}"]`)) || (slug && mainEl.querySelector(`[data-slug="${CSS.escape(slug)}"]`));
@@ -929,6 +1076,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
   }
 
   function back() {
+    if (closePicker()) return true;
     if (askOpen) return askOpen(), true;
     if (closeDialog()) return true;
     if (closePanel()) return true;
@@ -966,6 +1114,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
       if (name !== "repack") view.name = "front";
     }
     store.loadHome();
+    store.loadGenres();
     if (name === "repack" && slug) {
       if (view.name === "detail") view.name = view.prev || "front";
       return openRepack(slug);
@@ -979,7 +1128,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     }
   }
 
-  const busy = () => !!dialog || !!askOpen;
+  const busy = () => !!dialog || !!askOpen || !!picker;
 
   return {
     open,

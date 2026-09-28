@@ -4,6 +4,7 @@ import type {
   AchList,
   ArtItem,
   Bootstrap,
+  BrowseFilters,
   Candidate,
   Collection,
   DownloadDefaults,
@@ -14,6 +15,7 @@ import type {
   OverlayInit,
   FolderInspection,
   GameDetails,
+  Genre,
   GameFull,
   GamePatch,
   LibGame,
@@ -91,7 +93,12 @@ export const api = {
   overlayReady: () => invoke<OverlayInit>("overlay_ready"),
   overlayIdle: () => invoke<void>("overlay_idle"),
   overlayPanel: (open: boolean, restore?: boolean) => invoke<void>("overlay_panel", { open, restore }),
-  overlayAction: (action: "launcher") => invoke<void>("overlay_action", { action }),
+  overlayAction: (action: "launcher" | "screenshot" | "quit-game" | "downloads-resume" | "downloads-pause" | "open-captures") =>
+    invoke<void>("overlay_action", { action }),
+  overlayMedia: (cmd: "toggle" | "next" | "prev") => invoke<void>("overlay_media", { cmd }),
+  overlayVolume: (which: "game" | "master", level?: number | null, muted?: boolean | null) =>
+    invoke<void>("overlay_volume", { which, level: level ?? null, muted: muted ?? null }),
+  overlayNote: (text: string) => invoke<void>("overlay_note", { text }),
   overlayTest: () => invoke<void>("overlay_test"),
   overlayChime: (rare: boolean) => invoke<void>("overlay_chime", { rare }),
   overlayLook: () => invoke<NoticeLook>("overlay_look"),
@@ -126,6 +133,8 @@ export const api = {
 
   exploreHome: () => invoke<ExploreHome>("explore_home"),
   exploreSearch: (query: string, page?: number) => invoke<ExplorePage>("explore_search", { query, page }),
+  exploreBrowse: (filters: BrowseFilters, page?: number) => invoke<ExplorePage>("explore_browse", { filters, page }),
+  exploreGenres: () => invoke<Genre[]>("explore_genres"),
   exploreDetails: (slug: string) => invoke<RepackDetails>("explore_details", { slug }),
   downloadsList: () => invoke<DownloadItem[]>("downloads_list"),
   downloadsDefaults: () => invoke<DownloadDefaults>("downloads_defaults"),

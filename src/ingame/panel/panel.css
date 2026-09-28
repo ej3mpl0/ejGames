@@ -1,0 +1,79 @@
+/* Base común de los paneles del overlay. Cada plataforma pone el resto. */
+
+.pn-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  user-select: none;
+}
+.pn-root *,
+.pn-root *::before,
+.pn-root *::after {
+  box-sizing: border-box;
+}
+/* :where() sin especificidad: cualquier clase de la plataforma manda. */
+:where(.pn-root) button {
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-align: inherit;
+}
+:where(.pn-root) button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+:where(.pn-root) textarea {
+  font: inherit;
+  color: inherit;
+  resize: none;
+  user-select: text;
+}
+:where(.pn-root) :focus {
+  outline: none;
+}
+:where(.pn-root) svg {
+  flex: none;
+}
+:where(.pn-root) img {
+  display: block;
+}
+:where(.pn-root) .ph {
+  display: grid;
+  place-items: center;
+}
+
+/* Sin el anillo de foco del launcher: cada plataforma pinta el suyo. */
+:where(.pn-root) [data-nav].is-focused,
+:where(.pn-root) [data-nav]:focus-visible {
+  box-shadow: none;
+}
+
+/* Deslizadores: la parte rellena la pinta cada plataforma con --v y sus colores. */
+:where(.pn-root) input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+:where(.pn-root) input[type="range"]:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pn-root *,
+  .pn-root *::before,
+  .pn-root *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -175,7 +175,7 @@ fn is_helper(name: &str) -> bool {
 }
 
 /// Encuentra los PIDs del juego. Cachea rutas por PID para no reabrir procesos.
-fn find_pids(t: &Target, cache: &mut HashMap<u32, (String, Option<PathBuf>)>) -> Vec<u32> {
+pub(crate) fn find_pids(t: &Target, cache: &mut HashMap<u32, (String, Option<PathBuf>)>) -> Vec<u32> {
     #[cfg(windows)]
     {
         let procs = win::snapshot();

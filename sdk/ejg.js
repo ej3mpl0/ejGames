@@ -302,6 +302,11 @@
       home: function () { return call("explore.home"); },
       /** {query, items, page, pages, total}. Sin texto: novedades. */
       search: function (query, page) { return call("explore.search", { query: query || "", page: page || 1 }); },
+      /** Catálogo con filtros: {query, genres: [id], sort: "date"|"modified"|"title", maxGb, hideOwned}.
+       *  Devuelve lo mismo que search; para la página siguiente, pide `page + 1` de la respuesta. */
+      browse: function (filters, page) { return call("explore.browse", { filters: filters || {}, page: page || 1 }); },
+      /** Géneros para filtrar: [{id, name, group: "genre"|"view"|"setting"}]. */
+      genres: function () { return call("explore.genres"); },
       /** Ficha completa: capturas, características, descripción… */
       details: function (slug) { return call("explore.details", { slug: slug }); },
       /** Abre la ficha en la web oficial (navegador del sistema). */

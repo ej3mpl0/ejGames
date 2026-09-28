@@ -1,10 +1,11 @@
 // Explorar (ventana del host, para temas sin tienda propia): portada con
-// populares y novedades, búsqueda y fichas.
+// populares, novedades y géneros; el catálogo entero con filtros (géneros,
+// orden, tamaño y los que ya tienes) y fichas con «Más como este».
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Compass, Download, ExternalLink, Play, RefreshCw, Search } from "lucide-react";
+import { ArrowLeft, ChevronsUpDown, Compass, Download, ExternalLink, Play, RefreshCw, Search, X } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
-import type { ExploreHome, ExplorePage, Repack, RepackDetails } from "../../api/types";
+import type { BrowseFilters, ExploreHome, ExplorePage, Genre, Repack, RepackDetails } from "../../api/types";
 import { Button, Empty, Modal, Spinner, cx } from "../../components/ui";
 import { installDownload, openExplore, openKeyboard } from "../../host/downloads";
 import { useOverlayNav } from "../../input/nav";
@@ -12,7 +13,17 @@ import { useApp } from "../../store/app";
 import { DownloadDialog } from "./DownloadDialog";
 import { Cover, StatusBadge, sizeText } from "./shared";
 // @ts-ignore módulo JS del kit
-import { repackAction } from "../../../sdk/kit/store.js";
+import { repackAction, SORTS as KIT_SORTS, SIZES as KIT_SIZES, GENRE_GROUPS as KIT_GROUPS, MAX_GENRES } from "../../../sdk/kit/store.js";
+
+const SORTS = KIT_SORTS as { id: NonNullable<BrowseFilters["sort"]>; label: string }[];
+const SIZES = KIT_SIZES as { gb: number | null; label: string }[];
+const GROUPS = KIT_GROUPS as { id: Genre["group"]; label: string }[];
+
+type Filters = Required<Omit<BrowseFilters, "maxGb">> & { maxGb: number | null };
+const EMPTY: Filters = { query: "", genres: [], sort: "date", maxGb: null, hideOwned: false };
+
+/** Géneros de la portada. */
+const FRONT_GENRES = [55, 47, 51, 59, 54, 66, 65, 56, 71, 70, 214, 84];
 
 function Card({ r, onOpen }: { r: Repack; onOpen: (r: Repack) => void }) {
   return (
@@ -27,56 +38,137 @@ function Card({ r, onOpen }: { r: Repack; onOpen: (r: Repack) => void }) {
   );
 }
 
+/** Selector compacto: clic o izquierda/derecha para pasar de una opción a otra. */
+function Pick<T>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const idx = Math.max(0, options.findIndex((o) => o.value === value));
+  const step = (d: number) => onChange(options[(idx + d + options.length) % options.length].value);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fn = (e: Event) => step((e as CustomEvent<number>).detail);
+    el.addEventListener("cycle", fn);
+    return () => el.removeEventListener("cycle", fn);
+  });
+  return (
+    <button
+      ref={ref}
+      data-nav
+      data-cycle
+      onClick={() => step(1)}
+      className="flex h-9 items-center gap-2 rounded-[calc(var(--h-radius)*0.6)] bg-surface-3/70 px-3 text-sm ring-1 ring-line hover:bg-surface-3 cursor-pointer"
+    >
+      <span className="text-muted">{label}</span>
+      <span className="font-medium">{options[idx]?.label}</span>
+      <ChevronsUpDown size={14} className="text-muted" />
+    </button>
+  );
+}
+
+function Chip({ on, children, onClick }: { on?: boolean; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      data-nav
+      onClick={onClick}
+      className={cx(
+        "flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] ring-1 cursor-pointer",
+        on ? "bg-accent text-accent-contrast ring-accent" : "bg-surface-3/50 text-fg/85 ring-line hover:bg-surface-3",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknown> | null; onClose: () => void }) {
   const toast = useApp((s) => s.toast);
   const source = useApp((s) => s.inputSource);
   const [home, setHome] = useState<ExploreHome | null>(null);
   const [homeError, setHomeError] = useState("");
-  const [q, setQ] = useState("");
+  const [genres, setGenres] = useState<Genre[]>([]);
+  // Catálogo: null = portada.
+  const [filters, setFilters] = useState<Filters | null>(null);
   const [page, setPage] = useState<ExplorePage | null>(null);
-  const [searching, setSearching] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [allGenres, setAllGenres] = useState(false);
   const [detail, setDetail] = useState<RepackDetails | null>(null);
+  const [similar, setSimilar] = useState<Repack[] | null>(null);
   const [loadingSlug, setLoadingSlug] = useState<string | null>(null);
   const [dialog, setDialog] = useState<RepackDetails | null>(null);
   const seq = useRef(0);
   const timer = useRef<number>(0);
+  const scroller = useRef<HTMLDivElement>(null);
 
   const loadHome = () => {
     setHomeError("");
     api.exploreHome().then(setHome).catch((e) => setHomeError(errMsg(e)));
   };
-  useEffect(loadHome, []);
   useEffect(() => {
+    loadHome();
+    api.exploreGenres().then(setGenres).catch(() => {});
     if (typeof args?.slug === "string") void open(args.slug);
   }, []);
 
-  function search(text: string, pageNo = 1) {
-    setQ(text);
+  const genreName = (id: number) => genres.find((g) => g.id === id)?.name ?? "";
+
+  /** Pide una página del catálogo (con espera si se está escribiendo). */
+  function browse(f: Filters | null, pageNo = 1, delay = 0) {
     clearTimeout(timer.current);
-    if (!text.trim()) {
+    setFilters(f);
+    if (!f) {
       seq.current++;
       setPage(null);
-      setSearching(false);
+      setLoading(false);
       return;
     }
+    if (pageNo === 1) {
+      setPage(null);
+      scroller.current?.scrollTo({ top: 0 });
+    }
+    setLoading(true);
+    setError("");
     timer.current = window.setTimeout(async () => {
       const my = ++seq.current;
-      setSearching(true);
       try {
-        const r = await api.exploreSearch(text, pageNo);
+        const r = await api.exploreBrowse(f, pageNo);
         if (my !== seq.current) return;
-        setPage((prev) => (pageNo > 1 && prev ? { ...r, items: [...prev.items, ...r.items] } : r));
+        setPage((prev) => {
+          if (pageNo === 1 || !prev) return r;
+          const seen = new Set(prev.items.map((x) => x.slug));
+          return { ...r, items: [...prev.items, ...r.items.filter((x) => !seen.has(x.slug))] };
+        });
       } catch (e) {
-        if (my === seq.current) toast("error", errMsg(e));
+        if (my === seq.current) setError(errMsg(e));
       }
-      if (my === seq.current) setSearching(false);
-    }, pageNo > 1 ? 0 : 350);
+      if (my === seq.current) setLoading(false);
+    }, delay);
+  }
+  const change = (patch: Partial<Filters>, delay = 0) => browse({ ...(filters ?? EMPTY), ...patch }, 1, delay);
+  const more = () => {
+    if (filters && page && page.page < page.pages && !loading) browse(filters, page.page + 1);
+  };
+  function toggleGenre(id: number) {
+    const g = filters?.genres ?? [];
+    if (g.includes(id)) change({ genres: g.filter((x) => x !== id) });
+    else if (g.length >= MAX_GENRES) toast("info", `Como mucho ${MAX_GENRES} géneros a la vez`);
+    else change({ genres: [...g, id] });
   }
 
   async function open(slug: string) {
     setLoadingSlug(slug);
+    setSimilar(null);
     try {
-      setDetail(await api.exploreDetails(slug));
+      const d = await api.exploreDetails(slug);
+      setDetail(d);
+      // «Más como este»: sus dos primeros géneros conocidos.
+      const known = (d.tags ?? []).filter((t) => genres.some((g) => g.id === t && g.group === "genre")).slice(0, 2);
+      if (known.length)
+        api
+          .exploreBrowse({ genres: known }, 1)
+          .then((r) => setSimilar(r.items.filter((x) => x.slug !== d.slug).slice(0, 12)))
+          .catch(() => setSimilar([]));
+      else setSimilar([]);
     } catch (e) {
       toast("error", errMsg(e));
     }
@@ -94,13 +186,13 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
   }
 
   const ref = useOverlayNav<HTMLDivElement>({
-    onBack: () => (dialog ? setDialog(null) : detail ? setDetail(null) : onClose()),
+    onBack: () => (dialog ? setDialog(null) : detail ? setDetail(null) : filters ? browse(null) : onClose()),
     extra: {
       y: async () => {
-        const v = await openKeyboard({ title: "Buscar juegos", value: q, placeholder: "Nombre del juego" });
+        const v = await openKeyboard({ title: "Buscar juegos", value: filters?.query ?? "", placeholder: "Nombre del juego" });
         if (v != null) {
           setDetail(null);
-          search(v);
+          change({ query: v });
         }
       },
     },
@@ -112,21 +204,30 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
         <Search size={15} className="text-muted" />
         <input
           data-nav
-          value={q}
+          value={filters?.query ?? ""}
           onChange={(e) => {
             setDetail(null);
-            search(e.target.value);
+            change({ query: e.target.value }, 350);
           }}
           placeholder="Buscar juegos…"
           className="h-full flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
         />
-        {searching && <Spinner size={14} />}
+        {loading && <Spinner size={14} />}
       </div>
+      <Button size="sm" variant="ghost" icon={<Compass size={15} />} onClick={() => (setDetail(null), change({}))}>
+        Todo el catálogo
+      </Button>
       <Button size="sm" variant="ghost" icon={<Download size={15} />} onClick={() => openExplore("downloads")}>
         Descargas
       </Button>
     </div>
   );
+
+  const f = filters;
+  const shownGenres = (group: Genre["group"]) => {
+    const list = genres.filter((g) => g.group === group);
+    return allGenres ? list : list.filter((g, i) => i < 10 || f?.genres.includes(g.id));
+  };
 
   return (
     <Modal
@@ -143,27 +244,78 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
       hints={[
         ["accept", "Abrir"],
         ["y", "Buscar"],
-        ["back", detail ? "Volver" : "Cerrar"],
+        ["back", detail || f ? "Volver" : "Cerrar"],
       ]}
     >
-      <div className="relative h-full overflow-y-auto">
+      <div
+        ref={scroller}
+        className="relative h-full overflow-y-auto"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          if (!detail && f && el.scrollTop + el.clientHeight > el.scrollHeight - 500) more();
+        }}
+      >
         {detail ? (
-          <DetailView d={detail} onBack={() => setDetail(null)} onAction={() => action(detail)} />
-        ) : page ? (
+          <DetailView
+            d={detail}
+            genres={genres}
+            similar={similar}
+            onBack={() => setDetail(null)}
+            onAction={() => action(detail)}
+            onGenre={(id) => (setDetail(null), browse({ ...EMPTY, genres: [id] }))}
+            onOpen={(slug) => open(slug)}
+          />
+        ) : f ? (
           <div className="p-5">
-            <p className="mb-3 text-sm text-muted">
-              {page.total ? `${page.total} resultados para «${page.query}»` : `Nada con «${page.query}»`}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {page.items.map((r) => (
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <Pick label="Orden" value={f.sort} options={SORTS.map((o) => ({ value: o.id, label: o.label }))} onChange={(v) => change({ sort: v })} />
+              <Pick label="Tamaño" value={f.maxGb} options={SIZES.map((o) => ({ value: o.gb, label: o.label }))} onChange={(v) => change({ maxGb: v })} />
+              <Chip on={f.hideOwned} onClick={() => change({ hideOwned: !f.hideOwned })}>
+                Ocultar los que ya tengo
+              </Chip>
+              {(f.genres.length > 0 || f.maxGb || f.hideOwned || f.query) && (
+                <Button size="sm" variant="ghost" icon={<X size={14} />} onClick={() => browse({ ...EMPTY, sort: f.sort })}>
+                  Quitar filtros
+                </Button>
+              )}
+              <span className="ml-auto text-sm text-muted">
+                {loading && !page
+                  ? "Buscando…"
+                  : page
+                    ? `${page.filtered && page.page < page.pages ? "Unos " : ""}${page.total.toLocaleString("es")} juegos${f.query ? ` con «${f.query}»` : ""}`
+                    : ""}
+              </span>
+            </div>
+            {GROUPS.map(({ id, label }) => (
+              <div key={id} className="mb-2 flex flex-wrap items-center gap-1.5">
+                <span className="w-24 shrink-0 text-xs text-muted">{label}</span>
+                {shownGenres(id).map((g) => (
+                  <Chip key={g.id} on={f.genres.includes(g.id)} onClick={() => toggleGenre(g.id)}>
+                    {g.name}
+                  </Chip>
+                ))}
+                {id === "genre" && !allGenres && (
+                  <Button size="sm" variant="ghost" onClick={() => setAllGenres(true)}>
+                    Más géneros
+                  </Button>
+                )}
+              </div>
+            ))}
+            {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+            {page && !page.items.length && !loading && !error && <p className="mt-6 text-sm text-muted">No hay juegos que coincidan con estos filtros.</p>}
+            <div className="mt-4 flex flex-wrap gap-2">
+              {page?.items.map((r) => (
                 <Card key={r.slug} r={r} onOpen={(x) => open(x.slug)} />
               ))}
             </div>
-            {page.page < page.pages && (
+            {loading && (
+              <div className="grid place-items-center py-6">
+                <Spinner size={24} />
+              </div>
+            )}
+            {page && page.page < page.pages && !loading && (
               <div className="mt-4 flex justify-center">
-                <Button onClick={() => search(q, page.page + 1)} disabled={searching}>
-                  Ver más
-                </Button>
+                <Button onClick={more}>Ver más</Button>
               </div>
             )}
           </div>
@@ -180,6 +332,19 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
           </div>
         ) : (
           <div className="flex flex-col gap-6 py-5">
+            {genres.length > 0 && (
+              <section className="px-5">
+                <h3 className="mb-2 text-base font-semibold">Géneros</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {FRONT_GENRES.map((id) => (
+                    <Chip key={id} onClick={() => browse({ ...EMPTY, genres: [id] })}>
+                      {genreName(id)}
+                    </Chip>
+                  ))}
+                  <Chip onClick={() => browse({ ...EMPTY })}>Todo el catálogo</Chip>
+                </div>
+              </section>
+            )}
             {home.sections.map((s) => (
               <section key={s.id}>
                 <h3 className="mb-2 px-5 text-base font-semibold">{s.title}</h3>
@@ -197,9 +362,7 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
             <Spinner size={28} />
           </div>
         )}
-        {source === "gamepad" && !detail && !q && home && (
-          <p className="pb-4 text-center text-xs text-muted">Pulsa Y para buscar con el teclado en pantalla.</p>
-        )}
+        {source === "gamepad" && !detail && !f && home && <p className="pb-4 text-center text-xs text-muted">Pulsa Y para buscar con el teclado en pantalla.</p>}
       </div>
       {dialog && (
         <DownloadDialog
@@ -216,11 +379,28 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
   );
 }
 
-function DetailView({ d, onBack, onAction }: { d: RepackDetails; onBack: () => void; onAction: () => void }) {
+function DetailView({
+  d,
+  genres,
+  similar,
+  onBack,
+  onAction,
+  onGenre,
+  onOpen,
+}: {
+  d: RepackDetails;
+  genres: Genre[];
+  similar: Repack[] | null;
+  onBack: () => void;
+  onAction: () => void;
+  onGenre: (id: number) => void;
+  onOpen: (slug: string) => void;
+}) {
   const a = repackAction(d) as { id: string; label: string; hint?: string };
   const [shot, setShot] = useState<string | null>(null);
+  const known = (d.tags ?? []).map((t) => genres.find((g) => g.id === t)).filter((g): g is Genre => !!g);
   const facts: [string, string | null | undefined][] = [
-    ["Géneros", d.genres.join(", ")],
+    ["Géneros", known.length ? null : d.genres.join(", ")],
     ["Compañías", d.companies],
     ["Idiomas", d.languages],
     ["Tamaño original", sizeText(d.originalSize)],
@@ -268,6 +448,15 @@ function DetailView({ d, onBack, onAction }: { d: RepackDetails; onBack: () => v
           {d.description && <p className="whitespace-pre-line text-sm leading-relaxed text-fg/90">{d.description}</p>}
         </div>
         <aside className="flex flex-col gap-4">
+          {known.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {known.slice(0, 8).map((g) => (
+                <Chip key={g.id} onClick={() => onGenre(g.id)}>
+                  {g.name}
+                </Chip>
+              ))}
+            </div>
+          )}
           <dl className="rounded-[var(--h-radius)] bg-surface-2/70 p-4 text-sm ring-1 ring-line">
             {facts
               .filter(([, v]) => v)
@@ -289,6 +478,16 @@ function DetailView({ d, onBack, onAction }: { d: RepackDetails; onBack: () => v
           )}
         </aside>
       </div>
+      {similar && similar.length > 0 && (
+        <section className="pb-6">
+          <h3 className="mb-2 px-5 text-base font-semibold">Más como este</h3>
+          <div className="flex gap-2 overflow-x-auto px-4 pb-2">
+            {similar.map((r) => (
+              <Card key={r.slug} r={r} onOpen={(x) => onOpen(x.slug)} />
+            ))}
+          </div>
+        </section>
+      )}
       {shot && (
         <button className={cx("fixed inset-0 z-[46] grid place-items-center bg-black/85 cursor-zoom-out")} onClick={() => setShot(null)}>
           <img src={shot} alt="" className="max-h-[90vh] max-w-[92vw] rounded-lg" />

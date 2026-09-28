@@ -117,6 +117,12 @@ export function useOverlayNav<T extends HTMLElement>(opts: { onBack?: () => void
       }
     };
     const pop = pushNav(handler);
+    // Un elemento pide el foco (diálogo que se abre, pestaña nueva): ver focusNav().
+    const onFocusRequest = (e: Event) => {
+      const el = e.target as HTMLElement;
+      if (root.contains(el)) focus.focus(el, { instant: true, silent: true });
+    };
+    root.addEventListener("nav:focus", onFocusRequest);
     // Teclado dentro del host (el foco ya no está en el iframe).
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
@@ -139,9 +145,20 @@ export function useOverlayNav<T extends HTMLElement>(opts: { onBack?: () => void
     return () => {
       pop();
       focus.destroy();
+      root.removeEventListener("nav:focus", onFocusRequest);
       window.removeEventListener("keydown", onKey, true);
     };
   }, []);
 
   return ref;
 }
+
+/** Lleva el foco de mando/teclado a un elemento dentro de useOverlayNav. */
+export function focusNav(el: HTMLElement | null) {
+  el?.dispatchEvent(new CustomEvent("nav:focus", { bubbles: true }));
+}
+
+/** Ref que enfoca el elemento en cuanto aparece (diálogos, vistas nuevas). */
+export const autoNav = (el: HTMLElement | null) => {
+  if (el) requestAnimationFrame(() => focusNav(el));
+};

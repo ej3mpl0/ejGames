@@ -1,10 +1,11 @@
 //! Durante la partida: botón Guía/PS (o Back+Start mantenidos 1 s) abre el
 //! overlay (o el launcher). Con el panel del overlay abierto, la cruceta, el
 //! stick y A/B/X/Y lo manejan. Hilo XInput ligero que solo existe mientras hay
-//! un juego abierto.
+//! un juego abierto. De paso, cada pocos segundos, la batería del mando.
 
+use crate::overlay::live::PadPower;
 use crate::overlay::PadEvent;
-use gilrs::{Axis, Button, Gilrs};
+use gilrs::{Axis, Button, Gilrs, PowerInfo};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -26,6 +27,19 @@ fn nav_of(b: Button) -> Option<&'static str> {
     })
 }
 
+/// Batería del primer mando conectado.
+fn power(gilrs: &Gilrs) -> Option<PadPower> {
+    let (_, g) = gilrs.gamepads().find(|(_, g)| g.is_connected())?;
+    let (state, level) = match g.power_info() {
+        PowerInfo::Wired => ("wired", None),
+        PowerInfo::Charged => ("charged", Some(100)),
+        PowerInfo::Charging(l) => ("charging", Some(l)),
+        PowerInfo::Discharging(l) => ("discharging", Some(l)),
+        PowerInfo::Unknown => ("unknown", None),
+    };
+    Some(PadPower { name: g.name().to_string(), state: state.into(), level })
+}
+
 /// `guide`: reaccionar al botón Guía (en juegos de Steam lo usa Steam).
 pub fn spawn(stop: Arc<AtomicBool>, guide: bool, on_event: impl Fn(PadEvent) + Send + 'static) {
     let _ = std::thread::Builder::new().name("ejg-pad-home".into()).spawn(move || {
@@ -34,7 +48,17 @@ pub fn spawn(stop: Arc<AtomicBool>, guide: bool, on_event: impl Fn(PadEvent) + S
         let mut last_fire = Instant::now() - Duration::from_secs(10);
         // Stick: dirección actual y próximo disparo por repetición.
         let mut stick: Option<(&'static str, Instant)> = None;
+        let mut last_power: Option<Option<PadPower>> = None;
+        let mut power_at = Instant::now() - Duration::from_secs(60);
         while !stop.load(Ordering::Relaxed) {
+            if power_at.elapsed() > Duration::from_secs(3) {
+                power_at = Instant::now();
+                let p = power(&gilrs);
+                if last_power.as_ref() != Some(&p) {
+                    on_event(PadEvent::Power(p.clone()));
+                    last_power = Some(p);
+                }
+            }
             let mut fire = false;
             while let Some(ev) = gilrs.next_event() {
                 if let gilrs::EventType::ButtonPressed(b, _) = ev.event {

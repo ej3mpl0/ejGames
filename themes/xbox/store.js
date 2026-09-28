@@ -1,5 +1,6 @@
 // Tienda y Cola del tema Xbox: portada con «spotlight» y filas de mosaicos,
-// búsqueda, ficha a pantalla completa, panel lateral de descarga y
+// «Explorar» (todo el catálogo con sus desplegables de filtros), búsqueda,
+// ficha a pantalla completa con «Más como este», panel lateral de descarga y
 // «Administrar cola». La lógica común está en /_sdk/kit/store.js.
 
 import { h, img, keyed, debounce } from "/_sdk/kit/dom.js";
@@ -17,6 +18,12 @@ import {
   isActive,
   repackAction,
   askQuery,
+  emptyFilters,
+  filterCount,
+  SORTS,
+  SIZES,
+  GENRE_GROUPS,
+  MAX_GENRES,
 } from "/_sdk/kit/store.js";
 
 const I = {
@@ -35,7 +42,25 @@ const I = {
   install: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v7m0 0-3-3m3 3 3-3"/></svg>',
   disk: '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 14h.01M11 14h6"/></svg>',
   info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></svg>',
+  caret: '<svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>',
+  check: '<svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
 };
+
+/** Géneros de la portada (id y color de la losa). */
+const GENRE_TILES = [
+  [55, "#b3261e"],
+  [47, "#5b3fa8"],
+  [51, "#b36b00"],
+  [59, "#1f7a3a"],
+  [54, "#3a3a3a"],
+  [66, "#0f5a8a"],
+  [65, "#5f6b1d"],
+  [56, "#8a2c0f"],
+  [71, "#146d6d"],
+  [70, "#a3007a"],
+  [214, "#44318c"],
+  [84, "#0e7a6f"],
+];
 const icon = (n) => h("span", { class: "ico", html: I[n] });
 
 // Los géneros llegan en inglés desde la fuente.
@@ -72,10 +97,11 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     if (view === "store") paintBody();
   });
   let view = null; // "store" | "queue" | null (no se ve)
-  const st = { name: "front", latest: null, moreFrom: null, focusResults: false, autoFocus: false };
+  const st = { name: "front", moreFrom: null, focusResults: false, autoFocus: false };
   const rp = { open: false, slug: null, detail: null, error: "", from: null };
   let dialog = null;
   let askOpen = null;
+  let flyout = null;
   const run = (p) => Promise.resolve(p).catch((e) => ejg.ui.toast(e.message || String(e), "error"));
 
   /** El repack con el estado de su descarga al día (la portada se cachea). */
@@ -177,7 +203,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     "div",
     { class: "st-head", "data-focus-group": "st-head" },
     pill("front", "Destacados", () => goFront()),
-    pill("latest", "Novedades", () => browseLatest()),
+    pill("catalog", "Explorar", () => openCatalog()),
     h("label", { class: "st-search" }, icon("search"), input),
     h("button", { class: "st-queue", "data-focus": "", onclick: () => setView("queue") }, icon("queue"), "Cola", qCount),
   );
@@ -193,21 +219,18 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     onChange();
   }
 
-  // «Novedades»: la búsqueda sin texto devuelve lo último publicado.
-  async function browseLatest(page = 1) {
-    st.name = "latest";
+  /** «Explorar»: todo el catálogo. `filters`: empezar con estos (los demás, vacíos). */
+  function openCatalog(filters = null) {
+    const c = store.state.catalog;
+    st.name = "catalog";
     input.value = "";
-    if (page === 1) st.latest = null;
-    else if (st.latest) st.latest = { ...st.latest, searching: true };
-    paintBody();
+    store.loadGenres();
+    if (filters) store.browse({ ...emptyFilters(), ...filters });
+    else if (!c.page && !c.loading) store.browse({});
+    paintBody(false);
+    pages.store.scrollTop = 0;
+    focus.focus(body.querySelector('[data-k="f-sort"]') || head.firstElementChild, { silent: true });
     onChange();
-    try {
-      const r = await ejg.explore.search("", page);
-      st.latest = page > 1 && st.latest ? { ...r, items: st.latest.items.concat(r.items) } : r;
-    } catch (e) {
-      st.latest = { items: st.latest?.items || [], page: 1, pages: 1, error: e.message || String(e) };
-    }
-    if (st.name === "latest") paintBody();
   }
 
   // ─────────────── spotlight ───────────────
@@ -305,7 +328,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     const today = by.today || by.week;
     const seeAll = h(
       "button",
-      { class: "st-box st-all", "data-focus": "", "data-k": "all", onclick: () => browseLatest() },
+      { class: "st-box st-all", "data-focus": "", "data-k": "all", onclick: () => openCatalog({ sort: "date" }) },
       h("span", { class: "st-art" }, icon("right"), h("b", null, "Ver todo")),
       h("b", null, "Novedades"),
       h("small", null, "Lo último publicado"),
@@ -315,22 +338,179 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
       { class: "st-front" },
       today ? spotlight(today.title, today.items) : null,
       by.week ? row(by.week.title, by.week.items, wideTile, "week") : null,
+      s.genres.length ? genreRow() : null,
       by.month ? row(by.month.title, by.month.items, boxTile, "month") : null,
       by.latest ? row("Novedades", by.latest.items.slice(0, 15), boxTile, "latest", seeAll) : null,
     );
   }
 
+  /** Losas de colores de los géneros, como las categorías de la Tienda. */
+  function genreRow() {
+    const track = h("div", { class: "track st-track", "data-focus-group": "st-genres" });
+    for (const [id, color] of GENRE_TILES) {
+      const g = store.state.genres.find((x) => x.id === id);
+      if (!g) continue;
+      track.append(h("button", { class: "st-genre", "data-focus": "", "data-k": `g-${id}`, style: `--c: ${color}`, onclick: () => openCatalog({ genres: [id] }) }, h("b", null, g.name)));
+    }
+    return h("section", { class: "row st-row" }, h("h2", null, "Explorar por género"), track);
+  }
+
+  // ─────────────── explorar: filtros en desplegables ───────────────
+  const genreName = (id) => store.state.genres.find((g) => g.id === id)?.name || "";
+
+  function toggleGenre(id) {
+    if (!store.toggleGenre(id)) ejg.ui.toast(`Como mucho ${MAX_GENRES} géneros a la vez`, "info");
+  }
+
+  /** Opciones de cada desplegable: [{k, label, on, run, group?}] y si se cierra al elegir. */
+  function flyItems(kind) {
+    const f = store.state.catalog.filters;
+    if (kind === "sort") return { close: true, items: SORTS.map((o) => ({ k: `o-sort-${o.id}`, label: o.label, on: f.sort === o.id, run: () => store.browse({ sort: o.id }) })) };
+    if (kind === "size") return { close: true, items: SIZES.map((o) => ({ k: `o-size-${o.gb ?? 0}`, label: o.label, on: (f.maxGb || null) === o.gb, run: () => store.browse({ maxGb: o.gb }) })) };
+    const items = [];
+    for (const grp of GENRE_GROUPS) {
+      const list = store.state.genres.filter((g) => g.group === grp.id);
+      list.forEach((g, i) => items.push({ k: `o-g-${g.id}`, label: g.name, on: f.genres.includes(g.id), run: () => toggleGenre(g.id), group: i === 0 ? grp.label : null }));
+    }
+    return { close: false, items };
+  }
+
+  function openFlyout(kind) {
+    closeFlyout(true);
+    const menu = h("div", { class: "xf-menu" + (kind === "genre" ? " multi" : ""), "data-focus-group": "xf" });
+    const l = h("div", { class: "xf-layer", "data-focus-trap": "", onclick: (e) => e.target === l && closeFlyout() }, menu);
+    document.body.append(l);
+    flyout = { kind, layer: l, menu, prev: focus.current };
+    paintFlyout();
+    const on = menu.querySelector(".xf-opt.on") || menu.querySelector("[data-focus]");
+    focus.focus(on, { silent: true });
+    ejg.sound.play("open");
+    onChange();
+  }
+
+  function paintFlyout() {
+    if (!flyout) return;
+    const { kind, menu, layer } = flyout;
+    const anchor = body.querySelector(`[data-k="f-${kind}"]`);
+    const key = focus.current && menu.contains(focus.current) ? focus.current.dataset.k : null;
+    const { close, items } = flyItems(kind);
+    menu.replaceChildren(
+      ...items.flatMap((it) => [
+        it.group ? h("div", { class: "xf-group" }, it.group) : null,
+        h(
+          "button",
+          {
+            class: "xf-opt" + (it.on ? " on" : ""),
+            "data-focus": "",
+            "data-k": it.k,
+            role: close ? "menuitemradio" : "menuitemcheckbox",
+            onclick: () => {
+              it.run();
+              if (close) closeFlyout();
+            },
+          },
+          h("span", { class: "xf-mark", html: it.on ? I.check : "" }),
+          h("span", null, it.label),
+        ),
+      ]).filter(Boolean),
+    );
+    if (anchor) {
+      const a = anchor.getBoundingClientRect();
+      menu.style.left = `${Math.max(8, Math.min(a.left, window.innerWidth - 340))}px`;
+      menu.style.top = `${a.bottom + 6}px`;
+      menu.style.maxHeight = `${Math.max(200, window.innerHeight - a.bottom - 30)}px`;
+    }
+    if (key) {
+      const el = menu.querySelector(`[data-k="${key}"]`);
+      if (el && el !== focus.current) focus.focus(el, { silent: true, noScroll: true });
+    }
+    layer.hidden = false;
+  }
+
+  function closeFlyout(silent) {
+    if (!flyout) return false;
+    const { layer, kind } = flyout;
+    layer.remove();
+    flyout = null;
+    if (!silent) {
+      const a = body.querySelector(`[data-k="f-${kind}"]`);
+      if (a) focus.focus(a, { silent: true });
+      onChange();
+    }
+    return true;
+  }
+
+  function catalogBody() {
+    const c = store.state.catalog;
+    const f = c.filters;
+    const drop = (kind, label, value, active) =>
+      h("button", { class: "st-drop" + (active ? " on" : ""), "data-focus": "", "data-k": `f-${kind}`, onclick: () => openFlyout(kind) }, h("small", null, label), h("span", null, value), icon("caret"));
+    const sortLabel = SORTS.find((o) => o.id === f.sort)?.label || SORTS[0].label;
+    const genresLabel = f.genres.length ? f.genres.map(genreName).join(", ") : "Todos";
+    const sizeLabel = SIZES.find((o) => o.gb === (f.maxGb || null))?.label || "";
+    const count = c.loading && !c.items.length ? "Buscando…" : `${c.filtered && c.page < c.pages ? "Unos " : ""}${c.total.toLocaleString("es")} juegos`;
+    const grid = h("div", { class: "st-grid", "data-focus-group": "st-results" });
+    keyed(grid, c.items, (r) => r.slug, boxTile);
+    return h(
+      "div",
+      { class: "st-results" },
+      h("div", { class: "st-rhead" }, h("h1", null, f.query ? `Explorar «${f.query}»` : "Todos los juegos"), h("span", null, count)),
+      h(
+        "div",
+        { class: "st-filters", "data-focus-group": "st-filters" },
+        drop("sort", "Ordenar por", sortLabel, false),
+        drop("genre", "Género", genresLabel, f.genres.length > 0),
+        drop("size", "Tamaño", sizeLabel, !!f.maxGb),
+        h(
+          "button",
+          { class: "st-toggle" + (f.hideOwned ? " on" : ""), "data-focus": "", "data-k": "f-owned", role: "switch", "aria-checked": String(!!f.hideOwned), onclick: () => store.browse({ hideOwned: !f.hideOwned }) },
+          h("i"),
+          "Ocultar los que ya tengo",
+        ),
+        filterCount(f) || f.query ? h("button", { class: "st-clear", "data-focus": "", "data-k": "f-clear", onclick: () => store.clearFilters() }, "Quitar filtros") : null,
+      ),
+      c.error ? h("p", { class: "st-err" }, c.error) : null,
+      !c.items.length && !c.loading && !c.error ? h("p", { class: "st-muted" }, "No hay juegos que coincidan con estos filtros.") : null,
+      grid,
+      c.loading ? dots() : null,
+      c.page && c.page < c.pages && !c.loading
+        ? h(
+            "button",
+            {
+              class: "xb-btn st-moreres",
+              "data-focus": "",
+              "data-k": "more",
+              onclick: () => {
+                st.moreFrom = c.items.length;
+                store.browseMore();
+              },
+            },
+            "Ver más",
+          )
+        : null,
+    );
+  }
+
+  // Más al llegar abajo (rueda o ratón).
+  pages.store.addEventListener(
+    "scroll",
+    () => {
+      const el = pages.store;
+      if (view === "store" && st.name === "catalog" && !rp.open && el.scrollTop + el.clientHeight > el.scrollHeight - 700) store.browseMore();
+    },
+    { passive: true },
+  );
+
   function results() {
-    const latest = st.name === "latest";
-    const s = latest ? { ...(st.latest || { items: [] }), searching: !st.latest || !!st.latest.searching } : { ...store.state, items: store.state.results };
-    const err = latest ? s.error : s.searchError;
+    const s = { ...store.state, items: store.state.results };
+    const err = s.searchError;
     const items = s.items || [];
     const grid = h("div", { class: "st-grid", "data-focus-group": "st-results" });
     keyed(grid, items, (r) => r.slug, boxTile);
     return h(
       "div",
       { class: "st-results" },
-      h("div", { class: "st-rhead" }, h("h1", null, latest ? "Novedades" : `Resultados de «${s.query}»`), s.total ? h("span", null, `${s.total} resultados`) : null),
+      h("div", { class: "st-rhead" }, h("h1", null, `Resultados de «${s.query}»`), s.total ? h("span", null, `${s.total} resultados`) : null),
       err ? h("p", { class: "st-err" }, err) : null,
       !items.length && !s.searching && !err ? h("p", { class: "st-muted" }, "No hay ningún juego con ese nombre.") : null,
       grid,
@@ -344,7 +524,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
               "data-k": "more",
               onclick: () => {
                 st.moreFrom = items.length;
-                latest ? browseLatest(s.page + 1) : store.more();
+                store.more();
               },
             },
             "Ver más resultados",
@@ -360,11 +540,12 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     const group = inBody && prev.closest("[data-focus-group]")?.dataset.focusGroup;
     const slug = inBody && prev.closest("[data-slug]")?.dataset.slug;
     const k = inBody && prev.dataset.k;
-    body.replaceChildren(st.name === "front" ? front() : results());
+    body.replaceChildren(st.name === "front" ? front() : st.name === "catalog" ? catalogBody() : results());
+    paintFlyout();
     head.querySelectorAll(".st-pill").forEach((p) => p.classList.toggle("on", p.dataset.st === st.name));
     if (st.name === "front") startSpot();
     else stopSpot();
-    const searching = st.name === "latest" ? !st.latest || st.latest.searching : store.state.searching;
+    const searching = st.name === "catalog" ? store.state.catalog.loading : store.state.searching;
     const grid = body.querySelector(".st-grid");
     if (!searching && grid && st.moreFrom != null && grid.children[st.moreFrom]) {
       focus.focus(grid.children[st.moreFrom], { silent: true });
@@ -511,7 +692,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
             d.coverFull || d.cover ? coverImg(d) : null,
             h("div", null, h("h1", { class: "rp-title" }, d.title), d.companies ? h("div", { class: "rp-by" }, d.companies) : null),
           ),
-          h("div", { class: "rp-chips" }, ...genres(d, 5).map((g) => h("span", null, g)), d.selective ? h("span", { class: "sel" }, "Descarga selectiva") : null),
+          h("div", { class: "rp-chips", "data-focus-group": "rp-chips" }, ...chips(d), d.selective ? h("span", { class: "sel" }, "Descarga selectiva") : null),
           h("div", { class: "rp-facts" }, fact("Descarga", sizeText(d.repackSize)), fact("Instalado", sizeText(d.installSize)), fact("Versión", d.version)),
           h(
             "div",
@@ -549,9 +730,41 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
             d.features.length ? h("div", { class: "rp-card", "data-focus": "" }, h("h3", null, "Características del repack"), h("ul", { class: "rp-feat" }, ...d.features.map((f) => h("li", null, f)))) : null,
           ),
         ),
+        similarSec(d),
       ),
     );
     setMain(main, r);
+  }
+
+  /** Géneros de la ficha: los conocidos llevan a Explorar filtrado por ellos. */
+  function chips(d) {
+    const known = (d.tags || []).map((t) => store.state.genres.find((g) => g.id === t)).filter(Boolean);
+    if (!known.length) return genres(d, 5).map((g) => h("span", null, g));
+    return known.slice(0, 5).map((g) =>
+      h(
+        "button",
+        {
+          class: "rp-chip",
+          "data-focus": "",
+          onclick: () => {
+            closeRepack(true);
+            openCatalog({ genres: [g.id] });
+          },
+        },
+        g.name,
+      ),
+    );
+  }
+
+  function similarSec(d) {
+    const track = h("div", { class: "track rp-similar", "data-focus-group": "rp-similar" }, dots());
+    const sec = h("section", { class: "rp-sec" }, h("h2", null, "Más como este"), track);
+    store.similar(d, 16).then((list) => {
+      if (rp.slug !== d.slug) return;
+      if (!list.length) return sec.remove();
+      track.replaceChildren(...list.map(boxTile));
+    });
+    return sec;
   }
 
   function refreshRepack() {
@@ -902,6 +1115,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
 
   // ─────────────── vistas ───────────────
   function closeOverlays() {
+    closeFlyout(true);
     if (askOpen) askOpen();
     closeDialog();
     closeRepack(true);
@@ -936,6 +1150,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
         return;
       }
       store.loadHome();
+      store.loadGenres();
       paintBody(false);
       pages.store.scrollTop = 0;
       if (!focus.first(body)) {
@@ -959,6 +1174,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     closeOverlays,
     search,
     back() {
+      if (closeFlyout()) return true;
       if (askOpen) return askOpen(), true;
       if (closeDialog()) return true;
       if (closeRepack()) return true;
@@ -966,8 +1182,9 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
       return false;
     },
     /** Hay una capa encima (diálogo o ficha): LB/RB no cambian de sección. */
-    busy: () => !!dialog || !!askOpen || rp.open,
+    busy: () => !!dialog || !!askOpen || !!flyout || rp.open,
     hints() {
+      if (flyout) return [["accept", flyout.kind === "genre" ? "Marcar" : "Elegir"], ["back", "Cerrar"]];
       if (askOpen) return [["accept", "Elegir"], ["back", "Volver"]];
       if (dialog) return [["accept", "Marcar"], ["back", "Cancelar"]];
       if (rp.open) return [["accept", "Elegir"], ["back", "Volver"]];

@@ -24,7 +24,9 @@ const RELAY_URL: Option<&str> = option_env!("EJG_RELAY_URL");
 const RELAY_KEY: Option<&str> = option_env!("EJG_RELAY_KEY");
 /// Categoría «Lossless Repack» (deja fuera los resúmenes de actualizaciones).
 const CATEGORY: u32 = 5;
-const FIELDS: &str = "id,slug,link,date,title,content";
+const FIELDS: &str = "id,slug,link,date,title,content,tags";
+/// Etiqueta «Adult» de la web (fuera del catálogo si se ocultan los de adultos).
+pub const ADULT_TAG: u32 = 141;
 const UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
 
 #[derive(Debug, Clone)]
@@ -35,6 +37,8 @@ pub struct RawPost {
     pub date: String,
     pub title: String,
     pub content: String,
+    /// Etiquetas de la web (géneros, perspectiva…).
+    pub tags: Vec<u32>,
 }
 
 #[derive(Deserialize)]
@@ -45,6 +49,8 @@ struct WpPost {
     date: String,
     title: WpText,
     content: WpText,
+    #[serde(default)]
+    tags: Vec<u32>,
 }
 
 #[derive(Deserialize)]
@@ -61,6 +67,7 @@ impl From<WpPost> for RawPost {
             date: p.date,
             title: parse::decode_entities(&p.title.rendered),
             content: p.content.rendered,
+            tags: p.tags,
         }
     }
 }
@@ -405,6 +412,31 @@ impl FitGirl {
         .await
     }
 
+    /// Catálogo con filtros: texto en el título, etiquetas (todas a la vez),
+    /// etiquetas fuera y orden ("date" | "modified" | "title").
+    pub async fn browse(&self, q: &Query<'_>, page: u32, per_page: u32) -> anyhow::Result<Page> {
+        let mut path = format!("/wp-json/wp/v2/posts?categories={CATEGORY}&per_page={per_page}&page={page}&_fields={FIELDS}");
+        if !q.text.is_empty() {
+            let t = percent_encoding::utf8_percent_encode(q.text, percent_encoding::NON_ALPHANUMERIC);
+            path.push_str(&format!("&search={t}&search_columns=post_title"));
+        }
+        if !q.tags.is_empty() {
+            let list = q.tags.iter().map(|t| t.to_string()).collect::<Vec<_>>().join(",");
+            // Con `operator=AND` salen los que tienen todas (sin él, cualquiera).
+            path.push_str(&format!("&tags%5Bterms%5D={list}&tags%5Boperator%5D=AND"));
+        }
+        if !q.exclude.is_empty() {
+            let list = q.exclude.iter().map(|t| t.to_string()).collect::<Vec<_>>().join(",");
+            path.push_str(&format!("&tags_exclude={list}"));
+        }
+        match q.sort {
+            "title" => path.push_str("&orderby=title&order=asc"),
+            "modified" => path.push_str("&orderby=modified&order=desc"),
+            _ => {}
+        }
+        self.posts(&path).await
+    }
+
     /// Últimos repacks publicados.
     pub async fn latest(&self, page: u32, per_page: u32) -> anyhow::Result<Page> {
         self.posts(&format!("/wp-json/wp/v2/posts?categories={CATEGORY}&per_page={per_page}&page={page}&_fields={FIELDS}"))
@@ -441,6 +473,14 @@ impl FitGirl {
         }
         Ok(sections)
     }
+}
+
+/// Filtros del catálogo que entiende la web.
+pub struct Query<'a> {
+    pub text: &'a str,
+    pub tags: &'a [u32],
+    pub exclude: &'a [u32],
+    pub sort: &'a str,
 }
 
 pub fn valid_slug(s: &str) -> bool {

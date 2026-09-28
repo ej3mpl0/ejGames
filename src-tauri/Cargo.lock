@@ -1362,9 +1362,10 @@ checksum = "252afb9ae5eaa683babdc6a068b3f5726eb19e05070c731f9b2a23a7c3e8ed34"
 
 [[package]]
 name = "ejgames"
-version = "0.3.3"
+version = "0.4.0"
 dependencies = [
  "anyhow",
+ "base64 0.22.1",
  "blake3",
  "chrono",
  "dirs 6.0.0",

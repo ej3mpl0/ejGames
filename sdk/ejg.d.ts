@@ -148,8 +148,40 @@ export interface Repack {
   /** Se pueden dejar sin bajar idiomas y extras. */
   selective: boolean;
   adult: boolean;
+  /** Etiquetas de la web (ids de `ejg.explore.genres()`). */
+  tags?: number[];
   /** Relación contigo: en tu biblioteca, descargando, instalado… */
   status: { state: RepackState; downloadId?: number | null; gameId?: number | null; progress?: number | null };
+}
+
+export interface ExplorePage {
+  query: string;
+  items: Repack[];
+  page: number;
+  pages: number;
+  total: number;
+  /** Filtrado con `maxGb` o `hideOwned`: el total es aproximado. */
+  filtered?: boolean;
+}
+
+export interface Genre {
+  id: number;
+  name: string;
+  /** genre (género) | view (perspectiva) | setting (ambientación) */
+  group: "genre" | "view" | "setting";
+}
+
+export interface BrowseFilters {
+  /** Texto en el título. */
+  query?: string;
+  /** Hasta 4; salen los juegos que los tienen todos. */
+  genres?: number[];
+  /** date = novedades, modified = actualizados hace poco, title = de la A a la Z. */
+  sort?: "date" | "modified" | "title";
+  /** Tamaño máximo de la descarga. */
+  maxGb?: number | null;
+  /** Quitar los que ya están en tu biblioteca o en descargas. */
+  hideOwned?: boolean;
 }
 
 export interface RepackDetails extends Repack {
@@ -297,7 +329,10 @@ export interface Ejg {
     readonly enabled: boolean;
     onEnabled(fn: (enabled: boolean) => void): () => void;
     home(): Promise<{ sections: { id: "today" | "week" | "month" | "latest" | string; title: string; items: Repack[] }[] }>;
-    search(query: string, page?: number): Promise<{ query: string; items: Repack[]; page: number; pages: number; total: number }>;
+    search(query: string, page?: number): Promise<ExplorePage>;
+    /** Catálogo con filtros. Con `maxGb` o `hideOwned` una página puede leer varias de la web: pide `page + 1` de la respuesta. */
+    browse(filters?: BrowseFilters, page?: number): Promise<ExplorePage>;
+    genres(): Promise<Genre[]>;
     details(slug: string): Promise<RepackDetails>;
     /** Abre la ficha en la web de la fuente (navegador del sistema). */
     openPage(slug: string): Promise<void>;

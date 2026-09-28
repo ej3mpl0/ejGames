@@ -55,6 +55,8 @@ export interface Achievement {
   hidden: boolean;
   globalPct?: number | null;
   unlockedAt?: number | null;
+  /** Puntos al estilo Xbox (1000 por juego, repartidos por rareza). */
+  score?: number | null;
 }
 
 export interface AchList {
@@ -83,7 +85,7 @@ export interface NoticeLook {
 
 export interface OverlayNotice {
   id: number;
-  kind: "achievement" | "info" | "summary";
+  kind: "achievement" | "info" | "summary" | "screenshot";
   gameId?: number | null;
   game?: string | null;
   title: string;
@@ -104,8 +106,74 @@ export interface OverlayPanel {
   startedAt?: number | null;
   media: MediaUrls;
   hotkey?: string | null;
+  screenshotHotkey?: string | null;
   achievements?: AchList | null;
   pad: boolean;
+  look: NoticeLook;
+  /** Segundos jugados antes de esta partida. */
+  playtime: number;
+  launchCount: number;
+  note: string;
+  captures: Capture[];
+  capturesDir: string;
+  live: OverlayLive;
+  developer?: string | null;
+  releaseYear?: string | null;
+  /** Volumen de los sonidos de la interfaz del perfil (0..1). */
+  soundsVolume: number;
+}
+
+export interface Capture {
+  id: number;
+  gameId: number;
+  url: string;
+  thumb: string;
+  path: string;
+  width: number;
+  height: number;
+  takenAt: number;
+}
+
+export interface OverlayLive {
+  perf?: {
+    cpu: number;
+    ram: number;
+    gpu?: number | null;
+    vram?: number | null;
+    sysCpu: number;
+    sysRamUsed: number;
+    sysRamTotal: number;
+  } | null;
+  media?: {
+    title: string;
+    artist: string;
+    album: string;
+    app: string;
+    playing: boolean;
+    art?: string | null;
+    position?: number | null;
+    duration?: number | null;
+    canPrev: boolean;
+    canNext: boolean;
+  } | null;
+  volume?: { game?: number | null; gameMuted: boolean; master: number; masterMuted: boolean } | null;
+  pad?: { name: string; state: "wired" | "charging" | "discharging" | "charged" | "unknown"; level?: number | null } | null;
+  battery?: { level: number; charging: boolean } | null;
+  downloads: {
+    items: {
+      id: number;
+      title: string;
+      state: string;
+      pauseReason?: string | null;
+      progress: number;
+      downBps: number;
+      eta?: number | null;
+      capsule?: string | null;
+      cover?: string | null;
+    }[];
+    pausedForGame: boolean;
+    allowed: boolean;
+  };
 }
 
 export interface OverlayInit {
@@ -338,6 +406,8 @@ export interface Settings {
   overlaySound: boolean;
   overlayStartHint: boolean;
   overlaySteamNotify: boolean;
+  screenshotHotkey: string;
+  screenshotDir: string;
   achievementDirs: string[];
   firstRunDone: boolean;
   exploreEnabled: boolean;
@@ -474,6 +544,8 @@ export interface Repack {
   repackBytes?: number | null;
   selective: boolean;
   adult: boolean;
+  /** Etiquetas de la web (ids de `Genre`). */
+  tags?: number[];
   status: RepackStatus;
 }
 
@@ -495,6 +567,22 @@ export interface ExplorePage {
   page: number;
   pages: number;
   total: number;
+  /** Con filtros de tamaño o «los que ya tengo», el total es aproximado. */
+  filtered?: boolean;
+}
+
+export interface Genre {
+  id: number;
+  name: string;
+  group: "genre" | "view" | "setting";
+}
+
+export interface BrowseFilters {
+  query?: string;
+  genres?: number[];
+  sort?: "date" | "modified" | "title";
+  maxGb?: number | null;
+  hideOwned?: boolean;
 }
 
 export interface TorrentFile {

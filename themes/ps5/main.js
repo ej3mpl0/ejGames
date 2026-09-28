@@ -458,7 +458,7 @@ bindNav(focus, {
     if (state.tab === "store") return shop.search(), true;
     return (state.selected && ejg.game.favorite(state.selected), true);
   },
-  x: () => (mediaOpen() || shop.hasDialog() || state.tab === "store" || (state.selected && ejg.game.edit(state.selected)), true),
+  x: () => (mediaOpen() || shop.hasDialog() || (state.tab === "store" ? shop.filters() : state.selected && ejg.game.edit(state.selected)), true),
   menu: () => (ejg.ui.open("menu"), true),
   view: () => (ejg.ui.open("search"), true),
   lb: () => (mediaOpen() || shop.hasDialog() || cycleTab(-1), true),

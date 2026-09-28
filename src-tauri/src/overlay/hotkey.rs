@@ -1,9 +1,10 @@
-//! Atajo global del overlay (p. ej. Mayús+Tab). Solo se registra mientras el
-//! juego (o el propio overlay) está en primer plano: si se registrara siempre,
-//! Mayús+Tab dejaría de funcionar en el resto de programas.
+//! Atajos globales del overlay (el panel, p. ej. Mayús+Tab, y las capturas,
+//! F12). Solo se registran mientras el juego (o el propio overlay) está en
+//! primer plano: si se registraran siempre, Mayús+Tab dejaría de funcionar en
+//! el resto de programas.
 //!
 //! Un hilo con su cola de mensajes: `SetWinEventHook(EVENT_SYSTEM_FOREGROUND)`
-//! registra o quita el atajo al cambiar de ventana y `WM_HOTKEY` lo dispara.
+//! registra o quita los atajos al cambiar de ventana y `WM_HOTKEY` los dispara.
 //! Windows no siempre avisa del cambio (p. ej. al cerrarse la ventana que
 //! estaba delante), así que un temporizador lo comprueba cada 500 ms. Con el
 //! juego delante, además, se lee el estado de las teclas cada 40 ms por si el
@@ -55,6 +56,11 @@ pub fn is_steam_default(spec: &str) -> bool {
     parse(spec) == Some((0x4, 0x09))
 }
 
+/// ¿Es el atajo de capturas de Steam (F12)?
+pub fn is_steam_screenshot(spec: &str) -> bool {
+    parse(spec) == Some((0, 0x7B))
+}
+
 pub struct Guard {
     thread_id: u32,
 }
@@ -71,19 +77,31 @@ impl Drop for Guard {
 }
 
 type TargetFn = Box<dyn Fn(u32, isize) -> bool + Send>;
+pub type Action = std::sync::Arc<dyn Fn() + Send + Sync>;
 
-struct Ctx {
-    is_target: TargetFn,
+/// Una combinación y lo que hace.
+#[cfg_attr(not(windows), allow(dead_code))]
+struct Binding {
+    /// Id de RegisterHotKey (1, 2…).
+    id: i32,
+    name: &'static str,
     mods: u32,
     vk: u32,
-    /// El juego (o el overlay) está en primer plano.
-    active: bool,
     /// RegisterHotKey funcionó.
     registered: bool,
-    last_hwnd: isize,
     /// Combinación pulsada en la última lectura (para detectar el flanco).
     combo_down: bool,
     last_fire: Option<std::time::Instant>,
+    on_press: Action,
+}
+
+#[cfg_attr(not(windows), allow(dead_code))]
+struct Ctx {
+    is_target: TargetFn,
+    bindings: Vec<Binding>,
+    /// El juego (o el overlay) está en primer plano.
+    active: bool,
+    last_hwnd: isize,
 }
 
 thread_local! {
@@ -91,12 +109,13 @@ thread_local! {
 }
 
 /// Evita el doble disparo cuando funcionan los dos métodos a la vez.
-fn should_fire(ctx: &mut Ctx) -> bool {
+#[cfg(windows)]
+fn should_fire(b: &mut Binding) -> bool {
     let now = std::time::Instant::now();
-    if ctx.last_fire.map(|t| now.duration_since(t).as_millis() < 400).unwrap_or(false) {
+    if b.last_fire.map(|t| now.duration_since(t).as_millis() < 400).unwrap_or(false) {
         return false;
     }
-    ctx.last_fire = Some(now);
+    b.last_fire = Some(now);
     true
 }
 
@@ -116,48 +135,76 @@ fn update(hwnd: isize) {
             return;
         }
         ctx.active = want;
-        unsafe {
-            if want {
-                ctx.registered = RegisterHotKey(None, 1, HOT_KEY_MODIFIERS(ctx.mods) | MOD_NOREPEAT, ctx.vk).is_ok();
-                // Aunque falle (otro programa lo tiene), la lectura de teclas sigue valiendo.
-                // Con el juego como administrador no vale ninguno de los dos (UIPI).
-                let admin = crate::launcher::admin::above_us(pid);
-                tracing::info!(
-                    "overlay: juego en primer plano, atajo registrado: {}{}",
-                    ctx.registered,
-                    if admin { " (el juego corre como administrador: Windows no deja leer el teclado)" } else { "" }
-                );
-            } else {
-                if ctx.registered {
-                    let _ = UnregisterHotKey(None, 1);
+        for b in ctx.bindings.iter_mut() {
+            unsafe {
+                if want {
+                    // Aunque falle (otro programa lo tiene), la lectura de teclas sigue valiendo.
+                    b.registered = RegisterHotKey(None, b.id, HOT_KEY_MODIFIERS(b.mods) | MOD_NOREPEAT, b.vk).is_ok();
+                } else {
+                    if b.registered {
+                        let _ = UnregisterHotKey(None, b.id);
+                    }
+                    b.registered = false;
+                    b.combo_down = false;
                 }
-                ctx.registered = false;
-                ctx.combo_down = false;
             }
+        }
+        if want {
+            // Con el juego como administrador no vale ninguno de los dos métodos (UIPI).
+            let admin = crate::launcher::admin::above_us(pid);
+            let list: Vec<String> = ctx.bindings.iter().map(|b| format!("{}: {}", b.name, b.registered)).collect();
+            tracing::info!(
+                "overlay: juego en primer plano, atajos registrados ({}){}",
+                list.join(", "),
+                if admin { " (el juego corre como administrador: Windows no deja leer el teclado)" } else { "" }
+            );
         }
     });
 }
 
 /// Segundo método: leer el estado de las teclas. Algunos juegos (entrada raw
 /// con RIDEV_NOHOTKEYS, ganchos de teclado) no dejan llegar WM_HOTKEY.
+/// Devuelve los atajos que acaban de pulsarse.
 #[cfg(windows)]
-fn poll_keys() -> bool {
+fn poll_keys() -> Vec<usize> {
     CTX.with(|c| {
         let mut c = c.borrow_mut();
-        let Some(ctx) = c.as_mut() else { return false };
+        let Some(ctx) = c.as_mut() else { return vec![] };
         if !ctx.active {
-            return false;
+            return vec![];
         }
-        let down = super::win::keys_down(ctx.mods, ctx.vk);
-        let edge = down && !ctx.combo_down;
-        ctx.combo_down = down;
-        edge && should_fire(ctx)
+        let mut fired = vec![];
+        for (i, b) in ctx.bindings.iter_mut().enumerate() {
+            let down = super::win::keys_down(b.mods, b.vk);
+            let edge = down && !b.combo_down;
+            b.combo_down = down;
+            if edge && should_fire(b) {
+                fired.push(i);
+            }
+        }
+        fired
     })
 }
 
 #[cfg(windows)]
-fn hotkey_message() -> bool {
-    CTX.with(|c| c.borrow_mut().as_mut().map(should_fire).unwrap_or(false))
+fn hotkey_message(id: i32) -> Option<usize> {
+    CTX.with(|c| {
+        let mut c = c.borrow_mut();
+        let ctx = c.as_mut()?;
+        let i = ctx.bindings.iter().position(|b| b.id == id)?;
+        should_fire(&mut ctx.bindings[i]).then_some(i)
+    })
+}
+
+/// Llama a la acción de un atajo, fuera del préstamo de CTX (si la acción
+/// bombea mensajes, el gancho de primer plano puede volver a entrar).
+#[cfg(windows)]
+fn fire(i: usize, how: &str) {
+    let found = CTX.with(|c| c.borrow().as_ref().and_then(|ctx| ctx.bindings.get(i).map(|b| (b.name, b.on_press.clone()))));
+    if let Some((name, action)) = found {
+        tracing::info!("overlay: atajo de {name} ({how})");
+        action();
+    }
 }
 
 #[cfg(windows)]
@@ -173,8 +220,10 @@ unsafe extern "system" fn on_foreground(
     update(hwnd.0 as isize);
 }
 
+/// Registra los atajos `(nombre, combinación, acción)` mientras el juego esté
+/// delante. Las combinaciones que no se entienden se saltan; sin ninguna, None.
 #[cfg(windows)]
-pub fn start(spec: &str, is_target: TargetFn, on_press: Box<dyn Fn() + Send>) -> Option<Guard> {
+pub fn start(keys: Vec<(&'static str, String, Action)>, is_target: TargetFn) -> Option<Guard> {
     use windows::Win32::System::Threading::GetCurrentThreadId;
     use windows::Win32::UI::Accessibility::{SetWinEventHook, UnhookWinEvent};
     use windows::Win32::UI::Input::KeyboardAndMouse::UnregisterHotKey;
@@ -182,7 +231,24 @@ pub fn start(spec: &str, is_target: TargetFn, on_press: Box<dyn Fn() + Send>) ->
         GetForegroundWindow, GetMessageW, KillTimer, PeekMessageW, SetTimer, EVENT_SYSTEM_FOREGROUND, MSG, PM_NOREMOVE,
         WINEVENT_OUTOFCONTEXT, WM_HOTKEY, WM_TIMER, WM_USER,
     };
-    let (mods, vk) = parse(spec)?;
+    let bindings: Vec<Binding> = keys
+        .into_iter()
+        .filter_map(|(name, spec, on_press)| parse(&spec).map(|(mods, vk)| (name, mods, vk, on_press)))
+        .enumerate()
+        .map(|(i, (name, mods, vk, on_press))| Binding {
+            id: i as i32 + 1,
+            name,
+            mods,
+            vk,
+            registered: false,
+            combo_down: false,
+            last_fire: None,
+            on_press,
+        })
+        .collect();
+    if bindings.is_empty() {
+        return None;
+    }
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::Builder::new()
         .name("ejg-hotkey".into())
@@ -190,18 +256,7 @@ pub fn start(spec: &str, is_target: TargetFn, on_press: Box<dyn Fn() + Send>) ->
             let mut msg = MSG::default();
             // Crea la cola de mensajes del hilo antes de publicar su id.
             let _ = PeekMessageW(&mut msg, None, WM_USER, WM_USER, PM_NOREMOVE);
-            CTX.with(|c| {
-                *c.borrow_mut() = Some(Ctx {
-                    is_target,
-                    mods,
-                    vk,
-                    active: false,
-                    registered: false,
-                    last_hwnd: -1,
-                    combo_down: false,
-                    last_fire: None,
-                })
-            });
+            CTX.with(|c| *c.borrow_mut() = Some(Ctx { is_target, bindings, active: false, last_hwnd: -1 }));
             let hook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, None, Some(on_foreground), 0, 0, WINEVENT_OUTOFCONTEXT);
             // 40 ms: lectura de teclas; cada 500 ms, además, la ventana en primer
             // plano (Windows no siempre avisa del cambio).
@@ -216,9 +271,8 @@ pub fn start(spec: &str, is_target: TargetFn, on_press: Box<dyn Fn() + Send>) ->
                 }
                 match msg.message {
                     WM_HOTKEY => {
-                        if hotkey_message() {
-                            tracing::info!("overlay: atajo (WM_HOTKEY)");
-                            on_press();
+                        if let Some(i) = hotkey_message(msg.wParam.0 as i32) {
+                            fire(i, "WM_HOTKEY");
                         }
                     }
                     WM_TIMER => {
@@ -226,9 +280,8 @@ pub fn start(spec: &str, is_target: TargetFn, on_press: Box<dyn Fn() + Send>) ->
                         if ticks % 12 == 0 {
                             update(GetForegroundWindow().0 as isize);
                         }
-                        if poll_keys() {
-                            tracing::info!("overlay: atajo (teclas)");
-                            on_press();
+                        for i in poll_keys() {
+                            fire(i, "teclas");
                         }
                     }
                     _ => {}
@@ -238,8 +291,11 @@ pub fn start(spec: &str, is_target: TargetFn, on_press: Box<dyn Fn() + Send>) ->
             if !hook.is_invalid() {
                 let _ = UnhookWinEvent(hook);
             }
-            let _ = UnregisterHotKey(None, 1);
-            CTX.with(|c| *c.borrow_mut() = None);
+            if let Some(ctx) = CTX.with(|c| c.borrow_mut().take()) {
+                for b in ctx.bindings.iter().filter(|b| b.registered) {
+                    let _ = UnregisterHotKey(None, b.id);
+                }
+            }
         })
         .ok()?;
     let thread_id = rx.recv_timeout(std::time::Duration::from_secs(2)).ok()?;
@@ -247,7 +303,7 @@ pub fn start(spec: &str, is_target: TargetFn, on_press: Box<dyn Fn() + Send>) ->
 }
 
 #[cfg(not(windows))]
-pub fn start(_spec: &str, _is_target: TargetFn, _on_press: Box<dyn Fn() + Send>) -> Option<Guard> {
+pub fn start(_keys: Vec<(&'static str, String, Action)>, _is_target: TargetFn) -> Option<Guard> {
     None
 }
 
@@ -265,5 +321,7 @@ mod tests {
         assert_eq!(parse("Ctrl+Foo"), None);
         assert!(is_steam_default("shift+tab"));
         assert!(!is_steam_default("Ctrl+Tab"));
+        assert!(is_steam_screenshot("f12"));
+        assert!(!is_steam_screenshot("Ctrl+F12"));
     }
 }

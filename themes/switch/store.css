@@ -272,3 +272,37 @@ svg .f { fill: currentColor; }
 :root[data-mode="tv"] .sw-dlg-body { font-size: 19px; }
 :root[data-mode="tv"] .title-bar small { font-size: 18px; }
 :root[data-dark="on"] .circle[data-action="menu"] i { color: #c8c8c8; }
+
+/* ─── explorar: filtros como filas de la configuración ─── */
+.es-set { display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; background: var(--card); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); }
+.es-setrow { display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 16px 0 24px; text-align: left; border-bottom: 1px solid var(--line); border-radius: 6px; }
+.es-setrow:last-of-type { border-bottom: 0; }
+.es-setrow span { flex: none; font-size: 18px; font-weight: 700; }
+.es-setrow b { flex: 1; min-width: 0; text-align: right; font-size: 17px; font-weight: 700; color: var(--dl, #00a3d9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.es-setrow .ico svg { width: 22px; height: 22px; color: var(--muted); }
+.es-setrow.is-focused, .es-setrow:hover { box-shadow: inset 0 0 0 4px var(--accent); }
+.es-set-foot { display: flex; justify-content: flex-end; padding: 12px 14px; border-top: 1px solid var(--line); }
+.sw-toggle { position: relative; flex: none; width: 52px; height: 30px; border-radius: 15px; background: var(--line); transition: background 0.15s ease; }
+.sw-toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.18s cubic-bezier(0.3, 1.4, 0.5, 1); }
+.sw-toggle.on { background: var(--dl, #00a3d9); }
+.sw-toggle.on::after { transform: translateX(22px); }
+
+/* selector de un filtro (diálogo de sistema) */
+.sw-dlg-h { margin: 0 0 16px; font-size: 22px; font-weight: 800; }
+.dd-chks.one { grid-template-columns: 1fr; }
+.dd-sub { margin: 14px 0 2px; color: var(--muted); font-size: 14px; font-weight: 800; }
+.dd-sub:first-child { margin-top: 0; }
+.dd-chk.radio i { border-radius: 50%; }
+
+/* géneros de la portada: tarjetas de colores */
+.es-genres { grid-auto-columns: calc(var(--es-tile) * 1.25); }
+.es-genre { position: relative; aspect-ratio: 16 / 9; display: flex; align-items: flex-end; padding: 14px 16px; border-radius: 10px; overflow: hidden; text-align: left; color: #fff; background: var(--c); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18); }
+.es-genre::before { content: ""; position: absolute; right: -14%; bottom: -34%; width: 64%; aspect-ratio: 1; border-radius: 50%; background: rgba(255, 255, 255, 0.16); }
+.es-genre::after { content: ""; position: absolute; right: 16%; top: -22%; width: 30%; aspect-ratio: 1; border-radius: 50%; background: rgba(255, 255, 255, 0.1); }
+.es-genre b { position: relative; z-index: 1; font-size: 19px; font-weight: 800; }
+.es-genre.is-focused, .es-genre:hover { box-shadow: 0 0 0 4px var(--bg), 0 0 0 8px var(--accent); }
+
+/* ficha: géneros pulsables y «Más como este» */
+.fi-chips .fi-chip { padding: 4px 12px; border-radius: 99px; background: var(--card); color: var(--muted); font-size: 13px; font-weight: 700; }
+.fi-chips .fi-chip.is-focused, .fi-chips .fi-chip:hover { color: var(--fg); box-shadow: 0 0 0 3px var(--accent); }
+.fi-similar { margin-top: 30px; }

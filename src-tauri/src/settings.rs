@@ -56,6 +56,11 @@ pub struct Settings {
     pub overlay_start_hint: bool,
     /// Avisar también de logros de Steam (Steam ya los muestra en su overlay).
     pub overlay_steam_notify: bool,
+    /// Atajo de las capturas de pantalla ("F12"; "" = sin atajo). En juegos de
+    /// Steam no se registra si coincide con el de Steam.
+    pub screenshot_hotkey: String,
+    /// Carpeta de las capturas ("" = Imágenes\ejGames). Una subcarpeta por juego.
+    pub screenshot_dir: String,
     /// Carpetas extra donde buscar `<appid>chievements.*` de emuladores.
     pub achievement_dirs: Vec<String>,
     pub first_run_done: bool,
@@ -130,6 +135,8 @@ impl Default for Settings {
             overlay_sound: true,
             overlay_start_hint: true,
             overlay_steam_notify: false,
+            screenshot_hotkey: "F12".into(),
+            screenshot_dir: String::new(),
             achievement_dirs: vec![],
             first_run_done: false,
             explore_enabled: true,

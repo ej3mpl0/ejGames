@@ -126,6 +126,22 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
       return api.exploreHome();
     case "explore.search":
       return api.exploreSearch(str(params?.query ?? "", 100), params?.page == null ? 1 : Math.max(1, Math.min(500, num(params.page))));
+    case "explore.browse": {
+      const f = params?.filters && typeof params.filters === "object" ? params.filters : {};
+      const max = f.maxGb == null ? null : num(f.maxGb);
+      return api.exploreBrowse(
+        {
+          query: str(f.query ?? "", 100),
+          genres: Array.isArray(f.genres) ? f.genres.slice(0, 4).map(num).filter((n: number) => n > 0) : [],
+          sort: ["date", "modified", "title"].includes(f.sort) ? f.sort : "date",
+          maxGb: max && max > 0 ? Math.min(max, 1000) : null,
+          hideOwned: !!f.hideOwned,
+        },
+        params?.page == null ? 1 : Math.max(1, Math.min(1000, num(params.page))),
+      );
+    }
+    case "explore.genres":
+      return api.exploreGenres();
     case "explore.details":
       return api.exploreDetails(slug(params?.slug));
     case "explore.openPage":

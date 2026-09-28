@@ -145,6 +145,48 @@ export function repackAction(r) {
   }
 }
 
+// ───────────────────────────── catálogo ─────────────────────────────
+
+/** Órdenes del catálogo. */
+export const SORTS = [
+  { id: "date", label: "Novedades" },
+  { id: "modified", label: "Actualizados hace poco" },
+  { id: "title", label: "De la A a la Z" },
+];
+
+/** Tamaños máximos de descarga (null = cualquiera). */
+export const SIZES = [
+  { gb: null, label: "Cualquier tamaño" },
+  { gb: 5, label: "Hasta 5 GB" },
+  { gb: 10, label: "Hasta 10 GB" },
+  { gb: 25, label: "Hasta 25 GB" },
+  { gb: 50, label: "Hasta 50 GB" },
+];
+
+/** Grupos de géneros, en el orden en que conviene enseñarlos. */
+export const GENRE_GROUPS = [
+  { id: "genre", label: "Género" },
+  { id: "view", label: "Perspectiva" },
+  { id: "setting", label: "Ambientación" },
+];
+
+/** Máximo de géneros a la vez (salen los juegos que los tienen todos). */
+export const MAX_GENRES = 4;
+
+export const emptyFilters = () => ({ query: "", genres: [], sort: "date", maxGb: null, hideOwned: false });
+
+/** Cuántos filtros hay puestos (sin contar el texto ni el orden). */
+export function filterCount(f) {
+  return (f.genres?.length || 0) + (f.maxGb ? 1 : 0) + (f.hideOwned ? 1 : 0);
+}
+
+/** "Rol · Mundo abierto · Hasta 25 GB" (vacío si no hay filtros). */
+export function describeFilters(f, genres = []) {
+  const names = (f.genres || []).map((id) => genres.find((g) => g.id === id)?.name).filter(Boolean);
+  const size = SIZES.find((s) => s.gb === (f.maxGb || null));
+  return [...names, f.maxGb && size ? size.label : "", f.hideOwned ? "Sin los que ya tienes" : ""].filter(Boolean).join(" · ");
+}
+
 // ───────────────────────────── tienda ─────────────────────────────
 
 /**
@@ -163,10 +205,17 @@ export function createExplore(ejg, onChange = () => {}) {
     total: 0,
     searching: false,
     searchError: "",
+    /** Géneros para filtrar (se piden una vez con loadGenres). */
+    genres: [],
+    /** Catálogo con filtros (browse). */
+    catalog: { filters: emptyFilters(), items: [], page: 0, pages: 0, total: 0, filtered: false, loading: false, error: "" },
   };
   const details = new Map();
+  const similarCache = new Map();
   let seq = 0;
   let timer = 0;
+  let catSeq = 0;
+  let catTimer = 0;
   const emit = () => onChange(state);
 
   async function loadHome(force = false) {
@@ -235,19 +284,145 @@ export function createExplore(ejg, onChange = () => {}) {
     return d;
   }
 
+  async function loadGenres() {
+    if (state.genres.length) return state.genres;
+    try {
+      state.genres = (await ejg.explore.genres()) || [];
+      emit();
+    } catch {}
+    return state.genres;
+  }
+
+  async function runCatalog(page) {
+    const my = ++catSeq;
+    const c = state.catalog;
+    c.loading = true;
+    c.error = "";
+    emit();
+    try {
+      const r = await ejg.explore.browse(c.filters, page);
+      if (my !== catSeq) return;
+      // Sin repetir (una ficha actualizada puede cambiar de página entre peticiones).
+      const seen = new Set(page > 1 ? c.items.map((x) => x.slug) : []);
+      c.items = page > 1 ? c.items.concat(r.items.filter((x) => !seen.has(x.slug))) : r.items;
+      c.page = r.page;
+      c.pages = r.pages;
+      c.total = r.total;
+      c.filtered = !!r.filtered;
+    } catch (e) {
+      if (my !== catSeq) return;
+      c.error = e.message || String(e);
+      if (page <= 1) c.items = [];
+    }
+    c.loading = false;
+    emit();
+  }
+
+  /**
+   * Catálogo: cambia los filtros (se mezclan con los que hay) y vuelve a la
+   * primera página. `delay`: espera por si se sigue escribiendo el texto.
+   */
+  function browse(patch = {}, delay = 0) {
+    const c = state.catalog;
+    c.filters = { ...c.filters, ...patch };
+    c.filters.genres = [...new Set(c.filters.genres || [])].slice(0, MAX_GENRES);
+    c.items = [];
+    c.page = c.pages = c.total = 0;
+    catSeq++;
+    c.loading = true;
+    c.error = "";
+    emit();
+    clearTimeout(catTimer);
+    catTimer = setTimeout(() => runCatalog(1), delay);
+  }
+
+  /** Siguiente página del catálogo (para el scroll infinito). */
+  function browseMore() {
+    const c = state.catalog;
+    if (c.loading || !c.page || c.page >= c.pages) return;
+    runCatalog(c.page + 1);
+  }
+
+  /** Pone o quita un género (máx. MAX_GENRES). false si ya hay demasiados. */
+  function toggleGenre(id) {
+    const g = state.catalog.filters.genres || [];
+    if (g.includes(id)) browse({ genres: g.filter((x) => x !== id) });
+    else if (g.length >= MAX_GENRES) return false;
+    else browse({ genres: [...g, id] });
+    return true;
+  }
+
+  /** Quita los filtros (deja el orden). */
+  function clearFilters() {
+    browse({ ...emptyFilters(), sort: state.catalog.filters.sort });
+  }
+
+  /** Juegos parecidos a una ficha (comparten sus dos primeros géneros conocidos). */
+  async function similar(r, limit = 12) {
+    if (similarCache.has(r.slug)) return similarCache.get(r.slug);
+    await loadGenres();
+    const known = (r.tags || []).filter((t) => state.genres.some((g) => g.id === t && g.group === "genre")).slice(0, 2);
+    if (!known.length) return [];
+    try {
+      const res = await ejg.explore.browse({ genres: known, sort: "date" }, 1);
+      const list = res.items.filter((x) => x.slug !== r.slug).slice(0, limit);
+      similarCache.set(r.slug, list);
+      return list;
+    } catch {
+      return [];
+    }
+  }
+
+  /** Vuelve a pedir las páginas del catálogo ya cargadas (salen de la caché) sin perder el sitio. */
+  async function refreshCatalog() {
+    const c = state.catalog;
+    if (!c.page || c.loading) return;
+    const my = ++catSeq;
+    const upto = c.page;
+    let items = [];
+    let last = null;
+    try {
+      for (let p = 1; p <= upto; ) {
+        const r = await ejg.explore.browse(c.filters, p);
+        if (my !== catSeq) return;
+        const seen = new Set(items.map((x) => x.slug));
+        items = items.concat(r.items.filter((x) => !seen.has(x.slug)));
+        last = r;
+        if (r.page >= r.pages) break;
+        p = r.page + 1;
+      }
+    } catch {
+      return;
+    }
+    if (!last) return;
+    c.items = items;
+    c.page = last.page;
+    c.pages = last.pages;
+    c.total = last.total;
+    c.filtered = !!last.filtered;
+    emit();
+  }
+
   // Llegó arte de Steam (cápsulas): se vuelve a pedir lo que se está viendo.
+  let artTimer = 0;
   ejg.on?.("explore-art", () => {
     details.clear();
-    if (state.home) loadHome(true);
-    if (state.query) run(state.query, 1);
+    similarCache.clear();
+    clearTimeout(artTimer);
+    artTimer = setTimeout(() => {
+      if (state.home) loadHome(true);
+      if (state.query) run(state.query, 1);
+      refreshCatalog();
+    }, 600);
   });
 
   /** Olvida las fichas guardadas (su estado cambia al descargar/instalar). */
   function refresh() {
     details.clear();
+    similarCache.clear();
   }
 
-  return { state, loadHome, search, more, details: get, refresh };
+  return { state, loadHome, search, more, details: get, refresh, loadGenres, browse, browseMore, toggleGenre, clearFilters, similar };
 }
 
 /**

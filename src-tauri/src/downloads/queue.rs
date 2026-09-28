@@ -79,9 +79,12 @@ async fn reconcile_inner(st: &Arc<AppState>) -> anyhow::Result<()> {
     let rows = st.db.with(repo::list_downloads)?;
     let playing = st.sessions.any();
     st.downloads.playing.store(playing, Ordering::Relaxed);
+    if !playing {
+        st.downloads.allow_while_playing.store(false, Ordering::Relaxed);
+    }
     let block = if st.downloads.installing.lock().is_some() {
         Some("install")
-    } else if set.pause_while_playing && playing {
+    } else if set.pause_while_playing && playing && !st.downloads.allow_while_playing.load(Ordering::Relaxed) {
         Some("playing")
     } else {
         None

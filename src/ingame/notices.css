@@ -442,6 +442,32 @@
 }
 .nt-e-meta { margin-top: 5px; font-size: 11.5px; color: color-mix(in srgb, var(--e-text) 50%, transparent); }
 
+/* ═══════════ Capturas: la miniatura en 16:9 en lugar del icono ═══════════ */
+
+.nt .is-shot:not(.ph) {
+  width: 96px;
+  height: 54px;
+  object-fit: cover;
+}
+.nt .nt-ps-art.is-shot:not(.ph),
+.nt .nt-sw-icon.is-shot:not(.ph) {
+  width: 92px;
+  height: 52px;
+}
+.nt .nt-r-icon.is-shot:not(.ph) {
+  width: 80px;
+  height: 45px;
+  image-rendering: pixelated;
+}
+.nt-plain .is-shot + .nt-e-txt .nt-e-desc,
+.nt-steam .is-shot + .nt-steam-txt .nt-steam-desc,
+.nt-cinema .is-shot + .nt-c-txt .nt-c-desc {
+  -webkit-line-clamp: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  display: block;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nt,
   .nt * {

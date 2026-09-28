@@ -803,13 +803,20 @@ pub async fn update_settings(app: tauri::AppHandle, st: St<'_>, patch: Value) ->
         }
     }
     let mut next: Settings = serde_json::from_value(cur).map_err(|e| CmdError::Msg(e.to_string()))?;
-    for d in [&mut next.download_dir, &mut next.install_dir] {
+    for d in [&mut next.download_dir, &mut next.install_dir, &mut next.screenshot_dir] {
         if !d.trim().is_empty() {
             *d = crate::util::clean_dir(d);
         }
     }
-    if !next.overlay_hotkey.trim().is_empty() && crate::overlay::hotkey::parse(&next.overlay_hotkey).is_none() {
-        return Err(CmdError::Msg(format!("Atajo no válido: {}", next.overlay_hotkey)));
+    for k in [&next.overlay_hotkey, &next.screenshot_hotkey] {
+        if !k.trim().is_empty() && crate::overlay::hotkey::parse(k).is_none() {
+            return Err(CmdError::Msg(format!("Atajo no válido: {k}")));
+        }
+    }
+    if !next.screenshot_hotkey.trim().is_empty()
+        && crate::overlay::hotkey::parse(&next.screenshot_hotkey) == crate::overlay::hotkey::parse(&next.overlay_hotkey)
+    {
+        return Err(CmdError::Msg("El atajo de las capturas no puede ser el mismo que el del panel".into()));
     }
     if !crate::settings::OVERLAY_CORNERS.contains(&next.overlay_corner.as_str()) {
         return Err(CmdError::Msg("Posición de los avisos no válida".into()));
@@ -933,14 +940,54 @@ pub async fn overlay_panel(st: St<'_>, open: bool, restore: Option<bool>) -> Cmd
 
 #[tauri::command]
 pub async fn overlay_action(st: St<'_>, action: String) -> CmdResult<()> {
+    let s = st.inner().clone();
     match action.as_str() {
         "launcher" => {
+            crate::overlay::close_panel(&s, false);
+            crate::lifecycle::show_main(&s);
+        }
+        "screenshot" => crate::overlay::screenshot(&s),
+        "quit-game" => blocking(move || Ok(crate::overlay::quit_game(&s)?)).await?,
+        // Seguir descargando mientras se juega (solo esta partida) o volver a pausar.
+        "downloads-resume" | "downloads-pause" => {
+            s.downloads.allow_while_playing.store(action == "downloads-resume", std::sync::atomic::Ordering::Relaxed);
+            crate::downloads::queue::reconcile(&s).await;
+        }
+        "open-captures" => {
+            let dir = blocking(move || {
+                let title = s.sessions.list().first().map(|r| r.title.clone()).unwrap_or_default();
+                let dir = if title.is_empty() { crate::overlay::capture::root(&s) } else { crate::overlay::capture::game_folder(&s, &title) };
+                std::fs::create_dir_all(&dir)?;
+                Ok(dir)
+            })
+            .await?;
             crate::overlay::close_panel(st.inner(), false);
-            crate::lifecycle::show_main(st.inner());
+            use tauri_plugin_opener::OpenerExt;
+            st.app.opener().open_path(dir.to_string_lossy(), None::<&str>).map_err(|e| CmdError::Msg(e.to_string()))?;
         }
         _ => return Err(CmdError::Msg("acción no válida".into())),
     }
     Ok(())
+}
+
+/// Música del sistema: "toggle" | "next" | "prev".
+#[tauri::command]
+pub async fn overlay_media(cmd: String) -> CmdResult<()> {
+    blocking(move || Ok(crate::overlay::live::media_command(&cmd)?)).await
+}
+
+/// Volumen (0..1) o silencio del juego ("game") o del sistema ("master").
+#[tauri::command]
+pub async fn overlay_volume(st: St<'_>, which: String, level: Option<f32>, muted: Option<bool>) -> CmdResult<()> {
+    let s = st.inner().clone();
+    blocking(move || Ok(crate::overlay::live::set_volume(&s, &which, level, muted)?)).await
+}
+
+/// Nota del juego en marcha (se guarda sola al escribir en el panel).
+#[tauri::command]
+pub async fn overlay_note(st: St<'_>, text: String) -> CmdResult<()> {
+    let s = st.inner().clone();
+    blocking(move || Ok(crate::overlay::set_live_note(&s, &text)?)).await
 }
 
 /// La página del overlay enseña un aviso: su sonido, a la vez.
@@ -983,6 +1030,17 @@ pub async fn explore_home(st: St<'_>) -> CmdResult<crate::explore::Home> {
 #[tauri::command]
 pub async fn explore_search(st: St<'_>, query: String, page: Option<u32>) -> CmdResult<crate::explore::SearchPage> {
     Ok(crate::explore::search(st.inner(), &query, page.unwrap_or(1)).await?)
+}
+
+/// Catálogo con filtros (géneros, orden, tamaño, los que ya tienes).
+#[tauri::command]
+pub async fn explore_browse(st: St<'_>, filters: crate::explore::Browse, page: Option<u32>) -> CmdResult<crate::explore::SearchPage> {
+    Ok(crate::explore::browse(st.inner(), &filters, page.unwrap_or(1)).await?)
+}
+
+#[tauri::command]
+pub async fn explore_genres() -> CmdResult<&'static [crate::explore::genres::Genre]> {
+    Ok(crate::explore::genres::GENRES)
 }
 
 #[tauri::command]

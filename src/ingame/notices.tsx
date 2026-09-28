@@ -30,10 +30,15 @@ const summaryCount = (n: OverlayNotice) => parseInt(n.title, 10) || 0;
 export function noticeMs(n: OverlayNotice) {
   if (n.kind === "summary") return 9000;
   if (n.kind === "info") return 5500;
+  if (n.kind === "screenshot") return 4500;
   return isRare(n) ? 9000 : 6500;
 }
 
 const cls = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
+
+const isShot = (n: OverlayNotice) => n.kind === "screenshot";
+/** "C:\Users\x\Pictures\ejGames\Juego" → "Pictures › ejGames › Juego" */
+const shortDir = (dir?: string | null) => (dir ? dir.split(/[\\/]/).filter(Boolean).slice(-3).join(" › ") : "");
 
 // ─────────── iconos (propios, sin logos de nadie) ───────────
 
@@ -74,6 +79,17 @@ function Pad({ className }: { className?: string }) {
   );
 }
 
+function Camera({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M8.6 4.5h6.8l1.5 2.2h2.6A2.5 2.5 0 0 1 22 9.2v8.3a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5V9.2a2.5 2.5 0 0 1 2.5-2.5h2.6l1.5-2.2ZM12 9a4.2 4.2 0 1 0 0 8.4A4.2 4.2 0 0 0 12 9Zm0 2a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4Z"
+      />
+    </svg>
+  );
+}
+
 /** Icono del logro; si no hay (o falla), el glifo de la plataforma. */
 function Art({ src, className, children }: { src?: string | null; className: string; children: ReactNode }) {
   const [broken, setBroken] = useState(false);
@@ -102,6 +118,20 @@ type P = { n: OverlayNotice; look: NoticeLook };
 
 function Steam({ n }: P) {
   const rare = isRare(n);
+  if (isShot(n)) {
+    return (
+      <div className="nt-steam">
+        <Art src={n.icon} className="nt-steam-icon is-shot">
+          <Camera />
+        </Art>
+        <div className="nt-steam-txt">
+          <div className="nt-steam-head">Captura de pantalla guardada</div>
+          <div className="nt-steam-name">{n.game}</div>
+          <div className="nt-steam-desc">{shortDir(n.body)}</div>
+        </div>
+      </div>
+    );
+  }
   const head =
     n.kind === "summary" ? "Resumen de la partida" : n.kind === "info" ? n.game || "ejGames" : rare ? "Logro raro desbloqueado" : "Logro desbloqueado";
   return (
@@ -139,6 +169,22 @@ function grade(n: OverlayNotice): Grade {
 }
 
 function PlayStation({ n }: P) {
+  if (isShot(n)) {
+    return (
+      <div className="nt-ps info">
+        <Art src={n.icon} className="nt-ps-art is-shot">
+          <Camera />
+        </Art>
+        <div className="nt-ps-txt">
+          <div className="nt-ps-head">
+            <Camera className="nt-ps-cup" />
+            <span>Captura de pantalla guardada</span>
+          </div>
+          <div className="nt-ps-name">{n.game}</div>
+        </div>
+      </div>
+    );
+  }
   const g = grade(n);
   const info = n.kind === "info";
   const head =
@@ -169,9 +215,26 @@ function PlayStation({ n }: P) {
 
 function Xbox({ n, look }: P) {
   const rare = isRare(n);
+  const style = look.accent ? ({ "--x-accent": look.accent } as CSSProperties) : undefined;
+  if (isShot(n)) {
+    return (
+      <div className="nt-xbox info" style={style}>
+        <div className="nt-x-orb">
+          <Camera />
+        </div>
+        <div className="nt-x-pill">
+          <div className="nt-x-txt">
+            <div className="nt-x-l1">Captura realizada</div>
+            <div className="nt-x-l2">
+              <span className="nt-x-name">{n.game}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const info = n.kind === "info";
   const l1 = n.kind === "summary" ? `${summaryCount(n)} logros desbloqueados` : info ? n.title : rare ? "Logro raro desbloqueado" : "Logro desbloqueado";
-  const style = look.accent ? ({ "--x-accent": look.accent } as CSSProperties) : undefined;
   return (
     <div className={cls("nt-xbox", rare && "rare", info && "info")} style={style}>
       <div className="nt-x-orb">{info ? <Pad /> : rare ? <Gem /> : <Cup />}</div>
@@ -206,6 +269,20 @@ function Switch({ n, look }: P) {
   const info = n.kind === "info";
   const head = n.kind === "summary" ? "Resumen de la partida" : info ? n.game || "ejGames" : "Logro desbloqueado";
   const style = look.accent ? ({ "--sw-accent": look.accent } as CSSProperties) : undefined;
+  if (isShot(n)) {
+    return (
+      <div className={cls("nt-switch", look.dark && "dark")} style={style}>
+        <Art src={n.icon} className="nt-sw-icon is-shot">
+          <Camera />
+        </Art>
+        <div className="nt-sw-txt">
+          <div className="nt-sw-head">Álbum</div>
+          <div className="nt-sw-name">Captura guardada</div>
+          <div className="nt-sw-desc">{n.game}</div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={cls("nt-switch", look.dark && "dark")} style={style}>
       <Art src={info ? null : n.icon} className="nt-sw-icon">
@@ -224,19 +301,20 @@ function Switch({ n, look }: P) {
 
 function Cinema({ n, look }: P) {
   const info = n.kind === "info";
-  const kicker = n.kind === "summary" ? "Resumen de la partida" : info ? n.game || "ejGames" : "Logro desbloqueado";
+  const shot = isShot(n);
+  const kicker = shot ? "Captura guardada" : n.kind === "summary" ? "Resumen de la partida" : info ? n.game || "ejGames" : "Logro desbloqueado";
   const meta = [n.kind === "achievement" ? n.game : null, n.rarity != null ? `${pct(n.rarity)} % de los jugadores` : null].filter(Boolean).join("  ·  ");
   const style = look.accent ? ({ "--c-accent": look.accent } as CSSProperties) : undefined;
   return (
     <div className="nt-cinema" style={style}>
       <i className="nt-c-bar" />
-      <Art src={info ? null : n.icon} className="nt-c-icon">
-        {info ? <Pad /> : <Cup />}
+      <Art src={info ? null : n.icon} className={cls("nt-c-icon", shot && "is-shot")}>
+        {info ? <Pad /> : shot ? <Camera /> : <Cup />}
       </Art>
       <div className="nt-c-txt">
         <div className="nt-c-kicker">{kicker}</div>
-        <div className="nt-c-name">{n.title}</div>
-        {n.body && <div className="nt-c-desc">{n.body}</div>}
+        <div className="nt-c-name">{shot ? n.game : n.title}</div>
+        {n.body && <div className="nt-c-desc">{shot ? shortDir(n.body) : n.body}</div>}
         {meta && <div className="nt-c-meta">{meta}</div>}
       </div>
     </div>
@@ -246,6 +324,25 @@ function Cinema({ n, look }: P) {
 // ─────────── Arcade retro: cartel pixelado arriba en el centro ───────────
 
 function Retro({ n, look }: P) {
+  if (isShot(n)) {
+    return (
+      <div className={cls("nt-retro", `pal-${look.palette || "arcade"}`)}>
+        <div className="nt-r-head">
+          <span className="nt-r-star">★</span>
+          Foto guardada
+          <span className="nt-r-star">★</span>
+        </div>
+        <div className="nt-r-body">
+          <Art src={n.icon} className="nt-r-icon is-shot">
+            <Camera />
+          </Art>
+          <div className="nt-r-txt">
+            <div className="nt-r-name">{n.game}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const info = n.kind === "info";
   const head = n.kind === "summary" ? `${summaryCount(n)} logros` : info ? "Player 1" : isRare(n) ? "Logro raro" : "Logro desbloqueado";
   const meta = info
@@ -277,7 +374,8 @@ function Retro({ n, look }: P) {
 
 function Plain({ n, look }: P) {
   const info = n.kind === "info";
-  const head = n.kind === "summary" ? "Resumen de la partida" : info ? n.game || "ejGames" : "Logro desbloqueado";
+  const shot = isShot(n);
+  const head = shot ? "Captura guardada" : n.kind === "summary" ? "Resumen de la partida" : info ? n.game || "ejGames" : "Logro desbloqueado";
   const meta = [
     n.rarity != null ? `${pct(n.rarity)} % de los jugadores` : null,
     n.kind !== "info" && n.progress ? `${n.progress[0]} de ${n.progress[1]}` : null,
@@ -292,13 +390,13 @@ function Plain({ n, look }: P) {
   if (look.font) vars["--e-font"] = look.font;
   return (
     <div className={cls("nt-plain", !look.dark && "light")} style={vars as CSSProperties}>
-      <Art src={info ? null : n.icon} className="nt-e-icon">
-        {info ? <Pad /> : <Cup />}
+      <Art src={info ? null : n.icon} className={cls("nt-e-icon", shot && "is-shot")}>
+        {info ? <Pad /> : shot ? <Camera /> : <Cup />}
       </Art>
       <div className="nt-e-txt">
         <div className="nt-e-head">{head}</div>
-        <div className="nt-e-name">{n.title}</div>
-        {n.body && <div className="nt-e-desc">{n.body}</div>}
+        <div className="nt-e-name">{shot ? n.game : n.title}</div>
+        {n.body && <div className="nt-e-desc">{shot ? shortDir(n.body) : n.body}</div>}
         {meta && <div className="nt-e-meta">{meta}</div>}
       </div>
     </div>

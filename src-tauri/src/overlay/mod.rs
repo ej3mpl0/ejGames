@@ -12,7 +12,9 @@
 //! Xbox…): el tema lo declara en su theme.json (`"overlay": {"style": …}`) y el
 //! usuario puede forzar otro en Ajustes → Overlay.
 
+pub mod capture;
 pub mod hotkey;
+pub mod live;
 #[cfg(windows)]
 pub mod win;
 
@@ -57,7 +59,7 @@ pub struct Look {
 #[serde(rename_all = "camelCase")]
 pub struct Notice {
     pub id: u64,
-    /// "achievement" | "info"
+    /// "achievement" | "info" | "summary" | "screenshot"
     pub kind: String,
     pub game_id: Option<i64>,
     pub game: Option<String>,
@@ -82,9 +84,26 @@ pub struct PanelData {
     pub started_at: Option<i64>,
     pub media: MediaUrls,
     pub hotkey: Option<String>,
+    /// Atajo de las capturas (si está activo en esta partida).
+    pub screenshot_hotkey: Option<String>,
     pub achievements: Option<AchList>,
     /// Abierto con el mando: la UI muestra botones de mando.
     pub pad: bool,
+    /// Estilo de la plataforma del tema (el mismo que el de los avisos).
+    pub look: Look,
+    /// Tiempo jugado antes de esta partida (s) y veces que se ha abierto.
+    pub playtime: i64,
+    pub launch_count: i64,
+    pub note: String,
+    pub captures: Vec<capture::Capture>,
+    /// Carpeta de las capturas del juego.
+    pub captures_dir: String,
+    /// Datos vivos del último muestreo (el resto llega con `overlay:live`).
+    pub live: live::LiveInfo,
+    pub developer: Option<String>,
+    pub release_year: Option<String>,
+    /// Volumen de los sonidos de la interfaz del perfil (0..1).
+    pub sounds_volume: f64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -100,6 +119,7 @@ struct Live {
     title: String,
     started_at: i64,
     hotkey: Option<String>,
+    screenshot_hotkey: Option<String>,
     target: Target,
     /// Ventana principal del juego (caché).
     game_hwnd: isize,
@@ -131,11 +151,15 @@ pub struct Overlay {
     pub panel_open: AtomicBool,
     next_id: AtomicU64,
     hwnd: AtomicIsize,
+    /// Datos vivos del panel (rendimiento, música, volumen…).
+    pub sampler: live::Sampler,
 }
 
 pub enum PadEvent {
     Home,
     Nav(&'static str),
+    /// Batería del mando (None: sin mando).
+    Power(Option<live::PadPower>),
 }
 
 fn next_id(st: &AppState) -> u64 {
@@ -402,6 +426,7 @@ fn schedule_destroy(st: &Arc<AppState>) {
 fn fallback_toast(st: &AppState, n: &Notice) {
     let msg = match n.kind.as_str() {
         "achievement" => format!("🏆 Logro desbloqueado: {}", n.title),
+        "screenshot" => format!("📷 {}", n.title),
         _ => n.title.clone(),
     };
     crate::events::toast(st, "ok", msg);
@@ -530,11 +555,13 @@ pub fn notify_achievement(st: &Arc<AppState>, game_id: i64, u: &NewUnlock) {
 }
 
 fn refresh_panel(st: &Arc<AppState>) {
+    // Fuera del cerrojo: look() también lo toma.
+    let lk = look(st);
     let data = {
         let mut g = st.overlay.inner.lock();
         let pad = g.panel.as_ref().map(|p| p.pad).unwrap_or(false);
         let Some(live) = g.live.as_ref() else { return };
-        let d = panel_data(st, live, pad);
+        let d = panel_data(st, live, pad, lk);
         g.panel = Some(d.clone());
         d
     };
@@ -597,17 +624,31 @@ pub fn on_idle(st: &Arc<AppState>) {
 
 // ───────────────────────────── panel ─────────────────────────────
 
-fn panel_data(st: &AppState, live: &Live, pad: bool) -> PanelData {
-    let media = st.db.with(|c| repo::lib_game(c, live.profile_id, live.game_id)).map(|g| g.media).unwrap_or_default();
+/// Se llama con `inner` bloqueado: nada de aquí puede volver a tomarlo (por eso
+/// el aspecto llega hecho).
+fn panel_data(st: &AppState, live: &Live, pad: bool, look: Look) -> PanelData {
+    let game = st.db.with(|c| repo::lib_game(c, live.profile_id, live.game_id)).ok();
     let achievements = st.db.with(|c| achievements::list(c, live.game_id)).ok().filter(|l| l.total > 0);
     PanelData {
         game_id: live.game_id,
         title: live.title.clone(),
         started_at: Some(live.started_at),
-        media,
         hotkey: live.hotkey.clone(),
+        screenshot_hotkey: live.screenshot_hotkey.clone(),
         achievements,
         pad,
+        look,
+        // La partida en curso aún no está sumada.
+        playtime: game.as_ref().map(|g| g.playtime).unwrap_or(0),
+        launch_count: game.as_ref().map(|g| g.launch_count).unwrap_or(0),
+        note: get_note(st, live.profile_id, live.game_id),
+        captures: capture::list(st, live.game_id, 24),
+        captures_dir: capture::game_folder(st, &live.title).to_string_lossy().into_owned(),
+        live: st.overlay.sampler.last.lock().clone(),
+        developer: game.as_ref().and_then(|g| g.developer.clone()),
+        release_year: game.as_ref().and_then(|g| g.release_date.as_deref().map(|d| d.chars().take(4).collect())),
+        media: game.map(|g| g.media).unwrap_or_default(),
+        sounds_volume: st.db.with(|c| repo::get_profile(c, live.profile_id)).map(|p| p.sounds_volume).unwrap_or(0.6),
     }
 }
 
@@ -618,10 +659,11 @@ pub fn open_panel(st: &Arc<AppState>, pad: bool) {
     }
     #[cfg(windows)]
     let game = game_window(st);
+    let lk = look(st);
     let data = {
         let mut g = st.overlay.inner.lock();
         let Some(live) = g.live.as_ref() else { return };
-        let data = panel_data(st, live, pad);
+        let data = panel_data(st, live, pad, lk);
         #[cfg(windows)]
         {
             let fg = win::foreground();
@@ -637,6 +679,7 @@ pub fn open_panel(st: &Arc<AppState>, pad: bool) {
         data
     };
     st.overlay.panel_open.store(true, Ordering::Relaxed);
+    live::start(st);
     let ready = st.overlay.inner.lock().ready;
     ensure_window(st);
     if ready {
@@ -664,6 +707,16 @@ pub fn close_panel(st: &Arc<AppState>, restore_focus: bool) {
     let _ = (restore_focus, prev);
 }
 
+/// Captura del juego. Con el panel abierto, primero se cierra: la captura es
+/// del juego, no del panel.
+pub fn screenshot(st: &Arc<AppState>) {
+    let open = st.overlay.panel_open.load(Ordering::Relaxed);
+    if open {
+        close_panel(st, true);
+    }
+    capture::take(st, if open { 450 } else { 0 });
+}
+
 pub fn toggle_panel(st: &Arc<AppState>, pad: bool) {
     if st.overlay.panel_open.load(Ordering::Relaxed) {
         close_panel(st, true);
@@ -687,7 +740,95 @@ pub fn pad_event(st: &Arc<AppState>, ev: PadEvent) {
                 let _ = st.app.emit_to(LABEL, "overlay:nav", action);
             }
         }
+        PadEvent::Power(p) => *st.overlay.sampler.pad.lock() = p,
     }
+}
+
+/// Tras una captura: que la galería del panel se ponga al día.
+pub fn refresh_captures(st: &Arc<AppState>) {
+    if st.overlay.panel_open.load(Ordering::Relaxed) {
+        refresh_panel(st);
+    }
+}
+
+/// Cierra el juego a la fuerza (se ha colgado o no tiene menú para salir).
+pub fn quit_game(st: &Arc<AppState>) -> anyhow::Result<()> {
+    let target = st
+        .overlay
+        .inner
+        .lock()
+        .live
+        .as_ref()
+        .map(|l| l.target.clone())
+        .ok_or_else(|| anyhow::anyhow!("No hay ningún juego en marcha"))?;
+    let pids = tracker::find_pids(&target, &mut Default::default());
+    if pids.is_empty() {
+        anyhow::bail!("No se encuentran los procesos del juego");
+    }
+    close_panel(st, false);
+    #[cfg(windows)]
+    {
+        let done = win::terminate(&pids);
+        tracing::info!("overlay: cerrar juego: {done} de {} procesos", pids.len());
+        if done == 0 {
+            let admin = pids.iter().any(|p| crate::launcher::admin::above_us(*p));
+            anyhow::bail!(if admin {
+                "El juego se ejecuta como administrador y Windows no deja que ejGames lo cierre."
+            } else {
+                "Windows no dejó cerrar el juego."
+            });
+        }
+    }
+    Ok(())
+}
+
+// ───────────────────────────── notas ─────────────────────────────
+
+pub fn get_note(st: &AppState, profile_id: i64, game_id: i64) -> String {
+    use rusqlite::OptionalExtension;
+    st.db
+        .with(|c| {
+            c.query_row("SELECT text FROM game_notes WHERE profile_id = ?1 AND game_id = ?2", [profile_id, game_id], |r| r.get(0))
+                .optional()
+        })
+        .ok()
+        .flatten()
+        .unwrap_or_default()
+}
+
+pub fn set_note(st: &AppState, profile_id: i64, game_id: i64, text: &str) -> anyhow::Result<()> {
+    let text: String = text.chars().take(20_000).collect();
+    st.db.with(|c| {
+        if text.trim().is_empty() {
+            c.execute("DELETE FROM game_notes WHERE profile_id = ?1 AND game_id = ?2", [profile_id, game_id])?;
+        } else {
+            c.execute(
+                "INSERT INTO game_notes (profile_id, game_id, text, updated_at) VALUES (?1, ?2, ?3, ?4)
+                 ON CONFLICT (profile_id, game_id) DO UPDATE SET text = excluded.text, updated_at = excluded.updated_at",
+                rusqlite::params![profile_id, game_id, text, crate::util::now()],
+            )?;
+        }
+        Ok(())
+    })?;
+    if let Some(p) = st.overlay.inner.lock().panel.as_mut() {
+        if p.game_id == game_id {
+            p.note = text;
+        }
+    }
+    Ok(())
+}
+
+/// Nota de la partida en curso (panel del overlay).
+pub fn set_live_note(st: &AppState, text: &str) -> anyhow::Result<()> {
+    let (profile, game) = st
+        .overlay
+        .inner
+        .lock()
+        .live
+        .as_ref()
+        .map(|l| (l.profile_id, l.game_id))
+        .ok_or_else(|| anyhow::anyhow!("No hay partida"))?;
+    set_note(st, profile, game, text)
 }
 
 // ───────────────────────────── sesión ─────────────────────────────
@@ -695,24 +836,31 @@ pub fn pad_event(st: &Arc<AppState>, ev: PadEvent) {
 pub fn session_started(st: &Arc<AppState>, game: &Game, profile_id: i64, started_at: i64, target: Target) {
     let s = st.settings.get();
     let steam = game.source == "steam";
-    let mut hotkey_label = None;
-    let mut guard = None;
-    if s.overlay_enabled && !s.overlay_hotkey.trim().is_empty() && !(steam && hotkey::is_steam_default(&s.overlay_hotkey)) {
-        let st_t = st.clone();
+    let mut keys: Vec<(&'static str, String, hotkey::Action)> = vec![];
+    // En juegos de Steam, si coinciden con los de Steam, mandan los de Steam.
+    let panel_key = (s.overlay_enabled && !s.overlay_hotkey.trim().is_empty() && !(steam && hotkey::is_steam_default(&s.overlay_hotkey)))
+        .then(|| s.overlay_hotkey.clone());
+    let shot_key = (s.overlay_enabled && !s.screenshot_hotkey.trim().is_empty() && !(steam && hotkey::is_steam_screenshot(&s.screenshot_hotkey)))
+        .then(|| s.screenshot_hotkey.clone());
+    if let Some(k) = &panel_key {
         let st_p = st.clone();
-        guard = hotkey::start(
-            &s.overlay_hotkey,
-            Box::new({
-                let target = target.clone();
-                move |pid, hwnd| (hwnd != 0 && hwnd == st_t.overlay.hwnd.load(Ordering::Relaxed)) || tracker::matches_pid(&target, pid)
-            }),
-            Box::new(move || toggle_panel(&st_p, false)),
-        );
-        if guard.is_some() {
-            hotkey_label = Some(s.overlay_hotkey.clone());
-        }
+        keys.push(("panel", k.clone(), Arc::new(move || toggle_panel(&st_p, false))));
     }
-    tracing::info!("overlay: partida de «{}», atajo: {:?}", game.title, hotkey_label);
+    if let Some(k) = &shot_key {
+        let st_c = st.clone();
+        keys.push(("captura", k.clone(), Arc::new(move || screenshot(&st_c))));
+    }
+    let st_t = st.clone();
+    let guard = hotkey::start(
+        keys,
+        Box::new({
+            let target = target.clone();
+            move |pid, hwnd| (hwnd != 0 && hwnd == st_t.overlay.hwnd.load(Ordering::Relaxed)) || tracker::matches_pid(&target, pid)
+        }),
+    );
+    let hotkey_label = guard.as_ref().and(panel_key);
+    let screenshot_label = guard.as_ref().and(shot_key);
+    tracing::info!("overlay: partida de «{}», atajo: {:?}, capturas: {:?}", game.title, hotkey_label, screenshot_label);
     {
         let mut g = st.overlay.inner.lock();
         g.live = Some(Live {
@@ -721,6 +869,7 @@ pub fn session_started(st: &Arc<AppState>, game: &Game, profile_id: i64, started
             title: game.title.clone(),
             started_at,
             hotkey: hotkey_label.clone(),
+            screenshot_hotkey: screenshot_label,
             target,
             game_hwnd: 0,
             fs_seen: false,

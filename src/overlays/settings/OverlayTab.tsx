@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { FolderPlus, Keyboard, RotateCcw, Sparkles, Trash2 } from "lucide-react";
+import { Camera, FolderOpen, FolderPlus, Keyboard, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
 import type { NoticeLook, OverlayNotice, Settings } from "../../api/types";
 import { Button, Cycle, Section, Toggle } from "../../components/ui";
@@ -100,7 +100,23 @@ function keyName(e: KeyboardEvent): string | null {
   return null;
 }
 
-function HotkeyInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function HotkeyInput({
+  value,
+  onChange,
+  label,
+  hint,
+  fallback,
+  allowNone,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+  hint: string;
+  /** El de serie (botón "Restablecer"). */
+  fallback: string;
+  /** Se puede dejar sin atajo. */
+  allowNone?: boolean;
+}) {
   const [listening, setListening] = useState(false);
   useEffect(() => {
     if (!listening) return;
@@ -122,18 +138,20 @@ function HotkeyInput({ value, onChange }: { value: string; onChange: (v: string)
   return (
     <div className="flex items-center gap-4 px-3 py-2">
       <span className="flex-1">
-        <span className="block text-sm">Atajo del panel</span>
-        <span className="mt-0.5 block text-xs text-muted">
-          Solo funciona con el juego en primer plano. En los juegos de Steam, si coincide con el de Steam (Mayús + Tab), manda el de Steam; usa el
-          botón Guía del mando o elige otro atajo.
-        </span>
+        <span className="block text-sm">{label}</span>
+        <span className="mt-0.5 block text-xs text-muted">{hint}</span>
       </span>
       <Button icon={<Keyboard size={15} />} onClick={() => setListening((l) => !l)} className={listening ? "ring-2 ring-accent" : ""}>
         {listening ? "Pulsa la combinación…" : value ? hotkeyLabel(value) : "Sin atajo"}
       </Button>
-      {value !== "Shift+Tab" && (
-        <Button variant="ghost" size="sm" onClick={() => onChange("Shift+Tab")}>
+      {value !== fallback && (
+        <Button variant="ghost" size="sm" onClick={() => onChange(fallback)}>
           Restablecer
+        </Button>
+      )}
+      {allowNone && value && (
+        <Button variant="ghost" size="sm" onClick={() => onChange("")}>
+          Quitar
         </Button>
       )}
     </div>
@@ -144,6 +162,11 @@ export function OverlayTab() {
   const settings = useApp((s) => s.settings)!;
   const save = useSave();
   const dirs = settings.achievementDirs ?? [];
+
+  async function pickShotDir() {
+    const picked = await openDialog({ directory: true, multiple: false, title: "Carpeta de las capturas", defaultPath: settings.screenshotDir || undefined });
+    if (typeof picked === "string") await save({ screenshotDir: picked });
+  }
 
   async function addDir() {
     const picked = await openDialog({ directory: true, multiple: false, title: "Carpeta con logros de emuladores (<appid>\\achievements.*)" });
@@ -161,14 +184,45 @@ export function OverlayTab() {
         }
       >
         <p className="px-3 pb-2 text-xs leading-relaxed text-muted">
-          Una capa transparente encima del juego con los avisos de logros y un panel con tus logros, el tiempo de sesión y la hora. No toca el juego
-          (sin inyección), así que funciona en ventana y en ventana sin bordes. Si el juego usa pantalla completa exclusiva, los avisos salen al
-          salir de ella o al cerrar el juego.
+          Una capa transparente encima del juego con los avisos de logros y capturas, y un panel con el aspecto de la plataforma de tu tema: logros,
+          capturas, notas del juego, la música que suena en el PC, el volumen, lo que gasta el juego, tus descargas y un botón para cerrarlo si se
+          cuelga. No toca el juego (sin inyección), así que funciona en ventana y en ventana sin bordes. Si el juego usa pantalla completa
+          exclusiva, los avisos salen al salir de ella o al cerrar el juego.
         </p>
         <Toggle label="Activar el overlay" checked={settings.overlayEnabled} onChange={(v) => save({ overlayEnabled: v })} />
         {settings.overlayEnabled && (
           <>
-            <HotkeyInput value={settings.overlayHotkey} onChange={(v) => save({ overlayHotkey: v })} />
+            <HotkeyInput
+              label="Atajo del panel"
+              hint="Solo funciona con el juego en primer plano. En los juegos de Steam, si coincide con el de Steam (Mayús + Tab), manda el de Steam; usa el botón Guía del mando o elige otro atajo."
+              fallback="Shift+Tab"
+              value={settings.overlayHotkey}
+              onChange={(v) => save({ overlayHotkey: v })}
+            />
+            <HotkeyInput
+              label="Atajo de las capturas"
+              hint="Guarda una imagen del juego (sin el overlay). En los juegos de Steam, si es F12, hace la captura Steam."
+              fallback="F12"
+              allowNone
+              value={settings.screenshotHotkey}
+              onChange={(v) => save({ screenshotHotkey: v })}
+            />
+            <div className="flex items-center gap-4 px-3 py-2">
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm">Carpeta de las capturas</span>
+                <span className="mt-0.5 block truncate text-xs text-muted">
+                  {settings.screenshotDir || "Imágenes\\ejGames"} · una carpeta por juego
+                </span>
+              </span>
+              <Button icon={<FolderOpen size={15} />} onClick={pickShotDir}>
+                Cambiar
+              </Button>
+              {settings.screenshotDir && (
+                <Button variant="ghost" size="sm" icon={<Camera size={14} />} onClick={() => save({ screenshotDir: "" })}>
+                  La de serie
+                </Button>
+              )}
+            </div>
             <Cycle label="Estilo de los avisos" value={settings.overlayStyle} options={STYLES} onChange={(v) => save({ overlayStyle: v })} />
             <Cycle label="Dónde salen" value={settings.overlayCorner} options={CORNERS} onChange={(v) => save({ overlayCorner: v })} />
             <NoticePreview settings={settings} />

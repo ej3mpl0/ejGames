@@ -5,6 +5,26 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.4.0
+
+**Overlay dentro del juego, rehecho**
+- El panel (Mayús + Tab o el botón Guía) tiene ahora el aspecto de la plataforma de tu tema, igual que los avisos: el Mayús + Tab de Steam con su barra de herramientas, la Guía de Xbox a la izquierda, el centro de control de PlayStation abajo con sus tarjetas, un menú rápido de Switch, una película en pausa en Cine y la pausa de una recreativa en Retro. Los temas de otros usan uno sobrio con sus colores.
+- **Capturas de pantalla** con **F12** (se cambia en *Ajustes → Overlay*) o desde el panel: se guarda la imagen del juego, sin el overlay, en `Imágenes\ejGames\<juego>` y sale un aviso con la miniatura. En el panel están las últimas y un botón para abrir la carpeta. En los juegos de Steam, F12 sigue siendo de Steam.
+- **Notas de cada juego**: códigos, por dónde ibas, lo que te falta. Se guardan solas; con mando se escriben con el teclado en pantalla.
+- **Música**: lo que suene en el PC (Spotify, el navegador, el reproductor de Windows…) con su carátula, pausa, anterior y siguiente.
+- **Volumen** del juego y del sistema, y lo que gasta el juego: procesador, gráfica y memoria, con su gráfica del último minuto.
+- **Descargas** en el panel y **Seguir descargando** si se pausaron al empezar a jugar (solo en esa partida).
+- **Cerrar el juego** si se cuelga, con confirmación.
+- Logros mejor ordenados: los siguientes más fáciles, los conseguidos por fecha y los ocultos que faltan en una línea. Con puntos al estilo Xbox en su tema y copas de bronce, plata, oro y platino en el de PlayStation.
+- El tiempo total jugado junto al de la sesión, y la batería del mando y del portátil.
+- Todo se lee solo con el panel abierto: durante la partida sigue sin gastar nada.
+
+**Tienda: descubrir juegos**
+- Nuevo catálogo con los más de 7000 juegos y filtros: hasta cuatro géneros a la vez (y perspectiva y ambientación), orden (novedades, actualizados hace poco o de la A a la Z), tamaño máximo de la descarga y «ocultar los que ya tengo». Se carga más al bajar.
+- Accesos por género en la portada de cada tienda, géneros pulsables en las fichas y una fila de juegos parecidos («Más como este»).
+- Cada tema, a su manera: la búsqueda con filtros de Steam y sus categorías, «Explorar» con «Filtrar y ordenar» en PS5, los desplegables y las losas de colores de la tienda de Xbox, los filtros como filas de la configuración en Switch, el desplegable «Géneros» y filas por género en Cine y `GÉNERO ◀ ROL ▶` en Retro.
+- Para temas: `ejg.explore.browse(filtros, página)` y `ejg.explore.genres()`, y en el kit `browse`, `browseMore`, `toggleGenre`, `clearFilters` y `similar`. Está en la referencia y en la guía.
+
 ## 0.3.3
 
 **Tienda**

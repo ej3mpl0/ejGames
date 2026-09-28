@@ -171,6 +171,15 @@ async fn media(st: &Arc<AppState>, req: &Request<Vec<u8>>) -> Resp {
                 Err(e) => text(StatusCode::BAD_GATEWAY, &e.to_string()),
             }
         }
+        // Capturas de pantalla del overlay (y su miniatura: /s/<id>/t).
+        ["s", id, rest @ ..] => {
+            let Ok(id) = id.parse::<i64>() else { return text(StatusCode::BAD_REQUEST, "id") };
+            let thumb = rest.first() == Some(&"t");
+            match crate::overlay::capture::file(st, id, thumb) {
+                Some(p) => serve_file(&p, &mime_of(&p), range.as_deref(), false, None).await,
+                None => text(StatusCode::NOT_FOUND, "captura no encontrada"),
+            }
+        }
         // Portadas y capturas de Explorar (id opaco, ver explore::images).
         ["x", id] => match crate::explore::images::serve(st, id).await {
             Ok(p) => serve_file(&p, &mime_of(&p), None, true, None).await,

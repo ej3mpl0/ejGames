@@ -1,10 +1,31 @@
 // PlayStation Store y Descargas del tema PS5: portada con el fondo del juego
-// enfocado, búsqueda, ficha, diálogo de descarga y la lista de descargas.
+// enfocado, «Explorar» (todo el catálogo, con «Filtrar y ordenar»), búsqueda,
+// ficha con «Más como este», diálogo de descarga y la lista de descargas.
 // La lógica común está en /_sdk/kit/store.js.
 
 import { h, img, keyed } from "/_sdk/kit/dom.js";
 import { date } from "/_sdk/kit/format.js";
-import { createExplore, fileSelection, bytes, speed, eta, percent, sizeText, downloadLabel, canInstall, isActive, repackAction, askQuery, genreLabel } from "/_sdk/kit/store.js";
+import {
+  createExplore,
+  fileSelection,
+  bytes,
+  speed,
+  eta,
+  percent,
+  sizeText,
+  downloadLabel,
+  canInstall,
+  isActive,
+  repackAction,
+  askQuery,
+  genreLabel,
+  emptyFilters,
+  filterCount,
+  SORTS,
+  SIZES,
+  GENRE_GROUPS,
+  MAX_GENRES,
+} from "/_sdk/kit/store.js";
 
 const I = {
   search: '<svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>',
@@ -18,7 +39,25 @@ const I = {
   alert: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5h.01"/></svg>',
   grid: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  filter: '<svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>',
+  chev: '<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>',
 };
+
+/** Géneros de «Explorar» (id y tono de la losa cuando no hay arte). */
+const GENRE_TILES = [
+  [55, 4],
+  [47, 262],
+  [51, 32],
+  [59, 150],
+  [54, 350],
+  [66, 205],
+  [65, 95],
+  [56, 18],
+  [71, 190],
+  [70, 48],
+  [214, 290],
+  [84, 170],
+];
 const icon = (n) => h("span", { class: "si", html: I[n] });
 const spinner = () => h("div", { class: "ps-spin" });
 // Estados de una descarga que aún no ha terminado (pendientes).
@@ -34,6 +73,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
   let panelPrev = null;
   let frontEl = null;
   let frontFor = null;
+  let frontGenres = 0;
   let frontFocus = null;
   let info = null;
   let infoSlug = null;
@@ -125,7 +165,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
   function allTile() {
     return h(
       "button",
-      { class: "st-tile all", "data-focus": "", "data-key": "all-latest", onclick: () => openSearch(false) },
+      { class: "st-tile all", "data-focus": "", "data-key": "all-latest", onclick: () => openBrowse(emptyFilters()) },
       h("div", { class: "st-art" }, h("span", { html: I.grid }), h("b", null, "Ver todo")),
       h("div", { class: "st-cap" }, h("b", null, "Novedades"), h("span", { class: "st-sub" }, "Todo lo publicado")),
     );
@@ -139,6 +179,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
       "nav",
       { class: "st-menu", "data-focus-group": "st-menu" },
       mi("front", "Descubrir", null, goFront),
+      mi("browse", "Explorar", null, () => openBrowse()),
       mi("search", "Buscar", "search", () => openSearch(true)),
       mi("downloads", "Descargas", "download", openDownloads, h("span", { class: "st-count", hidden: !n }, String(n))),
     );
@@ -187,6 +228,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
       const r = row(sec.items.slice(0, 36), id);
       if (id === "latest") r.append(allTile());
       wrap.append(h("section", { class: "st-sec" }, h("h2", { class: "st-h" }, sec.title), r));
+      if (id === "week" && s.genres.length) wrap.append(h("section", { class: "st-sec" }, h("h2", { class: "st-h" }, "Explorar por género"), genreRow("fg")));
     }
     if (top?.items[0]) showInfo(top.items[0], top.id);
     return wrap;
@@ -213,6 +255,244 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
         h("div", { class: "st-facts" }, fact("Descarga", sizeText(r.repackSize)), fact("Tamaño original", sizeText(r.originalSize)), fact("Idiomas", r.languages), fact("Publicado", date(r.date))),
       ].filter(Boolean),
     );
+  }
+
+  // ─────────────── explorar: todo el catálogo ───────────────
+  let browseEl = null;
+  let brGrid, brCount, brChips, brSpin, brMore, brEmpty, brFilter, brGenres;
+  let brMoreFrom = null;
+  let sheet = null;
+
+  /** Arte para las losas de géneros: un juego popular de cada uno, sin repetir. */
+  function genreArt() {
+    const pool = (store.state.home?.sections || []).flatMap((x) => x.items).filter((r) => r.hero || r.capsuleBig);
+    const used = new Set();
+    const out = new Map();
+    for (const [id] of GENRE_TILES) {
+      const r = pool.find((x) => x.tags?.includes(id) && !used.has(x.slug));
+      if (!r) continue;
+      used.add(r.slug);
+      out.set(id, r.capsuleBig || r.hero);
+    }
+    return out;
+  }
+
+  function genreRow(prefix) {
+    const art = genreArt();
+    return h(
+      "div",
+      { class: "st-row br-genres", "data-focus-group": `${prefix}-genres` },
+      ...GENRE_TILES.map(([id, hue]) => {
+        const g = store.state.genres.find((x) => x.id === id);
+        return h(
+          "button",
+          { class: "br-genre", "data-focus": "", "data-key": `${prefix}-g-${id}`, "data-genre": id, style: `--h: ${hue}`, onclick: () => openBrowse({ genres: [id] }) },
+          art.get(id) ? img(art.get(id)) : null,
+          h("b", null, g ? g.name : ""),
+        );
+      }),
+    );
+  }
+
+  function browsePage() {
+    brGenres = h("div");
+    brFilter = h(
+      "button",
+      { class: "ps-btn small br-filter", "data-focus": "", "data-key": "br-filter", onclick: openSheet },
+      icon("filter"),
+      h("span", null, "Filtrar y ordenar"),
+      h("span", { class: "st-count", hidden: true }),
+    );
+    brCount = h("span", { class: "st-note" });
+    brChips = h("div", { class: "br-chips", "data-focus-group": "br-chips" });
+    brEmpty = h("div", { class: "st-note pad", hidden: true });
+    brGrid = h("div", { class: "st-grid", "data-focus-group": "br-results" });
+    brSpin = spinner();
+    brMore = h(
+      "button",
+      {
+        class: "ps-btn st-more",
+        "data-focus": "",
+        "data-key": "br-more",
+        onclick: () => {
+          brMoreFrom = brGrid.children.length;
+          store.browseMore();
+        },
+      },
+      "Ver más",
+    );
+    browseEl = h(
+      "div",
+      { class: "st-search st-browse" },
+      menu("browse"),
+      h("section", { class: "st-sec br-top" }, h("h2", { class: "st-h" }, "Géneros"), brGenres),
+      h("div", { class: "st-res-head br-head" }, h("h2", { class: "st-h big" }, "Todos los juegos"), brCount, brFilter),
+      brChips,
+      brEmpty,
+      brGrid,
+      brSpin,
+      brMore,
+    );
+    renderBrowse();
+    return browseEl;
+  }
+
+  const genreName = (id) => store.state.genres.find((g) => g.id === id)?.name || "";
+
+  function renderBrowse() {
+    if (!browseEl) return;
+    const s = store.state;
+    const c = s.catalog;
+    const f = c.filters;
+    if (!brGenres.firstChild && s.genres.length) brGenres.replaceWith((brGenres = genreRow("br")));
+    for (const el of brGenres.querySelectorAll?.(".br-genre") || []) el.classList.toggle("on", f.genres.length === 1 && Number(el.dataset.genre) === f.genres[0]);
+    const n = filterCount(f) + (f.sort !== "date" ? 1 : 0);
+    const badge = brFilter.querySelector(".st-count");
+    badge.hidden = !n;
+    badge.textContent = String(n);
+    brCount.textContent = c.loading && !c.items.length ? "Buscando…" : `${c.filtered && c.page < c.pages ? "Unos " : ""}${c.total.toLocaleString("es")} juegos`;
+    // Filtros puestos, como pastillas que se quitan.
+    const had = focus.current && brChips.contains(focus.current);
+    const chip = (key, label, fn) => h("button", { class: "br-chip", "data-focus": "", "data-key": key, onclick: fn }, h("span", null, label), icon("x"));
+    const chips = [
+      f.query ? chip("brc-q", `«${f.query}»`, () => store.browse({ query: "" })) : null,
+      ...f.genres.map((id) => chip(`brc-${id}`, genreName(id), () => store.toggleGenre(id))),
+      f.maxGb ? chip("brc-size", SIZES.find((o) => o.gb === f.maxGb)?.label || "", () => store.browse({ maxGb: null })) : null,
+      f.hideOwned ? chip("brc-owned", "Sin los que ya tengo", () => store.browse({ hideOwned: false })) : null,
+    ].filter(Boolean);
+    const key = had ? focus.current.dataset.key : null;
+    brChips.replaceChildren(...chips);
+    brChips.hidden = !chips.length;
+    if (had) focus.focus((key && brChips.querySelector(`[data-key="${key}"]`)) || brChips.querySelector("[data-focus]") || brFilter, { silent: true });
+    remember(c.items);
+    keyed(
+      brGrid,
+      c.items,
+      (r) => r.slug,
+      (r, prev) => (prev ? (applyStatus(prev), prev) : tile(r, "browse")),
+    );
+    brEmpty.hidden = !(c.error || (!c.items.length && !c.loading));
+    brEmpty.textContent = c.error || "No hay juegos que coincidan con estos filtros.";
+    brEmpty.classList.toggle("err", !!c.error);
+    brSpin.hidden = !c.loading;
+    brMore.hidden = !(c.page && c.page < c.pages) || c.loading;
+    if (!c.loading && brMoreFrom != null) {
+      const el = brGrid.children[brMoreFrom];
+      brMoreFrom = null;
+      if (el && (!focus.current || focus.current === brMore || !focus.current.isConnected)) focus.focus(el, { silent: true });
+    }
+    renderSheet();
+  }
+
+  /** Explorar. `filters`: empezar con estos (los demás, vacíos). */
+  function openBrowse(filters = null) {
+    const c = store.state.catalog;
+    store.loadGenres();
+    if (filters) store.browse({ ...emptyFilters(), ...filters });
+    else if (!c.page && !c.loading) store.browse({});
+    view.name = "browse";
+    paint();
+    root.scrollTop = 0;
+    focus.focus(filters?.genres?.length ? brFilter : root.querySelector(".br-genre") || brFilter, { silent: true });
+    onView();
+  }
+
+  // Más resultados al llegar abajo (rueda o ratón).
+  root.addEventListener(
+    "scroll",
+    () => {
+      if (shown && view.name === "browse" && root.scrollTop + root.clientHeight > root.scrollHeight - 700) store.browseMore();
+    },
+    { passive: true },
+  );
+
+  // «Filtrar y ordenar»: panel a la derecha, como en PlayStation Store.
+  function openSheet() {
+    if (sheet) return;
+    store.loadGenres();
+    const body = h("div", { class: "fs-body" });
+    const clear = h("button", { class: "ps-btn small", "data-focus": "", "data-key": "fs-clear", onclick: () => store.clearFilters() }, "Borrar filtros");
+    const done = h("button", { class: "ps-btn small primary", "data-focus": "", "data-key": "fs-done", onclick: () => closeSheet() }, "Hecho");
+    const panelEl = h("div", { class: "fs-panel" }, h("div", { class: "fs-head" }, h("h2", null, "Filtrar y ordenar"), h("span", { class: "fs-sub" })), body, h("div", { class: "fs-foot" }, clear, done));
+    const l = h("div", { class: "fs-layer", "data-focus-trap": "", onclick: (e) => e.target === l && closeSheet() }, panelEl);
+    document.body.append(l);
+    sheet = { layer: l, body, prev: focus.current, open: new Set(["sort"]) };
+    renderSheet();
+    focus.focus(body.querySelector("[data-focus]"), { silent: true });
+    ejg.sound.play("open");
+    onView();
+  }
+
+  function closeSheet() {
+    if (!sheet) return false;
+    const { layer: l, prev } = sheet;
+    l.remove();
+    sheet = null;
+    focus.focus(prev?.isConnected ? prev : brFilter, { silent: true });
+    onView();
+    return true;
+  }
+
+  function renderSheet() {
+    if (!sheet) return;
+    const s = store.state;
+    const f = s.catalog.filters;
+    const key = focus.current && sheet.layer.contains(focus.current) ? focus.current.dataset.key : null;
+    const opt = (k, label, on, fn, radio = false) =>
+      h("button", { class: "dg-chk" + (radio ? " fs-radio" : "") + (on ? " on" : ""), "data-focus": "", "data-key": k, role: radio ? "radio" : "checkbox", onclick: fn }, h("i", { html: I.check }), h("span", null, label));
+    // Cada grupo se abre y se cierra (como las secciones del panel de la consola).
+    const group = (id, title, value, items) => {
+      const open = sheet.open.has(id);
+      return h(
+        "div",
+        { class: "fs-group" + (open ? " open" : "") },
+        h(
+          "button",
+          {
+            class: "fs-gh",
+            "data-focus": "",
+            "data-key": `fs-g-${id}`,
+            onclick: () => {
+              if (open) sheet.open.delete(id);
+              else sheet.open.add(id);
+              renderSheet();
+            },
+          },
+          h("span", null, title),
+          h("small", null, value),
+          icon("chev"),
+        ),
+        open ? h("div", { class: "fs-opts", "data-focus-group": `fs-${id}` }, ...items) : null,
+      );
+    };
+    const sortLabel = SORTS.find((o) => o.id === f.sort)?.label || SORTS[0].label;
+    const sizeLabel = SIZES.find((o) => o.gb === (f.maxGb || null))?.label || "";
+    const groups = GENRE_GROUPS.map(({ id, label }) => {
+      const list = s.genres.filter((g) => g.group === id);
+      const picked = list.filter((g) => f.genres.includes(g.id)).map((g) => g.name);
+      return group(
+        id,
+        label,
+        picked.join(", "),
+        list.map((g) =>
+          opt(`fs-${g.id}`, g.name, f.genres.includes(g.id), () => {
+            if (!store.toggleGenre(g.id)) ejg.ui.toast(`Como mucho ${MAX_GENRES} géneros a la vez`, "info");
+          }),
+        ),
+      );
+    });
+    sheet.body.replaceChildren(
+      group("sort", "Ordenar por", sortLabel, SORTS.map((o) => opt(`fs-sort-${o.id}`, o.label, f.sort === o.id, () => store.browse({ sort: o.id }), true))),
+      group("size", "Tamaño de la descarga", sizeLabel, SIZES.map((o) => opt(`fs-size-${o.gb ?? 0}`, o.label, (f.maxGb || null) === o.gb, () => store.browse({ maxGb: o.gb }), true))),
+      group("show", "Mostrar", f.hideOwned ? "Sin los que ya tengo" : "Todos", [opt("fs-owned", "Ocultar los que ya tengo", f.hideOwned, () => store.browse({ hideOwned: !f.hideOwned }))]),
+      ...groups,
+    );
+    const c = s.catalog;
+    sheet.layer.querySelector(".fs-sub").textContent = c.loading ? "Buscando…" : `${c.filtered && c.page < c.pages ? "Unos " : ""}${c.total.toLocaleString("es")} juegos`;
+    if (key) {
+      const el = sheet.layer.querySelector(`[data-key="${key}"]`);
+      if (el && el !== focus.current) focus.focus(el, { silent: true, noScroll: true });
+    }
   }
 
   // ─────────────── búsqueda ───────────────
@@ -411,7 +691,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
           h("div", { class: "st-kicker" }, d.companies || "PlayStation Store"),
           h("h1", { class: "st-title pd-title" }, d.title),
           d.version ? h("div", { class: "st-ver" }, d.version) : null,
-          d.genres.length ? h("div", { class: "st-tags" }, ...d.genres.slice(0, 6).map((g) => h("span", null, genreLabel(g)))) : null,
+          detailTags(d),
           h("div", { class: "st-facts" }, fact("Descarga", sizeText(d.repackSize)), fact("Instalado", sizeText(d.installSize) || (full ? "" : "…")), fact("Tamaño original", sizeText(d.originalSize))),
           hint,
           h(
@@ -482,10 +762,36 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
             ),
           )
         : null,
+      full ? similarSec(d) : null,
     );
     updateDetail();
     if (descCard) requestAnimationFrame(() => descCard.classList.toggle("long", desc.scrollHeight > desc.clientHeight + 4));
     return page;
+  }
+
+  /** Géneros de la ficha: los conocidos llevan a Explorar filtrado por ellos. */
+  function detailTags(d) {
+    const known = (d.tags || []).map((t) => store.state.genres.find((g) => g.id === t)).filter(Boolean);
+    if (known.length) {
+      return h(
+        "div",
+        { class: "st-tags", "data-focus-group": "pd-tags" },
+        ...known.slice(0, 6).map((g) => h("button", { class: "st-tag", "data-focus": "", "data-key": `pd-t-${g.id}`, onclick: () => openBrowse({ genres: [g.id] }) }, g.name)),
+      );
+    }
+    return d.genres.length ? h("div", { class: "st-tags" }, ...d.genres.slice(0, 6).map((g) => h("span", null, genreLabel(g)))) : null;
+  }
+
+  function similarSec(d) {
+    const box = h("div", { class: "st-row", "data-focus-group": "row-similar" }, spinner());
+    const sec = h("section", { class: "st-sec pd-similar" }, h("h2", { class: "st-h" }, "Más como este"), box);
+    store.similar(d, 16).then((list) => {
+      if (view.slug !== d.slug) return;
+      if (!list.length) return sec.remove();
+      remember(list);
+      box.replaceChildren(...list.map((r) => tile(r, "similar")));
+    });
+    return sec;
   }
 
   function doAction(d) {
@@ -976,9 +1282,10 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
   function onState() {
     if (!shown) return;
     if (view.name === "search") return renderResults();
+    if (view.name === "browse") return renderBrowse();
     if (view.name !== "front") return;
     const s = store.state;
-    if (frontEl && frontFor === s.home && s.home) return;
+    if (frontEl && frontFor === s.home && s.home && frontGenres === s.genres.length) return;
     paint();
   }
 
@@ -990,16 +1297,19 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     let el;
     if (view.name === "detail") el = detailPage();
     else if (view.name === "search") el = searchEl || searchPage();
+    else if (view.name === "browse") el = browseEl || browsePage();
     else {
       const s = store.state;
-      if (!(frontEl && frontFor === s.home && s.home)) {
+      if (!(frontEl && frontFor === s.home && s.home && frontGenres === s.genres.length)) {
         frontEl = frontPage();
         frontFor = s.home;
+        frontGenres = s.genres.length;
       }
       el = frontEl;
     }
     if (root.firstChild !== el) root.replaceChildren(el);
     if (view.name === "search") renderResults();
+    if (view.name === "browse") renderBrowse();
     requestAnimationFrame(updateDeep);
     updateCounts();
     for (const t of el.querySelectorAll(".st-tile[data-slug]")) applyStatus(t);
@@ -1026,6 +1336,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     let el = null;
     if (view.name === "detail") el = root.querySelector(".pd-main") || root.querySelector("[data-focus]");
     else if (view.name === "search") el = input;
+    else if (view.name === "browse") el = brFilter;
     else el = (frontFocus?.isConnected && root.contains(frontFocus) && frontFocus) || root.querySelector(".st-feat .st-tile") || root.querySelector(".st-tile") || root.querySelector("[data-focus]");
     if (el) focus.focus(el, { silent: true });
   }
@@ -1051,14 +1362,14 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     if (view.name === "front") {
       if (r0) frontFocus = el;
       if (r) showInfo(r, el.dataset.sec);
-    } else if (view.name === "search" && r?.hero) setBg(r.hero);
+    } else if ((view.name === "search" || view.name === "browse") && r?.hero) setBg(r.hero);
     if (pointer) return;
     if (r0) scrollRow(r0, el);
     if (view.name === "front") {
       const sec = el.closest(".st-sec");
       root.scrollTo({ top: sec ? sec.offsetTop - 24 : 0, behavior: "smooth" });
-    } else if (view.name === "search") {
-      if (el.closest(".st-menu, .st-sbar")) root.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (view.name === "search" || view.name === "browse") {
+      if (el.closest(".st-menu, .st-sbar, .br-top")) root.scrollTo({ top: 0, behavior: "smooth" });
       else el.scrollIntoView({ block: "nearest", behavior: "smooth" });
     } else if (el.closest(".pd-more")) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
     else root.scrollTo({ top: 0, behavior: "smooth" });
@@ -1069,7 +1380,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
   function updateDeep() {
     deepRaf = 0;
     const top = root.querySelector(".st-hero, .pd-top");
-    const deep = shown && (view.name === "search" || (!!top && root.scrollTop > top.offsetHeight * 0.4));
+    const deep = shown && (view.name === "search" || view.name === "browse" || (!!top && root.scrollTop > top.offsetHeight * 0.4));
     document.body.classList.toggle("store-deep", deep);
   }
   root.addEventListener("scroll", () => (deepRaf ||= requestAnimationFrame(updateDeep)), { passive: true });
@@ -1085,6 +1396,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
 
   function back() {
     if (askOpen) return (askOpen(), true);
+    if (closeSheet()) return true;
     if (closeMenu()) return true;
     if (closeDialog()) return true;
     if (closeDownloads()) return true;
@@ -1100,7 +1412,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
       onView();
       return true;
     }
-    if (view.name === "search") return (goFront(), true);
+    if (view.name === "search" || view.name === "browse") return (goFront(), true);
     // En la portada, desde las filas de abajo se vuelve a la destacada.
     const cur = focus.current;
     if (cur && root.contains(cur) && cur.closest(".st-sec")) {
@@ -1112,10 +1424,10 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
   }
 
   function hintsFor() {
-    if (dialog || askOpen || menuOpen)
+    if (dialog || askOpen || menuOpen || sheet)
       return [
         ["accept", "Seleccionar"],
-        ["back", "Cancelar"],
+        ["back", sheet ? "Cerrar" : "Cancelar"],
       ];
     if (panel)
       return [
@@ -1135,6 +1447,13 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
         ["back", "Atrás"],
         ["lb", "Pestañas"],
       ];
+    if (view.name === "browse")
+      return [
+        ["accept", "Seleccionar"],
+        ["x", "Filtrar y ordenar"],
+        ["y", "Buscar"],
+        ["back", "Atrás"],
+      ];
     return [
       ["accept", "Seleccionar"],
       ["y", "Buscar"],
@@ -1150,6 +1469,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
       shown = true;
       if (!store.state.home) wantFocus = true;
       store.loadHome();
+      store.loadGenres();
       paint();
       focusDefault();
       if (lastBg) setBg(lastBg);
@@ -1167,17 +1487,21 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     closeDownloads,
     back,
     onFocus,
-    owns: (el) => root.contains(el) || layer.contains(el) || !!el.closest(".dg-layer, .om-layer"),
+    owns: (el) => root.contains(el) || layer.contains(el) || !!el.closest(".dg-layer, .om-layer, .fs-layer"),
     /** Y: buscar (teclado en pantalla con mando). */
     search() {
       if (ejg.input.source === "gamepad") return keyboard();
       openSearch(true);
     },
+    /** X: «Filtrar y ordenar» en Explorar. */
+    filters() {
+      if (shown && view.name === "browse" && !sheet) openSheet();
+    },
     hints: hintsFor,
     get panelOpen() {
       return panel;
     },
-    hasDialog: () => !!dialog || !!askOpen || !!menuOpen || panel,
+    hasDialog: () => !!dialog || !!askOpen || !!menuOpen || !!sheet || panel,
     pendingCount,
   };
 }

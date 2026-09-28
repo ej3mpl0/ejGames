@@ -9,7 +9,9 @@
 import { writeFileSync } from "node:fs";
 
 const [, , cmd, a, b, c] = process.argv;
-const list = await (await fetch("http://127.0.0.1:9222/json/list")).json();
+// Varias instancias de prueba a la vez: CDP_PORT=9333 node scripts/cdp.mjs …
+const port = process.env.CDP_PORT || 9222;
+const list = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
 if (cmd === "list") {
   console.log(list.map((t) => `${t.type}\t${t.url}`).join("\n"));
   process.exit(0);

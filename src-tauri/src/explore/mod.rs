@@ -6,6 +6,7 @@
 //! juego (en tu biblioteca, descargando…).
 
 pub mod fitgirl;
+pub mod genres;
 pub mod images;
 pub mod parse;
 pub mod steamart;
@@ -77,6 +78,9 @@ pub struct Repack {
     pub capsule_big: Option<String>,
     #[serde(default)]
     pub library: Option<String>,
+    /// Etiquetas de la web (ids; los géneros conocidos están en `genres`).
+    #[serde(default)]
+    pub tags: Vec<u32>,
     #[serde(default)]
     pub status: RepackStatus,
 }
@@ -123,6 +127,26 @@ pub struct SearchPage {
     pub page: u32,
     pub pages: u32,
     pub total: u32,
+    /// Filtrado aquí (tamaño, los que ya tienes): `total` es aproximado y una
+    /// página puede traer menos juegos que otra.
+    #[serde(default)]
+    pub filtered: bool,
+}
+
+/// Filtros del catálogo (Explorar → todos los juegos).
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Browse {
+    /// Texto en el título.
+    pub query: String,
+    /// Géneros (ids de `genres`); salen los que tienen todos.
+    pub genres: Vec<u32>,
+    /// date (novedades) | modified (actualizados hace poco) | title (A-Z)
+    pub sort: String,
+    /// Tamaño máximo de la descarga, en GB.
+    pub max_gb: Option<f64>,
+    /// Quitar los que ya están en tu biblioteca o descargándose.
+    pub hide_owned: bool,
 }
 
 fn shot_urls(base: &str) -> Shot {
@@ -162,6 +186,7 @@ fn to_details(raw: &fitgirl::RawPost) -> RepackDetails {
             capsule: None,
             capsule_big: None,
             library: None,
+            tags: raw.tags.clone(),
             status: RepackStatus::default(),
         },
         screenshots,
@@ -398,6 +423,7 @@ pub async fn search(st: &Arc<AppState>, query: &str, page: u32) -> anyhow::Resul
             page,
             pages: raw.pages.max(1),
             total: raw.total,
+            filtered: false,
         })
     })
     .await?;
@@ -408,6 +434,88 @@ pub async fn search(st: &Arc<AppState>, query: &str, page: u32) -> anyhow::Resul
     let hidden = (before - items.len()) as u32;
     let total = if res.pages <= 1 { items.len() as u32 } else { res.total.saturating_sub(hidden) };
     Ok(SearchPage { items, total, ..res })
+}
+
+/// Juegos por página del catálogo con filtros de aquí: se piden más páginas a
+/// la web hasta tener al menos estos (o `MAX_FETCH` páginas).
+const MIN_FILTERED: usize = 12;
+const MAX_FETCH: u32 = 4;
+
+/// Catálogo con filtros. `page` es la página de la web por la que seguir: la
+/// respuesta dice la última que se leyó (con filtros de aquí pueden ser varias).
+pub async fn browse(st: &Arc<AppState>, f: &Browse, page: u32) -> anyhow::Result<SearchPage> {
+    let text: String = f.query.trim().chars().take(100).collect();
+    let mut tags: Vec<u32> = f.genres.iter().copied().filter(|g| genres::known(*g)).take(4).collect();
+    tags.sort_unstable();
+    tags.dedup();
+    let sort = match f.sort.as_str() {
+        "title" | "modified" => f.sort.as_str(),
+        _ => "date",
+    };
+    let hide_adult = st.settings.get().explore_hide_adult;
+    let exclude: Vec<u32> = if hide_adult { vec![fitgirl::ADULT_TAG] } else { vec![] };
+    let max_bytes = f.max_gb.filter(|g| *g > 0.0).map(|g| (g * 1024f64.powi(3)) as u64);
+    let local = max_bytes.is_some() || f.hide_owned;
+    let tag_key = tags.iter().map(|t| t.to_string()).collect::<Vec<_>>().join(",");
+    let idx = status_index(st);
+
+    let mut page = page.clamp(1, 1000);
+    let start = page;
+    let mut out: Vec<Repack> = vec![];
+    let mut last: Option<SearchPage> = None;
+    // Vistos y que pasan los filtros de aquí (para estimar el total).
+    let mut seen = 0usize;
+    for fetched in 0..if local { MAX_FETCH } else { 1 } {
+        let key = format!("fg:browse:{}:{tag_key}:{}:{sort}:{page}", text.to_lowercase(), exclude.len());
+        let fg = &st.explore.fitgirl;
+        let q = fitgirl::Query { text: &text, tags: &tags, exclude: &exclude, sort };
+        let res: SearchPage = cached(st, &key, TTL_SEARCH, || async {
+            let raw = fg.browse(&q, page, PER_PAGE).await?;
+            let posts: Vec<RepackDetails> = raw.posts.iter().map(to_details).filter(usable).collect();
+            store_posts(st, &posts);
+            Ok(SearchPage {
+                query: text.clone(),
+                items: posts.into_iter().map(|d| d.repack).collect(),
+                page,
+                pages: raw.pages,
+                total: raw.total,
+                filtered: false,
+            })
+        })
+        .await?;
+        let items = publish_list(st, &idx, res.items.clone());
+        seen += items.len();
+        out.extend(items.into_iter().filter(|r| {
+            let fits = match (max_bytes, r.repack_bytes) {
+                (Some(max), Some(b)) => b <= max,
+                (Some(_), None) => false,
+                _ => true,
+            };
+            let owned = matches!(r.status.state.as_str(), "library" | "installed") || r.status.download_id.is_some();
+            fits && !(f.hide_owned && owned)
+        }));
+        let more = page < res.pages;
+        last = Some(res);
+        if !more || out.len() >= MIN_FILTERED || fetched + 1 == MAX_FETCH {
+            break;
+        }
+        page += 1;
+    }
+    let res = last.expect("al menos una página");
+    let total = if local {
+        // La web no sabe de tamaños ni de lo que tienes: se estima con la
+        // proporción de lo que pasó el filtro en las páginas leídas.
+        if (start == 1 && page >= res.pages) || seen == 0 {
+            out.len() as u32
+        } else {
+            ((res.total as f64) * (out.len() as f64 / seen as f64)).round() as u32
+        }
+    } else if res.pages > 1 {
+        res.total
+    } else {
+        out.len() as u32
+    };
+    Ok(SearchPage { query: text, items: out, page, pages: res.pages, total, filtered: local })
 }
 
 /// Ficha sin publicar (URLs originales). `fresh`: pedirla a la web aunque esté

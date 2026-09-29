@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { GuidesPane } from "../../components/guide";
 import { MapPane } from "../../components/map";
+import { SocialPane } from "../../components/social";
 import { TrainerPane } from "../../components/trainer";
 import { Hints } from "../../components/Hints";
 import { focusNav, useOverlayNav } from "../../input/nav";
@@ -28,7 +29,7 @@ import { clock, cls, CupIcon, hms, pctNum, shortDate } from "./parts";
 import type { Achievement } from "../../api/types";
 import "./retro.css";
 
-type View = "menu" | "ach" | "guides" | "cheats" | "map" | "shots" | "notes" | "music" | "system" | "dl";
+type View = "menu" | "ach" | "friends" | "guides" | "cheats" | "map" | "shots" | "notes" | "music" | "system" | "dl";
 
 /** El icono a 16 × 16 y ampliado sin suavizar, como un sprite. */
 function Sprite({ a }: { a: Achievement }) {
@@ -64,6 +65,7 @@ function Blocks({ value, of = 10 }: { value: number; of?: number }) {
 
 const TITLES: Record<Exclude<View, "menu">, string> = {
   ach: "Logros",
+  friends: "Amigos",
   guides: "Guías",
   cheats: "Trucos",
   map: "Mapa",
@@ -163,6 +165,13 @@ export function RetroPanel({ p }: { p: Panel }) {
         </div>
       );
       break;
+    case "friends":
+      screen = (
+        <div className="pn-guides">
+          <SocialPane inPanel />
+        </div>
+      );
+      break;
     case "cheats":
       screen = (
         <div className="pn-guides">
@@ -216,7 +225,7 @@ export function RetroPanel({ p }: { p: Panel }) {
         </span>
       </header>
 
-      <main className={cls("rt-box", (view === "guides" || view === "cheats" || view === "map") && "is-guides")}>
+      <main className={cls("rt-box", (view === "guides" || view === "cheats" || view === "map" || view === "friends") && "is-guides")}>
         {view === "menu" ? (
           <div ref={menuRef} className="rt-menu">
             <div className="rt-game">{d.title}</div>
@@ -224,6 +233,7 @@ export function RetroPanel({ p }: { p: Panel }) {
             <div className="rt-items">
               {item(null, "Continuar", "", p.actions.close, "is-first")}
               {p.ach.total > 0 && item("ach", "Logros", `${p.ach.got}/${p.ach.total}`, () => setView("ach"))}
+              {item("friends", "Amigos", "", () => setView("friends"))}
               {item("guides", "Guías", "", () => setView("guides"))}
               {item("cheats", "Trucos", "", () => setView("cheats"))}
               {item("map", "Mapa", "", () => setView("map"))}

@@ -18,6 +18,9 @@ import { UninstallDialog } from "./overlays/Uninstall";
 import { checkOnLaunch } from "./host/update";
 import { GameEditor } from "./overlays/GameEditor";
 import { GuidesOverlay } from "./overlays/Guides";
+import { ProfileEditorOverlay } from "./overlays/ProfileEditor";
+import { RecoveryCodeOverlay } from "./overlays/RecoveryCode";
+import { SocialOverlay } from "./overlays/Social";
 import { MapOverlay } from "./overlays/Map";
 import { TrainerOverlay } from "./overlays/Trainer";
 import { Onboarding } from "./overlays/Onboarding";
@@ -64,6 +67,7 @@ export default function App() {
   async function enter(p: Profile) {
     set({ profile: p });
     await loadLibrary();
+    set({ account: await api.accountState().catch(() => null) });
     useApp.getState().closeAll();
     setPhase("main");
     checkOnLaunch();
@@ -105,6 +109,8 @@ export default function App() {
       on("meta:progress", (m) => set({ meta: m })),
       on("scan:progress", (s) => set({ scan: s })),
       on("app:toast", (t) => useApp.getState().toast(t.kind, t.message)),
+      on("social:changed", (a) => set({ account: a })),
+      on("social:notice", (n) => useApp.getState().toast("info", n.body ? `${n.title}: ${n.body}` : n.title, { label: "Amigos", run: () => useApp.getState().open("social") })),
       on("theme:changed", (t) => {
         // El elegido, no el que se ve: con su theme.json roto se ve Steam y,
         // al arreglarlo, tiene que volver.
@@ -231,6 +237,12 @@ export default function App() {
             return <TrainerOverlay key={key} args={o.args} onClose={onClose} />;
           case "map":
             return <MapOverlay key={key} args={o.args} onClose={onClose} />;
+          case "social":
+            return <SocialOverlay key={key} args={o.args} onClose={onClose} />;
+          case "profile-editor":
+            return <ProfileEditorOverlay key={key} onClose={onClose} />;
+          case "recovery-code":
+            return <RecoveryCodeOverlay key={key} args={o.args} onClose={onClose} />;
           case "profiles":
             return (
               <ProfilePicker

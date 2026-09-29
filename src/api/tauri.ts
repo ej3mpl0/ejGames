@@ -40,6 +40,8 @@ import type {
   TrainerInstalled,
   TrainerLive,
   TrainerPage,
+  AccountState,
+  AccountStatus,
 } from "./types";
 
 export const api = {
@@ -169,6 +171,30 @@ export const api = {
   mapsChoose: (gameId: number, slug: string | null) => invoke<GameMaps>("maps_choose", { gameId, slug }),
   mapsLast: (gameId: number, map: string) => invoke<void>("maps_last", { gameId, map }),
   overlayPin: (url: string | null) => invoke<void>("overlay_pin", { url }),
+  // Cuenta y amigos
+  accountState: () => invoke<AccountState>("account_state"),
+  accountRegister: (username: string, password: string, displayName: string) =>
+    invoke<{ state: AccountState; recoveryCode: string }>("account_register", { username, password, displayName }),
+  accountLogin: (username: string, password: string) => invoke<AccountState>("account_login", { username, password }),
+  accountRecover: (username: string, code: string, password: string) =>
+    invoke<{ state: AccountState; recoveryCode: string }>("account_recover", { username, code, password }),
+  accountLogout: () => invoke<AccountState>("account_logout"),
+  accountPassword: (old: string, next: string) => invoke<void>("account_password", { old, new: next }),
+  accountNewCode: (password: string) => invoke<string>("account_new_code", { password }),
+  accountDelete: (password: string) => invoke<AccountState>("account_delete", { password }),
+  accountPrefs: (p: { status?: AccountStatus; notifyOnline?: boolean; notifyPlaying?: boolean }) =>
+    invoke<AccountState>("account_prefs", { status: p.status ?? null, notifyOnline: p.notifyOnline ?? null, notifyPlaying: p.notifyPlaying ?? null }),
+  accountProfile: (patch: Record<string, unknown>) => invoke<unknown>("account_profile", { patch }),
+  accountImage: (kind: "avatar" | "background" | "shot", path: string) => invoke<{ hash: string; url: string | null }>("account_image", { kind, path }),
+  socialRefresh: () => invoke<AccountState>("social_refresh"),
+  saveTextFile: (path: string, text: string) => invoke<void>("save_text_file", { path, text }),
+  socialFriend: (action: "request" | "accept" | "decline" | "remove" | "block" | "unblock", target: string | number) =>
+    invoke<AccountState>("social_friend", { action, target }),
+  socialUser: (id: number) => invoke<unknown>("social_user", { id }),
+  socialComments: (id: number, before?: number) => invoke<{ items: unknown[] }>("social_comments", { id, before: before ?? null }),
+  socialComment: (id: number, text: string) => invoke<void>("social_comment", { id, text }),
+  socialCommentDelete: (id: number) => invoke<void>("social_comment_delete", { id }),
+  socialFeed: (before?: number) => invoke<{ items: unknown[] }>("social_feed", { before: before ?? null }),
   downloadsList: () => invoke<DownloadItem[]>("downloads_list"),
   downloadsDefaults: () => invoke<DownloadDefaults>("downloads_defaults"),
   downloadsPrepare: (slug: string) => invoke<PreparedDownload>("downloads_prepare", { slug }),
@@ -202,6 +228,8 @@ export type Events = {
   "downloads:progress": DownloadItem[];
   "downloads:finished": { id: number; title: string };
   "explore:art": null;
+  "social:changed": AccountState;
+  "social:notice": { title: string; body?: string | null; icon?: string | null };
   "downloads:install": { id: number; phase: "running" | "done" | "cancelled" | "error" | "needs-folder"; message?: string | null; gameId?: number | null };
 };
 

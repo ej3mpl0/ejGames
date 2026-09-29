@@ -1,6 +1,7 @@
 // Llamadas de los temas → host. Solo lo que aparece aquí es accesible para un
 // tema; cada parámetro se valida antes de tocar el núcleo.
 
+import { hostEjg as social, openSocial } from "./social";
 import { api } from "../api/tauri";
 import { useApp, activeTheme, type OverlayName } from "../store/app";
 import { installDownload, locateInstall, openExplore, openKeyboard, pickFolder } from "./downloads";
@@ -14,7 +15,7 @@ const num = (v: unknown): number => {
   return n;
 };
 
-const UI_NAMES: Record<string, OverlayName> = {
+const UI_NAMES: Record<string, OverlayName | "friends" | "profile" | "account"> = {
   settings: "settings",
   game: "game",
   profiles: "profiles",
@@ -29,6 +30,10 @@ const UI_NAMES: Record<string, OverlayName> = {
   guides: "guides",
   trainer: "trainer",
   map: "map",
+  friends: "friends",
+  profile: "profile",
+  account: "account",
+  "profile-editor": "profile-editor",
 };
 
 const GUIDE_SORTS = ["toprated", "trend", "mostrecent"];
@@ -123,6 +128,8 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
       if (name === "add-folder") st.open("settings", { tab: "library", addFolder: true });
       else if (name === "guides") st.open("guides", { id: libGame(args?.id), guide: args?.guide == null ? null : validGuideId(args.guide) });
       else if (name === "trainer" || name === "map") st.open(name, { id: libGame(args?.id) });
+      else if (name === "friends" || name === "profile" || name === "account" || name === "profile-editor")
+        openSocial(name, { id: args?.id == null ? null : num(args.id) }, true);
       else if (name === "theme") st.open("settings", { tab: "appearance" });
       else if (name === "explore" || name === "downloads") st.open(name, { view: name, ...(args ?? {}) });
       else st.open(name, args);
@@ -212,6 +219,36 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
         anticheat: t.anticheat ?? null,
       };
     }
+    // Cuenta y amigos: lo mismo que el host, validado aquí.
+    case "account.state":
+      return st.account;
+    case "account.setStatus": {
+      const status = String(params?.status);
+      if (!["online", "away", "invisible"].includes(status)) throw new Error("estado no válido");
+      return social().account.setStatus(status as "online" | "away" | "invisible");
+    }
+    case "friends.add":
+      return social().friends.add(str(params?.user, 40));
+    case "friends.accept":
+    case "friends.decline":
+    case "friends.remove":
+    case "friends.block":
+    case "friends.unblock": {
+      const action = method.slice(8) as "accept" | "decline" | "remove" | "block" | "unblock";
+      return social().friends[action](num(params?.id));
+    }
+    case "friends.refresh":
+      return social().friends.refresh();
+    case "profiles.view":
+      return api.socialUser(num(params?.id));
+    case "comments.list":
+      return api.socialComments(num(params?.id), params?.before == null ? undefined : num(params.before));
+    case "comments.post":
+      return api.socialComment(num(params?.id), str(params?.text, 500));
+    case "comments.remove":
+      return api.socialCommentDelete(num(params?.id));
+    case "activity.feed":
+      return api.socialFeed(params?.before == null ? undefined : num(params.before));
     case "maps.info": {
       const m = await api.mapsFor(libGame(params?.gameId));
       return { game: m.game ? { name: m.game.name, maps: m.game.maps.map((x) => x.name) } : null, none: m.none };

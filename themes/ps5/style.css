@@ -168,3 +168,23 @@ main { position: relative; z-index: 2; height: calc(100% - 76px); }
 .gh-inner .g-rbody { line-height: 1.7; }
 .gh-inner .g-section-title { font-size: 22px; font-weight: 400; background: rgba(28, 30, 38, 0.98); }
 .gh-inner .g-toc-box { border-radius: 18px 0 0 18px; }
+
+/* ─── amigos y perfiles (kit social, en la capa de ayuda) ─── */
+.status .ico { position: relative; }
+.gh-inner .s-view {
+  --s-fg: #fff;
+  --s-muted: rgba(255, 255, 255, 0.62);
+  --s-accent: #4aa3ff;
+  --s-bg: rgba(16, 18, 26, 0.98);
+  --s-surface: rgba(255, 255, 255, 0.07);
+  --s-surface-2: rgba(255, 255, 255, 0.14);
+  --s-line: rgba(255, 255, 255, 0.12);
+  --s-radius: 14px;
+  --s-focus: 0 0 0 3px #fff;
+  height: 100%;
+  max-width: 1280px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.gh-inner .s-friends .s-row { padding: 10px 14px; }
+.gh-inner .s-friends .s-row-name { font-size: 17px; }

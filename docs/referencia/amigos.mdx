@@ -1,0 +1,101 @@
+---
+title: "Amigos y perfiles"
+description: "ejg.account, ejg.friends, ejg.profiles: la cuenta de ejGames, los amigos y sus perfiles al estilo Steam."
+icon: "users"
+---
+
+Con una cuenta de ejGames (opcional, ligada al perfil local), el usuario tiene **amigos** con su presencia («jugando
+a…»), **solicitudes**, **actividad** y un **perfil** personalizable: avatar con marco, fondo animado o imagen, color,
+vitrinas, nivel, insignias y comentarios.
+
+Si tu tema pinta sus propios amigos y perfiles, decláralo en `theme.json`:
+
+```json
+"features": { "explore": true, "guides": true, "social": true }
+```
+
+y el host (el menú rápido) te pedirá que los abras:
+
+```js
+ejg.ui.onView(({ view, userId }) => {
+  if (view === "friends") abrirAmigos();
+  if (view === "profile") abrirPerfil(userId); // null: el perfil del usuario
+});
+```
+
+Sin `features.social`, el host tiene su propia ventana: `ejg.friends.open()` y `ejg.profiles.open(id)`.
+
+## La forma rápida: la vista del kit
+
+`/_sdk/kit/social.js` trae la lista de amigos (jugando, en línea, desconectados), las solicitudes, la actividad y la
+página de perfil, con mando. Tú pones el sitio y el aspecto:
+
+```html
+<link rel="stylesheet" href="/_sdk/kit/social.css" />
+```
+
+```js
+import { createSocialView } from "/_sdk/kit/social.js";
+
+const view = createSocialView({
+  ejg,
+  root: document.getElementById("amigos"), // un contenedor visible, con altura
+  focus,                                   // tu createFocus()
+  start: "friends",                        // o "profile" (con userId; sin él, el tuyo)
+  onExit: cerrarAmigos,                    // «Atrás» desde la lista
+  onChange: () => pistas.set(view.hints()),
+});
+
+// Antes que tu propia navegación:
+bindNav(focus, {
+  back: () => view.nav("back") || miAtras(),
+  lb: () => view.nav("lb"),  // pestañas: Amigos, Solicitudes, Actividad
+  rb: () => view.nav("rb"),
+  x: () => view.nav("x"),    // añadir amigo (o comentar, en un perfil)
+  y: () => view.nav("y"),    // cambiar de estado
+});
+
+view.destroy(); // al salir
+```
+
+En un perfil abierto desde la lista, **Atrás** vuelve a la lista (`view.depth` dice cuántas pantallas hay abiertas).
+
+El aspecto se cambia con variables sobre `.s-view`: `--s-fg`, `--s-muted`, `--s-accent`, `--s-bg`, `--s-surface`,
+`--s-surface-2`, `--s-line`, `--s-radius`, `--s-focus` y `--s-font`, y con reglas sobre sus clases `s-…` (`s-row`,
+`s-tab`, `s-btn`, `s-showcase`…). Los marcos, los fondos animados, el color del perfil (`--s-paccent`) y las
+insignias son del usuario: se ven igual en todos los temas.
+
+<Tip>
+Si prefieres montarlo por piezas, el kit también trae `createFriendsView`, `createProfileView`, `avatar(usuario)`
+(con su marco), `levelBadge(nivel)`, `badgeEl(insignia)`, `presenceText(presencia)`, `groupFriends(lista)`,
+`activityText(entrada)` y las listas `FRAMES`, `BACKGROUNDS`, `COLORS`, `BADGES` y `SHOWCASES`.
+</Tip>
+
+## La API
+
+```js
+ejg.account.state;
+// { enabled, linked, username, userId, needsLogin, status, offline,
+//   social: { me, friends, incoming, outgoing, blocked } }
+ejg.account.onChange((state) => …);
+await ejg.account.setStatus("away");   // online | away | invisible
+ejg.account.openEditor();              // el editor del perfil (del host)
+ejg.account.openLogin();               // crear cuenta o entrar (Ajustes)
+
+ejg.friends.list;                      // [{ id, username, name, avatarUrl, frame, level, presence }]
+ejg.friends.requests;                  // { incoming, outgoing, blocked }
+await ejg.friends.add("ana");          // nombre de usuario o código de amigo ("485-304-036")
+await ejg.friends.accept(id);          // también decline, remove, block, unblock
+
+await ejg.profiles.view(id);           // el perfil entero (privacidad aplicada)
+await ejg.comments.list(id);           // { items: [{ id, text, at, author, canDelete }] }
+await ejg.comments.post(id, "¡Hola!");
+await ejg.activity.feed();             // { items: [{ id, kind, data, at, user }] }
+```
+
+- `presence.status`: `online`, `away` u `offline`; si juega, `presence.game` y `presence.since`. Los invisibles salen
+  desconectados.
+- `needsLogin`: la cuenta está ligada, pero la sesión caducó. `ejg.account.openLogin()` lleva a entrar.
+- Las imágenes (`avatarUrl`, `backgroundImageUrl`, las capturas de la vitrina) llegan por `ejg-media`, con caché.
+- En la actividad, `kind` es `played` (`data.minutes`), `achievement` (`data.name`, `data.rarity`), `completed`,
+  `badge` o `friend`. `activityText(entrada, miId)` la pone en palabras.

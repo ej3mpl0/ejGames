@@ -8,6 +8,7 @@ import type {
   RunningGame,
   Settings,
   ThemeInfo,
+  AccountState,
 } from "../api/types";
 
 export type PadType = "xbox" | "playstation" | "nintendo" | "generic";
@@ -30,6 +31,9 @@ export type OverlayName =
   | "guides"
   | "trainer"
   | "map"
+  | "social"
+  | "profile-editor"
+  | "recovery-code"
   | "onboarding";
 
 export interface Overlay {
@@ -54,6 +58,8 @@ interface State {
   collections: Collection[];
   running: RunningGame[];
   downloads: DownloadItem[];
+  /** Cuenta de ejGames del perfil (amigos, perfil). */
+  account: AccountState | null;
   overlays: Overlay[];
   toasts: Toast[];
   meta: { done: number; total: number };
@@ -91,6 +97,7 @@ export const useApp = create<State>((set, get) => ({
   collections: [],
   running: [],
   downloads: [],
+  account: null,
   overlays: [],
   toasts: [],
   meta: { done: 0, total: 0 },

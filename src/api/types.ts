@@ -85,7 +85,7 @@ export interface NoticeLook {
 
 export interface OverlayNotice {
   id: number;
-  kind: "achievement" | "info" | "summary" | "screenshot";
+  kind: "achievement" | "info" | "summary" | "screenshot" | "friend";
   gameId?: number | null;
   game?: string | null;
   title: string;
@@ -375,7 +375,7 @@ export interface ThemeInfo {
   windowControls?: "host" | "theme" | null;
   overlay?: { style?: NoticeStyle } | null;
   /** Vistas propias del tema (sin ellas, el host abre las suyas). */
-  features?: { explore?: boolean; guides?: boolean } | null;
+  features?: { explore?: boolean; guides?: boolean; social?: boolean } | null;
   builtin: boolean;
   dir: string;
   previewUrl?: string | null;
@@ -807,6 +807,97 @@ export interface TrainerLive {
   on: string[];
   visible: boolean;
   elevated: boolean;
+}
+
+// ───────────────────────────── cuenta y amigos ─────────────────────────────
+
+export type AccountStatus = "online" | "away" | "invisible";
+
+export interface SocialPresence {
+  status: "online" | "away" | "offline";
+  game?: string | null;
+  since?: number | null;
+  lastSeen?: number;
+}
+
+export interface SocialUser {
+  id: number;
+  username: string;
+  name: string;
+  avatar?: string | null;
+  avatarUrl?: string;
+  frame?: string;
+  level?: number;
+}
+
+export interface SocialFriend extends SocialUser {
+  since?: number;
+  presence: SocialPresence;
+}
+
+export interface SocialShowcase {
+  type: "featured" | "favorite" | "stats" | "recent" | "achievements" | "badges" | "screenshots" | "text";
+  game?: string;
+  title?: string;
+  text?: string;
+  items?: string[];
+  urls?: string[];
+}
+
+export interface SocialProfile {
+  name: string;
+  realName: string;
+  country: string;
+  bio: string;
+  avatar?: string | null;
+  avatarUrl?: string;
+  backgroundImage?: string | null;
+  backgroundImageUrl?: string;
+  frame: string;
+  background: string;
+  color: string;
+  showcases: SocialShowcase[];
+  featuredBadge: string;
+  privacy: "public" | "friends" | "private";
+  comments: "public" | "friends" | "off";
+}
+
+export interface SocialMe {
+  id: number;
+  username: string;
+  friendCode: string;
+  createdAt: number;
+  status: string;
+  profile: SocialProfile;
+  xp: number;
+  level: number;
+  badges: { id: string; tier: number }[];
+}
+
+export interface SocialSync {
+  rev: number;
+  me: SocialMe;
+  friends: SocialFriend[];
+  incoming: (SocialUser & { at: number })[];
+  outgoing: (SocialUser & { at: number })[];
+  blocked: SocialUser[];
+  lastComment: number;
+}
+
+export interface AccountState {
+  /** Esta versión tiene servidor de cuentas. */
+  enabled: boolean;
+  profileId?: number | null;
+  linked: boolean;
+  username?: string | null;
+  userId?: number | null;
+  /** Ligada, pero la sesión caducó. */
+  needsLogin: boolean;
+  status: AccountStatus;
+  notifyOnline: boolean;
+  notifyPlaying: boolean;
+  offline: boolean;
+  social?: SocialSync | null;
 }
 
 // ───────────────────────────── mapas (Map Genie) ─────────────────────────────

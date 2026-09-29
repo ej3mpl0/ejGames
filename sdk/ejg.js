@@ -116,6 +116,7 @@
       if (m.data.input) state.input = m.data.input;
       state.downloads = m.data.downloads || [];
       state.explore = m.data.explore !== false;
+      state.account = m.data.account || null;
       root.setAttribute("data-mode", m.data.mode || "desktop");
       applyInput();
       applySettings(m.data.settings);
@@ -156,6 +157,7 @@
         case "input": state.input = d; applyInput(); break;
         case "downloads": state.downloads = d || []; break;
         case "explore": state.explore = !!(d && d.enabled); break;
+        case "account": state.account = d || null; break;
       }
       emit(m.name, d);
     }
@@ -287,7 +289,7 @@
     },
     ui: {
       /** settings | game | profiles | search | add-folder | stats | theme | collections | menu | explore | downloads
-       *  | guides, trainer, map ({id: gameId}) */
+       *  | guides, trainer, map ({id: gameId}) | friends | profile ({id: userId}) | account | profile-editor */
       open: function (name, args) { return call("ui.open", { name: name, args: args || null }); },
       toast: function (message, kind) { return call("ui.toast", { message: message, kind: kind || "info" }); },
       /** El host pide abrir una vista del tema: fn({view: "explore"|"downloads"|"repack"|"guides", slug?, gameId?, guideId?}). */
@@ -341,6 +343,52 @@
       /** Ventana de trucos del host: buscar, ver opciones, instalar (lo confirma
        *  el usuario) y gestionar. Durante la partida, se usan desde el overlay. */
       open: function (gameId) { return call("ui.open", { name: "trainer", args: { id: gameId } }); },
+    },
+    account: {
+      /** Cuenta de ejGames del perfil: {enabled, linked, username, needsLogin, status, social: {me, friends, incoming, outgoing, blocked}}. */
+      get state() { return state.account; },
+      onChange: function (fn) { return on("account", fn); },
+      /** online | away | invisible */
+      setStatus: function (status) { return call("account.setStatus", { status: status }); },
+      /** Editor del perfil del host (avatar, marco, fondo, vitrinas…). */
+      openEditor: function () { return call("ui.open", { name: "profile-editor" }); },
+      /** Crear cuenta o entrar (Ajustes → Cuenta y amigos). */
+      openLogin: function () { return call("ui.open", { name: "account" }); },
+    },
+    friends: {
+      /** Amigos con su presencia: [{id, username, name, avatarUrl, frame, level, presence: {status, game, since, lastSeen}}]. */
+      get list() { return (state.account && state.account.social && state.account.social.friends) || []; },
+      /** Solicitudes: {incoming, outgoing, blocked}. */
+      get requests() {
+        var s = (state.account && state.account.social) || {};
+        return { incoming: s.incoming || [], outgoing: s.outgoing || [], blocked: s.blocked || [] };
+      },
+      onChange: function (fn) { return on("account", function (a) { fn((a && a.social && a.social.friends) || []); }); },
+      /** Por nombre de usuario o código de amigo. */
+      add: function (user) { return call("friends.add", { user: user }); },
+      accept: function (id) { return call("friends.accept", { id: id }); },
+      decline: function (id) { return call("friends.decline", { id: id }); },
+      remove: function (id) { return call("friends.remove", { id: id }); },
+      block: function (id) { return call("friends.block", { id: id }); },
+      unblock: function (id) { return call("friends.unblock", { id: id }); },
+      refresh: function () { return call("friends.refresh"); },
+      /** Ventana de amigos del host. */
+      open: function () { return call("ui.open", { name: "friends" }); },
+    },
+    profiles: {
+      /** Un perfil (el tuyo con tu id): nombre, avatar, fondo, nivel, insignias, vitrinas, juegos, actividad… */
+      view: function (id) { return call("profiles.view", { id: id }); },
+      /** Perfil en la ventana del host. */
+      open: function (id) { return call("ui.open", { name: "profile", args: { id: id } }); },
+    },
+    comments: {
+      list: function (userId, before) { return call("comments.list", { id: userId, before: before == null ? null : before }); },
+      post: function (userId, text) { return call("comments.post", { id: userId, text: text }); },
+      remove: function (commentId) { return call("comments.remove", { id: commentId }); },
+    },
+    activity: {
+      /** Lo último de tus amigos: {items: [{id, kind, data, at, user}]}. Para seguir, `before` = id del último. */
+      feed: function (before) { return call("activity.feed", { before: before == null ? null : before }); },
     },
     maps: {
       /** Mapa de Map Genie del juego: {game: {name, maps: [nombre]} | null, none}. */

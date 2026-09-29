@@ -145,3 +145,22 @@ body.playing-hero .hero-desc { opacity: 0; }
 .cg-inner .g-h1 { color: #fff; }
 .cg-inner .g-toc-box { background: #141414; }
 .cg-inner .g-toc-item.is-on { box-shadow: inset 3px 0 0 var(--accent); }
+
+/* ─── amigos y perfiles (kit social, en la capa de guías) ─── */
+.cg-inner .s-view {
+  --s-fg: #fff;
+  --s-muted: rgba(255, 255, 255, 0.65);
+  --s-accent: #e50914;
+  --s-bg: #181818;
+  --s-surface: #1f1f1f;
+  --s-surface-2: #2f2f2f;
+  --s-line: rgba(255, 255, 255, 0.12);
+  --s-radius: 4px;
+  --s-focus: 0 0 0 2px #fff;
+  height: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.cg-inner .s-friends .s-tab.is-on { background: #fff; color: #000; }

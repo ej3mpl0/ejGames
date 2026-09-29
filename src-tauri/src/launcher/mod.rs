@@ -245,6 +245,7 @@ impl Track {
             }
             crate::overlay::session_started(st, &self.game, profile_id, started, target.clone());
             crate::trainers::run::session_started(st, &self.game, target.clone());
+            crate::online::game_started(st, &self.game.title, started);
             crate::achievements::watch(st.clone(), game_id, profile_id, pad_stop.clone());
             if st.settings.get().gamepad_home_button {
                 let st_pad = st.clone();
@@ -261,6 +262,9 @@ impl Track {
             tracker::Outcome::Played(s, e) | tracker::Outcome::Cancelled(Some((s, e))) => Some((s, e)),
             _ => None,
         };
+        let cover = st.db.with(|c| repo::selected_remote_url(c, game_id, "cover")).ok().flatten();
+        let (s0, e0) = played.unwrap_or((0, 0));
+        crate::online::game_ended(st, &self.game.title, s0, e0, cover);
         if let Some((s, e)) = played {
             if e - s >= 5 && !recorded.swap(true, Ordering::SeqCst) {
                 if let Err(err) = st.db.with(|c| repo::record_session(c, profile_id, game_id, s, e)) {

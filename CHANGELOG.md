@@ -5,6 +5,39 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.7.0
+
+**Cuenta de ejGames (opcional)**
+- Crea tu cuenta al empezar (un paso nuevo del inicio) o cuando quieras en **Ajustes → Cuenta y amigos**. Se liga a
+  tu perfil local y el resto de ejGames funciona igual sin ella.
+- La contraseña no sale de tu PC: se convierte en una clave (argon2) y el servidor solo guarda un hash. Al crearla te
+  da un **código de recuperación** para cuando la olvides; guárdalo, solo se enseña una vez.
+
+**Amigos**
+- Añádelos por su nombre de usuario o por su **código de amigo**. Ves quién está en línea y **a qué juega**, como en
+  Steam, y tus solicitudes pendientes.
+- **Avisos dentro del juego** cuando un amigo se conecta o empieza a jugar (se pueden desactivar) y cuando te llega
+  una solicitud.
+- **Actividad**: partidas, logros (con su rareza), juegos completados y amigos nuevos de tu gente.
+- Tu estado: en línea, ausente o invisible.
+
+**Perfiles al estilo Steam**
+- Avatar con **12 marcos** (neón, fuego, galaxia, píxel…), **8 fondos animados** o una imagen tuya y 7 colores.
+- **Vitrinas** a elegir y ordenar: juego destacado, favorito, estadísticas, jugados hace poco, logros recientes,
+  insignias, capturas y texto libre.
+- **Nivel e insignias** que se ganan jugando: coleccionista, cazalogros, maratón, completista, explorador, veterano y
+  social, cada una con sus niveles de bronce a leyenda.
+- **Comentarios** en los perfiles y privacidad a tu gusto: quién ve tu perfil (todos, tus amigos o solo tú) y quién
+  comenta.
+- Editor con vista previa en vivo.
+
+**En todas partes**
+- Pestaña **Amigos** en los siete paneles del overlay, con los perfiles dentro.
+- Cada tema con sus amigos: «Amigos» en la barra de abajo en Steam, un icono en la de PS5, un botón en Xbox, un
+  círculo en Switch, un enlace en Cine y ♥ FRIENDS en Retro. Y en el menú rápido, «Amigos» y «Mi perfil».
+- Para temas: `ejg.account`, `ejg.friends`, `ejg.profiles`, `ejg.comments` y `ejg.activity`, y en el kit
+  `createSocialView` con `/_sdk/kit/social.css`. Está en la referencia.
+
 ## 0.6.0
 
 **Trucos**

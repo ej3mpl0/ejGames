@@ -81,6 +81,11 @@ impl From<tauri::Error> for CmdError {
         CmdError::Msg(e.to_string())
     }
 }
+impl From<crate::online::api::ApiError> for CmdError {
+    fn from(e: crate::online::api::ApiError) -> Self {
+        CmdError::Msg(e.message)
+    }
+}
 impl From<tokio::task::JoinError> for CmdError {
     fn from(e: tokio::task::JoinError) -> Self {
         CmdError::Msg(e.to_string())

@@ -56,6 +56,22 @@ También de los juegos que solo tienen el `.exe`:
   `achievements.json`. El appid sale de `steam_appid.txt` o de la configuración del emulador.
 - Los nombres en español, los iconos y la rareza vienen de Steam, sin cuenta ni clave.
 
+## Cuenta, amigos y perfil
+
+Opcional (el resto de ejGames funciona sin ella), con usuario y contraseña, y ligada a tu perfil local:
+
+- **Amigos**: se añaden por nombre de usuario o por **código de amigo**. Ves quién está en línea y **a qué está
+  jugando**, con avisos dentro del juego cuando alguien se conecta o empieza una partida.
+- **Actividad**: partidas, logros, juegos completados y amigos nuevos de tu gente.
+- **Perfil al estilo Steam**: avatar con **marco**, **fondo animado** o imagen propia, color, **vitrinas** (juego
+  destacado, favorito, estadísticas, jugados hace poco, logros, insignias, capturas y texto libre), **nivel** e
+  **insignias** que se ganan jugando, y **comentarios**. Tú decides quién lo ve (todos, tus amigos o solo tú) y quién
+  comenta.
+- Estado: en línea, ausente o invisible.
+
+La contraseña nunca sale del PC: se convierte en una clave con argon2 y el servidor solo guarda un hash de esa clave.
+Al crear la cuenta te da un **código de recuperación**, la única forma de recuperarla si olvidas la contraseña.
+
 ## Guías, trucos y mapas
 
 - **Guías de la comunidad de Steam** de cada juego, en la ficha y en el overlay: con buscador, categorías, lector
@@ -85,7 +101,7 @@ Sin inyectar nada en el juego:
   Mayús + Tab de Steam, la Guía de Xbox, el centro de control de PlayStation, un menú rápido de Switch, una película
   en pausa (Cine) o la pausa de una recreativa (Retro). Trae:
   - tus logros (los siguientes más fáciles, los conseguidos y los ocultos que quedan);
-  - las **guías**, los **trucos** y el **mapa** del juego;
+  - tus **amigos** (a qué juegan, solicitudes y perfiles), y las **guías**, los **trucos** y el **mapa** del juego;
   - el tiempo de esta sesión y el total;
   - **capturas**: con **F12** o desde el panel se guarda una imagen del juego (sin el overlay) en
     `Imágenes\ejGames\<juego>`, y en el panel están las últimas;

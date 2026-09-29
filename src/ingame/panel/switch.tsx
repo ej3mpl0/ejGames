@@ -2,9 +2,10 @@
 // fila de iconos redondos de colores del menú HOME y el borde cian que late.
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Activity, BookOpen, Download, Image as ImageIcon, MapIcon, Music2, NotebookPen, Power, Trophy, WandSparkles } from "lucide-react";
+import { Activity, BookOpen, Download, Image as ImageIcon, MapIcon, Music2, NotebookPen, Power, Trophy, Users, WandSparkles } from "lucide-react";
 import { GuidesPane } from "../../components/guide";
 import { MapPane } from "../../components/map";
+import { SocialPane } from "../../components/social";
 import { TrainerPane } from "../../components/trainer";
 import { Hints } from "../../components/Hints";
 import { useOverlayNav } from "../../input/nav";
@@ -29,11 +30,12 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hoursLabel, Img } from "./parts";
 import "./switch.css";
 
-type Sec = "album" | "ach" | "guides" | "cheats" | "map" | "notes" | "music" | "system" | "dl";
+type Sec = "album" | "ach" | "friends" | "guides" | "cheats" | "map" | "notes" | "music" | "system" | "dl";
 
 const SECTIONS: { id: Sec; label: string; icon: ReactNode; color: string }[] = [
   { id: "album", label: "Álbum", icon: <ImageIcon />, color: "#2e9bf0" },
   { id: "ach", label: "Logros", icon: <Trophy />, color: "#f2a516" },
+  { id: "friends", label: "Amigos", icon: <Users />, color: "#e8508c" },
   { id: "guides", label: "Guías", icon: <BookOpen />, color: "#8c5ae8" },
   { id: "cheats", label: "Trucos", icon: <WandSparkles />, color: "#e6463c" },
   { id: "map", label: "Mapa", icon: <MapIcon />, color: "#12b3a8" },
@@ -116,6 +118,13 @@ export function SwitchPanel({ p }: { p: Panel }) {
         </div>
       );
       break;
+    case "friends":
+      body = (
+        <div className="pn-guides">
+          <SocialPane inPanel />
+        </div>
+      );
+      break;
     case "cheats":
       body = (
         <div className="pn-guides">
@@ -152,7 +161,7 @@ export function SwitchPanel({ p }: { p: Panel }) {
 
   return (
     <div ref={ref} className={cls("pn-switch", dark && "is-dark")} style={style} onMouseDown={(e) => e.target === e.currentTarget && p.actions.close()}>
-      <aside className={cls("sw-panel", (sec === "guides" || sec === "cheats" || sec === "map") && "is-guides", ((sec === "guides" && reading) || sec === "map") && "is-reading")}>
+      <aside className={cls("sw-panel", (sec === "guides" || sec === "cheats" || sec === "map" || sec === "friends") && "is-guides", ((sec === "guides" && reading) || sec === "map") && "is-reading")}>
         <header className="sw-top">
           <span className="sw-time">{clock(p.now)}</span>
           <span className="sw-status">

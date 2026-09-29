@@ -50,6 +50,9 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 # Guías de Steam: su HTML se recorre y se convierte en bloques seguros (sin HTML).
 scraper = { version = "0.24", default-features = false }
 ego-tree = "0.10"
+# Cuentas: la contraseña se deriva aquí (el servidor no tiene CPU para hashear).
+argon2 = { version = "0.5", default-features = false, features = ["alloc"] }
+getrandom = "0.3"
 gilrs = { version = "0.11", default-features = false, features = ["xinput"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -79,6 +82,7 @@ windows = { version = "0.61", features = [
   "Win32_System_LibraryLoader",
   "Win32_UI_Input_KeyboardAndMouse",
   "Win32_Security",
+  "Win32_Security_Cryptography",
   "Win32_Graphics_Gdi",
   "Win32_UI_HiDpi",
   "Win32_UI_Accessibility",

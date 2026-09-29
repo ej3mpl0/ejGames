@@ -166,3 +166,21 @@ img { display: block; }
 .gx-inner .g-rtitle b { font-size: 22px; }
 .gx-inner .g-section-title { background: rgba(22, 24, 29, 0.99); }
 .gx-inner .g-toc-item.is-on { box-shadow: inset 3px 0 0 var(--accent); }
+
+/* ─── amigos y perfiles (kit social, en la página de guías) ─── */
+.gx-inner .s-view {
+  --s-fg: #f3f3f3;
+  --s-muted: rgba(243, 243, 243, 0.62);
+  --s-accent: color-mix(in srgb, var(--accent) 55%, #9be39b);
+  --s-bg: #16181d;
+  --s-surface: rgba(40, 42, 48, 0.82);
+  --s-surface-2: rgba(66, 68, 74, 0.9);
+  --s-line: rgba(255, 255, 255, 0.09);
+  --s-radius: var(--r);
+  --s-focus: 0 0 0 3px #fff;
+  height: 100%;
+  max-width: 1320px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.gx-inner .s-btn.is-primary { background: var(--accent); }

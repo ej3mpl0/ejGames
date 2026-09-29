@@ -144,6 +144,7 @@ export function ThemeFrame() {
         version: st.boot?.version,
         downloads: st.downloads,
         explore: st.settings?.exploreEnabled !== false,
+        account: st.account,
       },
     });
   }
@@ -238,6 +239,9 @@ export function ThemeFrame() {
     else if (dlTimer.current.t == null) dlTimer.current.t = window.setTimeout(send, wait);
   }, [downloads]);
   useEffect(() => () => void (dlTimer.current.t != null && clearTimeout(dlTimer.current.t)), []);
+  // Cuenta y amigos → tema.
+  const account = useApp((s) => s.account);
+  useEffect(() => void (beats.current.ready && event("account", account)), [account]);
   const exploreOn = useApp((s) => s.settings?.exploreEnabled !== false);
   useEffect(() => void (beats.current.ready && event("explore", { enabled: exploreOn })), [exploreOn]);
 

@@ -5,6 +5,7 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { GuidesPane } from "../../components/guide";
 import { MapPane } from "../../components/map";
+import { SocialPane } from "../../components/social";
 import { TrainerPane } from "../../components/trainer";
 import { Hints } from "../../components/Hints";
 import { useOverlayNav } from "../../input/nav";
@@ -31,12 +32,13 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hms, hoursLabel, Img } from "./parts";
 import "./cinema.css";
 
-type Row = "ach" | "guides" | "cheats" | "map" | "shots" | "notes" | "music" | "perf" | "dl";
+type Row = "ach" | "friends" | "guides" | "cheats" | "map" | "shots" | "notes" | "music" | "perf" | "dl";
 
 export function CinemaPanel({ p }: { p: Panel }) {
   const d = p.data;
   const rows: { id: Row; label: string }[] = [
     ...(p.ach.total ? [{ id: "ach" as Row, label: "Logros" }] : []),
+    { id: "friends", label: "Amigos" },
     { id: "guides", label: "Guías" },
     { id: "cheats", label: "Trucos" },
     { id: "map", label: "Mapa" },
@@ -85,6 +87,13 @@ export function CinemaPanel({ p }: { p: Panel }) {
       rail = (
         <div className="pn-guides">
           <GuidesPane gameId={d.gameId} onMenu={p.actions.close} />
+        </div>
+      );
+      break;
+    case "friends":
+      rail = (
+        <div className="pn-guides">
+          <SocialPane inPanel />
         </div>
       );
       break;
@@ -139,7 +148,7 @@ export function CinemaPanel({ p }: { p: Panel }) {
   }
 
   return (
-    <div ref={ref} className={cls("pn-cinema", (row === "guides" || row === "cheats" || row === "map") && "is-guides")} style={style}>
+    <div ref={ref} className={cls("pn-cinema", (row === "guides" || row === "cheats" || row === "map" || row === "friends") && "is-guides")} style={style}>
       {/* El «fotograma congelado» es el propio juego: solo se oscurece. */}
       <div className="cn-shade" />
 
@@ -212,7 +221,7 @@ export function CinemaPanel({ p }: { p: Panel }) {
             />
           )}
         </nav>
-        <div className={cls("cn-rail", `is-${row}`, (row === "cheats" || row === "map") && "is-guides")}>{rail}</div>
+        <div className={cls("cn-rail", `is-${row}`, (row === "cheats" || row === "map" || row === "friends") && "is-guides")}>{rail}</div>
       </section>
 
       {viewer != null && <CaptureViewer k="cn" list={d.captures} index={viewer} onIndex={setViewer} onClose={() => setViewer(null)} />}

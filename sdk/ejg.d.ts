@@ -361,6 +361,30 @@ export interface GuideShelfItem {
   progress?: GuideProgress | null;
 }
 
+export interface SocialUser {
+  id: number;
+  username: string;
+  name: string;
+  avatarUrl?: string;
+  frame?: string;
+  level?: number;
+}
+
+export interface SocialFriend extends SocialUser {
+  presence: { status: "online" | "away" | "offline"; game?: string | null; since?: number | null; lastSeen?: number };
+}
+
+export interface AccountState {
+  enabled: boolean;
+  linked: boolean;
+  username?: string | null;
+  userId?: number | null;
+  needsLogin: boolean;
+  status: "online" | "away" | "invisible";
+  offline: boolean;
+  social?: { me: any; friends: SocialFriend[]; incoming: SocialUser[]; outgoing: SocialUser[]; blocked: SocialUser[] } | null;
+}
+
 /** Trainer instalado para un juego (resumen). */
 export interface TrainerInfo {
   /** Nombre del archivo en la web de FLiNG. */
@@ -432,12 +456,16 @@ export interface Ejg {
   storage: { getAll(): Promise<Record<string, any>>; get(key: string): Promise<any>; set(key: string, value: any): Promise<void> };
   ui: {
     open(
-      name: "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads" | "guides" | "trainer" | "map",
+      name:
+        | "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads"
+        | "guides" | "trainer" | "map" | "friends" | "profile" | "account" | "profile-editor",
       args?: any,
     ): Promise<void>;
     toast(message: string, kind?: "info" | "ok" | "error"): Promise<void>;
     /** El host pide abrir una vista del tema (menú rápido, Ctrl+E, Ctrl+J, el indicador de descargas…). */
-    onView(fn: (e: { view: "explore" | "downloads" | "repack" | "guides"; slug?: string; gameId?: number; guideId?: string | null }) => void): () => void;
+    onView(
+      fn: (e: { view: "explore" | "downloads" | "repack" | "guides" | "friends" | "profile"; slug?: string; gameId?: number; guideId?: string | null; userId?: number | null }) => void,
+    ): () => void;
     /** Teclado en pantalla del host: el texto escrito o null si se cancela. */
     keyboard(opts?: { title?: string; value?: string; placeholder?: string; maxLength?: number }): Promise<string | null>;
   };
@@ -461,6 +489,39 @@ export interface Ejg {
     progress(gameId: number, guide: { id: string; title: string; author?: string; authors?: string[] }, section: number, scroll: number): Promise<void>;
     openInBrowser(id: string): Promise<void>;
     openLink(href: string): Promise<void>;
+  };
+  /** Cuenta de ejGames del perfil (amigos, presencia, perfil). */
+  account: {
+    readonly state: AccountState | null;
+    onChange(fn: (a: AccountState | null) => void): () => void;
+    setStatus(status: "online" | "away" | "invisible"): Promise<AccountState>;
+    openEditor(): Promise<void>;
+    openLogin(): Promise<void>;
+  };
+  friends: {
+    readonly list: SocialFriend[];
+    readonly requests: { incoming: SocialUser[]; outgoing: SocialUser[]; blocked: SocialUser[] };
+    onChange(fn: (friends: SocialFriend[]) => void): () => void;
+    add(usernameOrCode: string): Promise<AccountState>;
+    accept(id: number): Promise<AccountState>;
+    decline(id: number): Promise<AccountState>;
+    remove(id: number): Promise<AccountState>;
+    block(id: number): Promise<AccountState>;
+    unblock(id: number): Promise<AccountState>;
+    refresh(): Promise<AccountState>;
+    open(): Promise<void>;
+  };
+  profiles: {
+    view(id: number): Promise<any>;
+    open(id: number): Promise<void>;
+  };
+  comments: {
+    list(userId: number, before?: number): Promise<{ items: any[] }>;
+    post(userId: number, text: string): Promise<void>;
+    remove(commentId: number): Promise<void>;
+  };
+  activity: {
+    feed(before?: number): Promise<{ items: any[] }>;
   };
   /** Trucos con los trainers de FLiNG (buscar e instalar, siempre en la ventana del host). */
   trainer: {

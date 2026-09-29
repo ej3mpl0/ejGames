@@ -11,6 +11,7 @@ import { clock } from "/_sdk/kit/clock.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { createGuideView } from "/_sdk/kit/guides.js";
+import { createSocialView } from "/_sdk/kit/social.js";
 import { percent } from "/_sdk/kit/store.js";
 import { createStore } from "./store.js";
 
@@ -291,6 +292,41 @@ $("#help").addEventListener("click", () => state.selected && openGuides(state.se
 let guideView = null;
 let guideReturn = null;
 const guidesLayer = $("#guides");
+// ─────────────── amigos y perfiles (en la capa de la ayuda del juego) ───────────────
+function openSocial(start = "friends", userId = null) {
+  stopHome();
+  shop.closeDownloads();
+  guideView?.destroy();
+  guideReturn = guideView ? guideReturn : focus.current;
+  $("#gh-bg").style.backgroundImage = "";
+  guidesLayer.hidden = false;
+  document.documentElement.dataset.panel = "guides";
+  guideView = createSocialView({ ejg, root: $("#gh-inner"), focus, start, userId, onExit: closeGuides, onChange: () => updateHints() });
+  updateHints();
+  ejg.sound.play("open");
+}
+
+/** «3» amigos en línea o «+1» solicitud, para el botón de Amigos. */
+function friendsBadge() {
+  const a = ejg.account.state;
+  if (!a?.linked || a.needsLogin) return "";
+  const req = a.social?.incoming?.length || 0;
+  if (req) return `+${req}`;
+  const online = (a.social?.friends || []).filter((f) => f.presence.status !== "offline").length;
+  return online ? String(online) : "";
+}
+
+function renderFriendsIco() {
+  const a = ejg.account.state;
+  $("#friends-ico").hidden = !a?.enabled;
+  const n = friendsBadge();
+  $("#fr-badge").hidden = !n;
+  $("#fr-badge").textContent = n;
+}
+$("#friends-ico").addEventListener("click", () => openSocial("friends"));
+ejg.account.onChange(renderFriendsIco);
+renderFriendsIco();
+
 function openGuides(gameId, guideId = null) {
   const g = ejg.library.byId(gameId);
   if (!g) return;
@@ -602,8 +638,9 @@ ejg.explore.onEnabled(() => {
   updateDownloadsUi();
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
-ejg.ui.onView(({ view, slug, gameId, guideId }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId, userId }) => {
   if (view === "guides" && gameId) return openGuides(gameId, guideId);
+  if (view === "friends" || view === "profile") return openSocial(view, userId ?? null);
   closeGuides();
   if (view === "downloads") return stopHome(), shop.openDownloads();
   if (!ejg.explore.enabled) return;

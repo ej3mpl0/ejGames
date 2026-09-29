@@ -1,0 +1,32 @@
+# API de cuentas de ejGames (amigos, presencia, perfiles) en Cloudflare
+# Workers + D1. Desde la raíz del proyecto:
+#   npx wrangler d1 create ejgames                       (copia el database_id aquí abajo)
+#   npx wrangler d1 migrations apply ejgames --remote -c server/wrangler.toml
+#   npx wrangler secret put APP_KEY -c server/wrangler.toml   (la de server/.dev.vars)
+#   npx wrangler deploy -c server/wrangler.toml
+# server/.dev.vars (fuera de git) guarda API_URL (la que imprime el deploy) y
+# APP_KEY; build.rs los mete en la app al compilar. Sin él, la app no tiene cuentas.
+#
+# En local (sin tocar Cloudflare): npx wrangler dev -c server/wrangler.toml
+# con D1 en disco; la app de depuración apunta ahí con EJG_API_URL.
+name = "ejgames-api"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ejgames"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+# Entrar, registrarse y recuperar: por IP y minuto.
+[[ratelimits]]
+name = "AUTH_LIMIT"
+namespace_id = "1002"
+simple = { limit = 10, period = 60 }
+
+# El resto: por usuario y minuto (el sondeo es 1 por minuto).
+[[ratelimits]]
+name = "API_LIMIT"
+namespace_id = "1003"
+simple = { limit = 120, period = 60 }

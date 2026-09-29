@@ -11,11 +11,23 @@ import { useOverlayNav } from "../input/nav";
 import { PROFILE_COLORS, bytes } from "../lib/format";
 import { useApp } from "../store/app";
 import { Hints } from "../components/Hints";
+import { AccountAuth } from "../components/AccountPanel";
+import { RecoveryCodeBox } from "./RecoveryCode";
 
 export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) {
   const themes = useApp((s) => s.themes);
   const toast = useApp((s) => s.toast);
   const [step, setStep] = useState(0);
+  // Cuentas de ejGames: el último paso (opcional), tras crear el perfil.
+  const [accounts, setAccounts] = useState(false);
+  const [created, setCreated] = useState<number | null>(null);
+  const [code, setCode] = useState<{ code: string; username: string } | null>(null);
+  useEffect(() => {
+    api
+      .accountState()
+      .then((a) => setAccounts(a.enabled))
+      .catch(() => {});
+  }, []);
   const [name, setName] = useState("");
   const [color, setColor] = useState(PROFILE_COLORS[0]);
   const [theme, setTheme] = useState("steam");
@@ -64,15 +76,19 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
         downloadDir: explore ? dlDir ?? "" : "",
       });
       for (const f of folders) await api.addFolder(f.path, f.suggestedMode);
-      onDone(p.id);
+      // Con cuentas, un último paso (la cuenta se liga al perfil recién creado).
+      if (accounts) {
+        setCreated(p.id);
+        setBusy(false);
+        setStep(4);
+      } else onDone(p.id);
     } catch (e) {
       toast("error", errMsg(e));
       setBusy(false);
     }
   }
 
-  const steps = ["Tu perfil", "Tu estilo", "Tus juegos", "Descargas"];
-  const last = step === steps.length - 1;
+  const steps = ["Tu perfil", "Tu estilo", "Tus juegos", "Descargas", ...(accounts ? ["Tu cuenta"] : [])];
   return (
     <div ref={ref} className="relative flex h-full flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,#1d2a4a,#090c12_60%)]">
       <div
@@ -248,10 +264,26 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
               )}
             </div>
           )}
+                  {step === 4 && created != null && (
+            <div className="max-h-[62vh] overflow-y-auto">
+              <h1 className="mb-2 text-3xl font-bold">Juega con tus amigos</h1>
+              <p className="mb-6 max-w-xl text-muted">
+                Con una cuenta de ejGames puedes añadir amigos, ver a qué juegan, recibir avisos dentro del juego y tener un perfil con tus juegos,
+                logros e insignias. Es opcional: puedes crearla luego en Ajustes.
+              </p>
+              {code ? (
+                <div className="max-w-xl">
+                  <RecoveryCodeBox code={code.code} username={code.username} onDone={() => onDone(created)} />
+                </div>
+              ) : (
+                <AccountAuth onDone={() => onDone(created)} onCode={(c, u) => setCode({ code: c, username: u })} />
+              )}
+            </div>
+          )}
         </div>
 
         <div className="mt-8 flex items-center justify-between gap-6">
-          <Button variant="ghost" icon={<ArrowLeft size={16} />} onClick={() => setStep(step - 1)} disabled={step === 0}>
+          <Button variant="ghost" icon={<ArrowLeft size={16} />} onClick={() => setStep(step - 1)} disabled={step === 0 || step === 4}>
             Atrás
           </Button>
           <Hints
@@ -261,13 +293,19 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
               ["back", "Atrás"],
             ]}
           />
-          {!last ? (
+          {step === 4 ? (
+            !code && (
+              <Button variant="ghost" size="lg" onClick={() => created != null && onDone(created)}>
+                Ahora no
+              </Button>
+            )
+          ) : step < 3 ? (
             <Button variant="primary" size="lg" onClick={() => setStep(step + 1)} disabled={step === 0 && !name.trim()}>
               Siguiente <ArrowRight size={18} />
             </Button>
           ) : (
-            <Button variant="primary" size="lg" icon={<Sparkles size={18} />} onClick={finish} disabled={busy || (explore && !dlDir)}>
-              {busy ? "Preparando…" : "Empezar"}
+            <Button variant="primary" size="lg" icon={accounts ? undefined : <Sparkles size={18} />} onClick={finish} disabled={busy || (explore && !dlDir)}>
+              {busy ? "Preparando…" : accounts ? "Siguiente" : "Empezar"}
             </Button>
           )}
         </div>

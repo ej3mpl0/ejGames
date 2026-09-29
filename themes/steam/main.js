@@ -10,6 +10,7 @@ import { visible, sort, search, inCollection, canUninstall, SORTS } from "/_sdk/
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { downloadLabel, percent, speed } from "/_sdk/kit/store.js";
+import { createSocialView } from "/_sdk/kit/social.js";
 import { createGuideView, starsText } from "/_sdk/kit/guides.js";
 import { createStore } from "./store.js";
 
@@ -792,6 +793,53 @@ function openGuides(gameId, guideId = null) {
   render();
 }
 
+// ─────────────── amigos y perfiles (en la misma página que las guías) ───────────────
+/** start: "friends" | "profile" (userId: null = el tuyo). */
+function openSocial(start = "friends", userId = null) {
+  pushView("guides", { gameId: null, social: { start, userId } });
+  render();
+}
+
+function renderSocial() {
+  const key = `${state.social.start}:${state.social.userId}`;
+  if (guideView && guideRoot?.isConnected && guideRoot.dataset.social === key) return;
+  dropGuides();
+  guideRoot = h("div", { class: "guides-body social-body", "data-social": key });
+  main.replaceChildren(
+    h(
+      "div",
+      { class: "guides-page social-page" },
+      h("div", { class: "guides-top" }, h("span", { class: "guides-crumb" }, state.social.start === "profile" ? "Perfil" : "Amigos")),
+      guideRoot,
+    ),
+  );
+  main.scrollTop = 0;
+  guideView = createSocialView({ ejg, root: guideRoot, focus, start: state.social.start, userId: state.social.userId, onExit: () => back(), onChange: () => updateHints() });
+  updateHints();
+}
+
+/** Botón «Amigos» de la barra inferior, como el «Amigos y chat» de Steam. */
+function renderFriendsButton() {
+  const a = ejg.account.state;
+  const btn = $("#friends-btn");
+  btn.hidden = !a?.enabled;
+  if (!a?.enabled) return;
+  const friends = a.social?.friends || [];
+  const online = friends.filter((f) => f.presence.status !== "offline").length;
+  const req = a.social?.incoming?.length || 0;
+  btn.replaceChildren(
+    ...[
+      h("span", { html: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 5"/></svg>' }),
+      a.linked && !a.needsLogin ? "Amigos" : "Amigos: entrar",
+      a.linked && online ? h("span", { class: "bb-count" }, String(online)) : null,
+      req ? h("span", { class: "bb-count is-req" }, `+${req}`) : null,
+    ].filter(Boolean),
+  );
+}
+$("#friends-btn").addEventListener("click", () => openSocial("friends"));
+ejg.account.onChange(renderFriendsButton);
+renderFriendsButton();
+
 /** La página de guías: la del juego, con su arte difuminado detrás. */
 function renderGuides() {
   if (guideView && guideRoot?.isConnected && guideRoot.dataset.game === String(state.gameId)) return;
@@ -961,11 +1009,12 @@ function stopMedia() {
 
 /** Entra en una vista de la biblioteca recordando la actual para «Atrás». */
 function pushView(view, extra = {}) {
-  if (state.tab === "library") state.prev.push({ view: state.view, gameId: state.gameId, collection: state.collection, scroll: main.scrollTop });
+  if (state.tab === "library") state.prev.push({ view: state.view, gameId: state.gameId, collection: state.collection, social: state.social, scroll: main.scrollTop });
   if (state.prev.length > 30) state.prev.shift();
   stopMedia();
   state.tab = "library";
   state.view = view;
+  state.social = null;
   Object.assign(state, extra);
 }
 
@@ -988,6 +1037,7 @@ function goLibrary(view) {
   state.view = view;
   state.gameId = null;
   state.collection = null;
+  state.social = null;
   render();
   main.scrollTop = 0;
   focus.first(main);
@@ -998,6 +1048,8 @@ function back() {
   if (closeMenu()) return true;
   // En una guía: vuelve a la lista (o a la ficha, si se abrió desde ella).
   if (inGuides() && guideView.mode === "reader") return guideView.nav("back");
+  // En amigos: del perfil abierto vuelve a la lista.
+  if (inGuides() && state.social && guideView.depth > 1) return guideView.nav("back");
   if (shop.back()) return true;
   if (state.tab !== "library") return false;
   const p = state.prev.pop();
@@ -1008,7 +1060,7 @@ function back() {
   }
   const last = state.gameId;
   stopMedia();
-  Object.assign(state, { view: p.view, gameId: p.gameId, collection: p.collection });
+  Object.assign(state, { view: p.view, gameId: p.gameId, collection: p.collection, social: p.social || null });
   render();
   main.scrollTop = p.scroll || 0;
   const el = (last && (main.querySelector(`[data-game-id="${last}"]`) || sideList.querySelector(`[data-game-id="${last}"]`))) || null;
@@ -1060,7 +1112,7 @@ function render() {
   }
   renderSidebar();
   if (state.view === "game") renderGame(state.gameId);
-  else if (state.view === "guides") renderGuides();
+  else if (state.view === "guides") state.social ? renderSocial() : renderGuides();
   else if (state.view === "collections") renderCollections();
   else if (state.view === "collection") renderCollection();
   else renderHome();
@@ -1137,8 +1189,9 @@ ejg.explore.onEnabled(() => {
   else updateDownloadsUi();
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
-ejg.ui.onView(({ view, slug, gameId, guideId }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId, userId }) => {
   if (view === "guides" && gameId) return openGuides(gameId, guideId);
+  if (view === "friends" || view === "profile") return openSocial(view, userId ?? null);
   if (view === "downloads") return goTab("downloads");
   if (!ejg.explore.enabled) return;
   goTab("store");

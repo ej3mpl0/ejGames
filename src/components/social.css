@@ -1,0 +1,30 @@
+/* Las vistas del kit dentro del host y del overlay: toman los colores de la
+   piel del sitio (--gd-*, las mismas que las guías). El color propio de cada
+   perfil va aparte (--s-paccent) y manda en su página. */
+.gd-pane :where(.s-view) {
+  --s-fg: var(--gd-fg);
+  --s-muted: var(--gd-muted);
+  --s-accent: var(--gd-accent);
+  --s-bg: var(--gd-bg);
+  --s-surface: var(--gd-surface);
+  --s-surface-2: var(--gd-surface-2);
+  --s-line: var(--gd-line);
+  --s-radius: var(--gd-radius);
+  --s-focus: var(--gd-focus);
+  --s-font: var(--gd-font, inherit);
+}
+.s-host {
+  height: 100%;
+}
+.s-host-box {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+.s-host-box > .s-view {
+  height: 100%;
+}
+.s-host-box > .s-profile {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}

@@ -397,3 +397,28 @@ main::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.24
 .guides-body .g-table th { background: #16202d; color: #fff; }
 .guides-body .g-toc-box { background: #16202d; }
 .guides-body .g-toc-item.is-on { box-shadow: inset 3px 0 0 #66c0f4; }
+
+/* ─── amigos y perfiles (kit social) ─── */
+.bb-right { display: flex; align-items: center; margin-left: auto; }
+.bb-friends { height: 30px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border-radius: 2px; font-size: 12px; color: var(--muted); }
+.bb-friends svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.bb-friends:hover, .bb-friends.is-focused { color: #fff; background: rgba(255, 255, 255, 0.06); }
+.bb-count { min-width: 18px; padding: 0 5px; border-radius: 9px; background: #57cbde; color: #0e141b; font-weight: 700; font-size: 11px; line-height: 18px; text-align: center; }
+.bb-count.is-req { background: #a4d007; }
+.guides-body .s-view {
+  --s-fg: #c6d4df;
+  --s-muted: #8f98a0;
+  --s-accent: #66c0f4;
+  --s-bg: #1b2838;
+  --s-surface: rgba(0, 0, 0, 0.25);
+  --s-surface-2: rgba(103, 193, 245, 0.12);
+  --s-line: rgba(255, 255, 255, 0.08);
+  --s-radius: 2px;
+  --s-focus: 0 0 0 1px #66c0f4;
+  height: 100%;
+  overflow-y: auto;
+}
+.social-body .s-friends { max-width: 980px; margin: 0 auto; padding: 14px 16px 30px; background: linear-gradient(180deg, rgba(27, 40, 56, 0.9), rgba(27, 40, 56, 0.4)); }
+.social-body .s-friends .s-panel { overflow: visible; }
+.social-body .s-btn.is-primary { background: linear-gradient(90deg, #47bfff, #1a44c2); }
+.social-body .s-tab.is-on { background: rgba(103, 193, 245, 0.18); color: #fff; }

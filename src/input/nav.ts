@@ -41,6 +41,33 @@ export function pushNav(fn: Handler) {
   };
 }
 
+const FILTER = Symbol("filtro");
+
+/**
+ * Un manejador que solo se queda con algunas acciones (las que `fn` dice que
+ * ha usado); el resto sigue al de debajo. Para vistas dentro de un panel que
+ * necesitan, por ejemplo, su propio «Atrás».
+ */
+export function pushNavFilter(fn: (a: NavAction) => boolean) {
+  const handler: Handler & { [FILTER]?: true } = (a, r, s) => {
+    if (fn(a)) return;
+    const i = stack.lastIndexOf(handler);
+    const below = i > 0 ? stack[i - 1] : null;
+    if (below) below(a, r, s);
+    else themeSink?.(a, r, s);
+  };
+  handler[FILTER] = true;
+  return pushNav(handler);
+}
+
+/** El manejador que manda, sin contar los filtros de encima. */
+function effectiveTop(): Handler | undefined {
+  for (let i = stack.length - 1; i >= 0; i--) {
+    if (!(stack[i] as { [FILTER]?: true })[FILTER]) return stack[i];
+  }
+  return undefined;
+}
+
 interface FocusApi {
   current: HTMLElement | null;
   move(dir: string): boolean;
@@ -137,14 +164,15 @@ export function useOverlayNav<T extends HTMLElement>(opts: { onBack?: () => void
       if (!a && e.key === "Enter" && !typing) a = "accept";
       if (!a) return;
       if (typing && a !== "back" && a !== "up" && a !== "down") return;
-      if (stack[stack.length - 1] !== handler) return;
+      if (effectiveTop() !== handler) return;
       e.preventDefault();
       e.stopPropagation();
       if (typing && a === "back") {
         (t as HTMLInputElement).blur();
         return;
       }
-      handler(a, e.repeat, "keyboard");
+      // Por la cima de la pila: si hay un filtro encima, decide él primero.
+      stack[stack.length - 1](a, e.repeat, "keyboard");
     };
     window.addEventListener("keydown", onKey, true);
     return () => {

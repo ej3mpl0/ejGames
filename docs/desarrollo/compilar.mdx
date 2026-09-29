@@ -33,6 +33,38 @@ otra: `set CARGO_TARGET_DIR=D:\build\ejgames-target` (o `$env:CARGO_TARGET_DIR=�
 | `RUST_LOG=ejgames_lib=debug` | Logs detallados del núcleo. |
 | `EJGAMES_INSTALL_VERB=open` | (Solo en desarrollo) Abre el instalador de un repack sin pedir administrador, para probar. |
 | `EJGAMES_UPDATE_REPO=dueño/repo` | (Solo en desarrollo) Busca actualizaciones en otro repositorio. |
+| `EJG_API_URL=http://127.0.0.1:8787` | (Solo en desarrollo) Usa esa API de cuentas (por ejemplo, `wrangler dev`). |
+
+## Servidor de cuentas
+
+Las cuentas, los amigos y los perfiles van contra una API propia (`server/`): un Worker de Cloudflare con D1. El plan
+gratuito basta de sobra para empezar. La app sabe dónde está por `server/.dev.vars` (fuera de git), que `build.rs`
+mete al compilar. Sin ese archivo, la app sale sin cuentas y todo lo demás funciona igual.
+
+Con `npx wrangler login` hecho, `pnpm deploy-server` hace todo lo de abajo de una vez (y se puede repetir). A mano:
+
+<Steps>
+  <Step title="Crea la base de datos">
+    `npx wrangler d1 create ejgames` y copia el `database_id` que imprime en `server/wrangler.toml`.
+  </Step>
+  <Step title="Crea las tablas">
+    `npx wrangler d1 migrations apply ejgames --remote -c server/wrangler.toml`
+  </Step>
+  <Step title="La clave de la app">
+    Una clave aleatoria (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) en
+    `npx wrangler secret put APP_KEY -c server/wrangler.toml`.
+  </Step>
+  <Step title="Despliega">
+    `npx wrangler deploy -c server/wrangler.toml` imprime la URL del Worker.
+  </Step>
+  <Step title="Dile a la app dónde está">
+    Crea `server/.dev.vars` con `API_URL=<la URL>` y `APP_KEY=<la clave>`, y vuelve a compilar (`pnpm release`).
+  </Step>
+</Steps>
+
+Para probar sin tocar Cloudflare: `npx wrangler d1 migrations apply ejgames --local -c server/wrangler.toml`,
+`npx wrangler dev -c server/wrangler.toml` y la app de desarrollo con `EJG_API_URL=http://127.0.0.1:8787`.
+`node server/test.mjs` recorre toda la API con dos usuarios.
 
 ## Publicar una versión
 

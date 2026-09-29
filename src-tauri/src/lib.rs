@@ -12,6 +12,7 @@ mod lifecycle;
 mod maps;
 mod media;
 mod metadata;
+mod online;
 mod overlay;
 mod paths;
 mod protocols;
@@ -211,6 +212,25 @@ pub fn run() {
             commands::maps_choose,
             commands::maps_last,
             commands::overlay_pin,
+            commands::account_state,
+            commands::account_register,
+            commands::account_login,
+            commands::account_recover,
+            commands::account_logout,
+            commands::account_password,
+            commands::account_new_code,
+            commands::account_delete,
+            commands::account_prefs,
+            commands::account_profile,
+            commands::account_image,
+            commands::social_refresh,
+            commands::save_text_file,
+            commands::social_friend,
+            commands::social_user,
+            commands::social_comments,
+            commands::social_comment,
+            commands::social_comment_delete,
+            commands::social_feed,
             commands::downloads_list,
             commands::downloads_defaults,
             commands::downloads_prepare,
@@ -263,6 +283,7 @@ pub fn run() {
                 downloads: Default::default(),
                 updater: update::Updater::new(env!("CARGO_PKG_VERSION").to_string()),
                 trainers: Default::default(),
+                online: Default::default(),
             });
             app.manage(st.clone());
             {
@@ -282,6 +303,7 @@ pub fn run() {
             services::sync_watcher(&st);
             metadata::queue::start_worker(st.clone(), rx);
             lifecycle::setup_tray(app.handle())?;
+            online::start(&st);
 
             // Entrar solo si hay perfil recordado sin PIN.
             let s = st.settings.get();
@@ -291,6 +313,7 @@ pub fn run() {
                         if !p.has_pin {
                             *st.profile.write() = Some(pid);
                             commands::watch_active_theme(&st);
+                            online::on_profile(&st, Some(pid));
                         }
                     }
                 }
@@ -332,6 +355,7 @@ pub fn run() {
             if let Some(st) = app.try_state::<Arc<AppState>>() {
                 launcher::finish_all(st.inner());
                 downloads::shutdown(st.inner());
+                online::on_exit(st.inner());
             }
             return;
         }

@@ -164,3 +164,4 @@ body.playing-hero .hero-desc { opacity: 0; }
   scrollbar-width: none;
 }
 .cg-inner .s-friends .s-tab.is-on { background: #fff; color: #000; }
+.cg-inner .s-view.s-profile { max-width: none; }

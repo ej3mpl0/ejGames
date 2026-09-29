@@ -5,6 +5,32 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.7.2
+
+**Cada tema, su perfil**
+- El perfil ya no es el de Steam en todos los temas: cada uno tiene el suyo, con el estilo de su plataforma.
+  - **PS5**: portada, avatar redondo grande, nivel con su estrella y pestañas Perfil, Juegos, Insignias y Amigos.
+  - **Xbox**: la franja con el color de tu perfil, la tarjeta del gamertag con tu gamerscore (tu EXP), nivel, amigos
+    y juegos, y los pivotes Destacado, Juegos, Insignias y Amigos.
+  - **Switch**: la página de usuario, con el menú a la izquierda (Perfil, Actividad de juego, Insignias, Amigos), tu
+    icono sobre la franja y tu presentación en un bocadillo.
+  - **Cine**: como la ficha de una película, con tu fondo a lo ancho, tu nombre enorme, «Seguir jugando» y filas.
+  - **Retro**: la tarjeta **PLAYER 1** con tu nivel en bloques, **HI-SCORES** de tus juegos, tus insignias y el
+    **GUESTBOOK**.
+  - **Steam** sigue siendo la página de Steam.
+- Tu marco, tu fondo y las vitrinas salen en todos; el **tema del perfil** pone el color de tu perfil en los demás
+  temas (en Steam, sus colores de siempre). El overlay de cada plataforma usa también su perfil, y la vista previa
+  del editor enseña el del tema que usas.
+
+**Arreglos del perfil**
+- **Guardar** en «Editar perfil» ya no te saca del editor, y el perfil de detrás se pone al día solo (antes no
+  cambiaba hasta volver a entrar). «Guardar» solo se activa si hay cambios y avisa de lo que queda sin guardar.
+- **Vitrinas**: el desplegable para elegir el juego se cortaba dentro de la tarjeta; ahora se ve entero. Las
+  vitrinas sin datos ya no desaparecen: en tu perfil salen con lo que les falta («Elige el juego…», «Añade
+  capturas…») y las que se rellenan solas lo dicen («Todavía no hay insignias…»). Para el juego destacado se
+  pueden elegir los mismos juegos que salen en el perfil.
+- En el tema Steam, amigos, perfiles e insignias van a página entera, **sin la barra lateral de la biblioteca**.
+
 ## 0.7.1
 
 **Tu perfil, 1:1 como el de Steam**

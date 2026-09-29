@@ -187,4 +187,5 @@ main { position: relative; z-index: 2; height: calc(100% - 76px); }
   scrollbar-width: none;
 }
 .gh-inner .s-friends .s-row { padding: 10px 14px; }
+.gh-inner .s-view.s-profile { max-width: none; }
 .gh-inner .s-friends .s-row-name { font-size: 17px; }

@@ -1109,7 +1109,8 @@ function renderTabs() {
 
 function render() {
   renderTabs();
-  document.documentElement.dataset.view = isShop() ? state.tab : "library";
+  // Amigos, perfiles e insignias van a página entera, sin la barra de la biblioteca.
+  document.documentElement.dataset.view = isShop() ? state.tab : state.view === "guides" && state.social ? "social" : "library";
   updateHints();
   updateDownloadsUi();
   if (isShop()) {

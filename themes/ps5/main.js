@@ -301,7 +301,7 @@ function openSocial(start = "friends", userId = null) {
   $("#gh-bg").style.backgroundImage = "";
   guidesLayer.hidden = false;
   document.documentElement.dataset.panel = "guides";
-  guideView = createSocialView({ ejg, root: $("#gh-inner"), focus, start, userId, onExit: closeGuides, onChange: () => updateHints() });
+  guideView = createSocialView({ ejg, root: $("#gh-inner"), focus, start, userId, layout: "ps5", onExit: closeGuides, onChange: () => updateHints() });
   updateHints();
   ejg.sound.play("open");
 }

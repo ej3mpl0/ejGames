@@ -154,7 +154,7 @@ export function SteamPanel({ p }: { p: Panel }) {
       body = (
         <Window title="Amigos">
           <div className="pn-guides">
-            <SocialPane inPanel />
+            <SocialPane inPanel layout="steam" />
           </div>
         </Window>
       );

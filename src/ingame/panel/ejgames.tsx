@@ -119,7 +119,7 @@ export function EjGamesPanel({ p }: { p: Panel }) {
     case "friends":
       body = (
         <div className="pn-guides">
-          <SocialPane inPanel />
+          <SocialPane inPanel layout="steam" />
         </div>
       );
       break;

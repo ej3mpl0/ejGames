@@ -93,7 +93,7 @@ export function CinemaPanel({ p }: { p: Panel }) {
     case "friends":
       rail = (
         <div className="pn-guides">
-          <SocialPane inPanel />
+          <SocialPane inPanel layout="cinema" />
         </div>
       );
       break;

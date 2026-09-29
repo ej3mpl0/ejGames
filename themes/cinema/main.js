@@ -291,7 +291,7 @@ function openSocial(start = "friends", userId = null) {
   guideView?.destroy();
   $("#cg-bg").style.backgroundImage = "";
   guidesEl.hidden = false;
-  guideView = createSocialView({ ejg, root: $("#cg-inner"), focus, start, userId, onExit: closeGuides, onChange: () => updateHints() });
+  guideView = createSocialView({ ejg, root: $("#cg-inner"), focus, start, userId, layout: "cinema", onExit: closeGuides, onChange: () => updateHints() });
   updateHints();
   ejg.sound.play("open");
 }

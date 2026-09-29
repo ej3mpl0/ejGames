@@ -298,6 +298,12 @@
   opacity: 0.3;
   cursor: default;
 }
+.pe-dirty {
+  margin-right: auto;
+  align-self: center;
+  font-size: 13px;
+  color: #e3a23b;
+}
 .pe-foot {
   display: flex;
   justify-content: flex-end;
@@ -531,8 +537,10 @@
 .pe-sc {
   margin-top: 16px;
   border-radius: 3px;
-  overflow: hidden;
   background: rgba(0, 0, 0, 0.25);
+}
+.pe-sc-head {
+  border-radius: 3px 3px 0 0;
 }
 .pe-sc-head {
   display: flex;

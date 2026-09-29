@@ -12,7 +12,7 @@ import type { SocialProfile, SocialShowcase } from "../api/types";
 import { ProfilePreview } from "../components/social";
 import { cx } from "../components/ui";
 import { autoNav, focusNav, pushNavFilter, useOverlayNav } from "../input/nav";
-import { useApp } from "../store/app";
+import { activeTheme, useApp } from "../store/app";
 import { BACKGROUNDS, BADGES, COLORS, FRAMES, SHOWCASES, TIERS, avatar, badgeEl } from "../../sdk/kit/social.js";
 import "./profile-editor.css";
 
@@ -133,13 +133,20 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
   const games = useApp((s) => s.games);
   const toast = useApp((s) => s.toast);
   const me = account?.social?.me;
+  // La vista previa con el perfil del tema que usas (cada tema tiene el suyo).
+  const themeId = useApp((s) => activeTheme(s)?.id ?? "steam");
+  const layout = ["ps5", "xbox", "switch", "cinema", "retro"].includes(themeId) ? themeId : "steam";
   const [sec, setSec] = useState<Sec>("general");
   const [draft, setDraft] = useState<Draft | null>(me ? structuredClone(me.profile) : null);
   const [busy, setBusy] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const ref = useOverlayNav<HTMLDivElement>({ onBack: onClose });
 
-  const played = useMemo(() => games.filter((g) => g.playtime > 0).sort((a, b) => b.playtime - a.playtime), [games]);
+  // Los mismos juegos que salen en el perfil (el resumen: jugados un minuto o con logros).
+  const played = useMemo(
+    () => games.filter((g) => g.playtime >= 60 || (g.achievements?.unlocked ?? 0) > 0).sort((a, b) => b.playtime - a.playtime),
+    [games],
+  );
 
   // La página de perfil tal cual la verán los demás (con la biblioteca local para las imágenes).
   const preview = useMemo(() => {
@@ -197,6 +204,10 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
   }
 
   const set = (p: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...p } : d));
+  const KEYS: (keyof Draft)[] = ["name", "realName", "country", "bio", "avatar", "backgroundImage", "frame", "background", "color", "showcases", "featuredBadge", "privacy", "comments"];
+  // Las vitrinas se comparan sin las URL (el servidor guarda hashes).
+  const plain = (d: Draft, k: keyof Draft) => JSON.stringify(k === "showcases" ? d.showcases.map(({ urls: _u, ...x }) => x) : (d[k] ?? null));
+  const changed = KEYS.filter((k) => plain(draft, k) !== plain(me.profile, k));
   const showcases = draft.showcases;
   const setShowcases = (list: SocialShowcase[]) => set({ showcases: list });
 
@@ -214,21 +225,15 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
     }
   }
 
+  // Guardar no cierra (como en Steam): el perfil de detrás se pone al día solo.
   async function save() {
+    if (!changed.length) return;
     setBusy("save");
     try {
-      const orig = me!.profile;
       const patch: Record<string, unknown> = {};
-      const keys: (keyof Draft)[] = ["name", "realName", "country", "bio", "avatar", "backgroundImage", "frame", "background", "color", "showcases", "featuredBadge", "privacy", "comments"];
-      for (const k of keys) {
-        if (JSON.stringify(draft![k] ?? null) !== JSON.stringify(orig[k] ?? null)) {
-          // Las vitrinas van sin las URL (el servidor guarda hashes).
-          patch[k] = k === "showcases" ? draft!.showcases.map(({ urls: _u, ...s }) => s) : (draft![k] ?? null);
-        }
-      }
-      if (Object.keys(patch).length) await api.accountProfile(patch);
-      toast("ok", "Perfil guardado");
-      onClose();
+      for (const k of changed) patch[k] = k === "showcases" ? draft!.showcases.map(({ urls: _u, ...s }) => s) : (draft![k] ?? null);
+      await api.accountProfile(patch);
+      toast("ok", "Cambios guardados");
     } catch (e) {
       toast("error", errMsg(e));
     } finally {
@@ -363,7 +368,10 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
     case "theme":
       body = (
         <>
-          <p className="pe-desc">Elige un tema para tu perfil. El tema cambia los colores de la cabecera, del fondo del contenido, de las vitrinas y de los botones.</p>
+          <p className="pe-desc">
+            Elige un tema para tu perfil. En el tema Steam cambia los colores de la cabecera, del fondo, de las vitrinas y de los botones; en los demás
+            temas, el color de tu perfil (la portada, las barras y los botones).
+          </p>
           <div className="pe-grid pe-grid-themes">
             {COLORS.map((t: { id: string; name: string }) => (
               <button key={t.id || "default"} type="button" data-nav className={tile(draft.color === t.id)} onClick={() => set({ color: t.id })}>
@@ -384,7 +392,7 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
           </div>
           <Group title="Vista previa">
             <div className="pe-live">
-              <ProfilePreview data={preview} />
+              <ProfilePreview data={preview} layout={layout} />
             </div>
           </Group>
         </>
@@ -615,10 +623,11 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
             <h2 className="pe-title">{title}</h2>
             {body}
             <footer className="pe-foot">
+              {changed.length > 0 && <span className="pe-dirty">Tienes cambios sin guardar</span>}
               <button type="button" data-nav className="pe-btn" onClick={onClose}>
-                Cancelar
+                {changed.length ? "Cancelar" : "Cerrar"}
               </button>
-              <button type="button" data-nav className="pe-btn is-save" disabled={busy === "save"} onClick={() => void save()}>
+              <button type="button" data-nav className="pe-btn is-save" disabled={busy === "save" || !changed.length} onClick={() => void save()}>
                 {busy === "save" ? "Guardando…" : "Guardar"}
               </button>
             </footer>

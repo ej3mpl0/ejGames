@@ -442,7 +442,7 @@ function openSocial(start = "friends", userId = null) {
   if (!guideView) guideReturn = focus.current;
   $("#gx-bg").style.backgroundImage = "";
   guidesPage.hidden = false;
-  guideView = createSocialView({ ejg, root: $("#gx-inner"), focus, start, userId, onExit: closeGuides, onChange: () => updateHints() });
+  guideView = createSocialView({ ejg, root: $("#gx-inner"), focus, start, userId, layout: "xbox", onExit: closeGuides, onChange: () => updateHints() });
   updateHints();
   ejg.sound.play("open");
 }

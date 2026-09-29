@@ -58,6 +58,7 @@ const view = createSocialView({
   root: document.getElementById("amigos"), // un contenedor visible, con altura
   focus,                                   // tu createFocus()
   start: "friends",                        // requests | activity | profile | badges (con userId; sin él, los tuyos)
+  layout: "ps5",                           // el perfil de tu tema: steam | ps5 | xbox | switch | cinema | retro
   onExit: cerrarAmigos,                    // «Atrás» desde la lista
   onChange: () => pistas.set(view.hints()),
 });
@@ -81,7 +82,14 @@ La **lista de amigos** se viste con variables sobre `.s-view`: `--s-fg`, `--s-mu
 `--s-surface`, `--s-surface-2`, `--s-line`, `--s-radius`, `--s-focus` y `--s-font`, y con reglas sobre sus clases
 `s-…` (`s-row`, `s-tab`, `s-btn`…).
 
-La **página de perfil** es la de Steam pieza a pieza (cabecera de 976 px, columnas de 652 y 268 px, vitrinas con su
+La **página de perfil** tiene un diseño por plataforma (`layout`): `steam`, `ps5` (portada, avatar redondo y
+pestañas), `xbox` (tarjeta del gamertag y pivotes), `switch` (página de usuario con menú lateral), `cinema`
+(portada de película y filas) y `retro` (tarjeta PLAYER 1 con HI-SCORES, en inglés arcade). Los que no son Steam
+toman los colores de tu tema (`--s-fg`, `--s-muted`, `--s-bg`, `--s-surface`, `--s-surface-2`, `--s-line`,
+`--s-radius`, `--s-focus`, `--s-font`) y el del tema del perfil de cada usuario (`--s-pc`). En los que tienen
+pestañas, **LB/RB** las cambia.
+
+La de `steam` es la de Steam pieza a pieza (cabecera de 976 px, columnas de 652 y 268 px, vitrinas con su
 barra en degradado, actividad reciente, comentarios, estado, insignias y amigos a la derecha) y se ve igual en todos
 los temas: sus colores son del **tema del perfil** que elige cada usuario (`s-theme-summer`, `s-theme-midnight`,
 `s-theme-steel`, `s-theme-cosmic`, `s-theme-dark`…, los de Steam). Solo toma de tu tema `--s-focus` para el foco.

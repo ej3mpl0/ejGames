@@ -166,7 +166,7 @@ function openSocial(start = "friends", userId = null) {
   const box = h("div", { class: "gs-page" });
   root.replaceChildren(h("header", { class: "gs-head" }, h("div", null, h("small", null, "Tu cuenta de ejGames"), h("b", null, ({ profile: "Perfil", badges: "Insignias", activity: "Actividad", requests: "Solicitudes" })[start] || "Amigos"))), box);
   setView("guides");
-  guideView = createSocialView({ ejg, root: box, focus, start, userId, onExit: closeGuides, onChange: () => updateHints() });
+  guideView = createSocialView({ ejg, root: box, focus, start, userId, layout: "switch", onExit: closeGuides, onChange: () => updateHints() });
   updateHints();
   ejg.sound.play("open");
 }

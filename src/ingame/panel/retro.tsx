@@ -168,7 +168,7 @@ export function RetroPanel({ p }: { p: Panel }) {
     case "friends":
       screen = (
         <div className="pn-guides">
-          <SocialPane inPanel />
+          <SocialPane inPanel layout="retro" />
         </div>
       );
       break;

@@ -184,3 +184,4 @@ img { display: block; }
   scrollbar-width: none;
 }
 .gx-inner .s-btn.is-primary { background: var(--accent); }
+.gx-inner .s-view.s-profile { max-width: none; }

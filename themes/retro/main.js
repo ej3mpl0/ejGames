@@ -235,7 +235,7 @@ function openSocial(start = "friends", userId = null) {
   if (!detail.hidden) closeDetail(true);
   guideView?.destroy();
   guidesEl.hidden = false;
-  guideView = createSocialView({ ejg, root: guidesEl, focus, start, userId, onExit: closeGuides, onChange: () => updateHints() });
+  guideView = createSocialView({ ejg, root: guidesEl, focus, start, userId, layout: "retro", onExit: closeGuides, onChange: () => updateHints() });
   updateHints();
   ejg.sound.play("open");
 }

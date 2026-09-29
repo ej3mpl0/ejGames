@@ -189,7 +189,7 @@ export function XboxPanel({ p }: { p: Panel }) {
     case "friends":
       body = (
         <div className="pn-guides">
-          <SocialPane inPanel />
+          <SocialPane inPanel layout="xbox" />
         </div>
       );
       break;

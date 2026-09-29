@@ -37,8 +37,10 @@ export const SocialPane = forwardRef<
     className?: string;
     /** Dentro de un panel del overlay: la vista solo se queda con «Atrás» cuando hay un perfil abierto. */
     inPanel?: boolean;
+    /** Diseño del perfil (el del tema o el panel del overlay): steam, ps5, xbox, switch, cinema, retro. */
+    layout?: string;
   }
->(function SocialPane({ start = "friends", userId = null, onExit, onScreen, className, inPanel }, ref) {
+>(function SocialPane({ start = "friends", userId = null, onExit, onScreen, className, inPanel, layout = "steam" }, ref) {
   const [stack, setStack] = useState<Screen[]>(
     start === "profile" || start === "badges" ? [{ kind: start, id: userId }] : [{ kind: "friends", tab: start }],
   );
@@ -80,9 +82,9 @@ export const SocialPane = forwardRef<
     view.current = (
       top.kind === "friends"
         ? createFriendsView({ ejg, root, focus, tab: top.tab, onProfile: open, onExit: back, onChange })
-        : top.kind === "badges"
+        : top.kind === "badges" && layout === "steam"
           ? createBadgesView({ ejg, root, focus, userId: top.id, onProfile: open, onExit: back, onChange })
-          : createProfileView({ ejg, root, focus, userId: top.id, onProfile: open, onBadges: badges, onExit: back, onChange })
+          : createProfileView({ ejg, root, focus, layout, tab: top.kind === "badges" ? "badges" : "profile", userId: top.id, onProfile: open, onBadges: badges, onExit: back, onChange })
     ) as unknown as View;
     onScreen?.(top);
     return () => {
@@ -104,15 +106,15 @@ export const SocialPane = forwardRef<
 });
 
 /** Vista previa del perfil (editor): pinta los datos que se le dan. */
-export function ProfilePreview({ data }: { data: Record<string, unknown> }) {
+export function ProfilePreview({ data, layout = "steam" }: { data: Record<string, unknown>; layout?: string }) {
   const box = useRef<HTMLDivElement>(null);
   const view = useRef<{ update: (d: unknown) => void; destroy: () => void } | null>(null);
   useEffect(() => {
     const root = box.current;
     if (!root) return;
-    view.current = createProfileView({ ejg: hostEjg(), root, focus: null, data });
+    view.current = createProfileView({ ejg: hostEjg(), root, focus: null, data, layout });
     return () => view.current?.destroy();
-  }, []);
+  }, [layout]);
   useEffect(() => view.current?.update(data), [data]);
   return (
     <div className="gd-pane s-host is-preview">

@@ -185,7 +185,7 @@ export function PlayStationPanel({ p }: { p: Panel }) {
       title: "Amigos",
       body: (
         <div className="pn-guides">
-          <SocialPane inPanel />
+          <SocialPane inPanel layout="ps5" />
         </div>
       ),
     },

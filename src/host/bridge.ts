@@ -15,7 +15,7 @@ const num = (v: unknown): number => {
   return n;
 };
 
-const UI_NAMES: Record<string, OverlayName | "friends" | "profile" | "account"> = {
+const UI_NAMES: Record<string, OverlayName | "friends" | "profile" | "badges" | "account" | "account-login"> = {
   settings: "settings",
   game: "game",
   profiles: "profiles",
@@ -32,7 +32,9 @@ const UI_NAMES: Record<string, OverlayName | "friends" | "profile" | "account"> 
   map: "map",
   friends: "friends",
   profile: "profile",
+  badges: "badges",
   account: "account",
+  "account-login": "account-login",
   "profile-editor": "profile-editor",
 };
 
@@ -128,8 +130,8 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
       if (name === "add-folder") st.open("settings", { tab: "library", addFolder: true });
       else if (name === "guides") st.open("guides", { id: libGame(args?.id), guide: args?.guide == null ? null : validGuideId(args.guide) });
       else if (name === "trainer" || name === "map") st.open(name, { id: libGame(args?.id) });
-      else if (name === "friends" || name === "profile" || name === "account" || name === "profile-editor")
-        openSocial(name, { id: args?.id == null ? null : num(args.id) }, true);
+      else if (name === "friends" || name === "profile" || name === "badges" || name === "account" || name === "account-login" || name === "profile-editor")
+        openSocial(name, { id: args?.id == null ? null : num(args.id), tab: typeof args?.tab === "string" ? args.tab : null, mode: args?.mode === "login" ? "login" : "register" }, true);
       else if (name === "theme") st.open("settings", { tab: "appearance" });
       else if (name === "explore" || name === "downloads") st.open(name, { view: name, ...(args ?? {}) });
       else st.open(name, args);

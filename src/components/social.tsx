@@ -7,12 +7,12 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "re
 import type { NavAction } from "../api/types";
 import { hostEjg, kitFocus } from "../host/social";
 import { pushNavFilter } from "../input/nav";
-import { createFriendsView, createProfileView } from "../../sdk/kit/social.js";
+import { createBadgesView, createFriendsView, createProfileView } from "../../sdk/kit/social.js";
 import "../../sdk/kit/social.css";
 import "./guide.css";
 import "./social.css";
 
-type Screen = { kind: "friends" } | { kind: "profile"; id: number | null };
+type Screen = { kind: "friends"; tab?: string } | { kind: "profile"; id: number | null } | { kind: "badges"; id: number | null };
 
 export interface SocialHandle {
   /** Acción del mando; true si la ha usado la vista. */
@@ -29,7 +29,8 @@ interface View {
 export const SocialPane = forwardRef<
   SocialHandle,
   {
-    start?: "friends" | "profile";
+    /** friends | requests | activity (pestañas de la lista), profile o badges. */
+    start?: string;
     userId?: number | null;
     onExit?: () => void;
     onScreen?: (s: Screen) => void;
@@ -38,7 +39,9 @@ export const SocialPane = forwardRef<
     inPanel?: boolean;
   }
 >(function SocialPane({ start = "friends", userId = null, onExit, onScreen, className, inPanel }, ref) {
-  const [stack, setStack] = useState<Screen[]>(start === "profile" ? [{ kind: "profile", id: userId }] : [{ kind: "friends" }]);
+  const [stack, setStack] = useState<Screen[]>(
+    start === "profile" || start === "badges" ? [{ kind: start, id: userId }] : [{ kind: "friends", tab: start }],
+  );
   const box = useRef<HTMLDivElement>(null);
   const view = useRef<View | null>(null);
   const [, bump] = useState(0);
@@ -60,6 +63,7 @@ export const SocialPane = forwardRef<
     const ejg = hostEjg();
     const focus = kitFocus(root);
     const open = (id: number) => setStack((s) => [...s, { kind: "profile", id }]);
+    const badges = (id: number) => setStack((s) => [...s, { kind: "badges", id }]);
     const back = () => {
       if (depth.current > 1) {
         setStack((s) => s.slice(0, -1));
@@ -75,8 +79,10 @@ export const SocialPane = forwardRef<
     const onChange = () => bump((n) => n + 1);
     view.current = (
       top.kind === "friends"
-        ? createFriendsView({ ejg, root, focus, onProfile: open, onExit: back, onChange })
-        : createProfileView({ ejg, root, focus, userId: top.id, onProfile: open, onExit: back, onChange })
+        ? createFriendsView({ ejg, root, focus, tab: top.tab, onProfile: open, onExit: back, onChange })
+        : top.kind === "badges"
+          ? createBadgesView({ ejg, root, focus, userId: top.id, onProfile: open, onExit: back, onChange })
+          : createProfileView({ ejg, root, focus, userId: top.id, onProfile: open, onBadges: badges, onExit: back, onChange })
     ) as unknown as View;
     onScreen?.(top);
     return () => {

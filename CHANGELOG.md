@@ -5,6 +5,45 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.7.1
+
+**Tu perfil, 1:1 como el de Steam**
+- La página de perfil es ahora la de Steam pieza a pieza: cabecera con el avatar de 166 px (con el color de tu
+  estado), nombre, nombre real, país y resumen («Ver más información»), el círculo de **Nivel**, tu **insignia
+  destacada** con su EXP y los botones de Steam («Añadir amigo», «Más ▾» con eliminar y bloquear).
+- Debajo, las **vitrinas** con su barra en degradado (juego destacado y favorito, estadísticas, vitrina de logros,
+  coleccionista de insignias, capturas e información personalizada), la **actividad reciente** («46 h registradas ·
+  última sesión: 28 SEP», barra de logros y horas de las últimas dos semanas) y los **comentarios** con su «Publicar
+  comentario».
+- A la derecha, tu estado («Actualmente jugando / en línea / Sin conexión»), tus insignias, juegos, capturas y tus
+  **amigos** con su nivel.
+- Los **temas de perfil** de Steam: Por defecto, Verano, Medianoche, Acero, Cósmico, Modo oscuro, Violeta, Rojo
+  apagado, Verde Steam, Oro, Rosa y turquesa y Azul intenso (sustituyen a los colores de antes).
+- Página de **insignias** como la de Steam: nivel y EXP, lo que falta para el siguiente y cada insignia con su
+  progreso. Se abre desde el nivel o desde «Insignias» en cualquier perfil.
+- **Editar perfil** como el de Steam: General, Avatar (con sus tres tamaños y los marcos), Fondo del perfil, Tema,
+  Insignia destacada, Vitrinas destacadas y Privacidad, con «Cancelar / Guardar».
+
+**La cuenta, a la vista**
+- Diálogo nuevo para **crear la cuenta o entrar**: lo que desbloquea a la izquierda y un formulario claro a la
+  derecha (validación al escribir, fuerza de la contraseña, enseñarla, recuperar la cuenta) y, al terminar, tu código
+  de amigo y «Personalizar mi perfil / Añadir amigos».
+- **Guardado en la nube: próximamente.** Ya sale entre lo que desbloquea la cuenta, con su insignia de «Próximamente».
+- Sale **una vez** en cada perfil sin cuenta («Novedad») y lo abren todos los «Crear cuenta» de ejGames: el menú
+  rápido, Ajustes → Cuenta y amigos, el paso del inicio y las listas de amigos de los temas.
+- **Tema Steam**: tu nombre junto a Biblioteca, como en Steam (clic: tu perfil; encima: Actividad, Perfil, Amigos,
+  Solicitudes, Insignias y Editar perfil) y un **menú en tu foto** con tu perfil, tu estado (en línea, ausente,
+  invisible), los detalles de la cuenta y cambiar de perfil. Sin cuenta, los dos invitan a crearla.
+
+**Para temas**
+- `ejg.account.openLogin("register" | "login")` abre el diálogo; `ejg.friends.open(tab)` y el `tab` de
+  `ui.onView` abren Amigos en Solicitudes o Actividad; `ejg.profiles.badges(id)` y la vista `badges`, la página de
+  insignias. En el kit, `createBadgesView` y `start: "requests" | "activity" | "badges"` en `createSocialView`.
+
+**Servidor** (hay que volver a desplegarlo: `pnpm deploy-server`)
+- Cada perfil trae sus amigos de más nivel para la columna derecha, y el resumen guarda los juegos de la biblioteca,
+  las horas de las dos últimas semanas, las capturas y la cabecera de cada juego.
+
 ## 0.7.0
 
 **Cuenta de ejGames: opcional, pero lo desbloquea todo**

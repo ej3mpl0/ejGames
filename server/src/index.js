@@ -382,10 +382,23 @@ async function putSummary(request, env, me) {
         last: Number.isInteger(g.last) ? g.last : null,
         ach: Array.isArray(g.ach) && g.ach.length === 2 ? g.ach.map((n) => Math.max(0, Math.floor(Number(n) || 0))) : null,
         cover: text(g.cover, 300) || null,
+        header: text(g.header, 300) || null,
       }))
     : [];
   const stats = b.stats && typeof b.stats === "object" ? b.stats : {};
-  const json_ = JSON.stringify({ games, stats: { games: games.length, minutes: Math.floor(Number(stats.minutes) || 0), achievements: Math.floor(Number(stats.achievements) || 0), perfect: Math.floor(Number(stats.perfect) || 0) } });
+  const n = (v) => Math.max(0, Math.min(1e9, Math.floor(Number(v) || 0)));
+  const json_ = JSON.stringify({
+    games,
+    stats: {
+      games: games.length,
+      minutes: n(stats.minutes),
+      achievements: n(stats.achievements),
+      perfect: n(stats.perfect),
+      library: n(stats.library),
+      recent: n(stats.recent),
+      shots: n(stats.shots),
+    },
+  });
   const badges = Array.isArray(b.badges) ? b.badges.slice(0, 40).map((x) => ({ id: text(x.id, 30), tier: Math.max(1, Math.min(10, Math.floor(Number(x.tier) || 1))) })) : [];
   const xp = Math.max(0, Math.min(1e9, Math.floor(Number(b.xp) || 0)));
   const level = Math.max(0, Math.min(1000, Math.floor(Number(b.level) || 0)));
@@ -586,6 +599,18 @@ async function viewUser(env, me, id) {
     .bind(id)
     .first();
   const activity = await env.DB.prepare("SELECT id, kind, data, created_at FROM activity WHERE user_id = ?1 ORDER BY id DESC LIMIT 15").bind(id).all();
+  // Los amigos de la columna derecha (como en Steam: los de más nivel). Su
+  // estado solo se ve si su perfil es público o si también son amigos tuyos.
+  const top = await env.DB.prepare(
+    `SELECT u.id, u.username, p.display_name, p.avatar, p.frame, p.privacy, s.level, pr.status, pr.game, pr.game_appid, pr.since, pr.last_seen,
+            (u.id = ?2 OR EXISTS (SELECT 1 FROM friends x WHERE x.a = MIN(u.id, ?2) AND x.b = MAX(u.id, ?2) AND x.state = 'accepted')) AS mine
+     FROM (SELECT b AS other FROM friends WHERE a = ?1 AND state = 'accepted' UNION ALL SELECT a FROM friends WHERE b = ?1 AND state = 'accepted') f
+     JOIN users u ON u.id = f.other LEFT JOIN profiles p ON p.user_id = u.id LEFT JOIN summaries s ON s.user_id = u.id LEFT JOIN presence pr ON pr.user_id = u.id
+     ORDER BY s.level DESC, u.id LIMIT 6`,
+  )
+    .bind(id, me.id)
+    .all();
+  const topFriends = top.results.map((f) => ({ ...userCard(f), presence: f.mine || f.privacy === "public" ? visiblePresence(f) : null }));
   const canComment = self || (r.comments === "public" && relationOut !== "blocked") || (r.comments === "friends" && friend);
   return json({
     ...base,
@@ -595,6 +620,7 @@ async function viewUser(env, me, id) {
     summary: r.summary ? JSON.parse(r.summary) : null,
     presence: self || friend || r.privacy === "public" ? visiblePresence(r) : null,
     friends: friendsCount.n,
+    topFriends,
     activity: activity.results.map((a) => ({ id: a.id, kind: a.kind, data: JSON.parse(a.data), at: a.created_at })),
     canComment,
     commentsOff: r.comments === "off",

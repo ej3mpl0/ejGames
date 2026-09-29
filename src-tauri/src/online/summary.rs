@@ -91,22 +91,35 @@ pub fn build(st: &AppState, profile_id: i64, member_since: i64, friends: i64) ->
             continue;
         }
         // Portada pública (la de Steam): la ven los amigos desde su PC.
-        let cover = st.db.with(|c| repo::selected_remote_url(c, g.id, "cover")).ok().flatten().filter(|u| u.starts_with("https://"));
+        let remote = |kind| st.db.with(|c| repo::selected_remote_url(c, g.id, kind)).ok().flatten().filter(|u| u.starts_with("https://"));
+        let (cover, header) = (remote("cover"), remote("header"));
         games.push(json!({
             "title": g.title,
             "minutes": g.playtime / 60,
             "last": g.last_played,
             "ach": ach.map(|a| vec![a.unlocked, a.total]),
             "cover": cover,
+            "header": header,
         }));
     }
     games.sort_by(|a, b| b["minutes"].as_i64().cmp(&a["minutes"].as_i64()).then_with(|| a["title"].as_str().cmp(&b["title"].as_str())));
     games.truncate(500);
+    // Lo de la columna derecha del perfil: horas de las dos últimas semanas y capturas.
+    let since = crate::util::now() - 14 * 86400;
+    let (recent, shots) = st.db.with(|c| {
+        let recent: i64 = c.query_row("SELECT COALESCE(SUM(duration_s), 0) / 60 FROM sessions WHERE profile_id = ?1 AND started_at >= ?2", rusqlite::params![profile_id, since], |r| r.get(0))?;
+        let shots: i64 = c.query_row(
+            "SELECT COUNT(*) FROM screenshots WHERE game_id IN (SELECT game_id FROM profile_game WHERE profile_id = ?1)",
+            [profile_id],
+            |r| r.get(0),
+        )?;
+        Ok::<_, rusqlite::Error>((recent, shots))
+    })?;
     let b = badges(&s);
     let xp = xp(&s, &b);
     let body = json!({
         "games": games,
-        "stats": { "minutes": s.minutes, "achievements": s.achievements, "perfect": s.perfect },
+        "stats": { "minutes": s.minutes, "achievements": s.achievements, "perfect": s.perfect, "library": s.games, "recent": recent, "shots": shots },
         "xp": xp,
         "level": level_of(xp),
         "badges": b.iter().map(|(id, t)| json!({ "id": id, "tier": t })).collect::<Vec<_>>(),

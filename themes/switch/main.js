@@ -164,7 +164,7 @@ function openSocial(start = "friends", userId = null) {
   dropGuides();
   const root = $("#guides");
   const box = h("div", { class: "gs-page" });
-  root.replaceChildren(h("header", { class: "gs-head" }, h("div", null, h("small", null, "Tu cuenta de ejGames"), h("b", null, start === "profile" ? "Perfil" : "Amigos"))), box);
+  root.replaceChildren(h("header", { class: "gs-head" }, h("div", null, h("small", null, "Tu cuenta de ejGames"), h("b", null, ({ profile: "Perfil", badges: "Insignias", activity: "Actividad", requests: "Solicitudes" })[start] || "Amigos"))), box);
   setView("guides");
   guideView = createSocialView({ ejg, root: box, focus, start, userId, onExit: closeGuides, onChange: () => updateHints() });
   updateHints();
@@ -366,10 +366,10 @@ ejg.explore.onEnabled(() => {
   }
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
-ejg.ui.onView(({ view, slug, gameId, guideId, userId }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId, userId, tab }) => {
   if (!options.hidden) closeOptions();
   if (view === "guides" && gameId) return openGuides(gameId, guideId);
-  if (view === "friends" || view === "profile") return openSocial(view, userId ?? null);
+  if (view === "friends" || view === "profile" || view === "badges") return openSocial(view === "friends" ? tab || "friends" : view, userId ?? null);
   if (view === "downloads") return shop.open("downloads");
   if (!ejg.explore.enabled) return;
   shop.open(view === "repack" ? "repack" : "explore", slug);

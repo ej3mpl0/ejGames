@@ -458,13 +458,21 @@ export interface Ejg {
     open(
       name:
         | "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads"
-        | "guides" | "trainer" | "map" | "friends" | "profile" | "account" | "profile-editor",
+        | "guides" | "trainer" | "map" | "friends" | "profile" | "badges" | "account" | "account-login" | "profile-editor",
       args?: any,
     ): Promise<void>;
     toast(message: string, kind?: "info" | "ok" | "error"): Promise<void>;
     /** El host pide abrir una vista del tema (menú rápido, Ctrl+E, Ctrl+J, el indicador de descargas…). */
     onView(
-      fn: (e: { view: "explore" | "downloads" | "repack" | "guides" | "friends" | "profile"; slug?: string; gameId?: number; guideId?: string | null; userId?: number | null }) => void,
+      fn: (e: {
+        view: "explore" | "downloads" | "repack" | "guides" | "friends" | "profile" | "badges";
+        slug?: string;
+        gameId?: number;
+        guideId?: string | null;
+        userId?: number | null;
+        /** Amigos: la pestaña (friends | requests | activity). */
+        tab?: string | null;
+      }) => void,
     ): () => void;
     /** Teclado en pantalla del host: el texto escrito o null si se cancela. */
     keyboard(opts?: { title?: string; value?: string; placeholder?: string; maxLength?: number }): Promise<string | null>;
@@ -496,7 +504,8 @@ export interface Ejg {
     onChange(fn: (a: AccountState | null) => void): () => void;
     setStatus(status: "online" | "away" | "invisible"): Promise<AccountState>;
     openEditor(): Promise<void>;
-    openLogin(): Promise<void>;
+    /** Diálogo para crear la cuenta o entrar. */
+    openLogin(mode?: "register" | "login"): Promise<void>;
   };
   friends: {
     readonly list: SocialFriend[];
@@ -509,11 +518,12 @@ export interface Ejg {
     block(id: number): Promise<AccountState>;
     unblock(id: number): Promise<AccountState>;
     refresh(): Promise<AccountState>;
-    open(): Promise<void>;
+    open(tab?: "friends" | "requests" | "activity"): Promise<void>;
   };
   profiles: {
     view(id: number): Promise<any>;
     open(id: number): Promise<void>;
+    badges(id?: number | null): Promise<void>;
   };
   comments: {
     list(userId: number, before?: number): Promise<{ items: any[] }>;

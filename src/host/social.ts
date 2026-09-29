@@ -24,17 +24,30 @@ export function themeHasSocial() {
  */
 export function openSocial(name: string, args?: Record<string, unknown> | null, fromTheme = false) {
   const st = useApp.getState();
-  if (name === "account") return st.open("settings", { tab: "account" });
-  if (name === "profile-editor") return st.open("profile-editor");
+  const a = st.account;
+  const linked = !!a?.linked && !a.needsLogin;
+  // Sin cuenta, «Cuenta» es el diálogo para crearla o entrar; con ella, sus ajustes.
+  if (name === "account") return linked ? st.open("settings", { tab: "account" }) : openLogin(a?.needsLogin ? "login" : "register");
+  if (name === "account-login") return openLogin(args?.mode === "login" ? "login" : "register");
+  if (name === "profile-editor") return linked ? st.open("profile-editor") : openLogin("register");
   const id = typeof args?.id === "number" ? args.id : null;
+  const tab = typeof args?.tab === "string" && ["friends", "requests", "activity"].includes(args.tab) ? args.tab : null;
+  const view = name === "profile" || name === "badges" ? name : "friends";
   // Si lo pide el propio tema, no se le devuelve la pelota.
   if (themeHasSocial() && !fromTheme) {
     st.closeAll();
-    window.dispatchEvent(new CustomEvent("ejg:ui-view", { detail: { view: name === "profile" ? "profile" : "friends", userId: id } }));
+    window.dispatchEvent(new CustomEvent("ejg:ui-view", { detail: { view, userId: id, tab } }));
     return;
   }
-  if (name === "profile") st.open("social", { view: "profile", id });
-  else st.open("social", { view: "friends" });
+  st.open("social", { view, id, tab });
+}
+
+/** El diálogo de la cuenta de ejGames: crearla o entrar. */
+export function openLogin(mode: "register" | "login" = "register") {
+  const st = useApp.getState();
+  if (!st.account?.enabled) return;
+  if (st.overlays.some((o) => o.name === "account-auth")) return;
+  st.open("account-auth", { mode });
 }
 
 export function hostEjg() {
@@ -50,6 +63,7 @@ export function hostEjg() {
       },
       setStatus: (status: AccountStatus) => api.accountPrefs({ status }).then(setAccount),
       openEditor: () => openSocial("profile-editor"),
+      openLogin: (mode?: "register" | "login") => openLogin(mode),
     },
     friends: {
       add: (q: string) => api.socialFriend("request", q).then(setAccount),

@@ -1,6 +1,6 @@
 /* Las vistas del kit dentro del host y del overlay: toman los colores de la
    piel del sitio (--gd-*, las mismas que las guías). El color propio de cada
-   perfil va aparte (--s-paccent) y manda en su página. */
+   perfil (su tema, s-theme-*) va aparte y manda en su página. */
 .gd-pane :where(.s-view) {
   --s-fg: var(--gd-fg);
   --s-muted: var(--gd-muted);

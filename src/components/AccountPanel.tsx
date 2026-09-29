@@ -1,49 +1,14 @@
-// La cuenta de ejGames del perfil: crear una, entrar, recuperarla con el
-// código y, ya dentro, estado, avisos, contraseña, perfil y cerrar sesión.
-// Lo usan Ajustes → Cuenta y el paso «Tu cuenta» del onboarding.
+// Ajustes → Cuenta: sin cuenta, la tarjeta para crearla o entrar
+// (AccountCard); ya dentro, estado, avisos, contraseña, perfil y cerrar sesión.
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { Award, Bell, Frame, MessageSquare, Sparkles, Users } from "lucide-react";
+import { Cloud } from "lucide-react";
 import { api, errMsg } from "../api/tauri";
 import type { AccountState, AccountStatus } from "../api/types";
 import { openSocial } from "../host/social";
 import { useApp } from "../store/app";
-import { Button, Cycle, Field, Section, TextInput, Toggle, cx } from "./ui";
-
-type Mode = "register" | "login" | "recover";
-
-const PERKS: [ReactNode, string, string][] = [
-  [<Users size={18} />, "Amigos", "Añádelos y mira quién está en línea y a qué juega."],
-  [<Bell size={18} />, "Avisos dentro del juego", "Cuando un amigo se conecta o empieza a jugar."],
-  [<Sparkles size={18} />, "Actividad", "Las partidas, los logros y los juegos completados de tu gente."],
-  [<Frame size={18} />, "Tu perfil", "Avatar con marco, fondo animado, color y vitrinas con tus juegos."],
-  [<Award size={18} />, "Nivel e insignias", "Se ganan jugando: horas, logros, juegos al 100 %…"],
-  [<MessageSquare size={18} />, "Comentarios", "En tu perfil y en el de tus amigos."],
-];
-
-/** Lo que desbloquea la cuenta (y que sin ella ejGames funciona igual). */
-export function AccountPerks({ className }: { className?: string }) {
-  return (
-    <div className={className}>
-      <p className="mb-3 text-sm text-muted">
-        Crear una cuenta es <b className="text-fg">opcional</b>: sin ella, ejGames funciona exactamente igual. Con ella desbloqueas:
-      </p>
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {PERKS.map(([icon, title, text]) => (
-          <li key={title} className="flex gap-3 rounded-[calc(var(--h-radius)*0.8)] bg-surface-2/70 p-3 ring-1 ring-line">
-            <span className="mt-0.5 text-accent">{icon}</span>
-            <span>
-              <b className="block text-sm">{title}</b>
-              <span className="block text-xs text-muted">{text}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-const USERNAME = /^[A-Za-z0-9_.-]{3,20}$/;
+import { AccountCard } from "./AccountCard";
+import { Button, Cycle, Field, Section, TextInput, Toggle } from "./ui";
 
 function Form({ onSubmit, children }: { onSubmit: () => Promise<void>; children: ReactNode }) {
   const [busy, setBusy] = useState(false);
@@ -69,96 +34,6 @@ function Form({ onSubmit, children }: { onSubmit: () => Promise<void>; children:
       {error && <p className="mx-3 rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
       {busy && <p className="mx-3 text-sm text-muted">Un momento…</p>}
     </form>
-  );
-}
-
-/**
- * Crear cuenta, entrar o recuperarla. `onDone` tras entrar (onboarding).
- * `onCode`: dónde enseñar el código de recuperación (si no, en una ventana).
- */
-export function AccountAuth({ onDone, onCode, compact }: { onDone?: () => void; onCode?: (code: string, username: string) => void; compact?: boolean }) {
-  const [mode, setMode] = useState<Mode>("register");
-  const [username, setUsername] = useState("");
-  const [name, setName] = useState(useApp.getState().profile?.name ?? "");
-  const [password, setPassword] = useState("");
-  const [password2, setPassword2] = useState("");
-  const [code, setCode] = useState("");
-  const set = useApp((s) => s.set);
-  const open = useApp((s) => s.open);
-
-  const showCode = (recoveryCode: string) => (onCode ? onCode(recoveryCode, username.trim()) : open("recovery-code", { code: recoveryCode, username }));
-
-  const check = () => {
-    if (!USERNAME.test(username.trim())) throw new Error("El nombre de usuario lleva de 3 a 20 letras, números, «.», «_» o «-».");
-    if (password.length < 8) throw new Error("La contraseña tiene que tener al menos 8 caracteres.");
-    if ((mode === "register" || mode === "recover") && password !== password2) throw new Error("Las contraseñas no coinciden.");
-  };
-
-  const submit = async () => {
-    check();
-    if (mode === "register") {
-      const r = await api.accountRegister(username.trim(), password, name.trim());
-      set({ account: r.state });
-      showCode(r.recoveryCode);
-      if (!onCode) onDone?.();
-    } else if (mode === "login") {
-      set({ account: await api.accountLogin(username.trim(), password) });
-      onDone?.();
-    } else {
-      const r = await api.accountRecover(username.trim(), code, password);
-      set({ account: r.state });
-      showCode(r.recoveryCode);
-      if (!onCode) onDone?.();
-    }
-  };
-
-  const tab = (m: Mode, label: string) => (
-    <button
-      type="button"
-      data-nav
-      onClick={() => setMode(m)}
-      className={cx("h-9 rounded-md px-3 text-sm cursor-pointer", mode === m ? "bg-accent/15 text-fg" : "text-muted hover:bg-surface-3 hover:text-fg")}
-    >
-      {label}
-    </button>
-  );
-
-  return (
-    <div className={compact ? "" : "max-w-xl"}>
-      <div className="mb-2 flex flex-wrap gap-1 px-3">
-        {tab("register", "Crear cuenta")}
-        {tab("login", "Ya tengo cuenta")}
-        {tab("recover", "He olvidado la contraseña")}
-      </div>
-      <Form onSubmit={submit}>
-        <Field label="Nombre de usuario" hint={mode === "register" ? "Con él te encuentran tus amigos. De 3 a 20 letras, números, «.», «_» o «-»." : undefined}>
-          <TextInput value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" maxLength={20} data-autofocus />
-        </Field>
-        {mode === "register" && (
-          <Field label="Nombre visible" hint="El que ven los demás. Lo puedes cambiar cuando quieras.">
-            <TextInput value={name} onChange={(e) => setName(e.target.value)} maxLength={32} />
-          </Field>
-        )}
-        {mode === "recover" && (
-          <Field label="Código de recuperación" hint="El de 20 letras y números que guardaste al crear la cuenta.">
-            <TextInput value={code} onChange={(e) => setCode(e.target.value)} placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" className="font-mono uppercase" />
-          </Field>
-        )}
-        <Field label={mode === "recover" ? "Contraseña nueva" : "Contraseña"} hint={mode !== "login" ? "Al menos 8 caracteres." : undefined}>
-          <TextInput type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} />
-        </Field>
-        {mode !== "login" && (
-          <Field label="Repite la contraseña">
-            <TextInput type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} autoComplete="new-password" />
-          </Field>
-        )}
-        <div className="px-3 pt-2">
-          <Button type="submit" variant="primary">
-            {mode === "register" ? "Crear cuenta" : mode === "login" ? "Entrar" : "Cambiar la contraseña"}
-          </Button>
-        </div>
-      </Form>
-    </div>
   );
 }
 
@@ -214,6 +89,17 @@ function Linked({ a }: { a: AccountState }) {
         <Cycle label="Estado" value={a.status} options={STATUS_OPTIONS} onChange={(v) => void prefs({ status: v })} />
         <Toggle label="Avisar cuando un amigo se conecte" checked={a.notifyOnline} onChange={(v) => void prefs({ notifyOnline: v })} />
         <Toggle label="Avisar cuando un amigo empiece a jugar" hint="Dentro del juego, con el overlay." checked={a.notifyPlaying} onChange={(v) => void prefs({ notifyPlaying: v })} />
+      </Section>
+
+      <Section title="Guardado en la nube">
+        <div className="flex items-center gap-4 px-3 py-3 opacity-80">
+          <Cloud size={22} className="shrink-0 text-muted" />
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium">Tus partidas guardadas, en todos tus PC</div>
+            <div className="text-xs text-muted">Irá con tu cuenta de ejGames, sin hacer nada.</div>
+          </div>
+          <span className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ring-1 ring-line text-muted">Próximamente</span>
+        </div>
       </Section>
 
       <Section title="Seguridad">
@@ -301,19 +187,14 @@ function Linked({ a }: { a: AccountState }) {
 
 export function AccountPanel() {
   const a = useApp((s) => s.account);
+  // Creando la cuenta o recién entrado: la tarjeta sigue hasta que termine.
+  const [flow, setFlow] = useState(false);
   if (!a) return <p className="px-3 text-sm text-muted">Cargando…</p>;
   if (!a.enabled) return <p className="px-3 text-sm text-muted">Esta versión de ejGames no tiene cuentas.</p>;
-  if (a.linked && !a.needsLogin) return <Linked a={a} />;
+  if (a.linked && !a.needsLogin && !flow) return <Linked a={a} />;
   return (
-    <div className="max-w-xl">
-      <Section title={a.needsLogin ? "Tu sesión ha caducado" : "Cuenta de ejGames"}>
-        {a.needsLogin ? (
-          <p className="px-3 pb-2 text-sm text-muted">Vuelve a entrar como {a.username} para ver a tus amigos.</p>
-        ) : (
-          <AccountPerks className="px-3 pb-4 pt-1" />
-        )}
-        <AccountAuth />
-      </Section>
+    <div className="max-w-5xl px-3 pb-4">
+      <AccountCard onStep={(k) => setFlow(k !== "form")} onFinish={() => setFlow(false)} />
     </div>
   );
 }

@@ -289,7 +289,8 @@
     },
     ui: {
       /** settings | game | profiles | search | add-folder | stats | theme | collections | menu | explore | downloads
-       *  | guides, trainer, map ({id: gameId}) | friends | profile ({id: userId}) | account | profile-editor */
+       *  | guides, trainer, map ({id: gameId}) | friends ({tab}) | profile, badges ({id: userId}) | account | account-login ({mode})
+       *  | profile-editor */
       open: function (name, args) { return call("ui.open", { name: name, args: args || null }); },
       toast: function (message, kind) { return call("ui.toast", { message: message, kind: kind || "info" }); },
       /** El host pide abrir una vista del tema: fn({view: "explore"|"downloads"|"repack"|"guides", slug?, gameId?, guideId?}). */
@@ -352,8 +353,8 @@
       setStatus: function (status) { return call("account.setStatus", { status: status }); },
       /** Editor del perfil del host (avatar, marco, fondo, vitrinas…). */
       openEditor: function () { return call("ui.open", { name: "profile-editor" }); },
-      /** Crear cuenta o entrar (Ajustes → Cuenta y amigos). */
-      openLogin: function () { return call("ui.open", { name: "account" }); },
+      /** El diálogo para crear la cuenta ("register") o entrar ("login"). */
+      openLogin: function (mode) { return call("ui.open", { name: "account-login", args: { mode: mode === "login" ? "login" : "register" } }); },
     },
     friends: {
       /** Amigos con su presencia: [{id, username, name, avatarUrl, frame, level, presence: {status, game, since, lastSeen}}]. */
@@ -372,14 +373,16 @@
       block: function (id) { return call("friends.block", { id: id }); },
       unblock: function (id) { return call("friends.unblock", { id: id }); },
       refresh: function () { return call("friends.refresh"); },
-      /** Ventana de amigos del host. */
-      open: function () { return call("ui.open", { name: "friends" }); },
+      /** Amigos (del tema si los pinta; si no, la ventana del host). tab: friends | requests | activity. */
+      open: function (tab) { return call("ui.open", { name: "friends", args: { tab: tab || null } }); },
     },
     profiles: {
       /** Un perfil (el tuyo con tu id): nombre, avatar, fondo, nivel, insignias, vitrinas, juegos, actividad… */
       view: function (id) { return call("profiles.view", { id: id }); },
       /** Perfil en la ventana del host. */
       open: function (id) { return call("ui.open", { name: "profile", args: { id: id } }); },
+      /** Página de insignias (nivel, experiencia y lo que falta para cada una). */
+      badges: function (id) { return call("ui.open", { name: "badges", args: { id: id == null ? null : id } }); },
     },
     comments: {
       list: function (userId, before) { return call("comments.list", { id: userId, before: before == null ? null : before }); },

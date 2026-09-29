@@ -19,6 +19,7 @@ import { checkOnLaunch } from "./host/update";
 import { GameEditor } from "./overlays/GameEditor";
 import { GuidesOverlay } from "./overlays/Guides";
 import { ProfileEditorOverlay } from "./overlays/ProfileEditor";
+import { AccountAuthOverlay } from "./overlays/AccountAuth";
 import { RecoveryCodeOverlay } from "./overlays/RecoveryCode";
 import { SocialOverlay } from "./overlays/Social";
 import { MapOverlay } from "./overlays/Map";
@@ -55,6 +56,27 @@ async function loadLibrary() {
   useApp.getState().set({ games, collections, running });
 }
 
+/**
+ * Las cuentas son opcionales, pero que se sepa que existen: la primera vez que
+ * se entra en cada perfil sin cuenta, el diálogo con lo que desbloquea
+ * («Novedad»). Una sola vez por perfil.
+ */
+function accountPromo(profileId: number) {
+  const st = useApp.getState();
+  const seen = st.settings?.accountPromoSeen ?? [];
+  if (!st.account?.enabled || st.account.linked || seen.includes(profileId)) return;
+  setTimeout(() => {
+    const now = useApp.getState();
+    // Con otra cosa abierta (o ya en otro perfil), la próxima vez.
+    if (now.overlays.length || now.profile?.id !== profileId || now.account?.linked) return;
+    now.open("account-auth", { mode: "register", promo: true });
+    void api
+      .updateSettings({ accountPromoSeen: [...seen, profileId] })
+      .then((settings) => useApp.getState().set({ settings }))
+      .catch(() => {});
+  }, 2500);
+}
+
 export default function App() {
   const boot = useApp((s) => s.boot);
   const profile = useApp((s) => s.profile);
@@ -71,6 +93,7 @@ export default function App() {
     useApp.getState().closeAll();
     setPhase("main");
     checkOnLaunch();
+    accountPromo(p.id);
   }
 
   // Arranque.
@@ -241,6 +264,8 @@ export default function App() {
             return <SocialOverlay key={key} args={o.args} onClose={onClose} />;
           case "profile-editor":
             return <ProfileEditorOverlay key={key} onClose={onClose} />;
+          case "account-auth":
+            return <AccountAuthOverlay key={key} args={o.args} onClose={onClose} />;
           case "recovery-code":
             return <RecoveryCodeOverlay key={key} args={o.args} onClose={onClose} />;
           case "profiles":

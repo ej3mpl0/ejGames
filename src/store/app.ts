@@ -34,6 +34,7 @@ export type OverlayName =
   | "social"
   | "profile-editor"
   | "recovery-code"
+  | "account-auth"
   | "onboarding";
 
 export interface Overlay {

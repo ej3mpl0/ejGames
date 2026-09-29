@@ -11,8 +11,7 @@ import { useOverlayNav } from "../input/nav";
 import { PROFILE_COLORS, bytes } from "../lib/format";
 import { useApp } from "../store/app";
 import { Hints } from "../components/Hints";
-import { AccountAuth, AccountPerks } from "../components/AccountPanel";
-import { RecoveryCodeBox } from "./RecoveryCode";
+import { AccountCard } from "../components/AccountCard";
 
 export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) {
   const themes = useApp((s) => s.themes);
@@ -21,7 +20,8 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
   // Cuentas de ejGames: el último paso (opcional), tras crear el perfil.
   const [accounts, setAccounts] = useState(false);
   const [created, setCreated] = useState<number | null>(null);
-  const [code, setCode] = useState<{ code: string; username: string } | null>(null);
+  // Creando la cuenta (código de recuperación en pantalla): sin «Seguir sin cuenta».
+  const [inFlow, setInFlow] = useState(false);
   useEffect(() => {
     api
       .accountState()
@@ -70,11 +70,14 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
     try {
       const p = await api.createProfile(name.trim() || "Jugador", color, theme);
       await api.login(p.id);
-      await api.updateSettings({
+      const before = await api.getSettings().catch(() => null);
+      const settings = await api.updateSettings({
+        accountPromoSeen: [...(before?.accountPromoSeen ?? []), p.id],
         firstRunDone: true,
         exploreEnabled: explore,
         downloadDir: explore ? dlDir ?? "" : "",
       });
+      useApp.getState().set({ settings });
       for (const f of folders) await api.addFolder(f.path, f.suggestedMode);
       // Con cuentas, un último paso (la cuenta se liga al perfil recién creado).
       if (accounts) {
@@ -265,16 +268,8 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
             </div>
           )}
           {step === 4 && created != null && (
-            <div className="max-h-[62vh] overflow-y-auto pr-2">
-              <h1 className="mb-4 text-3xl font-bold">Juega con tus amigos</h1>
-              {!code && <AccountPerks className="mb-6 max-w-3xl" />}
-              {code ? (
-                <div className="max-w-xl">
-                  <RecoveryCodeBox code={code.code} username={code.username} onDone={() => onDone(created)} />
-                </div>
-              ) : (
-                <AccountAuth onDone={() => onDone(created)} onCode={(c, u) => setCode({ code: c, username: u })} />
-              )}
+            <div className="max-h-[70vh] overflow-y-auto p-1">
+              <AccountCard skipDone onFinish={() => onDone(created)} onStep={(k) => setInFlow(k !== "form")} />
             </div>
           )}
         </div>
@@ -291,7 +286,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
             ]}
           />
           {step === 4 ? (
-            !code && (
+            !inFlow && (
               <Button variant="ghost" size="lg" onClick={() => created != null && onDone(created)}>
                 Seguir sin cuenta
               </Button>

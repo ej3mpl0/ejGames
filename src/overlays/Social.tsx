@@ -9,7 +9,9 @@ import { useOverlayNav } from "../input/nav";
 
 export function SocialOverlay({ args, onClose }: { args?: Record<string, unknown> | null; onClose: () => void }) {
   const pane = useRef<SocialHandle>(null);
-  const [title, setTitle] = useState(args?.view === "profile" ? "Perfil" : "Amigos");
+  const TITLES: Record<string, string> = { friends: "Amigos", profile: "Perfil", badges: "Insignias" };
+  const start = typeof args?.view === "string" ? (args.view === "friends" && typeof args?.tab === "string" ? args.tab : args.view) : "friends";
+  const [title, setTitle] = useState(TITLES[String(args?.view)] ?? "Amigos");
   const [, bump] = useState(0);
   const pass = (a: NavAction) => () => {
     if (!pane.current?.nav(a) && a === "back") onClose();
@@ -31,11 +33,11 @@ export function SocialOverlay({ args, onClose }: { args?: Record<string, unknown
       <div className="h-full px-5 pb-4 pt-3" style={{ ["--gd-bg" as string]: "var(--h-surface)" }}>
         <SocialPane
           ref={pane}
-          start={args?.view === "profile" ? "profile" : "friends"}
+          start={start}
           userId={id}
           onExit={onClose}
           onScreen={(s) => {
-            setTitle(s.kind === "friends" ? "Amigos" : "Perfil");
+            setTitle(TITLES[s.kind]);
             bump((n) => n + 1);
           }}
         />

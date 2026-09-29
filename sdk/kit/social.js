@@ -58,7 +58,8 @@ export function levelOf(xp) {
   return n;
 }
 
-const LEVEL_COLORS = ["#8f98a0", "#c02942", "#d95b43", "#e7b82a", "#4f9a3c", "#4e8ddb", "#7652c9", "#c252c9", "#9a3b5c", "#b08d57"];
+// Los de Steam por decenas (lvl_0, lvl_10… lvl_90).
+const LEVEL_COLORS = ["#9b9b9b", "#c02942", "#d95b43", "#fecc23", "#467a3c", "#4e8ddb", "#7652c9", "#c252c9", "#542437", "#997c52"];
 export const levelColor = (level) => (level >= 100 ? "#f5c518" : LEVEL_COLORS[Math.floor(level / 10) % 10]);
 
 const I = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
@@ -66,7 +67,7 @@ export const BADGES = {
   collector: { name: "Coleccionista", unit: (n) => `${n} juegos en la biblioteca`, th: [5, 10, 25, 50, 100, 250], icon: I('<rect x="4" y="3" width="6" height="18" rx="1"/><rect x="11" y="3" width="4" height="18" rx="1"/><path d="m16 4 4 1-3 16-4-1Z"/>') },
   achiever: { name: "Cazalogros", unit: (n) => `${n} logros`, th: [10, 50, 100, 250, 500, 1000, 2500], icon: I('<path d="M7 4h10v5a5 5 0 0 1-10 0Z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 21h8"/>') },
   marathon: { name: "Maratón", unit: (n) => `${n} horas jugadas`, th: [10, 50, 100, 250, 500, 1000], icon: I('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/>') },
-  completionist: { name: "Completista", unit: (n) => `${n} juegos al 100 %`, th: [1, 3, 5, 10, 25, 50], icon: I('<path d="m12 3 2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7Z"/>') },
+  completionist: { name: "Completista", unit: (n) => `${n} ${n === 1 ? "juego" : "juegos"} al 100 %`, th: [1, 3, 5, 10, 25, 50], icon: I('<path d="m12 3 2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7Z"/>') },
   explorer: { name: "Explorador", unit: (n) => `${n} juegos jugados más de una hora`, th: [5, 10, 25, 50, 100], icon: I('<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5Z"/>') },
   veteran: { name: "Veterano", unit: (n) => `${n} ${n === 1 ? "año" : "años"} en ejGames`, th: [1, 2, 3, 4, 5], icon: I('<path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6Z"/><path d="m9 12 2 2 4-4"/>') },
   social: { name: "Social", unit: (n) => `${n} ${n === 1 ? "amigo" : "amigos"}`, th: [1, 5, 10, 25, 50], icon: I('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 5"/>') },
@@ -110,14 +111,21 @@ export const BACKGROUNDS = [
   { id: "embers", name: "Brasas" },
 ];
 
+/** Los temas del perfil de Steam (el «color» de cada perfil). `accent`: el
+ * color de sus botones y barras; `head`: el de las barras de las vitrinas. */
 export const COLORS = [
-  { id: "", name: "Azul", accent: "#4f9dff" },
-  { id: "purple", name: "Violeta", accent: "#a970ff" },
-  { id: "red", name: "Rojo", accent: "#ff5a5f" },
-  { id: "green", name: "Verde", accent: "#3ddc84" },
-  { id: "gold", name: "Oro", accent: "#f5c518" },
-  { id: "pink", name: "Rosa", accent: "#ff6ec7" },
-  { id: "teal", name: "Turquesa", accent: "#2dd4bf" },
+  { id: "", name: "Por defecto", accent: "#3d5a80", head: "#2b2d44" },
+  { id: "summer", name: "Verano", accent: "#91753d", head: "#46351f" },
+  { id: "midnight", name: "Medianoche", accent: "#3a3875", head: "#22203d" },
+  { id: "steel", name: "Acero", accent: "#56697f", head: "#373e4c" },
+  { id: "cosmic", name: "Cósmico", accent: "#8c3b8f", head: "#39183d" },
+  { id: "dark", name: "Modo oscuro", accent: "#505050", head: "#141414" },
+  { id: "purple", name: "Violeta", accent: "#603689", head: "#4c2f69" },
+  { id: "red", name: "Rojo apagado", accent: "#8a2a22", head: "#310909" },
+  { id: "green", name: "Verde Steam", accent: "#5c6f2d", head: "#3e452c" },
+  { id: "gold", name: "Oro", accent: "#a98444", head: "#b9914c" },
+  { id: "pink", name: "Rosa y turquesa", accent: "#2a757a", head: "#2a757a" },
+  { id: "teal", name: "Azul intenso", accent: "#235885", head: "#13395f" },
 ];
 
 export const SHOWCASES = [
@@ -125,10 +133,10 @@ export const SHOWCASES = [
   { type: "favorite", name: "Juego favorito" },
   { type: "stats", name: "Estadísticas" },
   { type: "recent", name: "Jugados hace poco" },
-  { type: "achievements", name: "Logros recientes" },
-  { type: "badges", name: "Insignias" },
-  { type: "screenshots", name: "Capturas" },
-  { type: "text", name: "Texto libre" },
+  { type: "achievements", name: "Vitrina de logros" },
+  { type: "badges", name: "Coleccionista de insignias" },
+  { type: "screenshots", name: "Vitrina de capturas" },
+  { type: "text", name: "Información personalizada" },
 ];
 
 const initials = (name = "?") =>
@@ -207,14 +215,15 @@ const key = (el, k) => (el.dataset.key = k, el);
 /**
  * Lista de amigos con solicitudes y actividad. Se pinta dentro de `root`.
  * `onProfile(id)`: abrir un perfil (el tema lo pinta con createProfileView).
- * @param {{ ejg: any, root: HTMLElement, focus?: any, cls?: string, labels?: Record<string, string>,
+ * `tab`: la pestaña con la que empieza (friends | requests | activity).
+ * @param {{ ejg: any, root: HTMLElement, focus?: any, tab?: string, cls?: string, labels?: Record<string, string>,
  *   onProfile?: (id: number) => void, onExit?: () => void, onChange?: () => void }} opts
  * @returns {{ nav: (a: string) => boolean, hints: () => [string, string][], reload: () => any, destroy: () => void }}
  */
-export function createFriendsView({ ejg, root, focus, cls = "s-", labels = {}, onProfile = () => {}, onExit = () => {}, onChange = () => {} }) {
+export function createFriendsView({ ejg, root, focus, tab: startTab = "friends", cls = "s-", labels = {}, onProfile = () => {}, onExit = () => {}, onChange = () => {} }) {
   const c = cls;
   const L = { title: "Amigos", friends: "Amigos", requests: "Solicitudes", activity: "Actividad", add: "Añadir amigo", ...labels };
-  let tab = "friends";
+  let tab = ["friends", "requests", "activity"].includes(startTab) ? startTab : "friends";
   let feed = { items: null, loading: false, done: false };
   let message = "";
   let busy = false;
@@ -389,8 +398,10 @@ export function createFriendsView({ ejg, root, focus, cls = "s-", labels = {}, o
                 "ul",
                 { class: `${c}perks` },
                 ...["Amigos y a qué juegan", "Avisos dentro del juego", "La actividad de tu gente", "Tu perfil: marcos, fondos y vitrinas", "Nivel e insignias", "Comentarios"].map((t) => h("li", null, t)),
+                h("li", { class: `${c}soon` }, "Guardado en la nube", h("span", { class: `${c}soon-tag` }, "Próximamente")),
               ),
-          btn("login", st.needsLogin ? "Entrar" : "Crear cuenta o entrar", () => ejg.ui.open("account"), "is-primary"),
+          btn("login", st.needsLogin ? "Entrar" : "Crear cuenta", () => (ejg.account.openLogin ? ejg.account.openLogin(st.needsLogin ? "login" : "register") : ejg.ui.open("account")), "is-primary"),
+          st.needsLogin ? null : btn("signin", "Ya tengo cuenta", () => (ejg.account.openLogin ? ejg.account.openLogin("login") : ejg.ui.open("account"))),
         ),
       ];
     } else {
@@ -448,8 +459,8 @@ export function createFriendsView({ ejg, root, focus, cls = "s-", labels = {}, o
         return true;
       }
       if (a === "back") {
-        if (tab !== "friends") {
-          setTab("friends");
+        if (tab !== startTab && tab !== "friends") {
+          setTab(startTab === "friends" ? "friends" : startTab);
           return true;
         }
         // onExit puede devolver false: «Atrás» sigue a quien contenga la vista.
@@ -479,76 +490,178 @@ export function createFriendsView({ ejg, root, focus, cls = "s-", labels = {}, o
 }
 
 // ───────────────────────────── perfil ─────────────────────────────
+// La página de perfil de Steam, pieza a pieza: cabecera (avatar, nombre,
+// resumen, nivel, insignia destacada y acciones), columna izquierda (vitrinas,
+// actividad reciente y comentarios) y columna derecha (estado, insignias,
+// juegos, capturas y amigos). El tema del perfil (s-theme-*) pone los colores.
 
-function gameCard(g, c, { big = false } = {}) {
-  if (!g) return null;
-  const ach = g.ach && g.ach[1] ? g.ach : null;
+/** "46,3 h" / "1.083 h" como Steam. */
+function hours(minutes = 0) {
+  const h = minutes / 60;
+  const n = h >= 100 ? Math.round(h) : Math.round(h * 10) / 10;
+  return `${n.toLocaleString("es", { useGrouping: "always" })} h`;
+}
+
+const MONTHS = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+/** "28 SEP" (o "28 SEP 2024" si no es de este año). */
+function steamDate(ts) {
+  const d = new Date(ts * 1000);
+  const y = d.getFullYear() === new Date().getFullYear() ? "" : ` ${d.getFullYear()}`;
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}${y}`;
+}
+/** "20 ABR 2023 a las 17:14" */
+const steamStamp = (ts) => {
+  const d = new Date(ts * 1000);
+  return `${steamDate(ts)} a las ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
+
+const pct = (a, b) => (b ? Math.max(0, Math.min(100, Math.round((a / b) * 100))) : 0);
+
+/** Imagen de un juego: la cabecera ancha de Steam, o la portada, o sus iniciales. */
+function capsule(g, c, cls = "") {
+  const url = g?.headerUrl || g?.coverUrl;
+  return url
+    ? h("img", { class: `${c}cap ${cls}${g?.headerUrl ? "" : " is-cover"}`, src: url, alt: "", loading: "lazy", draggable: false })
+    : h("span", { class: `${c}cap is-ph ${cls}` }, initials(g?.title));
+}
+
+/** Barra de logros de Steam: «Avance en los logros 10 de 53» + barra. */
+function achProgress(ach, c) {
+  if (!ach || !ach[1]) return null;
   return h(
     "div",
-    { class: `${c}game${big ? " is-big" : ""}` },
-    g.coverUrl ? h("img", { class: `${c}game-cover`, src: g.coverUrl, alt: "", loading: "lazy" }) : h("span", { class: `${c}game-cover is-ph` }, initials(g.title)),
-    h(
-      "span",
-      { class: `${c}game-main` },
-      h("b", null, g.title),
-      h("small", null, [g.minutes ? `${playtime(g.minutes * 60)} jugadas` : null, g.last ? `última vez ${relative(g.last).toLowerCase()}` : null].filter(Boolean).join(" · ")),
-      ach ? h("span", { class: `${c}bar`, title: `${ach[0]} de ${ach[1]} logros` }, h("i", { style: { width: `${Math.round((ach[0] / ach[1]) * 100)}%` } })) : null,
-      ach ? h("small", null, `${ach[0]} de ${ach[1]} logros`) : null,
-    ),
+    { class: `${c}achsum` },
+    h("span", { class: `${c}achsum-txt` }, h("span", { class: `${c}white` }, "Avance en los logros"), `  ${ach[0]} de ${ach[1]}`),
+    h("span", { class: `${c}achbar` }, h("i", { style: `width: ${pct(ach[0], ach[1])}%` })),
   );
 }
+
+/** Iconos de los logros de un juego que salen en la actividad (y «+N»). */
+function achIcons(p, g, c, max = 5) {
+  const got = (p.activity || []).filter((a) => a.kind === "achievement" && a.data?.game === g.title && a.data.iconUrl);
+  if (!got.length) return null;
+  const shown = got.slice(0, max);
+  const rest = Math.max(0, (g.ach?.[0] || got.length) - shown.length);
+  return h(
+    "div",
+    { class: `${c}achicons` },
+    ...shown.map((a) => h("img", { class: `${c}achicon`, src: a.data.iconUrl, alt: "", title: a.data.name, loading: "lazy" })),
+    rest ? h("span", { class: `${c}achicon is-more` }, `+${rest}`) : null,
+  );
+}
+
+/** Una fila de estadísticas de vitrina (valor grande y etiqueta gris). */
+const statsRow = (c, ...cells) =>
+  h("div", { class: `${c}statrow` }, ...cells.filter(Boolean).map(([v, l]) => h("div", { class: `${c}stat` }, h("div", { class: `${c}stat-v` }, typeof v === "number" ? v.toLocaleString("es", { useGrouping: "always" }) : v), h("div", { class: `${c}stat-l` }, l))));
+
+/** Caja de vitrina de Steam: barra con degradado y el contenido debajo. */
+const custom = (c, title, extra, ...kids) =>
+  h("section", { class: `${c}custom${extra ? ` ${extra}` : ""}` }, h("div", { class: `${c}custom-head` }, title), h("div", { class: `${c}custom-block` }, ...kids));
 
 function showcase(s, p, c) {
   const games = p.summary?.games || [];
   const find = (title) => games.find((g) => g.title === title) || (title ? { title } : null);
-  const box = (title, ...kids) => h("section", { class: `${c}showcase is-${s.type}` }, h("h3", { class: `${c}sc-title` }, title), ...kids);
+  const st = p.summary?.stats || {};
   switch (s.type) {
-    case "featured":
-      return s.game ? box("Juego destacado", gameCard(find(s.game), c, { big: true })) : null;
-    case "favorite":
-      return s.game ? box("Juego favorito", gameCard(find(s.game), c)) : null;
-    case "stats": {
-      const st = p.summary?.stats || {};
-      const cell = (n, l) => h("div", { class: `${c}stat` }, h("b", null, n.toLocaleString("es")), h("small", null, l));
-      return box("Estadísticas", h("div", { class: `${c}stats` }, cell(games.length, "juegos jugados"), cell(Math.round((st.minutes || 0) / 60), "horas"), cell(st.achievements || 0, "logros"), cell(st.perfect || 0, "al 100 %")));
-    }
-    case "recent": {
-      const recent = [...games].filter((g) => g.last).sort((a, b) => b.last - a.last).slice(0, 4);
-      return recent.length ? box("Jugados hace poco", h("div", { class: `${c}games` }, ...recent.map((g) => gameCard(g, c)))) : null;
-    }
-    case "achievements": {
-      const list = (p.activity || []).filter((a) => a.kind === "achievement").slice(0, 6);
-      if (!list.length) return null;
-      return box(
-        "Logros recientes",
+    case "featured": {
+      const g = find(s.game);
+      if (!g) return null;
+      return custom(
+        c,
+        "Juego destacado",
+        `${c}sc-featured`,
         h(
           "div",
-          { class: `${c}achs` },
-          ...list.map((a) =>
-            h(
-              "div",
-              { class: `${c}ach`, title: `${a.data.name} · ${a.data.game}` },
-              a.data.iconUrl ? h("img", { src: a.data.iconUrl, alt: "", loading: "lazy" }) : h("span", { class: `${c}ach-ph` }, "🏆"),
-              h("span", null, h("b", null, a.data.name), h("small", null, `${a.data.game}${a.data.rarity != null ? ` · ${String(Math.round(a.data.rarity * 10) / 10).replace(".", ",")} %` : ""}`)),
-            ),
-          ),
+          { class: `${c}cbg` },
+          capsule(g, c, `${c}cap-big`),
+          h("div", { class: `${c}sc-title` }, g.title),
+          statsRow(c, g.minutes ? [hours(g.minutes).replace(" h", ""), "Horas jugadas"] : null, g.ach?.[1] ? [`${g.ach[0]}/${g.ach[1]}`, "Logros"] : null, g.last ? [steamDate(g.last), "Última sesión"] : null),
         ),
+        g.ach?.[1] ? h("div", { class: `${c}gstats` }, achProgress(g.ach, c), achIcons(p, g, c, 7)) : null,
+      );
+    }
+    case "favorite": {
+      const g = find(s.game);
+      if (!g) return null;
+      return custom(
+        c,
+        "Juego favorito",
+        `${c}sc-favorite`,
+        h(
+          "div",
+          { class: `${c}cbg` },
+          h("div", { class: `${c}favgame` }, capsule(g, c, `${c}cap-184`), h("div", { class: `${c}sc-title` }, g.title), statsRow(c, g.minutes ? [hours(g.minutes).replace(" h", ""), "Horas jugadas"] : null)),
+        ),
+        g.ach?.[1] ? h("div", { class: `${c}gstats` }, achProgress(g.ach, c), achIcons(p, g, c)) : null,
+      );
+    }
+    case "stats":
+      return custom(
+        c,
+        "Estadísticas",
+        `${c}sc-stats`,
+        h("div", { class: `${c}cbg` }, statsRow(c, [st.library || games.length, "Juegos"], [Math.round((st.minutes || 0) / 60), "Horas jugadas"], [st.achievements || 0, "Logros"], [st.perfect || 0, "Juegos perfectos"])),
+      );
+    case "recent": {
+      const recent = [...games].filter((g) => g.last).sort((a, b) => b.last - a.last).slice(0, 4);
+      if (!recent.length) return null;
+      return custom(
+        c,
+        "Jugados hace poco",
+        `${c}sc-collector`,
+        h("div", { class: `${c}cbg` }, h("div", { class: `${c}collector` }, ...recent.map((g) => h("div", { class: `${c}collector-game`, title: `${g.title} · ${hours(g.minutes)}` }, capsule(g, c))))),
+      );
+    }
+    case "achievements": {
+      const list = (p.activity || []).filter((a) => a.kind === "achievement").slice(0, 7);
+      const withAch = games.filter((g) => g.ach?.[1]);
+      if (!list.length && !st.achievements) return null;
+      const avg = withAch.length ? Math.round(withAch.reduce((n, g) => n + g.ach[0] / g.ach[1], 0) / withAch.length * 100) : 0;
+      return custom(
+        c,
+        "Vitrina de logros",
+        `${c}sc-ach`,
+        list.length
+          ? h(
+              "div",
+              { class: `${c}cbg ${c}achgrid` },
+              ...list.map((a) =>
+                a.data.iconUrl
+                  ? h("img", { class: `${c}achbig`, src: a.data.iconUrl, alt: "", loading: "lazy", title: `${a.data.name}\n${a.data.game}${a.data.rarity != null ? ` · ${String(Math.round(a.data.rarity * 10) / 10).replace(".", ",")} %` : ""}` })
+                  : h("span", { class: `${c}achbig is-ph`, title: `${a.data.name}\n${a.data.game}` }, "🏆"),
+              ),
+            )
+          : null,
+        h("div", { class: `${c}cbg` }, statsRow(c, [st.achievements || 0, "Logros"], [st.perfect || 0, "Juegos perfectos"], [`${avg} %`, "Tasa media de finalización"])),
       );
     }
     case "badges": {
-      const list = (p.badges || []).map((b) => badgeEl(b, c, { big: true })).filter(Boolean);
-      return list.length ? box("Insignias", h("div", { class: `${c}badges` }, ...list)) : null;
+      const list = (p.badges || []).map((b) => badgeEl(b, c)).filter(Boolean);
+      if (!list.length) return null;
+      return custom(c, "Coleccionista de insignias", `${c}sc-badges`, h("div", { class: `${c}cbg` }, statsRow(c, [list.length, "Insignias conseguidas"], [p.xp || 0, "EXP"]), h("div", { class: `${c}badgerow` }, ...list)));
     }
-    case "screenshots":
-      return s.urls?.length ? box("Capturas", h("div", { class: `${c}shots n${s.urls.length}` }, ...s.urls.map((u) => h("img", { src: u, alt: "", loading: "lazy" })))) : null;
+    case "screenshots": {
+      const urls = s.urls || [];
+      if (!urls.length) return null;
+      const [first, ...rest] = urls;
+      return custom(
+        c,
+        "Vitrina de capturas",
+        `${c}sc-shots`,
+        h(
+          "div",
+          { class: `${c}shots${rest.length ? "" : " is-single"}` },
+          h("div", { class: `${c}shot-main` }, h("img", { src: first, alt: "", loading: "lazy" })),
+          rest.length ? h("div", { class: `${c}shot-side` }, ...rest.slice(0, 3).map((u) => h("img", { src: u, alt: "", loading: "lazy" })), p.summary?.stats?.shots ? h("div", { class: `${c}shot-count` }, `${p.summary.stats.shots} capturas`) : null) : null,
+        ),
+      );
+    }
     case "text":
-      return s.text ? box(s.title || "Sobre mí", h("p", { class: `${c}sc-text` }, s.text)) : null;
+      return s.text ? custom(c, s.title || "Información personalizada", `${c}sc-text`, h("div", { class: `${c}sc-textbody` }, s.text)) : null;
     default:
       return null;
   }
 }
-
-const DEFAULT_SHOWCASES = [{ type: "recent" }, { type: "stats" }, { type: "achievements" }, { type: "badges" }];
 
 // Nombre del país (Windows no pinta los emojis de banderas).
 let regions;
@@ -562,15 +675,17 @@ const country = (cc) => {
   }
 };
 
+const STATUS_HEAD = { playing: "Actualmente jugando", online: "Actualmente en línea", away: "Actualmente ausente", offline: "Sin conexión" };
+
 /**
- * El perfil de un usuario (o el tuyo, sin `userId`) al estilo Steam: fondo,
- * avatar con marco, nivel, insignias, vitrinas, actividad y comentarios.
- * Con `data` pinta ese perfil tal cual (vista previa del editor, sin acciones).
+ * El perfil de un usuario (o el tuyo, sin `userId`) como la página de perfil
+ * de Steam. Con `data` pinta ese perfil tal cual (vista previa, sin acciones).
  * @param {{ ejg: any, root: HTMLElement, focus?: any, userId?: number | null, data?: any, cls?: string,
- *   labels?: Record<string, string>, onExit?: () => void, onChange?: () => void, onProfile?: (id: number) => void }} opts
+ *   labels?: Record<string, string>, onExit?: () => void, onChange?: () => void, onProfile?: (id: number) => void,
+ *   onBadges?: ((id: number) => void) | null }} opts
  * @returns {{ nav: (a: string) => boolean, hints: () => [string, string][], reload: () => any, update: (d: any) => void, destroy: () => void }}
  */
-export function createProfileView({ ejg, root, focus, userId = null, data = null, cls = "s-", labels = {}, onExit = () => {}, onChange = () => {}, onProfile = () => {} }) {
+export function createProfileView({ ejg, root, focus, userId = null, data = null, cls = "s-", labels = {}, onExit = () => {}, onChange = () => {}, onProfile = () => {}, onBadges = null }) {
   const c = cls;
   const L = { edit: "Editar perfil", ...labels };
   const view = h("div", { class: `${c}view ${c}profile` });
@@ -579,11 +694,13 @@ export function createProfileView({ ejg, root, focus, userId = null, data = null
   let comments = null;
   let message = "";
   let confirm = null;
+  let menu = false;
+  let more = false;
   let destroyed = false;
   const preview = !!data;
   const myId = () => ejg?.account?.state?.social?.me?.id ?? ejg?.account?.state?.userId;
   const id = () => userId ?? myId();
-  const btn = (k, label, onclick, extra = "") => key(h("button", { class: `${c}btn ${extra}`.trim(), "data-focus": "", "data-nav": "", onclick }, label), k);
+  const btn = (k, label, onclick, extra = "") => key(h("button", { class: `${c}pbtn ${extra}`.trim(), "data-focus": "", "data-nav": "", onclick }, h("span", null, label)), k);
 
   async function load() {
     if (preview) return paint();
@@ -614,6 +731,7 @@ export function createProfileView({ ejg, root, focus, userId = null, data = null
       await fn();
       message = okText || "";
       confirm = null;
+      menu = false;
       await load();
     } catch (e) {
       message = String(e?.message || e);
@@ -622,7 +740,7 @@ export function createProfileView({ ejg, root, focus, userId = null, data = null
   }
 
   async function writeComment() {
-    const text = await ejg.ui.keyboard({ title: "Escribe un comentario", placeholder: `Para ${p.name}`, maxLength: 500 });
+    const text = await ejg.ui.keyboard({ title: "Añadir un comentario", placeholder: `Para ${p.profile?.name || p.name}`, maxLength: 500, multiline: true });
     if (!text || !text.trim()) return;
     try {
       await ejg.comments.post(p.id, text.trim());
@@ -636,33 +754,229 @@ export function createProfileView({ ejg, root, focus, userId = null, data = null
   function actions() {
     if (preview) return [];
     const r = p.relation;
+    const name = p.profile?.name || p.name;
     const out = [];
-    if (r === "self") out.push(btn("edit", L.edit, () => ejg.account.openEditor(), "is-primary"));
-    if (r === "none") out.push(btn("add", "Añadir amigo", () => act(() => ejg.friends.add(p.username), "Solicitud enviada."), "is-primary"));
+    if (r === "self") out.push(btn("edit", L.edit, () => ejg.account.openEditor()));
+    if (r === "none") out.push(btn("add", "Añadir amigo", () => act(() => ejg.friends.add(p.username), "Solicitud enviada.")));
     if (r === "outgoing") out.push(btn("cancel", "Cancelar solicitud", () => act(() => ejg.friends.remove(p.id))));
-    if (r === "incoming") out.push(btn("accept", "Aceptar solicitud", () => act(() => ejg.friends.accept(p.id), `Ahora eres amigo de ${p.name}.`), "is-primary"), btn("decline", "Rechazar", () => act(() => ejg.friends.decline(p.id))));
-    if (r === "friend")
-      out.push(
-        confirm === "remove" ? btn("remove", "¿Seguro? Quitar", () => act(() => ejg.friends.remove(p.id)), "is-danger") : btn("remove", "Quitar de amigos", () => ((confirm = "remove"), paint())),
-      );
+    if (r === "incoming") out.push(btn("accept", "Aceptar solicitud", () => act(() => ejg.friends.accept(p.id), `Ahora eres amigo de ${name}.`)), btn("decline", "Ignorar", () => act(() => ejg.friends.decline(p.id))));
     if (r === "blocked") out.push(btn("unblock", "Desbloquear", () => act(() => ejg.friends.unblock(p.id))));
-    else if (r !== "self")
-      out.push(confirm === "block" ? btn("block", "¿Seguro? Bloquear", () => act(() => ejg.friends.block(p.id)), "is-danger") : btn("block", "Bloquear", () => ((confirm = "block"), paint())));
+    if (r === "friend" || r === "none" || r === "outgoing" || r === "incoming") {
+      // «Más ▾» con lo que Steam esconde en su menú.
+      out.push(btn("more", "Más ▾", () => ((menu = !menu), (confirm = null), paint(), menu && focusKey(r === "friend" ? "remove" : "block")), `${c}pbtn-more${menu ? " is-open" : ""}`));
+    }
     return out;
   }
 
-  function commentsBox() {
+  function moreMenu() {
+    if (!menu || preview) return null;
+    const r = p.relation;
+    const item = (k, label, onclick, danger) => key(h("button", { class: `${c}pmenu-item${danger ? " is-danger" : ""}`, "data-focus": "", "data-nav": "", onclick }, label), k);
+    return h(
+      "div",
+      { class: `${c}pmenu` },
+      r === "friend"
+        ? confirm === "remove"
+          ? item("remove", "¿Seguro? Eliminar de amigos", () => act(() => ejg.friends.remove(p.id)), true)
+          : item("remove", "Eliminar de amigos", () => ((confirm = "remove"), paint(), focusKey("remove")))
+        : null,
+      confirm === "block" ? item("block", "¿Seguro? Bloquear toda comunicación", () => act(() => ejg.friends.block(p.id)), true) : item("block", "Bloquear toda comunicación", () => ((confirm = "block"), paint(), focusKey("block"))),
+    );
+  }
+
+  function focusKey(k) {
+    const el = view.querySelector(`[data-key="${CSS.escape(k)}"]`);
+    if (el && focus) focus.focus(el, { noScroll: true, silent: true });
+  }
+
+  function commentsArea() {
     if (preview || p.commentsOff) return null;
-    const list = comments === null ? [h("div", { class: `${c}empty` }, "Cargando…")] : comments.length ? comments.map((cm) =>
+    const me = ejg?.account?.state?.social?.me;
+    const list =
+      comments === null
+        ? [h("div", { class: `${c}cthread-empty` }, "Cargando…")]
+        : comments.map((cm) =>
+            h(
+              "div",
+              { class: `${c}comment` },
+              key(h("button", { class: `${c}comment-av`, "data-focus": "", "data-nav": "", onclick: () => onProfile(cm.author.id), title: cm.author.name }, avatar(cm.author, { size: "s", cls: c })), `cm${cm.id}`),
+              h(
+                "div",
+                { class: `${c}comment-main` },
+                h(
+                  "div",
+                  { class: `${c}comment-author` },
+                  h("span", { class: `${c}comment-name` }, cm.author.name),
+                  h("span", { class: `${c}comment-time`, title: new Date(cm.at * 1000).toLocaleString("es") }, steamStamp(cm.at)),
+                  cm.canDelete ? key(h("button", { class: `${c}comment-del`, "data-focus": "", "data-nav": "", onclick: () => act(async () => { await ejg.comments.remove(cm.id); await loadComments(); }), title: "Eliminar" }, "Eliminar"), `del${cm.id}`) : null,
+                ),
+                h("div", { class: `${c}comment-text` }, cm.text),
+              ),
+            ),
+          );
+    return h(
+      "div",
+      { class: `${c}cthread` },
+      h("div", { class: `${c}cthread-head` }, h("span", null, "Comentarios"), comments?.length ? h("span", { class: `${c}cthread-count` }, `${comments.length}${comments.length >= 20 ? "+" : ""}`) : null),
+      p.canComment
+        ? h(
+            "div",
+            { class: `${c}centry` },
+            me ? avatar({ ...me, avatarUrl: me.profile?.avatarUrl, frame: "", name: me.profile?.name || me.name }, { size: "s", cls: c }) : null,
+            key(h("button", { class: `${c}centry-box`, "data-focus": "", "data-nav": "", onclick: writeComment }, "Añadir un comentario"), "write"),
+            key(h("button", { class: `${c}cbtn`, "data-focus": "", "data-nav": "", onclick: writeComment }, h("span", null, "Publicar comentario")), "post"),
+          )
+        : null,
+      h("div", { class: `${c}comments` }, ...list),
+    );
+  }
+
+  function recentActivity() {
+    const games = [...(p.summary?.games || [])].filter((g) => g.last).sort((a, b) => b.last - a.last).slice(0, 3);
+    if (!games.length) return null;
+    const recent = p.summary?.stats?.recent;
+    return h(
+      "section",
+      { class: `${c}custom ${c}recent` },
+      h("div", { class: `${c}custom-head ${c}recent-head` }, h("div", null, "Actividad reciente"), recent != null ? h("div", { class: `${c}recent-time` }, `${hours(recent)} en estas 2 semanas`) : null),
       h(
         "div",
-        { class: `${c}comment` },
-        key(h("button", { class: `${c}comment-who`, "data-focus": "", "data-nav": "", onclick: () => onProfile(cm.author.id) }, avatar(cm.author, { size: "s", cls: c })), `cm${cm.id}`),
-        h("div", { class: `${c}comment-main` }, h("div", { class: `${c}comment-head` }, h("b", null, cm.author.name), h("small", null, relative(cm.at))), h("p", null, cm.text)),
-        cm.canDelete ? btn(`del${cm.id}`, "✕", () => act(async () => { await ejg.comments.remove(cm.id); await loadComments(); }), `${c}comment-del`) : null,
+        { class: `${c}custom-block` },
+        ...games.map((g) =>
+          h(
+            "div",
+            { class: `${c}rgame` },
+            h(
+              "div",
+              { class: `${c}rgame-info` },
+              capsule(g, c, `${c}cap-184`),
+              h("div", { class: `${c}rgame-details` }, `${hours(g.minutes)} registradas`, h("br"), `última sesión: ${steamDate(g.last)}`),
+              h("div", { class: `${c}rgame-name` }, g.title),
+            ),
+            g.ach?.[1] ? h("div", { class: `${c}gstats` }, achProgress(g.ach, c), achIcons(p, g, c)) : null,
+          ),
+        ),
       ),
-    ) : [h("div", { class: `${c}empty` }, "Aún no hay comentarios.")];
-    return h("section", { class: `${c}showcase is-comments` }, h("h3", { class: `${c}sc-title` }, "Comentarios"), p.canComment ? btn("write", "Escribir un comentario", writeComment, `${c}write`) : null, ...list);
+    );
+  }
+
+  function rightCol() {
+    const kind = p.presence ? presenceKind(p.presence) : null;
+    const badges = [...(p.badges || [])].sort((a, b) => (b.tier || 0) - (a.tier || 0));
+    const st = p.summary?.stats || {};
+    const count = (label, n, ...preview) => h("div", { class: `${c}count` }, h("div", { class: `${c}count-link` }, h("span", null, label), "  ", h("span", { class: `${c}count-total` }, n == null ? " " : n.toLocaleString("es", { useGrouping: "always" }))), preview.length ? h("div", { class: `${c}count-preview` }, ...preview) : null);
+    const friends = p.topFriends || [];
+    return h(
+      "div",
+      { class: `${c}rc` },
+      kind
+        ? h(
+            "div",
+            { class: `${c}ingame is-${kind}` },
+            h("div", { class: `${c}ingame-head` }, STATUS_HEAD[kind]),
+            kind === "playing" ? h("div", { class: `${c}ingame-name` }, p.presence.game) : null,
+            kind === "offline" && p.presence.lastSeen ? h("div", { class: `${c}ingame-last` }, `Última conexión ${relative(p.presence.lastSeen).toLowerCase()}`) : null,
+          )
+        : null,
+      badges.length
+        ? h(
+            "div",
+            { class: `${c}rblock` },
+            onBadges && !preview
+              ? key(h("button", { class: `${c}count-btn`, "data-focus": "", "data-nav": "", onclick: () => onBadges(p.id) }, count("Insignias", badges.length, h("div", { class: `${c}rbadges` }, ...badges.slice(0, 4).map((b) => badgeEl(b, c))))), "badges")
+              : count("Insignias", badges.length, h("div", { class: `${c}rbadges` }, ...badges.slice(0, 4).map((b) => badgeEl(b, c)))),
+          )
+        : null,
+      h(
+        "div",
+        { class: `${c}rblock` },
+        count("Juegos", st.library ?? p.summary?.games?.length ?? 0),
+        st.shots ? count("Capturas", st.shots) : null,
+        p.memberSince ? h("div", { class: `${c}count` }, h("div", { class: `${c}count-link` }, h("span", null, "Miembro desde"), "  ", h("span", { class: `${c}count-since` }, steamDate(p.memberSince)))) : null,
+      ),
+      h(
+        "div",
+        { class: `${c}rblock` },
+        count(
+          "Amigos",
+          p.friends ?? 0,
+          ...friends.map((f) => {
+            const k = f.presence ? presenceKind(f.presence) : "offline";
+            return key(
+              h(
+                "button",
+                { class: `${c}fblock is-${k}`, "data-focus": "", "data-nav": "", onclick: () => onProfile(f.id), disabled: preview },
+                avatar(f, { size: "fb", cls: c }),
+                h("span", { class: `${c}fblock-main` }, h("span", { class: `${c}fblock-name` }, f.name), h("span", { class: `${c}fblock-sub` }, k === "playing" ? ["jugando", h("br"), f.presence.game] : k === "offline" ? "Sin conexión" : k === "away" ? "Ausente" : "En línea")),
+                levelBadge(f.level || 0, c),
+              ),
+              `tf${f.id}`,
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  function header() {
+    const prof = p.profile || {};
+    const kind = p.presence ? presenceKind(p.presence) : "offline";
+    const badges = p.badges || [];
+    const featured = badges.find((b) => b.id === prof.featuredBadge) || null;
+    const fav = featured ? badgeInfo(featured) : null;
+    const bio = prof.bio || "";
+    const long = bio.length > 190 || bio.split("\n").length > 3;
+    const place = country(p.country || prof.country);
+    return h(
+      "div",
+      { class: `${c}ph-bg` },
+      h(
+        "div",
+        { class: `${c}ph-tex` },
+        h(
+          "div",
+          { class: `${c}ph` },
+          h("div", { class: `${c}pavatar is-${kind === "away" ? "online" : kind}` }, avatar(p, { size: "xl", cls: c })),
+          h(
+            "div",
+            { class: `${c}ph-center` },
+            h(
+              "div",
+              { class: `${c}persona` },
+              h("div", { class: `${c}persona-name` }, prof.name || p.name),
+              prof.realName || place ? h("div", { class: `${c}realname` }, prof.realName ? h("bdi", null, prof.realName) : null, place ? h("div", { class: `${c}location` }, place) : null) : null,
+            ),
+            bio
+              ? h(
+                  "div",
+                  { class: `${c}summary-wrap` },
+                  h("div", { class: `${c}summary${more ? " is-open" : ""}` }, bio),
+                  long ? key(h("button", { class: `${c}summary-more ${c}white`, "data-focus": "", "data-nav": "", onclick: () => ((more = !more), paint()) }, more ? "Ver menos" : "Ver más información"), "more-info") : null,
+                )
+              : preview
+                ? h("div", { class: `${c}summary is-empty` }, "No hay información.")
+                : null,
+          ),
+          h(
+            "div",
+            { class: `${c}ph-badgeinfo` },
+            onBadges && !preview
+              ? key(h("button", { class: `${c}plevel is-link`, "data-focus": "", "data-nav": "", onclick: () => onBadges(p.id), title: "Insignias" }, "Nivel ", levelBadge(p.level || 0, c)), "level")
+              : h("div", { class: `${c}plevel` }, "Nivel ", levelBadge(p.level || 0, c)),
+            fav
+              ? h(
+                  "div",
+                  { class: `${c}favbadge` },
+                  h("span", { class: `${c}favbadge-ico` }, badgeEl(featured, c)),
+                  h("span", { class: `${c}favbadge-desc` }, h("span", { class: `${c}favbadge-name` }, `${fav.name} - ${fav.tierName}`), h("span", { class: `${c}favbadge-xp` }, `${(fav.tier * 50).toLocaleString("es")} EXP`)),
+                )
+              : null,
+            h("div", { class: `${c}ph-actions` }, ...actions()),
+            moreMenu(),
+          ),
+        ),
+      ),
+    );
   }
 
   function paint() {
@@ -670,60 +984,23 @@ export function createProfileView({ ejg, root, focus, userId = null, data = null
     const had = focus?.current && view.contains(focus.current) ? focus.current.dataset.key : null;
     const prof = p.profile || {};
     const bgUrl = p.backgroundImageUrl || prof.backgroundImageUrl;
-    view.className = `${c}view ${c}profile ${profileSkin(p, c)}${bgUrl ? " has-image" : ""}`;
-    const bg = h("div", { class: `${c}backdrop`, style: bgUrl ? { backgroundImage: `url("${bgUrl}")` } : {} });
-    const presence = p.presence;
-    const featured = (p.badges || []).find((b) => b.id === prof.featuredBadge) || (p.badges || [])[0];
-    const head = h(
-      "header",
-      { class: `${c}phead` },
-      avatar(p, { size: "xl", cls: c }),
-      h(
-        "div",
-        { class: `${c}pname` },
-        h("h2", null, prof.name || p.name),
-        h("div", { class: `${c}pmeta` }, [prof.realName, country(p.country)].filter(Boolean).join(" · ") || `@${p.username}`),
-        presence ? h("div", { class: `${c}ppresence is-${presenceKind(presence)}` }, h("i", { class: `${c}dot` }), presenceText(presence)) : null,
-        prof.bio ? h("p", { class: `${c}bio` }, prof.bio) : null,
-      ),
-      h(
-        "div",
-        { class: `${c}plevel` },
-        h("div", null, "Nivel ", levelBadge(p.level || 0, c)),
-        featured ? badgeEl(featured, c, { big: true }) : null,
-        h("div", { class: `${c}pactions` }, ...actions()),
-      ),
-    );
+    const theme = p.color ?? prof.color ?? "";
+    const bg = p.background ?? prof.background ?? "";
+    view.className = `${c}view ${c}profile ${c}skin${theme ? ` ${c}theme-${theme}` : ""}${bg && !bgUrl ? ` ${c}bg-${bg}` : ""}${bgUrl ? " has-image" : ""}${bgUrl || bg ? " has-bg" : ""}${preview ? " is-preview" : ""}`;
+    const backdrop = h("div", { class: `${c}backdrop`, style: bgUrl ? `background-image: url("${bgUrl}")` : "" });
+    let content;
     if (p.private) {
-      view.replaceChildren(bg, h("div", { class: `${c}pwrap` }, head, h("div", { class: `${c}empty` }, "Este perfil es privado."), message ? h("div", { class: `${c}msg` }, message) : null));
+      content = h("div", { class: `${c}pc is-private` }, h("div", { class: `${c}private` }, "Este perfil es privado."));
     } else {
-      // Sin vitrinas elegidas, las de siempre (las que no tengan datos no salen).
-      const chosen = prof.showcases?.length ? prof.showcases : DEFAULT_SHOWCASES;
-      const main = h("div", { class: `${c}pmain` }, ...chosen.map((s) => showcase(s, p, c)).filter(Boolean), commentsBox());
-      const xp = p.xp || 0;
-      const lv = p.level || 0;
-      const pct = Math.max(0, Math.min(100, Math.round(((xp - xpFor(lv)) / Math.max(1, xpFor(lv + 1) - xpFor(lv))) * 100)));
-      const side = h(
-        "aside",
-        { class: `${c}pside` },
-        h("section", { class: `${c}showcase` }, h("h3", { class: `${c}sc-title` }, `Nivel ${lv}`), h("span", { class: `${c}bar` }, h("i", { style: { width: `${pct}%` } })), h("small", null, `${xp.toLocaleString("es")} XP · ${(xpFor(lv + 1) - xp).toLocaleString("es")} para el nivel ${lv + 1}`)),
-        (p.badges || []).length ? h("section", { class: `${c}showcase` }, h("h3", { class: `${c}sc-title` }, `Insignias (${p.badges.length})`), h("div", { class: `${c}badges is-small` }, ...p.badges.map((b) => badgeEl(b, c)).filter(Boolean))) : null,
-        h(
-          "section",
-          { class: `${c}showcase` },
-          h("div", { class: `${c}facts` }, h("span", null, h("b", null, String(p.summary?.games?.length ?? 0)), " juegos"), h("span", null, h("b", null, String(p.friends ?? 0)), " amigos"), p.memberSince ? h("span", null, "Desde ", h("b", null, new Date(p.memberSince * 1000).toLocaleDateString("es", { month: "short", year: "numeric" }))) : null),
-        ),
-        (p.activity || []).length
-          ? h(
-              "section",
-              { class: `${c}showcase` },
-              h("h3", { class: `${c}sc-title` }, "Actividad reciente"),
-              ...p.activity.slice(0, 6).map((a) => h("div", { class: `${c}mini-act` }, activityText({ ...a, user: { id: p.id, name: prof.name || p.name } }, myId()), h("small", null, relative(a.at)))),
-            )
-          : null,
+      const chosen = prof.showcases || [];
+      content = h(
+        "div",
+        { class: `${c}pc` },
+        h("div", { class: `${c}lc` }, ...chosen.map((s) => showcase(s, p, c)).filter(Boolean), recentActivity(), commentsArea()),
+        rightCol(),
       );
-      view.replaceChildren(bg, h("div", { class: `${c}pwrap` }, head, message ? h("div", { class: `${c}msg` }, message) : null, h("div", { class: `${c}pbody` }, main, side)));
     }
+    view.replaceChildren(h("div", { class: `${c}ppage` }, backdrop, header(), message ? h("div", { class: `${c}pmsg` }, message) : null, content));
     if (focus && !preview) {
       const again = had && view.querySelector(`[data-key="${CSS.escape(had)}"]`);
       if (again) focus.focus(again, { noScroll: true, silent: true });
@@ -736,9 +1013,11 @@ export function createProfileView({ ejg, root, focus, userId = null, data = null
   return {
     nav(a) {
       if (a === "back") {
-        if (confirm) {
+        if (confirm || menu) {
           confirm = null;
+          menu = false;
           paint();
+          focusKey("more");
           return true;
         }
         return onExit() !== false;
@@ -747,9 +1026,13 @@ export function createProfileView({ ejg, root, focus, userId = null, data = null
         writeComment();
         return true;
       }
+      if (a === "y" && p?.relation === "self" && !preview) {
+        ejg.account.openEditor();
+        return true;
+      }
       return false;
     },
-    hints: () => [["accept", "Elegir"], ...(p?.canComment ? [["x", "Comentar"]] : []), ["back", "Atrás"]],
+    hints: () => [["accept", "Elegir"], ...(p?.canComment ? [["x", "Comentar"]] : []), ...(p?.relation === "self" ? [["y", L.edit]] : []), ["back", "Atrás"]],
     reload: load,
     /** Cambia los datos de la vista previa. */
     update(next) {
@@ -763,12 +1046,162 @@ export function createProfileView({ ejg, root, focus, userId = null, data = null
   };
 }
 
+// ───────────────────────────── insignias ─────────────────────────────
+
+/** Lo que mide cada insignia, sacado del perfil (resumen, amigos y antigüedad). */
+function badgeValues(p) {
+  const st = p.summary?.stats || {};
+  const games = p.summary?.games || [];
+  return {
+    collector: st.library ?? games.length,
+    achiever: st.achievements || 0,
+    marathon: Math.floor((st.minutes || 0) / 60),
+    completionist: st.perfect || 0,
+    explorer: games.filter((g) => (g.minutes || 0) >= 60).length,
+    veteran: p.memberSince ? Math.floor((Date.now() / 1000 - p.memberSince) / (365 * 86400)) : 0,
+    social: p.friends || 0,
+  };
+}
+
+/**
+ * La página de insignias de Steam: nivel y experiencia arriba y cada insignia
+ * con su nivel, lo que falta para el siguiente y su barra.
+ * @param {{ ejg: any, root: HTMLElement, focus?: any, userId?: number | null, cls?: string,
+ *   onExit?: () => void, onChange?: () => void, onProfile?: (id: number) => void }} opts
+ * @returns {{ nav: (a: string) => boolean, hints: () => [string, string][], reload: () => any, destroy: () => void }}
+ */
+export function createBadgesView({ ejg, root, focus, userId = null, cls = "s-", onExit = () => {}, onChange = () => {}, onProfile = () => {} }) {
+  const c = cls;
+  const view = h("div", { class: `${c}view ${c}profile ${c}badgespage` });
+  root.replaceChildren(view);
+  let p = null;
+  let destroyed = false;
+  const myId = () => ejg?.account?.state?.social?.me?.id ?? ejg?.account?.state?.userId;
+  const id = () => userId ?? myId();
+
+  async function load() {
+    view.replaceChildren(h("div", { class: `${c}empty` }, "Cargando las insignias…"));
+    try {
+      p = await ejg.profiles.view(id());
+      if (!destroyed) paint();
+    } catch (e) {
+      view.replaceChildren(h("div", { class: `${c}empty` }, String(e?.message || e)));
+      onChange();
+    }
+  }
+
+  function paint() {
+    const prof = p.profile || {};
+    const theme = p.color ?? prof.color ?? "";
+    const bgUrl = p.backgroundImageUrl || prof.backgroundImageUrl;
+    const bg = p.background ?? prof.background ?? "";
+    view.className = `${c}view ${c}profile ${c}badgespage ${c}skin${theme ? ` ${c}theme-${theme}` : ""}${bg && !bgUrl ? ` ${c}bg-${bg}` : ""}${bgUrl ? " has-image" : ""}${bgUrl || bg ? " has-bg" : ""}`;
+    const name = prof.name || p.name;
+    const lv = p.level || 0;
+    const xp = p.xp || 0;
+    const need = Math.max(0, xpFor(lv + 1) - xp);
+    const done = pct(xp - xpFor(lv), xpFor(lv + 1) - xpFor(lv));
+    const num = (n) => n.toLocaleString("es", { useGrouping: "always" });
+    const head = h(
+      "div",
+      { class: `${c}ph-bg ${c}ph-small` },
+      h(
+        "div",
+        { class: `${c}ph-tex` },
+        h(
+          "div",
+          { class: `${c}bhead` },
+          key(h("button", { class: `${c}bhead-who`, "data-focus": "", "data-nav": "", onclick: () => onProfile(p.id), title: "Ver el perfil" }, avatar(p, { size: "l", cls: c }), h("span", { class: `${c}bhead-name` }, name)), "who"),
+          h("span", { class: `${c}bhead-sep` }, "»"),
+          h("span", { class: `${c}bhead-page` }, "Insignias"),
+        ),
+      ),
+    );
+    let content;
+    if (p.private) content = h("div", { class: `${c}pc is-private` }, h("div", { class: `${c}private` }, "Este perfil es privado."));
+    else {
+      const vals = badgeValues(p);
+      const owned = new Map((p.badges || []).map((b) => [b.id, b.tier || 0]));
+      const rows = Object.entries(BADGES)
+        .map(([bid, def]) => ({ bid, def, tier: owned.get(bid) || 0, value: vals[bid] ?? 0 }))
+        .sort((a, b) => b.tier - a.tier);
+      content = h(
+        "div",
+        { class: `${c}pc ${c}bpage` },
+        h(
+          "div",
+          { class: `${c}xpblock` },
+          h("div", { class: `${c}xp-level` }, h("span", null, "Nivel"), levelBadge(lv, c)),
+          h(
+            "div",
+            { class: `${c}xp-main` },
+            h("div", { class: `${c}xp-total` }, `EXP: ${num(xp)}`),
+            h("span", { class: `${c}achbar ${c}xp-bar` }, h("i", { style: `width: ${done}%` })),
+            h("div", { class: `${c}xp-need` }, `Gana ${num(need)} EXP para subir al nivel ${lv + 1}`),
+          ),
+          h("div", { class: `${c}xp-count` }, h("b", null, String((p.badges || []).length)), ` de ${Object.keys(BADGES).length} insignias`),
+        ),
+        h(
+          "div",
+          { class: `${c}brows` },
+          ...rows.map(({ bid, def, tier, value }) => {
+            const next = def.th[tier];
+            const from = tier ? def.th[tier - 1] : 0;
+            const info = tier ? badgeInfo({ id: bid, tier }) : null;
+            return h(
+              "div",
+              { class: `${c}brow${tier ? "" : " is-locked"}` },
+              h("span", { class: `${c}brow-ico` }, badgeEl({ id: bid, tier: Math.max(1, tier) }, c)),
+              h(
+                "div",
+                { class: `${c}brow-main` },
+                h("div", { class: `${c}brow-title` }, def.name),
+                h("div", { class: `${c}brow-sub` }, info ? `Nivel ${tier} (${info.tierName}), ${num(tier * 50)} EXP · ${info.text}` : "Sin conseguir"),
+                h("div", { class: `${c}brow-now` }, `Ahora: ${def.unit(value)}`),
+              ),
+              h(
+                "div",
+                { class: `${c}brow-next` },
+                next
+                  ? [
+                      h("div", null, `Siguiente nivel: ${def.unit(next)}`),
+                      h("span", { class: `${c}achbar` }, h("i", { style: `width: ${pct(value - from, next - from)}%` })),
+                      h("small", null, `${num(Math.min(value, next))} / ${num(next)}`),
+                    ]
+                  : h("div", { class: `${c}brow-max` }, "Nivel máximo"),
+              ),
+            );
+          }),
+        ),
+      );
+    }
+    view.replaceChildren(h("div", { class: `${c}ppage` }, h("div", { class: `${c}backdrop`, style: bgUrl ? `background-image: url("${bgUrl}")` : "" }), head, content));
+    if (focus && (!focus.current || !focus.current.isConnected || !view.contains(focus.current))) focus.first(view);
+    onChange();
+  }
+
+  load();
+  return {
+    nav: (a) => (a === "back" ? onExit() !== false : false),
+    hints: () => [
+      ["accept", "Ver el perfil"],
+      ["back", "Atrás"],
+    ],
+    reload: load,
+    destroy() {
+      destroyed = true;
+      view.remove();
+    },
+  };
+}
+
 // ───────────────────────────── amigos + perfiles en un contenedor ─────────────────────────────
 
 /**
  * Amigos y perfiles en un mismo sitio: la lista, y al elegir a alguien su
  * perfil (Atrás vuelve a la lista). Lo que monta cada tema en su capa.
- * `start`: "friends" | "profile" (con `userId`; sin él, el tuyo).
+ * `start`: "friends" | "requests" | "activity" (pestañas de la lista),
+ * "profile" o "badges" (con `userId`; sin él, los tuyos).
  * @param {{ ejg: any, root: HTMLElement, focus?: any, start?: string, userId?: number | null, cls?: string,
  *   labels?: Record<string, string>, onExit?: () => void, onChange?: () => void }} opts
  * @returns {{ nav: (a: string) => boolean, hints: () => [string, string][], open: (start: string, userId?: number | null) => void, readonly depth: number, destroy: () => void }}
@@ -784,15 +1217,21 @@ export function createSocialView({ ejg, root, focus, start = "friends", userId =
     }
     return onExit() !== false;
   };
+  const push = (entry) => {
+    stack.push(entry);
+    show();
+  };
   function show() {
     view?.destroy();
     const top = stack[stack.length - 1];
-    const common = { ejg, root, focus, cls, onChange, onExit: back, onProfile: (id) => (stack.push({ kind: "profile", id }), show()) };
-    view = top.kind === "friends" ? createFriendsView({ ...common, labels }) : createProfileView({ ...common, userId: top.id });
+    const common = { ejg, root, focus, cls, onChange, onExit: back, onProfile: (id) => push({ kind: "profile", id }) };
+    if (top.kind === "friends") view = createFriendsView({ ...common, tab: top.tab, labels });
+    else if (top.kind === "badges") view = createBadgesView({ ...common, userId: top.id });
+    else view = createProfileView({ ...common, userId: top.id, onBadges: (id) => push({ kind: "badges", id }) });
     onChange();
   }
   function open(s, id = null) {
-    stack = [s === "profile" ? { kind: "profile", id } : { kind: "friends" }];
+    stack = [s === "profile" || s === "badges" ? { kind: s, id } : { kind: "friends", tab: s }];
     show();
   }
   open(start, userId);

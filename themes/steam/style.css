@@ -422,3 +422,47 @@ main::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.24
 .social-body .s-friends .s-panel { overflow: visible; }
 .social-body .s-btn.is-primary { background: linear-gradient(90deg, #47bfff, #1a44c2); }
 .social-body .s-tab.is-on { background: rgba(103, 193, 245, 0.18); color: #fff; }
+
+/* ─── tu cuenta: la pestaña con tu nombre y el menú de tu foto ─── */
+.tab-wrap { position: relative; height: 100%; display: flex; }
+.tab-new { margin-left: 8px; padding: 2px 6px; border-radius: 2px; background: linear-gradient(90deg, #75b022, #588a1b); color: #d2efa9; font-size: 10px; letter-spacing: 0.04em; }
+.tab-menu { position: absolute; top: calc(100% - 6px); left: 4px; z-index: 60; display: none; min-width: 220px; padding: 6px 0; background: #3d4450; box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6); animation: menu-in 0.1s ease-out; }
+.tab-wrap:hover:not(.is-done) .tab-menu, .tab-wrap:has(.is-focused) .tab-menu { display: block; }
+.tab-menu-item { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 16px; text-align: left; font-size: 13.5px; color: #dcdedf; letter-spacing: 0.02em; white-space: nowrap; }
+.tab-menu-item:hover, .tab-menu-item.is-focused { background: #dcdedf; color: #171a21; }
+.tab-menu-count { margin-left: auto; font-size: 11px; color: #57cbde; }
+.tab-menu-count.is-req { color: #a4d007; }
+.tab-menu-item:hover .tab-menu-count, .tab-menu-item.is-focused .tab-menu-count { color: #3d4450; }
+.tab-menu-note { max-width: 260px; padding: 6px 16px 10px; font-size: 12px; line-height: 1.45; color: #acb2b8; white-space: normal; }
+:root[data-mode="tv"] .tab-menu-item { font-size: 16px; padding: 10px 18px; }
+
+.profile-btn .caret { width: 14px; height: 14px; margin-left: -2px; color: var(--muted); stroke-width: 2; }
+.profile-btn[data-status] .avatar { box-shadow: 0 0 0 1px #0e141b, 0 0 0 2px #6a6a6a; }
+.profile-btn[data-status="online"] .avatar { box-shadow: 0 0 0 1px #0e141b, 0 0 0 2px #57cbde; }
+.profile-btn[data-status="away"] .avatar { box-shadow: 0 0 0 1px #0e141b, 0 0 0 2px #e3a23b; }
+.acct-menu { min-width: 280px; max-width: 340px; }
+.acct-head { display: flex; align-items: center; gap: 12px; padding: 10px 16px 12px; }
+.acct-head .s-avatar { --size: 48px; border-radius: 2px; }
+.acct-head .s-avatar img, .acct-head .s-avatar-ph { border-radius: 2px; }
+.acct-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.acct-name { font-size: 16px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-name.is-online { color: #57cbde; }
+.acct-name.is-away { color: #e3a23b; }
+.acct-name.is-invisible { color: #8f98a0; }
+.acct-who small { font-size: 12px; color: #acb2b8; }
+.acct-lvl { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.acct-lvl .s-level { width: 22px; height: 22px; font-size: 11px; color: #fff; }
+.acct-head.is-promo { flex-direction: column; align-items: flex-start; gap: 4px; }
+.acct-promo-title { font-size: 15px; color: #fff; }
+.acct-head.is-promo p { margin: 0; font-size: 12px; line-height: 1.45; color: #acb2b8; white-space: normal; }
+.menu-item.primary { margin: 2px 12px 6px; width: calc(100% - 24px); border-radius: 2px; text-align: center; background: linear-gradient(90deg, #47bfff, #1a44c2); color: #fff; }
+.menu-item.primary:hover, .menu-item.primary.is-focused { background: linear-gradient(90deg, #66ccff, #2355d1); color: #fff; }
+.menu-item.has-dot::after { content: ""; display: inline-block; width: 8px; height: 8px; margin-left: 10px; border-radius: 50%; background: #6a6a6a; vertical-align: middle; }
+.menu-item.dot-online::after { background: #57cbde; }
+.menu-item.dot-away::after { background: #e3a23b; }
+.menu-item.dot-invisible::after { background: transparent; box-shadow: inset 0 0 0 1.5px #8f98a0; }
+/* Amigos, perfiles e insignias ocupan la página entera, como en Steam. */
+.social-page { padding: 0; }
+.social-page .guides-top { display: none; }
+.guides-body.social-body { max-width: none; height: calc(100vh - var(--top-h) - var(--bottom-h)); }
+.social-body .s-friends { margin-top: 18px; }

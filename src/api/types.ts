@@ -409,6 +409,8 @@ export interface Settings {
   screenshotDir: string;
   achievementDirs: string[];
   firstRunDone: boolean;
+  /** Perfiles que ya han visto el aviso de las cuentas. */
+  accountPromoSeen: number[];
   exploreEnabled: boolean;
   exploreHideAdult: boolean;
   downloadDir: string;

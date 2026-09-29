@@ -53,6 +53,8 @@ pub struct Settings {
     /// Carpetas extra donde buscar `<appid>chievements.*` de emuladores.
     pub achievement_dirs: Vec<String>,
     pub first_run_done: bool,
+    /// Perfiles locales que ya han visto el aviso de las cuentas de ejGames.
+    pub account_promo_seen: Vec<i64>,
 
     // ── Explorar y descargas ──
     pub explore_enabled: bool,
@@ -121,6 +123,7 @@ impl Default for Settings {
             screenshot_dir: String::new(),
             achievement_dirs: vec![],
             first_run_done: false,
+            account_promo_seen: vec![],
             explore_enabled: true,
             explore_hide_adult: true,
             download_dir: String::new(),

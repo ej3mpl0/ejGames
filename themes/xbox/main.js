@@ -392,9 +392,9 @@ ejg.explore.onEnabled(() => {
   else updateQueueUi();
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
-ejg.ui.onView(({ view, slug, gameId, guideId, userId }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId, userId, tab }) => {
   if (view === "guides" && gameId) return openGuides(gameId, guideId);
-  if (view === "friends" || view === "profile") return openSocial(view, userId ?? null);
+  if (view === "friends" || view === "profile" || view === "badges") return openSocial(view === "friends" ? tab || "friends" : view, userId ?? null);
   closeGuides();
   if (!player.hidden) closePlayer();
   if (!hub.hidden) closeHub();

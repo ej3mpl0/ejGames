@@ -152,6 +152,9 @@ fn with_urls(v: &mut Value) {
             if let Some(url) = map.get("icon").and_then(|c| c.as_str()).and_then(crate::explore::images::proxy) {
                 map.insert("iconUrl".into(), Value::String(url));
             }
+            if let Some(url) = map.get("header").and_then(|c| c.as_str()).and_then(crate::explore::images::proxy) {
+                map.insert("headerUrl".into(), Value::String(url));
+            }
             for (_, x) in map.iter_mut() {
                 with_urls(x);
             }

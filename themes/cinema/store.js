@@ -1,7 +1,8 @@
 // Explorar y Mis descargas del tema Cinema: cartelera con los populares del
 // día, filas de capturas, top 10, filas por género (se cargan al llegar a
-// ellas), la página de un género con su desplegable «Géneros», ficha en la
-// hoja modal con «Más títulos similares», diálogo de descarga y la lista de
+// ellas), la página de un género con su desplegable «Géneros», la lista de deseados
+// (la lista de deseados: fila en la portada y su página), ficha en la hoja
+// modal con «Más títulos similares», diálogo de descarga y la lista de
 // descargas con su anillo de progreso. La lógica común está en
 // /_sdk/kit/store.js.
 
@@ -25,6 +26,9 @@ import {
   emptyFilters,
   SORTS,
   SIZES,
+  WISH_SORTS,
+  sortWishlist,
+  toggleWish,
 } from "/_sdk/kit/store.js";
 
 const I = {
@@ -44,6 +48,8 @@ const I = {
   chev: '<svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>',
   disk: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15h.01M11 15h6"/></svg>',
   caret: '<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>',
+  plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  list: '<svg viewBox="0 0 24 24"><path d="M4 6h12M4 12h12M4 18h8M18 15v6M15 18h6"/></svg>',
 };
 const RING = '<svg viewBox="0 0 36 36"><circle class="rg-bg" cx="18" cy="18" r="15.5"/><circle class="rg-fg" cx="18" cy="18" r="15.5" pathLength="100"/></svg><i></i>';
 const RING_ICON = { queued: I.clock, paused: I.pause, seeding: I.box, completed: I.box, installed: I.check, error: I.alert };
@@ -81,7 +87,8 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
   });
   const queue = createDownloads(ejg, () => onDownloads());
   let view = "home";
-  const sv = { page: "front" };
+  // page: "front" | "catalog" | "search" | "wish" (lista de deseados).
+  const sv = { page: "front", wishSort: "added" };
   // Filas por género de la portada: se piden al llegar a ellas y se guardan.
   const genreCache = new Map();
   let drop = null; // desplegable «Géneros» u «Ordenar»
@@ -90,10 +97,17 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
   let sheet = null;
   let dialog = null;
   let askOpen = null;
+  // La lista de deseados del perfil (en este PC). «Mi lista» ya es la de la biblioteca.
+  const wl = ejg.explore.wishlist;
+  let wishSet = new Set(wl.items.map((x) => x.slug));
+  let wishSig = ""; // los juegos de la lista ya pintados (para no repintar por nada)
+  const wishBusy = new Set(); // añadiendo o quitando (sin dobles pulsaciones)
 
   const run = (p) => Promise.resolve(p).catch((e) => ejg.ui.toast(e.message || String(e), "error"));
   const remember = (list) => list.forEach((r) => known.set(r.slug, { ...known.get(r.slug), ...r }));
   const dedupe = (list) => list.filter((r, k) => list.findIndex((x) => x.slug === r.slug) === k);
+  const wished = (slug) => !!slug && wishSet.has(slug);
+  remember(wl.items);
 
   // ─────────────── estado de cada juego (en vivo con la cola) ───────────────
   function live(r) {
@@ -137,12 +151,17 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
     return h("div", { class: "sc-ph", style: { background: `linear-gradient(135deg, hsl(${hue} 40% 26%), hsl(${(hue + 40) % 360} 45% 11%))` } });
   };
 
+  /** Marca de «en tu lista de deseados» en las tarjetas (fuera de la propia lista). */
+  const wishMark = (slug) => h("span", { class: "sc-wish", hidden: !wished(slug), html: I.check });
+
+  /** `opts.wish`: tarjeta de la fila de deseados; `opts.mark: false`, sin la marca. */
   function card(r, opts = {}) {
     const el = h(
       "button",
-      { class: "sc", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), title: r.title },
+      { class: "sc", "data-focus": "", "data-slug": r.slug, "data-wish": opts.wish ? r.slug : null, onclick: () => openRepack(r.slug), title: r.title },
       h("div", { class: "sc-art" }, r.hero ? img(r.hero) : r.cover ? img(r.cover, { class: "fit" }) : placeholder(r.title)),
       opts.fresh ? h("span", { class: "sc-new" }, "Novedad") : null,
+      opts.wish || opts.mark === false ? null : wishMark(r.slug),
       h("span", { class: "sc-tag", hidden: true }),
       h(
         "div",
@@ -172,7 +191,7 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
         "div",
         { class: "track", "data-focus-group": `s-${id}` },
         ...list.map((r) => card(r, opts)),
-        opts.more ? h("button", { class: "sc sc-more", "data-focus": "", onclick: opts.more }, h("span", { html: I.chev }), h("b", null, "Ver todo")) : null,
+        opts.more ? h("button", { class: "sc sc-more", "data-focus": "", "data-k": `more-${id}`, onclick: opts.more }, h("span", { html: I.chev }), h("b", null, "Ver todo")) : null,
       ),
     );
   }
@@ -188,6 +207,7 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
           "div",
           { class: "t10-art" },
           r.cover ? img(r.cover) : h("span", { class: "t10-ph" }, r.title),
+          wishMark(r.slug),
           h("span", { class: "sc-tag", hidden: true }),
           h("div", { class: "sc-bar", hidden: true }, h("i")),
         ),
@@ -272,13 +292,22 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
     onUi();
   }
 
-  /** Cabecera de la página: «Juegos» y el desplegable «Géneros», como en las plataformas de series. */
-  function pageHead(title) {
+  /** Cabecera de la página: «Juegos», el desplegable «Géneros» y «Deseados», como en las plataformas de series. */
+  function pageHead(title, genres = true) {
     return h(
       "div",
       { class: "nf-head", "data-focus-group": "nf-head" },
       h("h1", null, title),
-      h("button", { class: "nf-drop-btn", "data-focus": "", "data-k": "d-genre", onclick: (e) => openDrop("genre", e.currentTarget) }, h("span", null, "Géneros"), h("span", { html: I.caret })),
+      genres
+        ? h("button", { class: "nf-drop-btn", "data-focus": "", "data-k": "d-genre", onclick: (e) => openDrop("genre", e.currentTarget) }, h("span", null, "Géneros"), h("span", { html: I.caret }))
+        : null,
+      h(
+        "button",
+        { class: "nf-wish", "data-focus": "", "data-k": "mylist", onclick: () => openWishlist() },
+        h("span", { html: I.list }),
+        h("span", null, "Deseados"),
+        h("span", { class: "nbadge", hidden: !wl.items.length }, String(wl.items.length)),
+      ),
     );
   }
 
@@ -328,26 +357,29 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
     { passive: true },
   );
 
-  /** Desplegable negro con los géneros en columnas (o el orden), bajo su botón. */
+  /** Desplegable negro con los géneros en columnas (o el orden: "sort" del catálogo, "wsort" de los deseados), bajo su botón. */
   function openDrop(kind, anchor) {
     closeDrop(true);
     store.loadGenres();
     const f = store.state.catalog.filters;
     const cur = sv.page === "catalog" && f.genres.length === 1 ? f.genres[0] : null;
+    const one = kind !== "genre";
     const opt = (k, label, on, fn) => h("button", { class: "nf-opt" + (on ? " on" : ""), "data-focus": "", "data-k": k, onclick: fn }, label);
     const items =
-      kind === "sort"
-        ? SORTS.map((o) => opt(`o-${o.id}`, o.label, f.sort === o.id, () => (closeDrop(), store.browse({ sort: o.id }))))
-        : [
-            opt("o-all", "Todos los géneros", sv.page === "catalog" && !f.genres.length, () => openCatalog({ sort: f.sort })),
-            ...store.state.genres.map((g) => opt(`o-${g.id}`, g.name, cur === g.id, () => openCatalog({ genres: [g.id], sort: f.sort }))),
-          ];
-    const box = h("div", { class: "nf-drop" + (kind === "sort" ? " one" : ""), "data-focus-group": "nf-drop" }, ...items);
+      kind === "wsort"
+        ? WISH_SORTS.map((o) => opt(`o-${o.id}`, o.label, sv.wishSort === o.id, () => (closeDrop(), (sv.wishSort = o.id), paint(true))))
+        : kind === "sort"
+          ? SORTS.map((o) => opt(`o-${o.id}`, o.label, f.sort === o.id, () => (closeDrop(), store.browse({ sort: o.id }))))
+          : [
+              opt("o-all", "Todos los géneros", sv.page === "catalog" && !f.genres.length, () => openCatalog({ sort: f.sort })),
+              ...store.state.genres.map((g) => opt(`o-${g.id}`, g.name, cur === g.id, () => openCatalog({ genres: [g.id], sort: f.sort }))),
+            ];
+    const box = h("div", { class: "nf-drop" + (one ? " one" : ""), "data-focus-group": "nf-drop" }, ...items);
     const layer = h("div", { class: "nf-drop-layer", "data-focus-trap": "", onclick: (e) => e.target === layer && closeDrop() }, box);
     document.body.append(layer);
     const a = anchor.getBoundingClientRect();
     box.style.top = `${a.bottom + 4}px`;
-    if (kind === "sort") box.style.right = `${Math.max(12, innerWidth - a.right)}px`;
+    if (one) box.style.right = `${Math.max(12, innerWidth - a.right)}px`;
     else box.style.left = `${a.left}px`;
     box.style.maxHeight = `${innerHeight - a.bottom - 30}px`;
     drop = { layer, anchor, kind };
@@ -367,6 +399,147 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
     }
     return true;
   }
+
+  // ─────────────── lista de deseados ───────────────
+  const wishSigOf = () => wl.items.map((x) => x.slug).join(",");
+
+  /** Añade o quita un juego (con su aviso); el repintado llega con onChange. */
+  function wish(r) {
+    if (!r?.slug || wishBusy.has(r.slug)) return;
+    wishBusy.add(r.slug);
+    toggleWish(ejg, r).finally(() => wishBusy.delete(r.slug));
+  }
+
+  /** «Añadido hace 3 días» */
+  const addedText = (ts) => {
+    if (!ts) return "";
+    const t = relative(ts);
+    return `Añadido ${t[0].toLowerCase()}${t.slice(1)}`;
+  };
+
+  /** Fila «Tu lista de deseados» de la portada (oculta mientras la lista esté vacía). */
+  function wishRow() {
+    const items = sortWishlist(wl.items, sv.wishSort).slice(0, 20);
+    wishSig = wishSigOf();
+    remember(items);
+    return row("wish", "Tu lista de deseados", items, { wish: true, more: () => openWishlist() }) || h("section", { class: "s-row", id: "s-wish", hidden: true });
+  }
+
+  /** Página «Lista de deseados»: los juegos en tarjetas, con su orden. */
+  function openWishlist() {
+    if (view !== "explore") goView("explore");
+    closeSheet(true);
+    closeDrop(true);
+    searchInput.value = "";
+    searchBox.classList.remove("open");
+    sv.page = "wish";
+    stopBillboard();
+    main.scrollTo({ top: 0, behavior: "instant" });
+    paint();
+    focus.focus(root.querySelector(".wl-grid [data-focus]") || root.querySelector("[data-focus]"), { silent: true, noScroll: true });
+    onUi();
+  }
+
+  function wishPage() {
+    const items = sortWishlist(wl.items, sv.wishSort);
+    wishSig = wishSigOf();
+    remember(items);
+    const sortLabel = WISH_SORTS.find((o) => o.id === sv.wishSort)?.label || WISH_SORTS[0].label;
+    return h(
+      "div",
+      { class: "s-results nf-cat wl-page" },
+      h(
+        "div",
+        { class: "nf-cat-bar" },
+        h("div", { class: "nf-head" }, h("h1", null, "Lista de deseados"), items.length ? h("span", { class: "wl-total" }, count(items.length)) : null),
+        items.length
+          ? h("button", { class: "nf-sort", "data-focus": "", "data-k": "d-wsort", onclick: (e) => openDrop("wsort", e.currentTarget) }, h("span", null, sortLabel), h("span", { html: I.caret }))
+          : null,
+      ),
+      items.length
+        ? h("div", { class: "s-grid wl-grid", "data-focus-group": "wl-grid" }, ...items.map(wishItem))
+        : h(
+            "div",
+            { class: "d-empty wl-empty" },
+            h("span", { class: "d-empty-ico", html: I.list }),
+            h("h2", null, "Tu lista está vacía"),
+            h("p", null, "Añade juegos con «+ Deseados» desde su ficha y los tendrás aquí a mano. La lista se guarda en este PC, solo para este perfil."),
+            h("button", { class: "hbtn play", "data-focus": "", onclick: () => setQuery("") }, "Descubrir juegos"),
+          ),
+    );
+  }
+
+  /** Tarjeta de la página con su tamaño, fecha, cuándo se añadió y «Quitar». */
+  function wishItem(r) {
+    return h(
+      "div",
+      { class: "wl-item", "data-wish": r.slug },
+      card(r, { mark: false }),
+      h(
+        "div",
+        { class: "wl-foot" },
+        h("div", { class: "wl-meta" }, h("span", null, [sizeText(r.repackSize), year(r.date)].filter(Boolean).join("  ·  ")), h("small", null, addedText(r.addedAt))),
+        h("button", {
+          class: "round wl-x",
+          "data-focus": "",
+          "data-k": `wx-${r.slug}`,
+          title: "Quitar de la lista de deseados",
+          "aria-label": "Quitar de la lista de deseados",
+          onclick: () => wish(r),
+          html: I.check + I.x,
+        }),
+      ),
+    );
+  }
+
+  /** Si se va de la lista el juego con el foco (o el que abrió la ficha), pasa al de al lado. */
+  function keepWishAnchor() {
+    const cur = sheet ? sheet.prev : focus.current;
+    const box = cur?.isConnected ? cur.closest("[data-wish]") : null;
+    if (!box || wished(box.dataset.wish)) return;
+    const sibs = [...box.parentNode.children];
+    const i = sibs.indexOf(box);
+    const next = [...sibs.slice(i + 1), ...sibs.slice(0, i).reverse()].find((x) => wished(x.dataset.wish));
+    if (!next) return;
+    const el = cur === box ? next : next.querySelector(cur.classList.contains("wl-x") ? ".wl-x" : ".sc");
+    if (sheet) sheet.prev = el;
+    else focus.focus(el, { silent: true, noScroll: true });
+  }
+
+  /** La fila de la portada, en su sitio (sin repintar lo demás). */
+  function repaintWishRow() {
+    const old = root.querySelector("#s-wish");
+    if (!old) return;
+    const cur = old.contains(focus.current) ? focus.current : null;
+    const sec = wishRow();
+    old.replaceWith(sec);
+    if (!cur) return;
+    const again = refind(cur) || root.querySelector(".s-rows [data-focus]");
+    if (again) focus.focus(again, { silent: true, noScroll: true });
+  }
+
+  function onWish() {
+    const items = wl.items;
+    wishSet = new Set(items.map((x) => x.slug));
+    remember(items);
+    updateSheetWish();
+    if (view !== "explore") return;
+    keepWishAnchor();
+    // Contador de la cabecera, marcas de las tarjetas y su estado (descargando, instalado…).
+    const badge = root.querySelector('[data-k="mylist"] .nbadge');
+    if (badge) {
+      badge.hidden = !items.length;
+      badge.textContent = String(items.length);
+    }
+    root.querySelectorAll(".sc-wish").forEach((m) => (m.hidden = !wished(m.closest("[data-slug]")?.dataset.slug)));
+    for (const r of items) root.querySelectorAll(`[data-slug="${CSS.escape(r.slug)}"]`).forEach((el) => el.querySelector(".sc-tag") && applyStatus(el, known.get(r.slug)));
+    if (wishSigOf() === wishSig) return;
+    if (sv.page === "wish") {
+      if (!items.length && drop?.kind === "wsort") closeDrop(true);
+      paint(true);
+    } else if (sv.page === "front") repaintWishRow();
+  }
+  wl.onChange(onWish);
 
   // ─────────────── cartelera ───────────────
   function billboard(list) {
@@ -461,11 +634,14 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
     return h(
       "div",
       { class: "s-front" },
-      store.state.genres.length ? h("div", { class: "nf-over" }, pageHead("Juegos")) : null,
+      // «Géneros» cuando ya estén; «Deseados», siempre.
+      h("div", { class: "nf-over" }, pageHead("Juegos", store.state.genres.length > 0)),
       billboard((today.length ? today : week).filter((r) => r.hero).slice(0, 6)),
       h(
         "div",
         { class: "s-rows" },
+        // La lista de deseados, la primera bajo la cartelera (como en las plataformas de series).
+        wishRow(),
         top10(top),
         row("week", by.week?.title || "Populares de la semana", week),
         row("latest", "Novedades", latest, { fresh: true, more: () => openCatalog({ sort: "date" }) }),
@@ -597,6 +773,7 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
           "div",
           { class: "hero-actions", "data-focus-group": "s-sheet-act" },
           btn,
+          setWishBtn(h("button", { class: "s-wishbtn", "data-focus": "", "data-k": "wish", onclick: () => wish(r) }), wished(r.slug)),
           r.url ? h("button", { class: "hbtn info", "data-focus": "", "data-k": "web", onclick: () => run(ejg.explore.openPage(r.slug)), html: `${I.ext}<span>Ver en FitGirl</span>` }) : null,
         ),
       ),
@@ -629,7 +806,9 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
       ["Instalado", sizeText(d?.installSize)],
     ].filter((f) => f[1]);
     const shots = d?.screenshots || [];
+    // Sin los huecos vacíos: replaceChildren pintaría «null».
     box.replaceChildren(
+      ...[
       hero,
       h(
         "div",
@@ -669,6 +848,7 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
       d ? similarSec(d) : null,
       error ? h("p", { class: "s-err s-pad" }, error) : null,
       h("div", { class: "s-foot" }),
+      ].filter(Boolean),
     );
     // Descripción larga: recortada con «Leer más».
     if (d?.description || featsLeft) {
@@ -705,6 +885,20 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
     return sec;
   }
 
+  /** Botón redondo «+ Deseados» / «✓ En deseados» de la ficha. */
+  function setWishBtn(b, on) {
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-label", on ? "Quitar de la lista de deseados" : "Añadir a la lista de deseados");
+    b.innerHTML = `<span class="round">${on ? I.check : I.plus}</span><span class="s-wish-lb">${on ? "En deseados" : "Deseados"}</span>`;
+    return b;
+  }
+
+  function updateSheetWish() {
+    const b = sheet?.box.querySelector('[data-k="wish"]');
+    const on = wished(sheet?.slug);
+    if (b && b.classList.contains("on") !== on) setWishBtn(b, on);
+  }
+
   function updateSheetAction() {
     if (!sheet) return;
     const r = sheet.d || sheet.r;
@@ -723,7 +917,9 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
     sheet.layer.remove();
     sheet = null;
     if (!silent) {
-      if (prev?.isConnected) focus.focus(prev, { silent: true });
+      // Si la vista se repintó debajo (p. ej. la de deseados), el mismo elemento en la nueva.
+      const again = prev?.isConnected ? prev : refind(prev);
+      if (again) focus.focus(again, { silent: true });
       else focus.first(root);
       onUi();
     }
@@ -1081,11 +1277,25 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
   }
 
   // ─────────────── pintar ───────────────
+  /** El mismo elemento tras repintar: por su data-k, el mismo juego (en su fila si sigue) o su descarga. */
+  function refind(el) {
+    if (!el) return null;
+    const k = el.dataset?.k;
+    const slug = el.closest?.("[data-slug]")?.dataset.slug;
+    const dl = el.closest?.("[data-dl]")?.dataset.dl;
+    const group = el.closest?.("[data-focus-group]")?.dataset.focusGroup;
+    const s = slug && `[data-slug="${CSS.escape(slug)}"]`;
+    return (
+      (k && root.querySelector(`[data-k="${CSS.escape(k)}"]`)) ||
+      (s && group && root.querySelector(`[data-focus-group="${CSS.escape(group)}"] ${s}`)) ||
+      (s && root.querySelector(s)) ||
+      (dl && root.querySelector(`[data-dl="${dl}"] [data-focus]`)) ||
+      null
+    );
+  }
+
   function paint(keepFocus = false) {
     const prev = keepFocus ? focus.current : null;
-    const slug = prev?.closest?.("[data-slug]")?.dataset.slug;
-    const dl = prev?.closest?.("[data-dl]")?.dataset.dl;
-    const k = prev?.dataset?.k;
     const wasEmpty = !root.querySelector("[data-focus]");
     const top = main.scrollTop;
     if (view === "downloads") {
@@ -1097,17 +1307,13 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
         startBillboard();
       } else {
         stopBillboard();
-        root.replaceChildren(sv.page === "catalog" ? catalogPage() : results());
+        root.replaceChildren(sv.page === "catalog" ? catalogPage() : sv.page === "wish" ? wishPage() : results());
       }
     } else return;
     if (keepFocus) main.scrollTop = top;
     const free = !sheet && !dialog && !askOpen;
     if (keepFocus && prev && !prev.isConnected) {
-      const again =
-        (k && root.querySelector(`[data-k="${k}"]`)) ||
-        (slug && root.querySelector(`[data-slug="${CSS.escape(slug)}"]`)) ||
-        (dl && root.querySelector(`[data-dl="${dl}"] [data-focus]`)) ||
-        null;
+      const again = refind(prev);
       if (again) focus.focus(again, { silent: true, noScroll: true });
       else if (free) focus.first(root);
     } else if (wasEmpty && free && (!focus.current?.isConnected || focus.current.id === "nav-explore")) {

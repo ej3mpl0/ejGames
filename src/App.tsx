@@ -89,7 +89,7 @@ export default function App() {
   async function enter(p: Profile) {
     set({ profile: p });
     await loadLibrary();
-    set({ account: await api.accountState().catch(() => null) });
+    set({ account: await api.accountState().catch(() => null), wishlist: await api.wishlist().catch(() => []) });
     useApp.getState().closeAll();
     setPhase("main");
     checkOnLaunch();
@@ -133,6 +133,7 @@ export default function App() {
       on("scan:progress", (s) => set({ scan: s })),
       on("app:toast", (t) => useApp.getState().toast(t.kind, t.message)),
       on("social:changed", (a) => set({ account: a })),
+      on("wishlist:changed", (list) => set({ wishlist: list })),
       on("social:notice", (n) => useApp.getState().toast("info", n.body ? `${n.title}: ${n.body}` : n.title, { label: "Amigos", run: () => useApp.getState().open("social") })),
       on("theme:changed", (t) => {
         // El elegido, no el que se ve: con su theme.json roto se ve Steam y,
@@ -140,7 +141,11 @@ export default function App() {
         const st = useApp.getState();
         if ((st.themeOverride ?? st.profile?.themeId) === t.id) void reloadTheme();
       }),
-      on("downloads:changed", (list) => setDownloads(list)),
+      on("downloads:changed", (list) => {
+        setDownloads(list);
+        // El estado de lo deseado (descargando, instalado…) va con las descargas.
+        if (useApp.getState().wishlist.length) void api.wishlist().then((w) => set({ wishlist: w }), () => {});
+      }),
       on("downloads:progress", (list) => mergeProgress(list)),
       on("downloads:finished", (d) =>
         useApp.getState().toast("ok", `«${d.title}» descargado`, { label: "Instalar", run: () => void installDownload(d.id) }),

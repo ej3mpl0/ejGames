@@ -478,6 +478,16 @@ export interface Ejg {
     keyboard(opts?: { title?: string; value?: string; placeholder?: string; maxLength?: number }): Promise<string | null>;
   };
   explore: {
+    /** Lista de deseados de la tienda (por perfil, solo en este PC). */
+    wishlist: {
+      readonly items: (Repack & { addedAt: number })[];
+      has(slug: string): boolean;
+      add(slug: string): Promise<any[]>;
+      remove(slug: string): Promise<any[]>;
+      /** true si queda en la lista. */
+      toggle(slug: string): Promise<boolean>;
+      onChange(fn: (items: (Repack & { addedAt: number })[]) => void): () => void;
+    };
     readonly enabled: boolean;
     onEnabled(fn: (enabled: boolean) => void): () => void;
     home(): Promise<{ sections: { id: "today" | "week" | "month" | "latest" | string; title: string; items: Repack[] }[] }>;

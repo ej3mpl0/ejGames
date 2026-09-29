@@ -10,6 +10,7 @@ pub mod genres;
 pub mod images;
 pub mod parse;
 pub mod steamart;
+pub mod wishlist;
 
 use crate::db::repo;
 use crate::library::names;

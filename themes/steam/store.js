@@ -1,7 +1,7 @@
 // Tienda y Descargas del tema Steam: portada con destacados y categorías, la
 // búsqueda con filtros (el catálogo entero, como la de Steam), página de
-// producto con su caja de compra y «Más como este», diálogo «Instalar» y el
-// gestor de descargas con la gráfica de red. La lógica común está en
+// producto con su caja de compra y «Más como este», la lista de deseados,
+// diálogo «Instalar» y el gestor de descargas con la gráfica de red. La lógica común está en
 // /_sdk/kit/store.js.
 
 import { h, img, keyed, debounce } from "/_sdk/kit/dom.js";
@@ -26,6 +26,9 @@ import {
   SIZES,
   GENRE_GROUPS,
   MAX_GENRES,
+  WISH_SORTS,
+  sortWishlist,
+  toggleWish,
 } from "/_sdk/kit/store.js";
 
 const I = {
@@ -44,6 +47,7 @@ const I = {
   check: '<svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
   globe: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9S9.5 5.5 12 3Z"/></svg>',
   caret: '<svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>',
+  heart: '<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6.2 5 5 0 0 1 21.2 11c-2.2 4.6-9.2 9-9.2 9Z"/></svg>',
 };
 
 /** Categorías de la portada («Explora por categoría»): id del género y su tono. */
@@ -74,6 +78,10 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
   let tabRef = () => "library";
   let carousel = { i: 0, timer: 0 };
   let dialog = null;
+  // Lista de deseados: orden y filtro de su página.
+  let wishSort = "added";
+  let wishQuery = "";
+  const wished = (slug) => ejg.explore.wishlist.has(slug);
   const active = () => tabRef();
 
   // ─────────────── piezas ───────────────
@@ -90,7 +98,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
 
   function badge(r) {
     const s = r.status?.state;
-    if (!s || s === "none") return null;
+    if (!s || s === "none") return wished(r.slug) ? h("span", { class: "owned wish" }, "EN TU LISTA DE DESEADOS") : null;
     const text = {
       installed: "EN LA BIBLIOTECA",
       library: "EN LA BIBLIOTECA",
@@ -163,13 +171,29 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
         ),
         h("label", { class: "sn-search" }, navInput, h("span", { class: "sn-go", html: I.search, onclick: () => openCatalog({ ...store.state.catalog.filters, query: navInput.value }) })),
       );
+      // Como en Steam: «Lista de deseados (N)» encima de la barra, a la derecha.
+      links.wish = h("button", { class: "sn-wish", "data-focus": "", onclick: () => openWish() }, "Lista de deseados", h("span", { class: "sn-wish-n" }));
       content = h("div", { class: "store-content" });
-      shell = h("div", { class: "store" }, h("div", { class: "store-top" }, nav), content);
+      shell = h("div", { class: "store" }, h("div", { class: "store-top" }, h("div", { class: "store-over" }, links.wish), nav), content);
     }
+    wishCount();
     if (main.firstChild !== shell || main.childNodes.length !== 1) main.replaceChildren(shell);
     const on = view.name === "detail" ? view.prev : view.name === "list" ? view.list : view.name;
     for (const [id, el] of Object.entries(links)) el.classList.toggle("on", id === on);
     if (document.activeElement !== navInput) navInput.value = view.name === "catalog" || view.prev === "catalog" ? store.state.catalog.filters.query || "" : "";
+  }
+
+  /** El número de la lista en el botón de la barra. */
+  function wishCount() {
+    const n = ejg.explore.wishlist.items.length;
+    links.wish?.querySelector(".sn-wish-n")?.replaceChildren(n ? ` (${n})` : "");
+  }
+
+  function openWish() {
+    view.name = "wish";
+    paint();
+    main.scrollTop = 0;
+    focus.first(main.querySelector(".wish-page") || main);
   }
 
   function goFront() {
@@ -628,6 +652,126 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     }
   }
 
+  /** Lo que hace el botón principal de una ficha (descargar, instalar, jugar…). */
+  function runAction(r) {
+    const act = repackAction(r);
+    if (act.id === "download") return openDialog(r);
+    if (act.id === "install" && r.status.downloadId) return ejg.downloads.install(r.status.downloadId).catch((e) => ejg.ui.toast(e.message, "error"));
+    if (act.id === "play" && r.status.gameId) return ejg.game.launch(r.status.gameId).catch((e) => ejg.ui.toast(e.message, "error"));
+    goTab("downloads");
+  }
+
+  /** «Añadir a tu lista de deseados» / «En tu lista de deseados», como el de Steam. */
+  function wishButton(r) {
+    const on = wished(r.slug);
+    return h(
+      "button",
+      { class: "btn-wish" + (on ? " on" : ""), "data-focus": "", "data-key": "wish", onclick: () => toggleWish(ejg, r) },
+      on ? h("span", { class: "ico", html: I.check }) : null,
+      on ? "En tu lista de deseados" : "Añadir a tu lista de deseados",
+    );
+  }
+
+  // ─────────────── lista de deseados ───────────────
+  const addedDate = (t) => new Date(t * 1000).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" }).replace(".", "");
+  function wishRow(r) {
+    const act = repackAction(r);
+    return h(
+      "div",
+      { class: "wrow", "data-slug": r.slug },
+      h("button", { class: "wrow-cap", "data-focus": "", onclick: () => openRepack(r.slug), title: r.title }, wide(r)),
+      h(
+        "div",
+        { class: "wrow-main" },
+        h("button", { class: "wrow-title", "data-focus": "", onclick: () => openRepack(r.slug) }, r.title),
+        h("div", { class: "wrow-meta" }, h("span", { class: "trow-plat", html: I.win }), h("span", null, `Publicado: ${date(r.date)}`)),
+        r.genres.length ? h("div", { class: "wrow-tags" }, ...r.genres.slice(0, 5).map((g) => h("span", null, genreLabel(g)))) : null,
+      ),
+      h(
+        "div",
+        { class: "wrow-side" },
+        h(
+          "div",
+          { class: "wrow-buy" },
+          // En la lista no hace falta decir que está en la lista: su estado o su tamaño.
+          h("span", { class: "wrow-price" }, (r.status?.state && r.status.state !== "none" ? badge(r) : null) || sizeText(r.repackSize) || "—"),
+          h("button", { class: "buy-btn" + (act.id === "downloads" ? " blue" : ""), "data-focus": "", onclick: () => runAction(r) }, act.label),
+        ),
+        h(
+          "div",
+          { class: "wrow-added" },
+          `Añadido el ${addedDate(r.addedAt)} `,
+          h("button", { class: "wrow-rm", "data-focus": "", onclick: () => toggleWish(ejg, r) }, "(quitar)"),
+        ),
+      ),
+    );
+  }
+
+  function wishPage() {
+    const all = ejg.explore.wishlist.items;
+    const q = wishQuery.trim().toLowerCase();
+    const items = sortWishlist(all, wishSort).filter((r) => !q || r.title.toLowerCase().includes(q) || r.genres.some((g) => genreLabel(g).toLowerCase().includes(q)));
+    const name = ejg.profile?.name || "";
+    const search = h("input", {
+      class: "wish-search",
+      placeholder: "Buscar por nombre o etiqueta",
+      spellcheck: "false",
+      "data-focus": "",
+      "data-key": "wish-q",
+      value: wishQuery,
+      oninput: debounce((e) => {
+        wishQuery = e.target.value;
+        paint(true);
+      }, 120),
+    });
+    const list = h("div", { class: "wrows", "data-focus-group": "wish" });
+    keyed(list, items, (r) => r.slug, (r) => wishRow(r));
+    return h(
+      "div",
+      { class: "wish-page" },
+      h("div", { class: "wish-head" }, h("h2", null, name ? `Lista de deseados de ${name}` : "Tu lista de deseados"), h("span", { class: "muted" }, "Se guarda en este PC, solo para este perfil.")),
+      all.length
+        ? h(
+            "div",
+            { class: "wish-tools" },
+            search,
+            h(
+              "div",
+              { class: "wish-sorts" },
+              h("span", { class: "muted" }, "Ordenar por:"),
+              ...WISH_SORTS.map((o) =>
+                h(
+                  "button",
+                  {
+                    class: "wish-sort" + (wishSort === o.id ? " on" : ""),
+                    "data-focus": "",
+                    "data-key": `wsort-${o.id}`,
+                    onclick: () => {
+                      wishSort = o.id;
+                      paint(true);
+                    },
+                  },
+                  o.label,
+                ),
+              ),
+            ),
+          )
+        : null,
+      all.length
+        ? items.length
+          ? list
+          : h("div", { class: "store-empty small" }, h("p", null, "Ningún juego de tu lista coincide con la búsqueda."))
+        : h(
+            "div",
+            { class: "store-empty" },
+            h("span", { class: "wish-empty-ico", html: I.heart }),
+            h("h2", null, "Tu lista de deseados está vacía"),
+            h("p", null, "Añade juegos con «Añadir a tu lista de deseados» en su página. La lista se guarda en este PC, solo para este perfil."),
+            h("button", { class: "btn-steam-sm", "data-focus": "", onclick: () => openCatalog({}) }, "Explorar la tienda"),
+          ),
+    );
+  }
+
   function detailPage() {
     if (view.detailError) return h("div", { class: "store-empty" }, h("h2", null, "No se pudo abrir la ficha"), h("p", null, view.detailError));
     const d = view.detail;
@@ -655,12 +799,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     );
     const act = repackAction(d);
     const short = (d.description || "").replace(/\s+/g, " ").trim();
-    const doAction = () => {
-      if (act.id === "download") return openDialog(d);
-      if (act.id === "install" && d.status.downloadId) return ejg.downloads.install(d.status.downloadId).catch((e) => ejg.ui.toast(e.message, "error"));
-      if (act.id === "play" && d.status.gameId) return ejg.game.launch(d.status.gameId).catch((e) => ejg.ui.toast(e.message, "error"));
-      goTab("downloads");
-    };
+    const doAction = () => runAction(d);
     const glance = [
       ["Publicado", date(d.date)],
       ["Compañías", d.companies],
@@ -700,7 +839,12 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
           h("span", null, " > "),
           h("span", null, d.title),
         ),
-        h("div", { class: "app-head" }, h("h1", { class: "app-title" }, d.title), d.url ? h("button", { class: "btn-steam-sm", "data-focus": "", onclick: () => ejg.explore.openPage(d.slug) }, "Ver la ficha en FitGirl") : null),
+        h(
+          "div",
+          { class: "app-head" },
+          h("h1", { class: "app-title" }, d.title),
+          h("div", { class: "app-head-acts" }, wishButton(d), d.url ? h("button", { class: "btn-steam-sm", "data-focus": "", onclick: () => ejg.explore.openPage(d.slug) }, "Ver la ficha en FitGirl") : null),
+        ),
         h(
           "div",
           { class: "app-top" },
@@ -1121,6 +1265,20 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     onDownloads();
     onChange();
   });
+  ejg.explore.wishlist.onChange(() => {
+    wishCount();
+    if (active() !== "store") return;
+    if (view.name === "detail") {
+      // Solo el botón: la página del juego no se repinta (se perdería la captura elegida).
+      const old = main.querySelector(".btn-wish");
+      if (old && view.detail) {
+        const was = focus.current === old;
+        const next = wishButton(view.detail);
+        old.replaceWith(next);
+        if (was) focus.focus(next, { silent: true, noScroll: true });
+      }
+    } else paint(true);
+  });
 
   // ─────────────── pintar ───────────────
   function paint(keepFocus = false) {
@@ -1134,7 +1292,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
       main.replaceChildren(downloadsPage());
     } else {
       ensureShell();
-      content.replaceChildren(view.name === "detail" ? detailPage() : view.name === "front" ? front() : view.name === "catalog" ? catalogPage() : results());
+      content.replaceChildren(view.name === "detail" ? detailPage() : view.name === "front" ? front() : view.name === "catalog" ? catalogPage() : view.name === "wish" ? wishPage() : results());
     }
     if (keepFocus && prevFocus && !prevFocus.isConnected) {
       const again =

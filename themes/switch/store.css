@@ -159,9 +159,9 @@ svg .f { fill: currentColor; }
 .fi-buy.is-focused, .fi-buy:hover { background: var(--es-hi); box-shadow: 0 0 0 4px var(--bg), 0 0 0 8px var(--accent); }
 .fi-buy.busy.is-focused, .fi-buy.busy:hover { background: var(--dl); }
 .fi-hint { margin: -2px 0 0; text-align: center; color: var(--muted); font-size: 14px; font-weight: 700; }
-.fi-link { height: 50px; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: 25px; background: var(--card); font-size: 16px; font-weight: 800; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14); }
+.fi-link, .fi-wish { height: 50px; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: 25px; background: var(--card); font-size: 16px; font-weight: 800; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14); }
 .fi-link svg { width: 20px; height: 20px; }
-.fi-link.is-focused, .fi-link:hover { box-shadow: 0 0 0 3px var(--bg), 0 0 0 7px var(--accent); }
+.fi-link.is-focused, .fi-link:hover, .fi-wish.is-focused, .fi-wish:hover { box-shadow: 0 0 0 3px var(--bg), 0 0 0 7px var(--accent); }
 .fi-body { margin-top: 30px; }
 .fi-card { position: relative; margin-bottom: 20px; padding: 22px 26px; border-radius: 10px; background: var(--card); }
 .fi-card.is-focused { box-shadow: 0 0 0 4px var(--accent); }
@@ -306,3 +306,38 @@ svg .f { fill: currentColor; }
 .fi-chips .fi-chip { padding: 4px 12px; border-radius: 99px; background: var(--card); color: var(--muted); font-size: 13px; font-weight: 700; }
 .fi-chips .fi-chip.is-focused, .fi-chips .fi-chip:hover { color: var(--fg); box-shadow: 0 0 0 3px var(--accent); }
 .fi-similar { margin-top: 30px; }
+
+/* ─────────────── lista de deseos ─────────────── */
+.es-mi > span:not(.ico) { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.es-count.wish { min-width: 0; padding: 0; background: none; color: var(--muted); font-size: 16px; }
+.es-mi.on .es-count.wish { color: var(--es); }
+/* corazón de los mosaicos que están en la lista */
+.es-heart { position: absolute; z-index: 1; top: 8px; right: 8px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, 0.92); color: var(--es); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); }
+.es-heart svg { width: 17px; height: 17px; stroke-width: 2; }
+/* botón de la ficha */
+.fi-wish svg { width: 22px; height: 22px; color: var(--es); }
+.fi-wish.on { color: var(--es); }
+/* la página: orden en una fila de ajustes y los juegos en filas */
+.wl-sort { margin-bottom: 16px; }
+.wl-list { display: flex; flex-direction: column; padding: 6px; border-radius: 12px; background: var(--card); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); }
+.wl-row { display: flex; align-items: center; gap: 12px; padding-right: 12px; border-bottom: 1px solid var(--line); }
+.wl-row:last-child { border-bottom: 0; }
+.wl-item { flex: 1; min-width: 0; display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 22px; padding: 12px; border-radius: 6px; text-align: left; }
+.wl-item.is-focused, .wl-item:hover { box-shadow: inset 0 0 0 4px var(--accent); }
+.wl-art { position: relative; width: 96px; height: 96px; border-radius: var(--round); overflow: hidden; background: var(--bg); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16); }
+.wl-art img { width: 100%; height: 100%; object-fit: cover; object-position: center 16%; }
+.wl-art .es-ph { position: absolute; inset: 0; display: grid; place-items: center; padding: 8px; text-align: center; font-weight: 800; font-size: 13px; color: #fff; }
+.wl-main { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.wl-main b { font-size: 19px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wl-info { color: var(--muted); font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wl-info:empty, .wl-tag:empty { display: none; }
+.wl-line { min-width: 0; display: flex; align-items: center; gap: 12px; }
+.wl-meta { min-width: 0; color: var(--muted); font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wl-tag { flex: none; display: flex; }
+.wl-tag .es-tag { position: static; max-width: none; }
+.wl-del { flex: none; height: 46px; display: flex; align-items: center; gap: 8px; padding: 0 22px 0 16px; border-radius: 23px; background: var(--bg); font-size: 16px; font-weight: 800; }
+.wl-del svg { width: 22px; height: 22px; color: var(--es); }
+.wl-del.is-focused, .wl-del:hover { box-shadow: 0 0 0 3px var(--card), 0 0 0 7px var(--accent); }
+.wl-big { color: var(--es); }
+:root[data-mode="tv"] .wl-main b { font-size: 21px; }
+:root[data-mode="tv"] .wl-info, :root[data-mode="tv"] .wl-meta { font-size: 17px; }

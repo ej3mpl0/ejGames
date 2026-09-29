@@ -173,6 +173,44 @@ export const GENRE_GROUPS = [
 /** Máximo de géneros a la vez (salen los juegos que los tienen todos). */
 export const MAX_GENRES = 4;
 
+// ───────────────────────────── lista de deseados ─────────────────────────────
+// Los datos van en ejg.explore.wishlist (items, has, toggle, onChange): por
+// perfil y solo en este PC. Esto es lo común para pintarla.
+
+/** Órdenes de la lista de deseados. */
+export const WISH_SORTS = [
+  { id: "added", label: "Añadidos recientemente" },
+  { id: "name", label: "Nombre" },
+  { id: "date", label: "Fecha de publicación" },
+  { id: "size", label: "Tamaño" },
+];
+
+/** La lista en el orden pedido (sin tocar la original). */
+export function sortWishlist(items = [], sort = "added") {
+  const list = [...items];
+  if (sort === "name") list.sort((a, b) => a.title.localeCompare(b.title, "es"));
+  else if (sort === "date") list.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  else if (sort === "size") list.sort((a, b) => (a.repackBytes || Infinity) - (b.repackBytes || Infinity));
+  else list.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+  return list;
+}
+
+/**
+ * Añade o quita un juego de la lista avisando con un toast. `r`: la ficha (o
+ * algo con `slug` y `title`); `name`: cómo la llama el tema en el aviso («tu
+ * lista de deseos», «Mi lista»…). Resuelve con true si queda en la lista.
+ */
+export async function toggleWish(ejg, r, name = "tu lista de deseados") {
+  try {
+    const on = await ejg.explore.wishlist.toggle(r.slug);
+    ejg.ui.toast(on ? `«${r.title}» está en ${name}` : `«${r.title}» ya no está en ${name}`, on ? "ok" : "info");
+    return on;
+  } catch (e) {
+    ejg.ui.toast(String(e?.message || e), "error");
+    return ejg.explore.wishlist.has(r.slug);
+  }
+}
+
 export const emptyFilters = () => ({ query: "", genres: [], sort: "date", maxGb: null, hideOwned: false });
 
 /** Cuántos filtros hay puestos (sin contar el texto ni el orden). */

@@ -1,7 +1,8 @@
 // SHOP y DOWNLOADS del tema Retro: menú de cartuchos con cursor ▶, «TODO» (el
-// catálogo entero con opciones de recreativa: GÉNERO ◀ ROL ▶), ficha a
-// pantalla completa con «MÁS COMO ESTE», diálogo de RPG y cola con barras de
-// bloques. La lógica común está en /_sdk/kit/store.js.
+// catálogo entero con opciones de recreativa: GÉNERO ◀ ROL ▶), «DESEADOS» (la
+// lista de deseados, con ♥ en las filas), ficha a pantalla completa con «MÁS
+// COMO ESTE», diálogo de RPG y cola con barras de bloques. La lógica común
+// está en /_sdk/kit/store.js.
 
 import { h, keyed } from "/_sdk/kit/dom.js";
 import { date } from "/_sdk/kit/format.js";
@@ -23,6 +24,9 @@ import {
   emptyFilters,
   SORTS,
   SIZES,
+  WISH_SORTS,
+  sortWishlist,
+  toggleWish,
 } from "/_sdk/kit/store.js";
 import { pixelate } from "./pixel.js";
 
@@ -32,6 +36,7 @@ const SECTIONS = [
   ["month", "MES", "POPULARES DEL MES", "★ TOP MES"],
   ["latest", "NUEVOS", "NOVEDADES", "NEW!"],
   ["all", "TODO", "TODOS LOS JUEGOS", "CATÁLOGO"],
+  ["wish", "DESEADOS", "LISTA DE DESEADOS", "♥ DESEADO"],
   ["search", "BUSCAR", "BUSCAR", "RESULTADO"],
 ];
 const STATE = {
@@ -67,11 +72,15 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     fillOptions();
     fillList();
   });
-  const view = { sec: "today", ficha: null, detail: null, error: "", back: null };
+  const view = { sec: "today", ficha: null, detail: null, error: "", back: null, wishSort: "added" };
   const latest = { items: null, page: 1, pages: Infinity, loading: false, error: "" };
   let ui = null; // piezas de la pantalla SHOP
   let dialog = null;
   let askOpen = null;
+  // Lista de deseados: por perfil y solo en este PC (la guarda el core).
+  const wish = ejg.explore.wishlist;
+  let wishSig = ""; // slugs de DESEADOS tal como están pintados
+  let wishBusy = false;
 
   // Estado en vivo de un repack (la cola manda sobre lo que trajo la web).
   function live(r) {
@@ -104,10 +113,24 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     }
   }
   const shortSize = (s) => up(sizeText(s).replace(/^(desde|hasta)\s+/i, ""));
+  const heart = () => h("span", { class: "s-heart" }, "♥");
 
   // ─────────────── SHOP ───────────────
   function sectionData() {
     const s = store.state;
+    if (view.sec === "wish") {
+      const items = sortWishlist(wish.items, view.wishSort);
+      wishSig = items.map((r) => r.slug).join(",");
+      return {
+        items,
+        title: "LISTA DE DESEADOS",
+        total: items.length,
+        empty: [
+          h("p", null, "TU LISTA DE DESEADOS ESTÁ VACÍA"),
+          h("p", { class: "dim" }, "EN LA FICHA DE UN JUEGO, PULSA «♡ AÑADIR A DESEADOS». SE GUARDA EN ESTE PC, SOLO PARA ESTE PERFIL."),
+        ],
+      };
+    }
     if (view.sec === "all") {
       const c = s.catalog;
       const g = c.filters.genres.length ? c.filters.genres.map(genreName).join(" + ") : "";
@@ -149,17 +172,38 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
 
   function item(r) {
     const [t, cls] = tag(r);
+    const inWish = view.sec === "wish";
     return h(
       "li",
       null,
       h(
         "button",
         { class: "item s-item", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug) },
-        h("span", { class: "s-t" }, r.title),
+        h("span", { class: "s-t" }, !inWish && wish.has(r.slug) ? heart() : null, r.title),
         h("span", { class: "s-tag " + cls }, t),
         h("span", { class: "s-size" }, shortSize(r.repackSize)),
+        // En DESEADOS, ✕ para quitarlo con el ratón (con mando o teclado, X).
+        inWish ? h("span", { class: "s-x", title: "Quitar de deseados", onclick: (e) => (e.stopPropagation(), wishToggle(r)) }, "✕") : null,
       ),
     );
+  }
+
+  /** Etiqueta de estado y ♥ de una fila ya pintada. */
+  function retag(el, r) {
+    const [t, cls] = tag(r);
+    const b = el.querySelector(".s-tag");
+    if (b.textContent !== t) (b.textContent = t), (b.className = "s-tag " + cls);
+    const s = el.querySelector(".s-t");
+    const m = s.querySelector(".s-heart");
+    const on = view.sec !== "wish" && wish.has(r.slug);
+    if (on && !m) s.prepend(heart());
+    else if (!on && m) m.remove();
+  }
+  function retagAll() {
+    ui.list.querySelectorAll(".s-item").forEach((el) => {
+      const r = bySlug.get(el.dataset.slug);
+      if (r) retag(el, r);
+    });
   }
 
   const bySlug = new Map();
@@ -175,9 +219,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     );
     keyed(ui.list, d.items, (r) => r.slug, (r, prev) => {
       if (prev) {
-        const [t, cls] = tag(r);
-        const b = prev.querySelector(".s-tag");
-        if (b.textContent !== t) (b.textContent = t), (b.className = "s-tag " + cls);
+        retag(prev, r);
         return prev;
       }
       return item(r);
@@ -259,6 +301,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
         row("ORIGINAL", up(sizeText(r.originalSize))),
         row("GÉNEROS", up(r.genres.slice(0, 3).map(genreLabel).join(" / ")) || "???"),
         row("ESTADO", t || "DISPONIBLE"),
+        row("DESEADO", r.addedAt ? up(date(r.addedAt * 1000)) : ""),
       ].filter(Boolean),
     );
     ticker([r.fullTitle, r.companies, r.languages].filter(Boolean).join(" · "));
@@ -270,6 +313,16 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
 
   /** Opciones: [clave, nombre, valor, cambiar(d)] (izquierda/derecha cambian el valor). */
   function options() {
+    if (view.sec === "wish") {
+      // DESEADOS: solo el orden (se queda mientras dure la sesión).
+      const i = Math.max(0, WISH_SORTS.findIndex((o) => o.id === view.wishSort));
+      const change = (d) => {
+        view.wishSort = cyc(WISH_SORTS, i, d).id;
+        fillOptions();
+        fillList();
+      };
+      return [["wsort", "ORDEN", WISH_SORTS[i].label, change]];
+    }
     const f = store.state.catalog.filters;
     const genres = [null, ...store.state.genres.map((g) => g.id)];
     const g0 = f.genres[0] ?? null;
@@ -283,10 +336,11 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     ];
   }
 
+  const hasOpts = () => view.sec === "all" || view.sec === "wish";
   function fillOptions() {
     if (!ui) return;
-    ui.opts.hidden = view.sec !== "all";
-    if (view.sec !== "all") return;
+    ui.opts.hidden = !hasOpts();
+    if (!hasOpts()) return;
     const had = focus.current && ui.opts.contains(focus.current) ? focus.current.dataset.opt : null;
     ui.opts.replaceChildren(
       ...options().map(([k, label, value, change]) =>
@@ -385,7 +439,12 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
       { class: "s-secs", "data-focus-group": "secs" },
       h("span", { class: "s-arrow" }, "◀"),
       ...SECTIONS.map(([id, label]) =>
-        h("button", { class: "s-sec" + (view.sec === id ? " on" : ""), "data-focus": "", "data-sec": id, onclick: () => setSection(id, { toList: true }) }, label),
+        h(
+          "button",
+          { class: "s-sec" + (view.sec === id ? " on" : ""), "data-focus": "", "data-sec": id, onclick: () => setSection(id, { toList: true }) },
+          label,
+          id === "wish" ? h("span", { class: "s-sec-n", hidden: !wish.items.length }, String(wish.items.length)) : null,
+        ),
       ),
       h("span", { class: "s-arrow" }, "▶"),
     );
@@ -405,7 +464,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
       },
     });
     const search = h("label", { class: "s-search", hidden: view.sec !== "search" }, h("span", null, "BUSCAR>"), input, h("span", { class: "s-caret" }, "█"));
-    const opts = h("div", { class: "s-opts", "data-focus-group": "opts", hidden: view.sec !== "all" });
+    const opts = h("div", { class: "s-opts", "data-focus-group": "opts", hidden: !hasOpts() });
     const head = h("div", { class: "s-head" });
     const list = h("ol", { class: "list s-list", "data-focus-group": "shop-list" });
     const hero = h("canvas", { width: 16, height: 9 });
@@ -431,11 +490,73 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
   function shopHints() {
     if (askOpen) return hints.set([["accept", "ELEGIR"], ["back", "CANCELAR"]]);
     if (dialog) return hints.set([["accept", "MARCAR"], ["back", "CANCELAR"]]);
-    if (view.ficha) return hints.set([["accept", "ELEGIR"], ["back", "VOLVER"]]);
+    if (view.ficha) return hints.set([["accept", "ELEGIR"], ...(view.detail ? [["x", wishHint(view.detail.slug)]] : []), ["back", "VOLVER"]]);
     if (focus.current === ui?.input)
       return hints.set([["accept", ejg.input.source === "gamepad" ? "TECLADO" : "RESULTADOS"], ["down", "LISTA"], ["back", "SALIR"]]);
-    hints.set([["accept", "VER"], ["y", "BUSCAR"], ["right", "SECCIÓN"], ["lb", "PESTAÑA"], ["back", "SALIR"]]);
+    const r = bySlug.get(focus.current?.dataset.slug);
+    hints.set([["accept", "VER"], ...(r ? [["x", wishHint(r.slug)]] : []), ["y", "BUSCAR"], ["right", "SECCIÓN"], ["lb", "PESTAÑA"], ["back", "SALIR"]]);
   }
+
+  // ─────────────── DESEADOS ───────────────
+  const wishHint = (slug) => (wish.has(slug) ? "♥ QUITAR" : "♥ DESEAR");
+
+  /** Añade o quita (con su aviso); lo que se ve cambia con wish.onChange. */
+  function wishToggle(r) {
+    if (wishBusy) return;
+    wishBusy = true;
+    toggleWish(ejg, r).finally(() => (wishBusy = false));
+  }
+
+  /** X: el juego de la ficha o el de la fila con el cursor, a DESEADOS o fuera. */
+  function wishKey() {
+    const r = view.ficha ? view.detail : bySlug.get(focus.current?.dataset.slug);
+    if (!r) return false;
+    ejg.sound.play("select");
+    wishToggle(r);
+    return true;
+  }
+
+  /** Botón de la ficha: dice lo que hará y se enciende si ya está en la lista. */
+  function paintWish(b, slug) {
+    const on = wish.has(slug);
+    b.classList.toggle("on", on);
+    b.textContent = on ? "♥ QUITAR DE DESEADOS" : "♡ AÑADIR A DESEADOS";
+  }
+
+  /** Repinta DESEADOS; si se fue el juego del cursor, pasa al de al lado. */
+  function refillWish() {
+    const rowsOf = () => [...ui.list.querySelectorAll(".s-item")];
+    const anchor = view.ficha ? view.back && root.querySelector(`[data-slug="${CSS.escape(view.back)}"]`) : focus.current;
+    const at = anchor ? rowsOf().indexOf(anchor) : -1;
+    fillList();
+    if (at < 0 || anchor.isConnected) return;
+    const left = rowsOf();
+    const next = left[Math.min(at, left.length - 1)];
+    // Con la ficha abierta, el cursor vuelve ahí al cerrarla.
+    if (view.ficha) view.back = next?.dataset.slug || null;
+    else if (next) focus.focus(next, { silent: true });
+  }
+
+  /** La lista cambió (aquí, en otro tema o en el host): contador, filas, ♥ y ficha. */
+  function onWish() {
+    if (tab() !== "shop" || !ui) return;
+    const n = wish.items.length;
+    const c = ui.secs.querySelector(".s-sec-n");
+    if (c) (c.hidden = !n), (c.textContent = String(n));
+    if (view.sec === "wish") {
+      const items = sortWishlist(wish.items, view.wishSort);
+      if (items.map((r) => r.slug).join(",") !== wishSig) refillWish();
+      else {
+        // Solo cambió el estado (descargando, instalado…): en su sitio.
+        for (const r of items) bySlug.set(r.slug, r);
+        retagAll();
+      }
+    } else retagAll();
+    const b = view.ficha && ficha.querySelector(".f-wish");
+    if (b) paintWish(b, view.ficha);
+    shopHints();
+  }
+  wish.onChange(onWish);
 
   // ─────────────── ficha ───────────────
   async function openRepack(slug) {
@@ -464,7 +585,10 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     delete document.documentElement.dataset.ficha;
     ficha.replaceChildren();
     const el = view.back && root.querySelector(`[data-slug="${CSS.escape(view.back)}"]`);
+    // Si su fila ya no está (p. ej. quitado de DESEADOS), a la lista o a la sección.
+    const alt = ui && (ui.list.querySelector("[data-focus]") || ui.secs.querySelector(".on"));
     if (el) focus.focus(el, { silent: true });
+    else if (alt?.isConnected) focus.focus(alt, { silent: true });
     else focus.first(root);
     view.back = null;
     shopHints();
@@ -498,6 +622,8 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     }
     const act = repackAction({ ...d, status: live(d) });
     const btn = h("button", { class: "cart-btn", "data-focus": "", onclick: () => doAction(d, act) }, h("span", { class: "cart-lbl" }, up(act.label)));
+    const wishBtn = h("button", { class: "pbtn wide f-wish", "data-focus": "", onclick: () => wishToggle(d) });
+    paintWish(wishBtn, d.slug);
     const cover = h("canvas", { width: 84, height: 126 });
     const screenC = h("canvas", { width: 16, height: 9 });
     const shots = d.screenshots.slice(0, 8);
@@ -554,6 +680,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
           h("div", { class: "art f-art" }, cover),
           btn,
           act.hint ? h("p", { class: "f-hint" }, up(act.hint)) : null,
+          wishBtn,
           d.url ? h("button", { class: "pbtn wide", "data-focus": "", onclick: () => ejg.explore.openPage(d.slug) }, "VER EN FITGIRL ↗") : null,
           ...(d.tags || [])
             .map((t) => store.state.genres.find((g) => g.id === t && g.group === "genre"))
@@ -987,14 +1114,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
           if (!had) focus.first(ficha);
         }
       }
-      if (ui)
-        ui.list.querySelectorAll(".s-item").forEach((el) => {
-          const r = bySlug.get(el.dataset.slug);
-          if (!r) return;
-          const [t, cls] = tag(r);
-          const b = el.querySelector(".s-tag");
-          if (b.textContent !== t) (b.textContent = t), (b.className = "s-tag " + cls);
-        });
+      if (ui) retagAll();
     }
   }
   ejg.downloads.onChange(() => {
@@ -1085,6 +1205,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
       if (dialog || askOpen) return true;
       if (tab() === "shop") {
         if (a === "y" && !view.ficha) return openSearch(), true;
+        if (a === "x") return wishKey();
         return false;
       }
       const id = focus.current?.dataset.dl;

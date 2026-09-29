@@ -1,7 +1,7 @@
 // Tienda y Cola del tema Xbox: portada con «spotlight» y filas de mosaicos,
 // «Explorar» (todo el catálogo con sus desplegables de filtros), búsqueda,
-// ficha a pantalla completa con «Más como este», panel lateral de descarga y
-// «Administrar cola». La lógica común está en /_sdk/kit/store.js.
+// ficha a pantalla completa con «Más como este», panel lateral de descarga,
+// «Lista de deseos» y «Administrar cola». La lógica común está en /_sdk/kit/store.js.
 
 import { h, img, keyed, debounce } from "/_sdk/kit/dom.js";
 import { date } from "/_sdk/kit/format.js";
@@ -24,6 +24,9 @@ import {
   SIZES,
   GENRE_GROUPS,
   MAX_GENRES,
+  WISH_SORTS,
+  sortWishlist,
+  toggleWish,
 } from "/_sdk/kit/store.js";
 
 const I = {
@@ -44,6 +47,8 @@ const I = {
   info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></svg>',
   caret: '<svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>',
   check: '<svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+  heart: '<svg viewBox="0 0 24 24"><path d="M12 20.5 3.9 12.4A4.9 4.9 0 0 1 12 6.6a4.9 4.9 0 0 1 8.1 5.8Z"/></svg>',
+  heartOn: '<svg viewBox="0 0 24 24"><path d="M12 20.5 3.9 12.4A4.9 4.9 0 0 1 12 6.6a4.9 4.9 0 0 1 8.1 5.8Z" fill="currentColor"/></svg>',
 };
 
 /** Géneros de la portada (id y color de la losa). */
@@ -97,7 +102,8 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     if (view === "store") paintBody();
   });
   let view = null; // "store" | "queue" | null (no se ve)
-  const st = { name: "front", moreFrom: null, focusResults: false, autoFocus: false };
+  // name: "front" | "catalog" | "search" | "wish"
+  const st = { name: "front", moreFrom: null, focusResults: false, autoFocus: false, wishSort: "added" };
   const rp = { open: false, slug: null, detail: null, error: "", from: null };
   let dialog = null;
   let askOpen = null;
@@ -135,6 +141,11 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
   }
   const tileSig = (r) => `${r.status?.state}:${Math.floor((r.status?.progress || 0) * 100)}`;
 
+  // Lista de deseos: los slugs, para marcar los mosaicos sin recorrerla cada vez.
+  let wishes = new Set(ejg.explore.wishlist.items.map((w) => w.slug));
+  const heart = () => h("span", { class: "st-heart", html: I.heartOn });
+  const wishMark = (r) => (wishes.has(r.slug) ? heart() : null);
+
   function wideTile(r) {
     const lr = live(r);
     const el = h(
@@ -144,6 +155,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
       h("span", { class: "st-cap" }, h("b", null, r.title), h("small", null, [genres(r, 2).join(" · "), sizeText(r.repackSize)].filter(Boolean).join("  •  "))),
       badge(lr),
       progress(lr),
+      wishMark(r),
     );
     el.__r = r;
     el.__sig = tileSig(lr);
@@ -155,7 +167,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     const el = h(
       "button",
       { class: "st-box", "data-focus": "", "data-slug": r.slug, title: r.title, onclick: () => openRepack(r.slug) },
-      h("span", { class: "st-art" }, r.cover ? img(r.cover, { loading: "lazy" }) : h("span", { class: "st-ph" }, r.title), badge(lr), progress(lr)),
+      h("span", { class: "st-art" }, r.cover ? img(r.cover, { loading: "lazy" }) : h("span", { class: "st-ph" }, r.title), badge(lr), progress(lr), wishMark(r)),
       h("b", null, r.title),
       h("small", null, sizeText(r.repackSize) || genres(r, 1)[0] || "—"),
     );
@@ -179,6 +191,17 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     spot.label?.();
   }
 
+  // Corazones en su sitio (también en «Más como este» de la ficha).
+  function refreshHearts() {
+    for (const el of [...pages.store.querySelectorAll(".st-box[data-slug], .st-wide[data-slug]"), ...pages.repack.querySelectorAll(".st-box[data-slug]")]) {
+      const box = el.querySelector(".st-art") || el;
+      const mark = box.querySelector(":scope > .st-heart");
+      const on = wishes.has(el.dataset.slug);
+      if (on && !mark) box.append(heart());
+      else if (!on && mark) mark.remove();
+    }
+  }
+
   // ─────────────── cabecera de la tienda ───────────────
   const input = h("input", {
     class: "st-input",
@@ -199,11 +222,15 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
   });
   const pill = (id, label, fn) => h("button", { class: "st-pill", "data-focus": "", "data-st": id, onclick: fn }, label);
   const qCount = h("span", { class: "st-count" });
+  const wCount = h("span", { class: "st-count soft" });
+  const paintWishCount = () => (wCount.textContent = ejg.explore.wishlist.items.length ? String(ejg.explore.wishlist.items.length) : "");
+  paintWishCount();
   const head = h(
     "div",
     { class: "st-head", "data-focus-group": "st-head" },
     pill("front", "Destacados", () => goFront()),
     pill("catalog", "Explorar", () => openCatalog()),
+    h("button", { class: "st-pill st-wish", "data-focus": "", "data-st": "wish", onclick: () => openWish() }, icon("heart"), "Lista de deseos", wCount),
     h("label", { class: "st-search" }, icon("search"), input),
     h("button", { class: "st-queue", "data-focus": "", onclick: () => setView("queue") }, icon("queue"), "Cola", qCount),
   );
@@ -230,6 +257,16 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     paintBody(false);
     pages.store.scrollTop = 0;
     focus.focus(body.querySelector('[data-k="f-sort"]') || head.firstElementChild, { silent: true });
+    onChange();
+  }
+
+  /** «Lista de deseos»: los juegos guardados por este perfil en este PC. */
+  function openWish() {
+    st.name = "wish";
+    input.value = "";
+    paintBody(false);
+    pages.store.scrollTop = 0;
+    focus.focus(body.querySelector(".wl-open") || body.querySelector("[data-focus]") || head.querySelector('[data-st="wish"]'), { silent: true });
     onChange();
   }
 
@@ -367,6 +404,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     const f = store.state.catalog.filters;
     if (kind === "sort") return { close: true, items: SORTS.map((o) => ({ k: `o-sort-${o.id}`, label: o.label, on: f.sort === o.id, run: () => store.browse({ sort: o.id }) })) };
     if (kind === "size") return { close: true, items: SIZES.map((o) => ({ k: `o-size-${o.gb ?? 0}`, label: o.label, on: (f.maxGb || null) === o.gb, run: () => store.browse({ maxGb: o.gb }) })) };
+    if (kind === "wsort") return { close: true, items: WISH_SORTS.map((o) => ({ k: `o-wsort-${o.id}`, label: o.label, on: st.wishSort === o.id, run: () => setWishSort(o.id) })) };
     const items = [];
     for (const grp of GENRE_GROUPS) {
       const list = store.state.genres.filter((g) => g.group === grp.id);
@@ -440,11 +478,13 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     return true;
   }
 
+  /** Desplegable de la barra de filtros (abre su menú flotante). */
+  const drop = (kind, label, value, active) =>
+    h("button", { class: "st-drop" + (active ? " on" : ""), "data-focus": "", "data-k": `f-${kind}`, onclick: () => openFlyout(kind) }, h("small", null, label), h("span", null, value), icon("caret"));
+
   function catalogBody() {
     const c = store.state.catalog;
     const f = c.filters;
-    const drop = (kind, label, value, active) =>
-      h("button", { class: "st-drop" + (active ? " on" : ""), "data-focus": "", "data-k": `f-${kind}`, onclick: () => openFlyout(kind) }, h("small", null, label), h("span", null, value), icon("caret"));
     const sortLabel = SORTS.find((o) => o.id === f.sort)?.label || SORTS[0].label;
     const genresLabel = f.genres.length ? f.genres.map(genreName).join(", ") : "Todos";
     const sizeLabel = SIZES.find((o) => o.gb === (f.maxGb || null))?.label || "";
@@ -533,6 +573,95 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     );
   }
 
+  // ─────────────── lista de deseos ───────────────
+  // Lo que se pintó (para no repintar si solo llega la misma lista).
+  let wishSig = "";
+  const wishSigOf = () => ejg.explore.wishlist.items.map((w) => `${w.slug}:${w.status?.state}`).join(",");
+
+  function setWishSort(id) {
+    st.wishSort = id;
+    ejg.storage.set("wishSort", id).catch(() => {});
+    paintBody();
+  }
+  ejg.storage.get("wishSort").then((v) => {
+    if (!WISH_SORTS.some((o) => o.id === v) || v === st.wishSort) return;
+    st.wishSort = v;
+    if (view === "store" && st.name === "wish") paintBody();
+  }, () => {});
+
+  /** Añade o quita (con aviso). Resuelve con true si queda en la lista; sin dobles pulsaciones. */
+  async function wishToggle(r, btn) {
+    if (btn.__busy) return wishes.has(r.slug);
+    btn.__busy = true;
+    const on = await toggleWish(ejg, r, "tu lista de deseos");
+    btn.__busy = false;
+    return on;
+  }
+
+  /** Fila de la lista: arte con su estado, nombre, tamaño y fechas; abre la ficha o se quita. */
+  function wishRow(r) {
+    const lr = live(r);
+    const art = r.capsule || r.hero || r.cover;
+    const open = h(
+      "button",
+      { class: "wl-open", "data-focus": "", "data-slug": r.slug, title: r.title, onclick: () => openRepack(r.slug) },
+      h("span", { class: "st-art wl-art" }, art ? img(art, { loading: "lazy" }) : h("span", { class: "st-ph" }, r.title), badge(lr), progress(lr)),
+      h(
+        "span",
+        { class: "wl-txt" },
+        h("b", null, r.title),
+        h("small", null, genres(r, 3).join(" · ") || "—"),
+        h(
+          "span",
+          { class: "wl-meta" },
+          [sizeText(r.repackSize), r.date ? `Publicado el ${date(r.date)}` : "", r.addedAt ? `Añadido el ${date(r.addedAt * 1000)}` : ""].filter(Boolean).join("  •  "),
+        ),
+      ),
+    );
+    open.__r = r;
+    open.__sig = tileSig(lr);
+    const tip = "Quitar de la lista de deseos";
+    const rm = h("button", { class: "q-sq wl-rm", "data-focus": "", "data-k": `wrm-${r.slug}`, "data-tip": tip, "aria-label": tip, onclick: () => wishToggle(r, rm) }, icon("heartOn"));
+    return h("div", { class: "wl-row", "data-wish": r.slug }, open, rm);
+  }
+
+  function wishBody() {
+    const all = ejg.explore.wishlist.items;
+    wishSig = wishSigOf();
+    const n = all.length;
+    const title = h("div", { class: "st-rhead" }, h("h1", null, "Lista de deseos"), n ? h("span", null, `${n} ${n === 1 ? "juego" : "juegos"}`) : null);
+    if (!n)
+      return h(
+        "div",
+        { class: "st-results" },
+        title,
+        h(
+          "div",
+          { class: "q-empty wl-empty" },
+          icon("heart"),
+          h("h2", null, "Tu lista de deseos está vacía"),
+          h("p", null, "Añade juegos desde su página con el botón del corazón. La lista se guarda en este PC, solo para este perfil."),
+          h("button", { class: "xb-btn green", "data-focus": "", "data-k": "w-explore", onclick: () => openCatalog() }, "Explorar juegos"),
+        ),
+      );
+    const sortLabel = WISH_SORTS.find((o) => o.id === st.wishSort)?.label || WISH_SORTS[0].label;
+    return h(
+      "div",
+      { class: "st-results" },
+      title,
+      h("div", { class: "st-filters", "data-focus-group": "st-filters" }, drop("wsort", "Ordenar por", sortLabel, false)),
+      h("div", { class: "wl-list", "data-focus-group": "st-wish" }, ...sortWishlist(all, st.wishSort).map((r) => wishRow(r))),
+      h("p", { class: "wl-note" }, icon("info"), "La lista se guarda en este PC, solo para este perfil."),
+    );
+  }
+
+  /** Tras quitar un juego: la fila que ocupa su sitio (el mismo botón). */
+  function wishNear(at, prev) {
+    const rows = body.querySelectorAll(".wl-row");
+    if (at < 0 || !rows.length) return null;
+    return rows[Math.min(at, rows.length - 1)].querySelector(prev.classList.contains("wl-rm") ? ".wl-rm" : ".wl-open");
+  }
+
   function paintBody(keep = true) {
     if (view !== "store") return;
     const prev = keep ? focus.current : null;
@@ -540,7 +669,9 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     const group = inBody && prev.closest("[data-focus-group]")?.dataset.focusGroup;
     const slug = inBody && prev.closest("[data-slug]")?.dataset.slug;
     const k = inBody && prev.dataset.k;
-    body.replaceChildren(st.name === "front" ? front() : st.name === "catalog" ? catalogBody() : results());
+    const wRow = inBody && prev.closest(".wl-row");
+    const wAt = wRow ? [...wRow.parentNode.children].indexOf(wRow) : -1;
+    body.replaceChildren(st.name === "front" ? front() : st.name === "catalog" ? catalogBody() : st.name === "wish" ? wishBody() : results());
     paintFlyout();
     head.querySelectorAll(".st-pill").forEach((p) => p.classList.toggle("on", p.dataset.st === st.name));
     if (st.name === "front") startSpot();
@@ -559,7 +690,10 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     } else if (inBody && !prev.isConnected) {
       const q = (sel) => (group && body.querySelector(`[data-focus-group="${group}"] ${sel}`)) || body.querySelector(sel);
       const again =
-        (slug && q(`[data-slug="${CSS.escape(slug)}"]`)) || (k && body.querySelector(`[data-k="${k}"]`)) || (st.moreFrom != null && grid?.children[st.moreFrom - 1]);
+        (slug && q(`[data-slug="${CSS.escape(slug)}"]`)) ||
+        (k && body.querySelector(`[data-k="${CSS.escape(k)}"]`)) ||
+        (st.moreFrom != null && grid?.children[st.moreFrom - 1]) ||
+        wishNear(wAt, prev);
       if (again) focus.focus(again, { silent: true, noScroll: true });
       else focus.first(body) || focus.first(head);
     }
@@ -596,11 +730,30 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     pages.repack.replaceChildren();
     if (silent) return true;
     startSpot();
+    // Si el mosaico se repintó mientras tanto, el mismo juego si sigue ahí.
+    const again = back && !back.isConnected && back.dataset.slug ? body.querySelector(`[data-slug="${CSS.escape(back.dataset.slug)}"]`) : null;
     // Si se abrió desde fuera (onView), el foco estaba en la cabecera: mejor, a la portada.
     if (back?.isConnected && !head.contains(back)) focus.focus(back, { silent: true });
-    else focus.first(view === "queue" ? pages.queue : body) || focus.first(head);
+    else if (again) focus.focus(again, { silent: true });
+    else focus.first(view === "queue" ? pages.queue : (st.name === "wish" && body.querySelector(".wl-list")) || body) || focus.first(head);
+    // La lista de deseos cambió con la ficha abierta: se repinta ahora (el foco sigue en su fila).
+    if (view === "store" && st.name === "wish" && wishSigOf() !== wishSig) paintBody();
     onChange();
     return true;
+  }
+
+  function setWish(btn, on) {
+    const tip = on ? "En tu lista de deseos" : "Añadir a la lista de deseos";
+    btn.classList.toggle("on", on);
+    btn.dataset.tip = tip;
+    btn.setAttribute("aria-label", tip);
+    btn.setAttribute("aria-pressed", String(on));
+    btn.replaceChildren(icon(on ? "heartOn" : "heart"));
+  }
+
+  function refreshWish() {
+    const b = rp.open && pages.repack.querySelector(".rp-wish");
+    if (b && !b.__busy) setWish(b, wishes.has(rp.slug));
   }
 
   function setMain(btn, r) {
@@ -646,6 +799,8 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     const r = live(d);
     const bg = d.hero || d.screenshots[0]?.full;
     const main = h("button", { class: "xb-btn green rp-main", "data-focus": "", onclick: () => act(live(rp.detail)) });
+    const wish = h("button", { class: "xb-sq rp-wish", "data-focus": "", onclick: () => wishToggle(d, wish).then((on) => wish.isConnected && setWish(wish, on)) });
+    setWish(wish, wishes.has(d.slug));
     const sq = (ico, tip, fn) => h("button", { class: "xb-sq", "data-focus": "", "data-tip": tip, "aria-label": tip, onclick: fn }, icon(ico));
     const fact = (k, v) => (v ? h("div", { class: "rp-fact" }, h("small", null, k), h("b", null, v)) : null);
     const shots = d.screenshots.map((s) => s.full);
@@ -698,6 +853,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
             "div",
             { class: "rp-actions", "data-focus-group": "rp-actions" },
             main,
+            wish,
             sq("queue", "Administrar cola", () => setView("queue")),
             d.url ? sq("ext", "Ver en FitGirl", () => run(ejg.explore.openPage(d.slug))) : null,
           ),
@@ -1112,6 +1268,16 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     refreshRepack();
   });
   qCount.textContent = String(ejg.downloads.all.filter((d) => d.state !== "installed").length || "");
+
+  // Lista de deseos (cambia desde aquí, otro tema o el host): contador, corazones,
+  // botón de la ficha y la propia lista. Con la ficha abierta, la lista espera a cerrarla.
+  ejg.explore.wishlist.onChange(() => {
+    wishes = new Set(ejg.explore.wishlist.items.map((w) => w.slug));
+    paintWishCount();
+    refreshHearts();
+    refreshWish();
+    if (view === "store" && st.name === "wish" && !rp.open && wishSigOf() !== wishSig) paintBody();
+  });
 
   // ─────────────── vistas ───────────────
   function closeOverlays() {

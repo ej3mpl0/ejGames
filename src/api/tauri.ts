@@ -42,6 +42,7 @@ import type {
   TrainerPage,
   AccountState,
   AccountStatus,
+  WishItem,
 } from "./types";
 
 export const api = {
@@ -145,6 +146,9 @@ export const api = {
   exploreBrowse: (filters: BrowseFilters, page?: number) => invoke<ExplorePage>("explore_browse", { filters, page }),
   exploreGenres: () => invoke<Genre[]>("explore_genres"),
   exploreDetails: (slug: string) => invoke<RepackDetails>("explore_details", { slug }),
+  wishlist: () => invoke<WishItem[]>("wishlist"),
+  wishlistAdd: (slug: string) => invoke<WishItem[]>("wishlist_add", { slug }),
+  wishlistRemove: (slug: string) => invoke<WishItem[]>("wishlist_remove", { slug }),
   guidesList: (gameId: number, query?: GuideQuery) => invoke<GuideList>("guides_list", { gameId, query: query ?? null }),
   guidesGet: (id: string) => invoke<Guide>("guides_get", { id }),
   guidesShelf: (gameId: number) => invoke<GuideShelf>("guides_shelf", { gameId }),
@@ -228,6 +232,7 @@ export type Events = {
   "downloads:progress": DownloadItem[];
   "downloads:finished": { id: number; title: string };
   "explore:art": null;
+  "wishlist:changed": WishItem[];
   "social:changed": AccountState;
   "social:notice": { title: string; body?: string | null; icon?: string | null };
   "downloads:install": { id: number; phase: "running" | "done" | "cancelled" | "error" | "needs-folder"; message?: string | null; gameId?: number | null };

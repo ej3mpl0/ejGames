@@ -13,7 +13,7 @@
   var seq = 0;
   var pending = new Map();
   var listeners = new Map();
-  var state = { init: null, settings: {}, library: [], collections: [], profile: null, running: [], input: { source: "mouse", pad: "xbox" }, downloads: [], explore: true };
+  var state = { init: null, settings: {}, library: [], collections: [], profile: null, running: [], input: { source: "mouse", pad: "xbox" }, downloads: [], wishlist: [], explore: true };
   var readyResolve;
   var readyPromise = new Promise(function (r) { readyResolve = r; });
   var initialized = false;
@@ -115,6 +115,7 @@
       state.running = m.data.running || [];
       if (m.data.input) state.input = m.data.input;
       state.downloads = m.data.downloads || [];
+      state.wishlist = m.data.wishlist || [];
       state.explore = m.data.explore !== false;
       state.account = m.data.account || null;
       root.setAttribute("data-mode", m.data.mode || "desktop");
@@ -156,6 +157,7 @@
         case "running": state.running = d; break;
         case "input": state.input = d; applyInput(); break;
         case "downloads": state.downloads = d || []; break;
+        case "wishlist": state.wishlist = d || []; break;
         case "explore": state.explore = !!(d && d.enabled); break;
         case "account": state.account = d || null; break;
       }
@@ -315,6 +317,20 @@
       details: function (slug) { return call("explore.details", { slug: slug }); },
       /** Abre la ficha en la web oficial (navegador del sistema). */
       openPage: function (slug) { return call("explore.openPage", { slug: slug }); },
+      /** Lista de deseados: los juegos de la tienda que el usuario quiere. Por perfil y solo en este PC. */
+      wishlist: {
+        /** [{...repack, addedAt}], la última añadida primero (con su estado al día). */
+        get items() { return state.wishlist; },
+        has: function (slug) { return state.wishlist.some(function (w) { return w.slug === slug; }); },
+        add: function (slug) { return call("explore.wishlistAdd", { slug: slug }); },
+        remove: function (slug) { return call("explore.wishlistRemove", { slug: slug }); },
+        /** Añade o quita; resuelve con true si queda en la lista. */
+        toggle: function (slug) {
+          var on = this.has(slug);
+          return (on ? this.remove(slug) : this.add(slug)).then(function () { return !on; });
+        },
+        onChange: function (fn) { return on("wishlist", fn); },
+      },
     },
     guides: {
       /** Guías de la comunidad de Steam de un juego: {appid, items, page, pages, total, next, filtered}.

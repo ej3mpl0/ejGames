@@ -543,6 +543,12 @@ export interface Repack {
   status: RepackStatus;
 }
 
+/** Un juego de la lista de deseados (solo en este PC, por perfil). */
+export interface WishItem extends Repack {
+  /** Cuándo se añadió (segundos). */
+  addedAt: number;
+}
+
 export interface RepackDetails extends Repack {
   screenshots: { thumb: string; full: string }[];
   features: string[];

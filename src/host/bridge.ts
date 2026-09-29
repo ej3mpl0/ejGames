@@ -164,6 +164,12 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
         params?.page == null ? 1 : Math.max(1, Math.min(1000, num(params.page))),
       );
     }
+    case "explore.wishlist":
+      return st.wishlist;
+    case "explore.wishlistAdd":
+      return api.wishlistAdd(slug(params?.slug));
+    case "explore.wishlistRemove":
+      return api.wishlistRemove(slug(params?.slug));
     case "explore.genres":
       return api.exploreGenres();
     case "explore.details":

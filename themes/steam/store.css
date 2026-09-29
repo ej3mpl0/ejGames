@@ -313,3 +313,47 @@ img.img-error { visibility: hidden; }
 .app-tags .app-tag:hover, .app-tags .app-tag.is-focused { color: #fff; background: #67c1f5; }
 .similar-sec { margin-top: 34px; }
 .pg-items.similar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* ─── lista de deseados (como la de Steam) ─── */
+.store-over { display: flex; justify-content: flex-end; max-width: 1100px; margin: 0 auto 6px; }
+.sn-wish { height: 24px; padding: 0 12px; border-radius: 2px; background: rgba(103, 193, 245, 0.2); color: #67c1f5; font-size: 12px; letter-spacing: 0.02em; text-transform: uppercase; }
+.sn-wish:hover, .sn-wish.is-focused, .sn-wish.on { background: linear-gradient(-60deg, #417a9b 5%, #67c1f5 95%); color: #fff; }
+.owned.wish { background: rgba(103, 193, 245, 0.2); color: #67c1f5; }
+.app-head-acts { display: flex; gap: 8px; margin-left: auto; }
+.app-head .app-title { flex: 0 1 auto; }
+.btn-wish { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 15px; border-radius: 2px; background: rgba(103, 193, 245, 0.2); color: #67c1f5; font-size: 13px; white-space: nowrap; }
+.btn-wish .ico { display: flex; }
+.btn-wish svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.btn-wish.on { background: rgba(103, 193, 245, 0.32); color: #fff; }
+.btn-wish:hover, .btn-wish.is-focused { background: linear-gradient(-60deg, #417a9b 5%, #67c1f5 95%); color: #fff; }
+.wish-page { max-width: 1100px; margin: 0 auto; padding: 8px 0 60px; }
+.wish-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 14px; }
+.wish-head h2 { margin: 0; font-size: 26px; font-weight: 400; color: #fff; }
+.wish-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 24px; margin-bottom: 14px; padding: 10px 12px; background: rgba(0, 0, 0, 0.2); }
+.wish-search { width: 280px; height: 30px; padding: 0 10px; border: 0; border-radius: 3px; outline: none; background: #316282; box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.3); color: #fff; font: inherit; font-size: 13px; }
+.wish-search::placeholder { color: #0e1c25; font-style: italic; }
+.wish-search.is-focused, .wish-search:focus { box-shadow: 0 0 0 1px #67c1f5, inset 1px 1px 0 rgba(0, 0, 0, 0.3); }
+.wish-sorts { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 13px; }
+.wish-sort { height: 26px; padding: 0 10px; border-radius: 2px; color: #67c1f5; font-size: 13px; }
+.wish-sort.on { background: rgba(103, 193, 245, 0.2); color: #fff; }
+.wish-sort:hover, .wish-sort.is-focused { background: linear-gradient(-60deg, #417a9b 5%, #67c1f5 95%); color: #fff; }
+.wrows { display: flex; flex-direction: column; gap: 6px; }
+.wrow { display: grid; grid-template-columns: 231px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 8px; background: rgba(0, 0, 0, 0.2); border-radius: 2px; }
+.wrow:hover, .wrow:has(.is-focused) { background: rgba(103, 193, 245, 0.08); }
+.wrow-cap { display: block; padding: 0; }
+.wrow-cap .st-art.wide { width: 231px; height: auto; aspect-ratio: 460 / 215; }
+.wrow-cap.is-focused { box-shadow: 0 0 0 2px #67c1f5; }
+.wrow-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.wrow-title { align-self: flex-start; max-width: 100%; padding: 0; font-size: 20px; color: #fff; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.wrow-title:hover, .wrow-title.is-focused { color: #67c1f5; }
+.wrow-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8f98a0; }
+.wrow-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.wrow-tags span { padding: 2px 7px; border-radius: 2px; background: rgba(103, 193, 245, 0.2); color: #67c1f5; font-size: 11px; }
+.wrow-side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.wrow-buy { display: flex; align-items: center; background: #000; border-radius: 2px; padding: 2px 2px 2px 12px; gap: 12px; }
+.wrow-price { font-size: 13px; color: #c7d5e0; white-space: nowrap; }
+.wrow-added { font-size: 12px; color: #8f98a0; white-space: nowrap; }
+.wrow-rm { padding: 0; color: #8f98a0; font-size: 12px; text-decoration: underline; }
+.wrow-rm:hover, .wrow-rm.is-focused { color: #fff; }
+.wish-empty-ico svg { width: 46px; height: 46px; fill: none; stroke: #67c1f5; stroke-width: 1.6; }
+.store-empty.small { padding: 40px 20px; }

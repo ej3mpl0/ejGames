@@ -9,6 +9,7 @@ import type {
   Settings,
   ThemeInfo,
   AccountState,
+  WishItem,
 } from "../api/types";
 
 export type PadType = "xbox" | "playstation" | "nintendo" | "generic";
@@ -59,6 +60,8 @@ interface State {
   collections: Collection[];
   running: RunningGame[];
   downloads: DownloadItem[];
+  /** Lista de deseados de la tienda (del perfil activo). */
+  wishlist: WishItem[];
   /** Cuenta de ejGames del perfil (amigos, perfil). */
   account: AccountState | null;
   overlays: Overlay[];
@@ -98,6 +101,7 @@ export const useApp = create<State>((set, get) => ({
   collections: [],
   running: [],
   downloads: [],
+  wishlist: [],
   account: null,
   overlays: [],
   toasts: [],

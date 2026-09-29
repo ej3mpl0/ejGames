@@ -1,8 +1,8 @@
 // Nintendo eShop y Gestión de descargas del tema Switch: cabecera naranja con
 // menú lateral y mosaicos, «Explorar» (todo el catálogo con sus filtros en
-// filas de ajustes), ficha con «Más como este», diálogos de sistema y la lista
-// de descargas con su panel de opciones. La lógica común está en
-// /_sdk/kit/store.js.
+// filas de ajustes), ficha con «Más como este», «Lista de deseos», diálogos de
+// sistema y la lista de descargas con su panel de opciones. La lógica común
+// está en /_sdk/kit/store.js.
 
 import { h, img, keyed, debounce, hueOf } from "/_sdk/kit/dom.js";
 import { date } from "/_sdk/kit/format.js";
@@ -26,6 +26,9 @@ import {
   SIZES,
   GENRE_GROUPS,
   MAX_GENRES,
+  WISH_SORTS,
+  sortWishlist,
+  toggleWish,
 } from "/_sdk/kit/store.js";
 
 export const I = {
@@ -45,6 +48,8 @@ export const I = {
   plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
   grid: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>',
   chev: '<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>',
+  heart: '<svg viewBox="0 0 24 24"><path d="M12 19.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 6.7a4.3 4.3 0 0 1 7.5 2.6c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>',
+  heartOn: '<svg viewBox="0 0 24 24"><path class="f" d="M12 19.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 6.7a4.3 4.3 0 0 1 7.5 2.6c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>',
 };
 
 /** Géneros de la portada: id y color de su tarjeta (los de la eShop son vivos). */
@@ -76,7 +81,7 @@ export function stateText(d) {
 
 export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, onChange, onHints }) {
   const store = createExplore(ejg, onStore);
-  // view.name: front | popular | catalog | search | detail
+  // view.name: front | popular | catalog | wishlist | search | detail
   const view = { name: "front", prev: "front", slug: null, detail: null, detailError: "", scroll: 0, auto: false };
   let dialog = null; // diálogo de descarga
   let askOpen = null; // pregunta abierta (cierra con null)
@@ -91,16 +96,24 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     ["front", "Destacados", "star"],
     ["catalog", "Explorar", "grid"],
     ["popular", "Populares", "trend"],
+    ["wishlist", "Lista de deseos", "heart"],
     ["downloads", "Descargas", "down"],
   ];
   const userEl = h("div", { class: "es-user" });
   const sideCount = h("b", { class: "es-count", hidden: true });
+  const wishCount = h("b", { class: "es-count wish", hidden: true });
   const side = h(
     "nav",
     { class: "es-side", "data-focus-group": "es-side" },
     userEl,
     ...MENU.map(([id, label, ico]) =>
-      h("button", { class: "es-mi", "data-focus": "", "data-menu": id, onclick: () => menu(id) }, icon(ico), h("span", null, label), id === "downloads" ? sideCount : null),
+      h(
+        "button",
+        { class: "es-mi", "data-focus": "", "data-menu": id, onclick: () => menu(id) },
+        icon(ico),
+        h("span", null, label),
+        id === "downloads" ? sideCount : id === "wishlist" ? wishCount : null,
+      ),
     ),
   );
   const mainEl = h("div", { class: "es-main" });
@@ -137,11 +150,15 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
 
   const art = (src, title) => (src ? img(src, { loading: "lazy" }) : h("div", { class: "es-ph", style: { background: `hsl(${hueOf(title)} 45% 45%)` } }, title));
 
+  // Corazón de los mosaicos que están en la lista de deseos.
+  const heart = () => h("span", { class: "es-heart", title: "En tu lista de deseos", html: I.heartOn });
+  const wishMark = (r) => (ejg.explore.wishlist.has(r.slug) ? heart() : null);
+
   function tile(r) {
     return h(
       "button",
       { class: "es-tile", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), title: r.title },
-      h("div", { class: "es-art" }, art(r.cover, r.title), tag(r)),
+      h("div", { class: "es-art" }, art(r.cover, r.title), tag(r), wishMark(r)),
       h("b", { class: "es-name" }, r.title),
       h("span", { class: "es-size" }, sizeText(r.repackSize) || " "),
     );
@@ -159,7 +176,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     return h(
       "button",
       { class: "es-feat", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), title: r.title },
-      h("div", { class: "es-feat-img" }, img(r.hero, { loading: "eager" }), tag(r)),
+      h("div", { class: "es-feat-img" }, img(r.hero, { loading: "eager" }), tag(r), wishMark(r)),
       h("b", null, r.title),
       h("span", null, [r.genres.slice(0, 3).map(genreLabel).join(", "), sizeText(r.repackSize)].filter(Boolean).join(" · ")),
     );
@@ -177,6 +194,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     if (id === "downloads") return openDownloads(null, "shop");
     if (id === "search") return startSearch();
     if (id === "catalog") return openCatalog();
+    if (id === "wishlist") return openWishlist();
     view.name = id;
     paint();
     if (!focus.first(mainEl)) view.auto = true;
@@ -184,7 +202,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
 
   /** LB/RB: sección anterior/siguiente del menú lateral. */
   function cycle(d) {
-    const order = ["front", "catalog", "popular"];
+    const order = ["front", "catalog", "popular", "wishlist"];
     const i = order.indexOf(view.name);
     menu(order[(Math.max(0, i) + d + order.length) % order.length]);
   }
@@ -333,7 +351,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
   /** Selector de un filtro: el diálogo de sistema con la lista de opciones. */
   function openPicker(kind) {
     const list = h("div", { class: "dd-chks one", "data-focus-group": "picker" });
-    const title = { sort: "Ordenar", genre: `Género (hasta ${MAX_GENRES})`, size: "Tamaño de la descarga" }[kind];
+    const title = { sort: "Ordenar", wsort: "Ordenar", genre: `Género (hasta ${MAX_GENRES})`, size: "Tamaño de la descarga" }[kind];
     const ok = h("button", { class: "sw-btn", "data-focus": "", onclick: () => closePicker() }, "Aceptar");
     const layer = h("div", { class: "sw-layer", "data-focus-trap": "" }, h("div", { class: "sw-dlg" }, h("div", { class: "sw-dlg-body" }, h("h2", { class: "sw-dlg-h" }, title), list), h("div", { class: "sw-dlg-foot" }, ok)));
     document.body.append(layer);
@@ -353,6 +371,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     let items;
     if (picker.kind === "sort") items = SORTS.map((o) => opt(`p-${o.id}`, o.label, f.sort === o.id, () => (store.browse({ sort: o.id }), closePicker()), true));
     else if (picker.kind === "size") items = SIZES.map((o) => opt(`p-${o.gb ?? 0}`, o.label, (f.maxGb || null) === o.gb, () => (store.browse({ maxGb: o.gb }), closePicker()), true));
+    else if (picker.kind === "wsort") items = WISH_SORTS.map((o) => opt(`p-${o.id}`, o.label, wishSort === o.id, () => ((wishSort = o.id), fillWishlist(), closePicker()), true));
     else
       items = GENRE_GROUPS.flatMap((grp) => {
         const list = store.state.genres.filter((g) => g.group === grp.id);
@@ -544,6 +563,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
             { class: "fi-actions", "data-focus-group": "fi-actions" },
             h("button", { class: "fi-buy" + (act.id === "downloads" ? " busy" : ""), "data-focus": "", "data-key": "buy", onclick: doAction }, act.label),
             act.hint ? h("p", { class: "fi-hint" }, act.hint) : null,
+            wishButton(d),
             d.url ? h("button", { class: "fi-link", "data-focus": "", "data-key": "web", onclick: () => run(ejg.explore.openPage(d.slug)) }, icon("ext"), "Ver en FitGirl") : null,
           ),
         ),
@@ -589,6 +609,170 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     });
     return sec;
   }
+
+  // ─────────────── lista de deseos ───────────────
+  let wishSort = "added";
+  let wishList = null; // filas de la página (null si no se ve)
+  let wishTotal = null;
+  let wishSortVal = null;
+  let wishSig = "";
+  const wishing = new Set(); // juegos con el cambio en marcha (un toque a la vez)
+
+  /** Añade o quita de la lista (con su aviso) y repinta el botón de la ficha. */
+  async function wish(r) {
+    if (wishing.has(r.slug)) return;
+    wishing.add(r.slug);
+    const on = await toggleWish(ejg, r, "tu lista de deseos");
+    wishing.delete(r.slug);
+    const b = view.name === "detail" && view.slug === r.slug && mainEl.querySelector(".fi-wish");
+    if (b) paintWish(b, on);
+  }
+
+  /** Botón de la ficha: corazón vacío o lleno. */
+  function wishButton(d) {
+    const b = h("button", { class: "fi-wish", "data-focus": "", "data-key": "wish", onclick: () => wish(d) });
+    paintWish(b, ejg.explore.wishlist.has(d.slug));
+    return b;
+  }
+  function paintWish(b, on) {
+    b.classList.toggle("on", on);
+    b.replaceChildren(icon(on ? "heartOn" : "heart"), on ? "En tu lista de deseos" : "Añadir a la lista de deseos");
+  }
+
+  // El estado de lo deseado, con el progreso de su descarga al día.
+  function wishLive(r) {
+    const d = ejg.downloads.all.find((x) => x.slug === r.slug);
+    return d ? { ...r, status: { ...r.status, state: d.state, downloadId: d.id, progress: d.progress, gameId: d.gameId } } : r;
+  }
+
+  /** «Lista de deseos». */
+  function openWishlist() {
+    if (where() !== "shop") show("shop");
+    view.name = "wishlist";
+    paint();
+    mainEl.scrollTop = 0;
+    const el = mainEl.querySelector(".wl-item") || mainEl.querySelector("[data-focus]");
+    focus.focus(el || side.querySelector('[data-menu="wishlist"]'), { silent: true });
+  }
+
+  function wishlistPage() {
+    if (!ejg.explore.wishlist.items.length) {
+      wishList = null;
+      return h(
+        "div",
+        { class: "es-page" },
+        h(
+          "div",
+          { class: "es-empty" },
+          icon("heart", "dm-big wl-big"),
+          h("h2", null, "Tu lista de deseos está vacía"),
+          h("p", null, "Añade juegos desde su ficha con el botón del corazón. La lista se guarda en este PC, solo para este perfil."),
+          pill("Explorar", "orange", () => openCatalog(), "w-browse"),
+        ),
+      );
+    }
+    wishSortVal = h("b");
+    wishTotal = h("span", { class: "es-total" });
+    wishList = h("div", { class: "wl-list", "data-focus-group": "wishlist" });
+    wishSig = "";
+    const sort = h(
+      "div",
+      { class: "es-set wl-sort", "data-focus-group": "w-sort" },
+      h("button", { class: "es-setrow", "data-focus": "", "data-key": "f-wsort", onclick: () => openPicker("wsort") }, h("span", null, "Ordenar"), wishSortVal, icon("chev")),
+    );
+    const page = h("div", { class: "es-page" }, section("Lista de deseos", h("div", null, sort, wishList), wishTotal));
+    fillWishlist();
+    return page;
+  }
+
+  /** Una fila: arte, nombre, géneros, tamaño y fecha con su etiqueta de estado, y «Quitar». */
+  function wishRow(r) {
+    const artBox = h("div", { class: "wl-art" });
+    const name = h("b");
+    const info = h("span", { class: "wl-info" });
+    const meta = h("span", { class: "wl-meta" });
+    const tagBox = h("span", { class: "wl-tag" });
+    const item = h(
+      "button",
+      { class: "wl-item", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug) },
+      artBox,
+      h("div", { class: "wl-main" }, name, info, h("div", { class: "wl-line" }, meta, tagBox)),
+    );
+    const del = h("button", { class: "wl-del", "data-focus": "", title: "Quitar de la lista de deseos", onclick: () => wish(el.__r) }, icon("heartOn"), h("span", null, "Quitar"));
+    const el = h("div", { class: "wl-row" }, item, del);
+    let sig = "";
+    let cover;
+    el.__upd = (r) => {
+      el.__r = r;
+      if (r.cover !== cover) {
+        cover = r.cover;
+        artBox.replaceChildren(art(r.cover, r.title));
+      }
+      const s = `${r.title}|${r.repackSize}|${r.date}|${tileSig(r)}`;
+      if (s === sig) return;
+      sig = s;
+      item.title = r.title;
+      name.textContent = r.title;
+      info.textContent = (r.genres || []).slice(0, 3).map(genreLabel).join(", ");
+      meta.textContent = [sizeText(r.repackSize), r.date ? `Publicado el ${date(r.date)}` : ""].filter(Boolean).join(" · ");
+      const t = tag(r);
+      tagBox.replaceChildren(...(t ? [t] : []));
+    };
+    el.__upd(r);
+    return el;
+  }
+
+  /** Rellena la lista en su sitio (sin perder el foco ni el scroll). */
+  function fillWishlist() {
+    if (!wishList) return;
+    const items = sortWishlist(ejg.explore.wishlist.items, wishSort).map(wishLive);
+    wishTotal.textContent = items.length === 1 ? "1 programa" : `${items.length} programas`;
+    wishSortVal.textContent = WISH_SORTS.find((o) => o.id === wishSort)?.label || "";
+    // Mismos juegos en el mismo orden: solo cambian sus datos.
+    const sig = items.map((r) => r.slug).join("\n");
+    if (sig === wishSig) return items.forEach((r, k) => wishList.children[k]?.__upd(r));
+    wishSig = sig;
+    // Si se quita la fila enfocada, el foco pasa a la que ocupa su sitio.
+    const cur = focus.current;
+    const row = cur && wishList.contains(cur) ? cur.closest(".wl-row") : null;
+    const at = row ? Array.prototype.indexOf.call(wishList.children, row) : -1;
+    keyed(wishList, items, (r) => r.slug, (r, prev) => (prev ? (prev.__upd(r), prev) : wishRow(r)));
+    if (row && !row.isConnected) {
+      const next = wishList.children[Math.min(at, wishList.children.length - 1)];
+      const el = next?.querySelector(cur.classList.contains("wl-del") ? ".wl-del" : ".wl-item");
+      if (el) focus.focus(el, { silent: true });
+    }
+  }
+
+  /** Pone o quita el corazón de los mosaicos a la vista. */
+  function markWishes() {
+    const on = new Set(ejg.explore.wishlist.items.map((w) => w.slug));
+    for (const el of mainEl.querySelectorAll(".es-tile[data-slug], .es-feat[data-slug]")) {
+      const box = el.firstElementChild;
+      const mark = box.querySelector(".es-heart");
+      if (on.has(el.dataset.slug) === !!mark) continue;
+      if (mark) mark.remove();
+      else box.append(heart());
+    }
+  }
+
+  // Cambió la lista (aquí, en otro tema o en el host): contador, página, ficha y mosaicos.
+  function onWish() {
+    const n = ejg.explore.wishlist.items.length;
+    wishCount.hidden = !n;
+    wishCount.textContent = String(n);
+    if (view.name === "wishlist") {
+      // Se vació o dejó de estarlo: otra página; si no, en su sitio.
+      if (!!wishList !== n > 0) paint(true);
+      else fillWishlist();
+    } else if (view.name === "detail" && view.detail) {
+      const b = mainEl.querySelector(".fi-wish");
+      if (b) paintWish(b, ejg.explore.wishlist.has(view.detail.slug));
+    }
+    markWishes();
+  }
+  ejg.explore.wishlist.onChange(onWish);
+  onWish();
 
   // ─────────────── diálogos de sistema ───────────────
   function hintsChanged() {
@@ -1035,7 +1219,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
         const b = mainEl.querySelector(".fi-buy");
         if (b) b.textContent = repackAction(view.detail).label;
       }
-    }
+    } else if (view.name === "wishlist") fillWishlist(); // etiquetas de estado de la lista
   }
   ejg.downloads.onChange(() => {
     onDownloads();
@@ -1065,7 +1249,8 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     side.querySelectorAll(".es-mi").forEach((b) => b.classList.toggle("on", b.dataset.menu === on));
     if (view.name !== "search") searchBox = null;
     if (view.name !== "catalog") catBox = null;
-    const content = detail ? detailPage() : view.name === "search" ? searchPage() : view.name === "catalog" ? catalogPage() : view.name === "popular" ? popular() : front();
+    if (view.name !== "wishlist") wishList = null;
+    const content = detail ? detailPage() : view.name === "search" ? searchPage() : view.name === "catalog" ? catalogPage() : view.name === "wishlist" ? wishlistPage() : view.name === "popular" ? popular() : front();
     mainEl.replaceChildren(content);
     if (keepFocus && prev && !prev.isConnected) {
       const again = (key && mainEl.querySelector(`[data-key="${key}"]`)) || (slug && mainEl.querySelector(`[data-slug="${CSS.escape(slug)}"]`));
@@ -1154,12 +1339,19 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
         ];
       }
       if (view.name === "detail") return [["accept", "Aceptar"], ["y", "Buscar"], ["back", "Atrás"]];
+      if (view.name === "wishlist" && focus.current?.closest?.(".wl-row")) {
+        const del = focus.current.classList.contains("wl-del");
+        return [["accept", del ? "Quitar" : "Ver ficha"], ...(del ? [] : [["x", "Quitar"]]), ["y", "Buscar"], ["lb", "Secciones"], ["back", "Atrás"]];
+      }
       return [["accept", "Aceptar"], ["y", "Buscar"], ["lb", "Secciones"], ["back", "Atrás"]];
     },
     /** X (devuelve true si lo gestiona). */
     x(el) {
       if (busy()) return true;
       if (panel || where() === "dls" || el?.dataset?.dlId) return togglePause(el), true;
+      // Lista de deseos: quitar el juego de la fila enfocada.
+      const row = where() === "shop" && view.name === "wishlist" && el?.closest?.(".wl-row");
+      if (row?.__r) return wish(row.__r), true;
       return false;
     },
     /** Y: buscar en la eShop o pausar/reanudar todo en las descargas. */

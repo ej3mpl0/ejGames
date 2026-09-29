@@ -208,3 +208,22 @@ canvas { image-rendering: pixelated; }
 .rpg-genres .rpg-btn { position: relative; text-align: left; padding: 2px 8px 2px 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rpg-genres .rpg-btn.on { color: var(--hi); }
 .f-similar { border: 0; padding: 0; }
+
+/* ─── DESEADOS: la lista de deseados ─── */
+/* contador en la sección (como el de DOWNLOADS) */
+.s-sec-n { display: inline-block; margin-left: 8px; padding: 0 5px; background: var(--hi); color: var(--bg); text-shadow: none; }
+.s-sec.on .s-sec-n { background: var(--bg); color: var(--hi); }
+.s-sec.on.is-focused .s-sec-n, .s-sec.on:hover .s-sec-n { color: var(--hi2); }
+/* ♥ delante del título de los deseados (en las demás secciones) */
+.s-heart { margin-right: 0.7em; color: var(--hi); }
+.s-item.is-focused .s-heart, .s-item:hover .s-heart { color: var(--bg); }
+/* ✕ para quitar con el ratón: una columna más en DESEADOS */
+.s-item:has(.s-x) { grid-template-columns: minmax(0, 1fr) auto minmax(6em, auto) auto; }
+.s-x { padding: 0 6px; font-size: 0.8em; color: var(--dim); }
+.s-item.is-focused .s-x, .s-item:hover .s-x { color: var(--bg); }
+.s-x:hover { background: var(--hi); }
+.s-msg p { margin: 0 0 12px; }
+/* botón de la ficha: encendido si ya está en la lista */
+.pbtn.f-wish { white-space: normal; line-height: 1.8; }
+.f-wish.on { border-color: var(--hi); color: var(--hi); }
+.f-wish.on.is-focused, .f-wish.on:hover { background: var(--hi); color: var(--bg); }

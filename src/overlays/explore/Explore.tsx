@@ -1,11 +1,12 @@
 // Explorar (ventana del host, para temas sin tienda propia): portada con
 // populares, novedades y géneros; el catálogo entero con filtros (géneros,
-// orden, tamaño y los que ya tienes) y fichas con «Más como este».
+// orden, tamaño y los que ya tienes), fichas con «Más como este» y la lista
+// de deseados (por perfil, solo en este PC).
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ChevronsUpDown, Compass, Download, ExternalLink, Play, RefreshCw, Search, X } from "lucide-react";
+import { ArrowLeft, ChevronsUpDown, Compass, Download, ExternalLink, Heart, Play, RefreshCw, Search, X } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
-import type { BrowseFilters, ExploreHome, ExplorePage, Genre, Repack, RepackDetails } from "../../api/types";
+import type { BrowseFilters, ExploreHome, ExplorePage, Genre, Repack, RepackDetails, WishItem } from "../../api/types";
 import { Button, Empty, Modal, Spinner, cx } from "../../components/ui";
 import { installDownload, openExplore, openKeyboard } from "../../host/downloads";
 import { useOverlayNav } from "../../input/nav";
@@ -13,7 +14,7 @@ import { useApp } from "../../store/app";
 import { DownloadDialog } from "./DownloadDialog";
 import { Cover, StatusBadge, sizeText } from "./shared";
 // @ts-ignore módulo JS del kit
-import { repackAction, SORTS as KIT_SORTS, SIZES as KIT_SIZES, GENRE_GROUPS as KIT_GROUPS, MAX_GENRES } from "../../../sdk/kit/store.js";
+import { repackAction, sortWishlist, SORTS as KIT_SORTS, SIZES as KIT_SIZES, GENRE_GROUPS as KIT_GROUPS, MAX_GENRES, WISH_SORTS } from "../../../sdk/kit/store.js";
 
 const SORTS = KIT_SORTS as { id: NonNullable<BrowseFilters["sort"]>; label: string }[];
 const SIZES = KIT_SIZES as { gb: number | null; label: string }[];
@@ -25,10 +26,30 @@ const EMPTY: Filters = { query: "", genres: [], sort: "date", maxGb: null, hideO
 /** Géneros de la portada. */
 const FRONT_GENRES = [55, 47, 51, 59, 54, 66, 65, 56, 71, 70, 214, 84];
 
+const wishSorts = WISH_SORTS as { id: string; label: string }[];
+
+/** Añade o quita un juego de la lista de deseados, con su aviso. */
+async function toggleWish(r: Repack) {
+  const { wishlist, toast } = useApp.getState();
+  const on = wishlist.some((w) => w.slug === r.slug);
+  try {
+    await (on ? api.wishlistRemove(r.slug) : api.wishlistAdd(r.slug));
+    toast(on ? "info" : "ok", on ? `«${r.title}» ya no está en tu lista de deseados` : `«${r.title}» está en tu lista de deseados`);
+  } catch (e) {
+    toast("error", errMsg(e));
+  }
+}
+
 function Card({ r, onOpen }: { r: Repack; onOpen: (r: Repack) => void }) {
+  const wished = useApp((s) => s.wishlist.some((w) => w.slug === r.slug));
   return (
-    <button data-nav onClick={() => onOpen(r)} className="group flex w-40 shrink-0 flex-col gap-1.5 rounded-[calc(var(--h-radius)*0.7)] p-1.5 text-left hover:bg-surface-3/50 cursor-pointer">
+    <button data-nav onClick={() => onOpen(r)} className="group relative flex w-40 shrink-0 flex-col gap-1.5 rounded-[calc(var(--h-radius)*0.7)] p-1.5 text-left hover:bg-surface-3/50 cursor-pointer">
       <Cover src={r.cover} title={r.title} className="aspect-[3/4] w-full" />
+      {wished && (
+        <span className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-accent" title="En tu lista de deseados">
+          <Heart size={14} fill="currentColor" />
+        </span>
+      )}
       <span className="line-clamp-2 text-[13px] leading-tight">{r.title}</span>
       <span className="flex items-center gap-1.5 text-[11px] text-muted">
         {r.repackSize && <span className="truncate">{sizeText(r.repackSize)}</span>}
@@ -96,6 +117,10 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
   const [similar, setSimilar] = useState<Repack[] | null>(null);
   const [loadingSlug, setLoadingSlug] = useState<string | null>(null);
   const [dialog, setDialog] = useState<RepackDetails | null>(null);
+  // Lista de deseados: abierta y su orden.
+  const wishlist = useApp((s) => s.wishlist);
+  const [wishOpen, setWishOpen] = useState(args?.view === "wishlist");
+  const [wishSort, setWishSort] = useState("added");
   const seq = useRef(0);
   const timer = useRef<number>(0);
   const scroller = useRef<HTMLDivElement>(null);
@@ -186,7 +211,7 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
   }
 
   const ref = useOverlayNav<HTMLDivElement>({
-    onBack: () => (dialog ? setDialog(null) : detail ? setDetail(null) : filters ? browse(null) : onClose()),
+    onBack: () => (dialog ? setDialog(null) : detail ? setDetail(null) : wishOpen ? setWishOpen(false) : filters ? browse(null) : onClose()),
     extra: {
       y: async () => {
         const v = await openKeyboard({ title: "Buscar juegos", value: filters?.query ?? "", placeholder: "Nombre del juego" });
@@ -207,6 +232,7 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
           value={filters?.query ?? ""}
           onChange={(e) => {
             setDetail(null);
+            setWishOpen(false);
             change({ query: e.target.value }, 350);
           }}
           placeholder="Buscar juegos…"
@@ -214,8 +240,11 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
         />
         {loading && <Spinner size={14} />}
       </div>
-      <Button size="sm" variant="ghost" icon={<Compass size={15} />} onClick={() => (setDetail(null), change({}))}>
+      <Button size="sm" variant="ghost" icon={<Compass size={15} />} onClick={() => (setDetail(null), setWishOpen(false), change({}))}>
         Todo el catálogo
+      </Button>
+      <Button size="sm" variant={wishOpen && !detail ? "primary" : "ghost"} icon={<Heart size={15} />} onClick={() => (setDetail(null), setWishOpen(true))}>
+        Lista de deseados{wishlist.length ? ` (${wishlist.length})` : ""}
       </Button>
       <Button size="sm" variant="ghost" icon={<Download size={15} />} onClick={() => openExplore("downloads")}>
         Descargas
@@ -262,9 +291,13 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
             similar={similar}
             onBack={() => setDetail(null)}
             onAction={() => action(detail)}
+            wished={wishlist.some((w) => w.slug === detail.slug)}
+            onWish={() => void toggleWish(detail)}
             onGenre={(id) => (setDetail(null), browse({ ...EMPTY, genres: [id] }))}
             onOpen={(slug) => open(slug)}
           />
+        ) : wishOpen ? (
+          <WishView items={sortWishlist(wishlist, wishSort) as WishItem[]} sort={wishSort} onSort={setWishSort} onOpen={(slug) => open(slug)} onBrowse={() => (setWishOpen(false), change({}))} />
         ) : f ? (
           <div className="p-5">
             <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -345,6 +378,18 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
                 </div>
               </section>
             )}
+            {wishlist.length > 0 && (
+              <section>
+                <h3 className="mb-2 flex items-center gap-2 px-5 text-base font-semibold">
+                  <Heart size={15} className="text-accent" /> Tu lista de deseados
+                </h3>
+                <div className="flex gap-2 overflow-x-auto px-4 pb-2">
+                  {wishlist.map((r) => (
+                    <Card key={`wish-${r.slug}`} r={r} onOpen={(x) => open(x.slug)} />
+                  ))}
+                </div>
+              </section>
+            )}
             {home.sections.map((s) => (
               <section key={s.id}>
                 <h3 className="mb-2 px-5 text-base font-semibold">{s.title}</h3>
@@ -387,12 +432,16 @@ function DetailView({
   onAction,
   onGenre,
   onOpen,
+  wished,
+  onWish,
 }: {
   d: RepackDetails;
   genres: Genre[];
   similar: Repack[] | null;
   onBack: () => void;
   onAction: () => void;
+  wished: boolean;
+  onWish: () => void;
   onGenre: (id: number) => void;
   onOpen: (slug: string) => void;
 }) {
@@ -423,6 +472,9 @@ function DetailView({
             <div className="mt-3 flex items-center gap-3">
               <Button variant="primary" size="lg" data-autofocus icon={a.id === "play" ? <Play size={18} /> : <Download size={18} />} onClick={onAction}>
                 {a.label}
+              </Button>
+              <Button variant={wished ? "primary" : "ghost"} icon={<Heart size={15} fill={wished ? "currentColor" : "none"} />} onClick={onWish}>
+                {wished ? "En tu lista de deseados" : "Añadir a la lista de deseados"}
               </Button>
               {d.url && (
                 <Button variant="ghost" icon={<ExternalLink size={15} />} onClick={() => api.openExternal(d.url)}>
@@ -493,6 +545,45 @@ function DetailView({
           <img src={shot} alt="" className="max-h-[90vh] max-w-[92vw] rounded-lg" />
         </button>
       )}
+    </div>
+  );
+}
+
+/** La lista de deseados: los juegos con su estado, en el orden elegido. */
+function WishView({ items, sort, onSort, onOpen, onBrowse }: { items: WishItem[]; sort: string; onSort: (s: string) => void; onOpen: (slug: string) => void; onBrowse: () => void }) {
+  if (!items.length)
+    return (
+      <Empty icon={<Heart size={40} />} title="Tu lista de deseados está vacía">
+        <p>Añade juegos con «Añadir a la lista de deseados» en su ficha. Se guarda en este PC, solo para este perfil.</p>
+        <Button className="mt-4" icon={<Compass size={15} />} onClick={onBrowse}>
+          Explorar el catálogo
+        </Button>
+      </Empty>
+    );
+  return (
+    <div className="p-5">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <h3 className="mr-2 text-base font-semibold">Tu lista de deseados</h3>
+        <span className="text-sm text-muted">
+          {items.length} {items.length === 1 ? "juego" : "juegos"} · se guarda en este PC, solo para este perfil
+        </span>
+        <span className="ml-auto" />
+        {wishSorts.map((o) => (
+          <Chip key={o.id} on={sort === o.id} onClick={() => onSort(o.id)}>
+            {o.label}
+          </Chip>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {items.map((r) => (
+          <div key={r.slug} className="flex flex-col">
+            <Card r={r} onOpen={(x) => onOpen(x.slug)} />
+            <button data-nav onClick={() => void toggleWish(r)} className="mx-1.5 rounded-md py-1 text-xs text-muted hover:bg-surface-3/60 hover:text-fg cursor-pointer">
+              Quitar
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

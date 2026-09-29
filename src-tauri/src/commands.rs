@@ -1032,6 +1032,22 @@ pub async fn explore_details(st: St<'_>, slug: String) -> CmdResult<crate::explo
     Ok(crate::explore::details(st.inner(), &slug).await?)
 }
 
+/// Lista de deseados del perfil (solo en este PC).
+#[tauri::command]
+pub async fn wishlist(st: St<'_>) -> CmdResult<Vec<crate::explore::wishlist::WishItem>> {
+    Ok(crate::explore::wishlist::list(st.inner())?)
+}
+
+#[tauri::command]
+pub async fn wishlist_add(st: St<'_>, slug: String) -> CmdResult<Vec<crate::explore::wishlist::WishItem>> {
+    Ok(crate::explore::wishlist::add(st.inner(), &slug).await?)
+}
+
+#[tauri::command]
+pub async fn wishlist_remove(st: St<'_>, slug: String) -> CmdResult<Vec<crate::explore::wishlist::WishItem>> {
+    Ok(crate::explore::wishlist::remove(st.inner(), &slug)?)
+}
+
 // ───────────────────────────── guías de Steam ─────────────────────────────
 
 #[tauri::command]

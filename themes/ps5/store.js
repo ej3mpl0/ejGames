@@ -1,7 +1,7 @@
 // PlayStation Store y Descargas del tema PS5: portada con el fondo del juego
 // enfocado, «Explorar» (todo el catálogo, con «Filtrar y ordenar»), búsqueda,
-// ficha con «Más como este», diálogo de descarga y la lista de descargas.
-// La lógica común está en /_sdk/kit/store.js.
+// «Lista de deseos», ficha con «Más como este», diálogo de descarga y la
+// lista de descargas. La lógica común está en /_sdk/kit/store.js.
 
 import { h, img, keyed } from "/_sdk/kit/dom.js";
 import { date } from "/_sdk/kit/format.js";
@@ -25,6 +25,9 @@ import {
   SIZES,
   GENRE_GROUPS,
   MAX_GENRES,
+  WISH_SORTS,
+  sortWishlist,
+  toggleWish,
 } from "/_sdk/kit/store.js";
 
 const I = {
@@ -41,6 +44,9 @@ const I = {
   x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   filter: '<svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>',
   chev: '<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>',
+  heart: '<svg viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9.3C1.5 7.4 3.7 4.5 7 4.5c2.1 0 3.8 1.2 5 3 1.2-1.8 2.9-3 5-3 3.3 0 5.5 2.9 4.3 6.2C19.5 15.4 12 20 12 20Z"/></svg>',
+  heartOn: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 20s-7.5-4.6-9.3-9.3C1.5 7.4 3.7 4.5 7 4.5c2.1 0 3.8 1.2 5 3 1.2-1.8 2.9-3 5-3 3.3 0 5.5 2.9 4.3 6.2C19.5 15.4 12 20 12 20Z"/></svg>',
+  sort: '<svg viewBox="0 0 24 24"><path d="M7 4v16m0 0-3.5-3.5M7 20l3.5-3.5M17 20V4m0 0-3.5 3.5M17 4l3.5 3.5"/></svg>',
 };
 
 /** Géneros de «Explorar» (id y tono de la losa cuando no hay arte). */
@@ -88,6 +94,18 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
   const run = (p) => Promise.resolve(p).catch((e) => ejg.ui.toast(e.message || String(e), "error"));
   const pendingCount = () => ejg.downloads.all.filter((d) => DL.has(d.state)).length;
 
+  // Slugs de la lista de deseos (se rehace solo cuando cambia la lista).
+  let wsFor = null;
+  let ws = new Set();
+  function wishSet() {
+    const a = ejg.explore.wishlist.items;
+    if (a !== wsFor) {
+      wsFor = a;
+      ws = new Set(a.map((w) => w.slug));
+    }
+    return ws;
+  }
+
   // Fondo del juego enfocado (con una pequeña espera por si se sigue moviendo).
   let lastBg = null;
   function setBg(url) {
@@ -134,7 +152,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     const el = h(
       "button",
       { class: "st-tile", "data-focus": "", "data-slug": r.slug, "data-sec": sec, title: r.title, onclick: () => openRepack(r.slug) },
-      h("div", { class: "st-art" }, r.cover ? img(r.cover) : h("span", { class: "st-ph" }, r.title), mark),
+      h("div", { class: "st-art" }, r.cover ? img(r.cover) : h("span", { class: "st-ph" }, r.title), mark, h("span", { class: "st-heart", html: I.heartOn })),
       caption ? h("div", { class: "st-cap" }, h("b", null, r.title), sub) : null,
     );
     el.__r = r;
@@ -146,6 +164,8 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
 
   function applyStatus(el) {
     const r = el.__r;
+    // Corazón en la losa si está en la lista de deseos.
+    el.classList.toggle("wished", wishSet().has(r.slug));
     const st = live(r);
     const key = `${st.state}|${Math.floor((st.progress || 0) * 100)}`;
     if (el.__st === key) return;
@@ -175,21 +195,26 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     const mi = (key, label, ico, fn, extra) =>
       h("button", { class: "st-mi" + (active === key ? " on" : ""), "data-focus": "", "data-key": "m-" + key, onclick: fn }, ico ? icon(ico) : null, h("span", null, label), extra);
     const n = pendingCount();
+    const w = ejg.explore.wishlist.items.length;
     return h(
       "nav",
       { class: "st-menu", "data-focus-group": "st-menu" },
       mi("front", "Descubrir", null, goFront),
       mi("browse", "Explorar", null, () => openBrowse()),
       mi("search", "Buscar", "search", () => openSearch(true)),
+      mi("wishlist", "Lista de deseos", "heart", openWishlist, h("span", { class: "st-count wl", hidden: !w }, String(w))),
       mi("downloads", "Descargas", "download", openDownloads, h("span", { class: "st-count", hidden: !n }, String(n))),
     );
   }
 
+  // Contadores del menú: descargas pendientes y juegos de la lista de deseos.
   function updateCounts() {
     const n = pendingCount();
-    for (const c of root.querySelectorAll(".st-count")) {
-      c.hidden = !n;
-      c.textContent = String(n);
+    const w = ejg.explore.wishlist.items.length;
+    for (const c of root.querySelectorAll(".st-mi .st-count")) {
+      const v = c.classList.contains("wl") ? w : n;
+      c.hidden = !v;
+      c.textContent = String(v);
     }
   }
 
@@ -614,6 +639,127 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     renderResults();
   }
 
+  // ─────────────── lista de deseos ───────────────
+  let wishEl = null;
+  let wlGrid, wlCount, wlSort, wlEmpty;
+  let wishSort = "added";
+  let wishBusy = false;
+
+  function wishPage() {
+    wlSort = h("button", { class: "ps-btn small wl-sort", "data-focus": "", "data-key": "wl-sort", onclick: openWishSort }, icon("sort"), h("span", null, "Ordenar:"), h("b"));
+    wlCount = h("span", { class: "st-note" });
+    wlEmpty = empty(
+      "Tu lista de deseos está vacía",
+      "Añade juegos desde su página con «Añadir a la lista de deseos». La lista se guarda en este PC, solo para este perfil.",
+      h("button", { class: "ps-btn primary", "data-focus": "", "data-key": "wl-browse", onclick: () => openBrowse() }, "Explorar juegos"),
+    );
+    wlEmpty.classList.add("wl-empty");
+    wlEmpty.prepend(h("span", { class: "wl-empty-ico", html: I.heart }));
+    wlGrid = h("div", { class: "st-grid wl-grid", "data-focus-group": "wl-items" });
+    wishEl = h(
+      "div",
+      { class: "st-search wl-page" },
+      menu("wishlist"),
+      h("div", { class: "st-res-head wl-head" }, h("h2", { class: "st-h big" }, "Lista de deseos"), wlCount, wlSort),
+      wlEmpty,
+      wlGrid,
+    );
+    renderWishlist();
+    return wishEl;
+  }
+
+  // Un juego de la lista: su losa (con el estado), tamaño, fecha y el corazón para quitarlo.
+  function wishCell(r) {
+    const t = tile(r, "wishlist");
+    const label = "Quitar de la lista de deseos";
+    const el = h(
+      "div",
+      { class: "wl-cell" },
+      t,
+      h(
+        "div",
+        { class: "wl-foot" },
+        h("div", { class: "wl-meta" }, ...[sizeText(r.repackSize), date(r.date)].filter(Boolean).map((x) => h("span", null, x))),
+        h("button", { class: "wl-heart", "data-focus": "", "data-key": `wl-x-${r.slug}`, "data-slug": r.slug, title: label, "aria-label": label, onclick: () => wish(t.__r) }, icon("heartOn")),
+      ),
+    );
+    el.__tile = t;
+    return el;
+  }
+
+  function renderWishlist() {
+    if (!wishEl) return;
+    const items = sortWishlist(ejg.explore.wishlist.items, wishSort);
+    const cur = focus.current;
+    const inPage = !!cur && wishEl.contains(cur);
+    const at = inPage && wlGrid.contains(cur) ? Array.prototype.indexOf.call(wlGrid.children, cur.closest(".wl-cell")) : -1;
+    remember(items);
+    wlCount.textContent = items.length ? `${items.length} ${items.length === 1 ? "juego" : "juegos"}` : "";
+    wlSort.hidden = !items.length;
+    wlSort.querySelector("b").textContent = (WISH_SORTS.find((o) => o.id === wishSort) || WISH_SORTS[0]).label;
+    keyed(
+      wlGrid,
+      items,
+      (r) => r.slug,
+      (r, prev) => (prev ? ((prev.__tile.__r = r), applyStatus(prev.__tile), prev) : wishCell(r)),
+    );
+    wlEmpty.hidden = !!items.length;
+    // Si se quitó el juego enfocado, el foco pasa al que ocupa su sitio.
+    if (inPage && (!wishEl.contains(cur) || cur.closest("[hidden]"))) {
+      const cell = at >= 0 ? wlGrid.children[Math.min(at, wlGrid.children.length - 1)] : null;
+      const next = cell ? cell.querySelector(cur.classList.contains("wl-heart") ? ".wl-heart" : ".st-tile") : wlEmpty.querySelector("[data-focus]");
+      if (next) focus.focus(next, { silent: true, noScroll: true });
+    }
+  }
+
+  function openWishlist() {
+    view.name = "wishlist";
+    paint();
+    root.scrollTop = 0;
+    focusDefault();
+    onView();
+  }
+
+  // «Ordenar»: las opciones en un menú junto al botón (también con X).
+  function openWishSort() {
+    if (!wishEl || wlSort.hidden) return;
+    optionsMenu(
+      wlSort,
+      WISH_SORTS.map((o) => [
+        o.label,
+        () => {
+          wishSort = o.id;
+          renderWishlist();
+        },
+        wishSort === o.id ? "on" : "",
+      ]),
+    );
+  }
+
+  // Corazón: añade o quita de la lista (una pulsación cada vez).
+  function wish(r) {
+    if (wishBusy) return;
+    wishBusy = true;
+    toggleWish(ejg, r, "tu lista de deseos")
+      .then((on) => det?.d.slug === r.slug && updateWish(on))
+      .finally(() => (wishBusy = false));
+  }
+
+  // Corazón de la ficha: vacío («Añadir a la lista de deseos») o lleno («En tu lista de deseos»).
+  function updateWish(on) {
+    if (!det) return;
+    if (on == null) on = wishSet().has(det.d.slug);
+    const b = det.wish;
+    if (b.__on === on) return;
+    b.__on = on;
+    const label = on ? "En tu lista de deseos" : "Añadir a la lista de deseos";
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-label", label);
+    b.setAttribute("aria-pressed", String(on));
+    b.title = label;
+    b.replaceChildren(icon(on ? "heartOn" : "heart"));
+  }
+
   // ─────────────── ficha ───────────────
   async function openRepack(slug) {
     if (view.name !== "detail") {
@@ -655,8 +801,11 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     const txt = h("span");
     const pct = h("b");
     const prog = h("div", { class: "pd-prog", hidden: true }, h("div", { class: "pd-prog-t" }, txt, pct), h("div", { class: "pd-bar" }, bar));
-    det = { d, btn, hint, prog, bar, txt, pct };
     const round = (ico, label, key, fn) => h("button", { class: "pd-round", "data-focus": "", "data-key": key, "aria-label": label, title: label, onclick: fn }, icon(ico));
+    // Junto al botón principal, como en la consola: el corazón de la lista de deseos.
+    const wishBtn = round("heart", "Añadir a la lista de deseos", "pd-wish", () => wish(d));
+    wishBtn.classList.add("wish");
+    det = { d, btn, hint, prog, bar, txt, pct, wish: wishBtn };
     const fact = (k, v) => (v ? h("div", null, h("b", null, v), k) : null);
     const facts = [
       ["Géneros", d.genres.map(genreLabel).join(", ")],
@@ -698,6 +847,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
             "div",
             { class: "pd-btns", "data-focus-group": "pd-btns" },
             btn,
+            wishBtn,
             round("download", "Descargas", "pd-dl", openDownloads),
             d.url ? round("ext", "Ver en FitGirl", "pd-web", () => run(ejg.explore.openPage(d.slug))) : null,
           ),
@@ -765,6 +915,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
       full ? similarSec(d) : null,
     );
     updateDetail();
+    updateWish();
     if (descCard) requestAnimationFrame(() => descCard.classList.toggle("long", desc.scrollHeight > desc.clientHeight + 4));
     return page;
   }
@@ -1025,7 +1176,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     list.style.left = `${Math.max(16, Math.min(innerWidth - list.offsetWidth - 16, a.right - list.offsetWidth))}px`;
     menuOpen = { layer: l, prev };
     ejg.sound.play("open");
-    focus.focus(list.querySelector("[data-focus]"), { silent: true });
+    focus.focus(list.querySelector(".on") || list.querySelector("[data-focus]"), { silent: true });
     onView();
   }
   function closeMenu() {
@@ -1278,6 +1429,17 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
   }
   ejg.downloads.onChange(onDownloads);
 
+  // La lista de deseos cambió (aquí, en otro tema o en el host).
+  function onWish() {
+    if (!shown) return;
+    if (view.name === "wishlist") renderWishlist();
+    updateCounts();
+    updateWish();
+    for (const el of root.querySelectorAll(".st-tile[data-slug]")) applyStatus(el);
+    if (view.name === "wishlist") onView();
+  }
+  ejg.explore.wishlist.onChange(onWish);
+
   // ─────────────── pintar y foco ───────────────
   function onState() {
     if (!shown) return;
@@ -1298,6 +1460,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     if (view.name === "detail") el = detailPage();
     else if (view.name === "search") el = searchEl || searchPage();
     else if (view.name === "browse") el = browseEl || browsePage();
+    else if (view.name === "wishlist") el = wishEl || wishPage();
     else {
       const s = store.state;
       if (!(frontEl && frontFor === s.home && s.home && frontGenres === s.genres.length)) {
@@ -1310,6 +1473,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     if (root.firstChild !== el) root.replaceChildren(el);
     if (view.name === "search") renderResults();
     if (view.name === "browse") renderBrowse();
+    if (view.name === "wishlist") renderWishlist();
     requestAnimationFrame(updateDeep);
     updateCounts();
     for (const t of el.querySelectorAll(".st-tile[data-slug]")) applyStatus(t);
@@ -1337,6 +1501,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     if (view.name === "detail") el = root.querySelector(".pd-main") || root.querySelector("[data-focus]");
     else if (view.name === "search") el = input;
     else if (view.name === "browse") el = brFilter;
+    else if (view.name === "wishlist") el = wlGrid?.querySelector(".st-tile") || wlEmpty?.querySelector("[data-focus]");
     else el = (frontFocus?.isConnected && root.contains(frontFocus) && frontFocus) || root.querySelector(".st-feat .st-tile") || root.querySelector(".st-tile") || root.querySelector("[data-focus]");
     if (el) focus.focus(el, { silent: true });
   }
@@ -1359,17 +1524,18 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     if (!root.contains(el)) return;
     const r = el.dataset.slug && bySlug.get(el.dataset.slug);
     const r0 = el.closest(".st-row");
+    const list = view.name === "search" || view.name === "browse" || view.name === "wishlist";
     if (view.name === "front") {
       if (r0) frontFocus = el;
       if (r) showInfo(r, el.dataset.sec);
-    } else if ((view.name === "search" || view.name === "browse") && r?.hero) setBg(r.hero);
+    } else if (list && r?.hero) setBg(r.hero);
     if (pointer) return;
     if (r0) scrollRow(r0, el);
     if (view.name === "front") {
       const sec = el.closest(".st-sec");
       root.scrollTo({ top: sec ? sec.offsetTop - 24 : 0, behavior: "smooth" });
-    } else if (view.name === "search" || view.name === "browse") {
-      if (el.closest(".st-menu, .st-sbar, .br-top")) root.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (list) {
+      if (el.closest(".st-menu, .st-sbar, .br-top, .wl-head")) root.scrollTo({ top: 0, behavior: "smooth" });
       else el.scrollIntoView({ block: "nearest", behavior: "smooth" });
     } else if (el.closest(".pd-more")) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
     else root.scrollTo({ top: 0, behavior: "smooth" });
@@ -1380,7 +1546,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
   function updateDeep() {
     deepRaf = 0;
     const top = root.querySelector(".st-hero, .pd-top");
-    const deep = shown && (view.name === "search" || view.name === "browse" || (!!top && root.scrollTop > top.offsetHeight * 0.4));
+    const deep = shown && (view.name === "search" || view.name === "browse" || view.name === "wishlist" || (!!top && root.scrollTop > top.offsetHeight * 0.4));
     document.body.classList.toggle("store-deep", deep);
   }
   root.addEventListener("scroll", () => (deepRaf ||= requestAnimationFrame(updateDeep)), { passive: true });
@@ -1412,7 +1578,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
       onView();
       return true;
     }
-    if (view.name === "search" || view.name === "browse") return (goFront(), true);
+    if (view.name === "search" || view.name === "browse" || view.name === "wishlist") return (goFront(), true);
     // En la portada, desde las filas de abajo se vuelve a la destacada.
     const cur = focus.current;
     if (cur && root.contains(cur) && cur.closest(".st-sec")) {
@@ -1454,6 +1620,13 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
         ["y", "Buscar"],
         ["back", "Atrás"],
       ];
+    if (view.name === "wishlist")
+      return [
+        ["accept", "Seleccionar"],
+        ...(ejg.explore.wishlist.items.length ? [["x", "Ordenar"]] : []),
+        ["y", "Buscar"],
+        ["back", "Atrás"],
+      ];
     return [
       ["accept", "Seleccionar"],
       ["y", "Buscar"],
@@ -1483,6 +1656,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
       if (view.name !== "front") goFront();
     },
     openRepack,
+    openWishlist,
     openDownloads,
     closeDownloads,
     back,
@@ -1493,9 +1667,11 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
       if (ejg.input.source === "gamepad") return keyboard();
       openSearch(true);
     },
-    /** X: «Filtrar y ordenar» en Explorar. */
+    /** X: «Filtrar y ordenar» en Explorar; «Ordenar» en la lista de deseos. */
     filters() {
-      if (shown && view.name === "browse" && !sheet) openSheet();
+      if (!shown || sheet) return;
+      if (view.name === "browse") openSheet();
+      else if (view.name === "wishlist") openWishSort();
     },
     hints: hintsFor,
     get panelOpen() {

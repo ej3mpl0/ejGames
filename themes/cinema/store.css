@@ -318,3 +318,54 @@ img.img-error { visibility: hidden; }
 .sim-info b { font-size: 14px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .sim-info span { font-size: 12.5px; color: #a3a3a3; }
 .sim-card:hover, .sim-card.is-focused { box-shadow: 0 0 0 2px #fff; }
+
+/* ─────────── lista de deseados ─────────── */
+/* botón de la cabecera, junto a «Géneros», con el número de juegos */
+.nf-wish { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; font-size: 15px; font-weight: 700; color: #e5e5e5; background: rgba(0, 0, 0, 0.5); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
+.nf-drop-btn + .nf-wish { margin-left: -14px; }
+.nf-wish > span:first-child { display: grid; }
+.nf-wish svg { width: 18px; height: 18px; stroke-width: 2.4; }
+.nf-wish .nbadge { margin-left: 0; }
+.nf-wish:hover, .nf-wish.is-focused { color: #fff; background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 1px #fff, 0 0 0 2px #fff; }
+
+/* marca «en tu lista de deseados» en las tarjetas */
+.sc-wish { position: absolute; top: 7px; right: 7px; z-index: 3; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: rgba(0, 0, 0, 0.72); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.85); }
+.sc-wish[hidden] { display: none; }
+.sc-wish svg { width: 13px; height: 13px; stroke-width: 3; }
+.sc:has(> .sc-wish:not([hidden])) > .sc-tag { max-width: calc(100% - 44px); }
+.t10-art .sc-wish { top: 5px; right: 5px; width: 18px; height: 18px; }
+.t10-art .sc-wish svg { width: 11px; height: 11px; }
+.t10-art:has(.sc-wish:not([hidden])) .sc-tag { max-width: calc(100% - 34px); }
+
+/* ficha: «+ Deseados» / «✓ En deseados», redondo y con su nombre debajo */
+.s-wishbtn { position: relative; flex: none; align-self: center; }
+.s-wishbtn .round { transition: border-color 0.15s ease, background 0.15s ease; }
+.s-wishbtn .round svg { width: 20px; height: 20px; stroke-width: 2.4; }
+.s-wishbtn.on .round { border-color: #fff; background: rgba(255, 255, 255, 0.16); }
+.s-wishbtn:hover .round, .s-wishbtn.is-focused .round { border-color: #fff; box-shadow: 0 0 0 2px #fff; }
+.s-wish-lb { position: absolute; top: 100%; left: 50%; margin-top: 5px; transform: translateX(-50%); font-size: 12px; font-weight: 700; white-space: nowrap; color: rgba(255, 255, 255, 0.8); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9); pointer-events: none; }
+.s-wishbtn:hover .s-wish-lb, .s-wishbtn.is-focused .s-wish-lb { color: #fff; }
+
+/* la página: tarjetas con tamaño, fecha, cuándo se añadió y «Quitar» */
+.wl-page .nf-head { gap: 18px; align-items: baseline; }
+.wl-total { color: #808080; font-size: 15px; }
+.wl-grid { gap: 30px 14px; }
+.wl-item { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.wl-item .sc { width: 100%; }
+.wl-item .sc.is-focused, .wl-item .sc:hover { transform: scale(1.06); }
+.wl-foot { display: flex; align-items: center; gap: 12px; padding: 0 2px; }
+.wl-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.wl-meta span { font-size: 13.5px; font-weight: 600; color: #e5e5e5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wl-meta small { font-size: 12.5px; color: #808080; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wl-x { flex: none; width: 36px; height: 36px; border-color: rgba(255, 255, 255, 0.7); }
+.wl-x svg { width: 16px; height: 16px; stroke-width: 2.6; }
+/* ✓ en reposo; ✕ al señalarlo (quitar) */
+.wl-x svg + svg, .wl-x:hover svg:first-child, .wl-x.is-focused svg:first-child { display: none; }
+.wl-x:hover svg + svg, .wl-x.is-focused svg + svg { display: block; }
+.wl-empty { padding-top: 60px; }
+
+:root[data-mode="tv"] .s-wish-lb { font-size: 14px; }
+:root[data-mode="tv"] .wl-total { font-size: 17px; }
+:root[data-mode="tv"] .wl-meta span { font-size: 16px; }
+:root[data-mode="tv"] .wl-meta small { font-size: 14.5px; }
+:root[data-mode="tv"] .wl-x { width: 44px; height: 44px; }

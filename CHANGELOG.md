@@ -5,6 +5,21 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.7.3
+
+**Tienda: lista de deseados**
+- Guarda los juegos que quieres desde su ficha («Añadir a tu lista de deseados») y tenlos a mano en su sección de la
+  tienda, con cuándo los añadiste, su tamaño, su estado al día (descargando, instalado, en tu biblioteca) y el botón
+  para descargarlos o jugar. Se ordena por fecha, nombre, publicación o tamaño.
+- Se guarda **en tu PC**, una lista por perfil local, y es la misma en todos los temas: «Lista de deseados» en
+  Steam (arriba a la derecha de la tienda, como en Steam), «Lista de deseos» con su corazón en PS5, Xbox y Switch,
+  «Deseados» en Cine (con su fila en la portada) y la sección DESEADOS en Retro. También en la ventana Explorar del
+  host. Los juegos que tienes en la lista llevan su marca en la tienda.
+- Para temas: `ejg.explore.wishlist` (items, has, toggle, onChange) y, en el kit, `sortWishlist` y `toggleWish`.
+
+**Arreglos**
+- En Cine, la ficha de un juego sin capturas enseñaba «null».
+
 ## 0.7.2
 
 **Cada tema, su perfil**

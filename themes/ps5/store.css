@@ -318,3 +318,36 @@ body.has-dlg .hints { z-index: 31; }
 .st-tags .st-tag { padding: 5px 13px; border-radius: 99px; background: rgba(255, 255, 255, 0.13); font-size: 13px; color: rgba(255, 255, 255, 0.9); backdrop-filter: blur(6px); transition: background 0.15s ease, color 0.15s ease; }
 .st-tags .st-tag:hover, .st-tags .st-tag.is-focused { background: #fff; color: #0b0d12; }
 .pd-similar { padding-bottom: 60px; }
+
+/* ─────────────── lista de deseos ─────────────── */
+.st-count.wl { background: rgba(255, 255, 255, 0.22); }
+.st-mi:hover .st-count.wl, .st-mi.is-focused .st-count.wl { background: #0b0d12; }
+/* Corazón en las losas de los juegos que están en la lista. */
+.st-heart { position: absolute; z-index: 2; top: 8px; left: 8px; width: 26px; height: 26px; display: none; place-items: center; border-radius: 50%; background: rgba(8, 10, 15, 0.62); color: #fff; backdrop-filter: blur(6px); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
+.st-heart svg { width: 15px; height: 15px; }
+.st-tile.wished .st-heart { display: grid; }
+.wl-cell .st-tile.wished .st-heart { display: none; }
+/* Ficha: corazón lleno si ya está en la lista. */
+.pd-round.wish.on { background: rgba(255, 255, 255, 0.26); }
+.pd-round.wish.on:hover, .pd-round.wish.on.is-focused { background: #fff; }
+.wl-head { align-items: center; }
+.wl-sort { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
+.wl-sort .si svg { width: 20px; height: 20px; }
+.wl-sort span { font-weight: 400; }
+.wl-cell { display: flex; flex-direction: column; min-width: 0; }
+.wl-cell .st-sub:not(.on) { display: none; }
+.wl-foot { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 0 2px; transition: transform 0.22s var(--ease); }
+.wl-cell:has(.st-tile.is-focused) .wl-foot { transform: translateY(6px); }
+.wl-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: var(--muted); }
+.wl-meta span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wl-heart { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, 0.12); scroll-margin: 90px 0 110px; transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease; }
+.wl-heart svg { width: 19px; height: 19px; }
+.wl-heart:hover, .wl-heart.is-focused { background: #fff; color: #0b0d12; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3); }
+.wl-empty { padding-top: 7vh; }
+.wl-empty[hidden] { display: none; }
+.wl-empty-ico { display: block; margin-bottom: 14px; }
+.wl-empty-ico svg { width: 54px; height: 54px; stroke-width: 1.3; color: var(--muted); }
+/* Opción elegida en un menú (orden de la lista). */
+.om-item.on { display: flex; align-items: center; justify-content: space-between; gap: 24px; font-weight: 600; }
+.om-item.on::after { content: "✓"; }
+:root[data-mode="tv"] .wl-meta { font-size: 14.5px; }

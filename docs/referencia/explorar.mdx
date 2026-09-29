@@ -35,6 +35,24 @@ await ejg.explore.details(slug)  // ficha: screenshots [{thumb, full}], features
 ejg.explore.openPage(slug)       // abre la ficha en la web de la fuente
 ```
 
+## Lista de deseados
+
+Los juegos que el usuario quiere. Se guarda en el PC (en la base de datos de ejGames), una por perfil local, y es la
+misma en todos los temas y en la ventana Explorar del host. Cada juego lleva su estado al día (descargando, instalado,
+en la biblioteca…), como en las demás listas.
+
+```js
+ejg.explore.wishlist.items              // [{ ...ficha, addedAt }], la última añadida primero
+ejg.explore.wishlist.has(slug)
+await ejg.explore.wishlist.toggle(slug) // true si queda en la lista (también add y remove)
+ejg.explore.wishlist.onChange((items) => …)  // cambia desde cualquier tema o el host
+```
+
+El kit trae lo común para pintarla (`/_sdk/kit/store.js`): `WISH_SORTS` y `sortWishlist(items, orden)` (añadidos,
+nombre, publicación, tamaño) y `toggleWish(ejg, ficha)`, que la añade o la quita con su aviso. Cada tema la llama a
+su manera: «Lista de deseados» en Steam, «Lista de deseos» en PS5, Xbox y Switch, «Deseados» en Cine y DESEADOS en
+Retro. `toggleWish(ejg, ficha, "tu lista de deseos")` usa ese nombre en el aviso.
+
 ## El catálogo con filtros
 
 `browse(filtros, página)` recorre todo el catálogo:

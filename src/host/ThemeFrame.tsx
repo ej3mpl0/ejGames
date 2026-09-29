@@ -143,6 +143,7 @@ export function ThemeFrame() {
         input: { source: st.inputSource, pad: st.padType },
         version: st.boot?.version,
         downloads: st.downloads,
+        wishlist: st.wishlist,
         explore: st.settings?.exploreEnabled !== false,
         account: st.account,
       },
@@ -239,6 +240,9 @@ export function ThemeFrame() {
     else if (dlTimer.current.t == null) dlTimer.current.t = window.setTimeout(send, wait);
   }, [downloads]);
   useEffect(() => () => void (dlTimer.current.t != null && clearTimeout(dlTimer.current.t)), []);
+  // Lista de deseados → tema.
+  const wishlist = useApp((s) => s.wishlist);
+  useEffect(() => void (beats.current.ready && event("wishlist", wishlist)), [wishlist]);
   // Cuenta y amigos → tema.
   const account = useApp((s) => s.account);
   useEffect(() => void (beats.current.ready && event("account", account)), [account]);

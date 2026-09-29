@@ -27,6 +27,7 @@ const MIGRATIONS: &[Migration] = &[
     Migration::Sql(include_str!("../../migrations/009_guides.sql")),
     Migration::Sql(include_str!("../../migrations/010_trainers_maps.sql")),
     Migration::Sql(include_str!("../../migrations/011_accounts.sql")),
+    Migration::Sql(include_str!("../../migrations/012_wishlist.sql")),
 ];
 
 pub struct Db {

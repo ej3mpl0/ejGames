@@ -11,7 +11,7 @@ import { useOverlayNav } from "../input/nav";
 import { PROFILE_COLORS, bytes } from "../lib/format";
 import { useApp } from "../store/app";
 import { Hints } from "../components/Hints";
-import { AccountAuth } from "../components/AccountPanel";
+import { AccountAuth, AccountPerks } from "../components/AccountPanel";
 import { RecoveryCodeBox } from "./RecoveryCode";
 
 export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) {
@@ -264,13 +264,10 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
               )}
             </div>
           )}
-                  {step === 4 && created != null && (
-            <div className="max-h-[62vh] overflow-y-auto">
-              <h1 className="mb-2 text-3xl font-bold">Juega con tus amigos</h1>
-              <p className="mb-6 max-w-xl text-muted">
-                Con una cuenta de ejGames puedes añadir amigos, ver a qué juegan, recibir avisos dentro del juego y tener un perfil con tus juegos,
-                logros e insignias. Es opcional: puedes crearla luego en Ajustes.
-              </p>
+          {step === 4 && created != null && (
+            <div className="max-h-[62vh] overflow-y-auto pr-2">
+              <h1 className="mb-4 text-3xl font-bold">Juega con tus amigos</h1>
+              {!code && <AccountPerks className="mb-6 max-w-3xl" />}
               {code ? (
                 <div className="max-w-xl">
                   <RecoveryCodeBox code={code.code} username={code.username} onDone={() => onDone(created)} />
@@ -296,7 +293,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
           {step === 4 ? (
             !code && (
               <Button variant="ghost" size="lg" onClick={() => created != null && onDone(created)}>
-                Ahora no
+                Seguir sin cuenta
               </Button>
             )
           ) : step < 3 ? (

@@ -372,7 +372,26 @@ export function createFriendsView({ ejg, root, focus, cls = "s-", labels = {}, o
       body = [h("div", { class: `${c}empty` }, "Esta versión de ejGames no tiene cuentas.")];
     } else if (!st.linked || st.needsLogin) {
       body = [
-        h("div", { class: `${c}cta` }, h("b", null, st.needsLogin ? "Tu sesión ha caducado" : "Juega con tus amigos"), h("p", null, st.needsLogin ? "Vuelve a entrar para ver a tus amigos." : "Crea tu cuenta de ejGames (o entra con la tuya) para añadir amigos, ver a qué juegan y personalizar tu perfil."), btn("login", st.needsLogin ? "Entrar" : "Crear cuenta o entrar", () => ejg.ui.open("account"), "is-primary")),
+        h(
+          "div",
+          { class: `${c}cta` },
+          h("b", null, st.needsLogin ? "Tu sesión ha caducado" : "Juega con tus amigos"),
+          h(
+            "p",
+            null,
+            st.needsLogin
+              ? "Vuelve a entrar para ver a tus amigos."
+              : "Crear una cuenta de ejGames es opcional (sin ella todo funciona igual), pero con ella desbloqueas:",
+          ),
+          st.needsLogin
+            ? null
+            : h(
+                "ul",
+                { class: `${c}perks` },
+                ...["Amigos y a qué juegan", "Avisos dentro del juego", "La actividad de tu gente", "Tu perfil: marcos, fondos y vitrinas", "Nivel e insignias", "Comentarios"].map((t) => h("li", null, t)),
+              ),
+          btn("login", st.needsLogin ? "Entrar" : "Crear cuenta o entrar", () => ejg.ui.open("account"), "is-primary"),
+        ),
       ];
     } else {
       const me = s.me || { name: st.username, profile: {} };

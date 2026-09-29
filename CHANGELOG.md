@@ -7,9 +7,12 @@ biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
 ## 0.7.0
 
-**Cuenta de ejGames (opcional)**
-- Crea tu cuenta al empezar (un paso nuevo del inicio) o cuando quieras en **Ajustes → Cuenta y amigos**. Se liga a
-  tu perfil local y el resto de ejGames funciona igual sin ella.
+**Cuenta de ejGames: opcional, pero lo desbloquea todo**
+- Hacerte una cuenta es **opcional**: sin ella, ejGames funciona exactamente igual que antes. Con ella desbloqueas
+  todo lo de abajo: amigos y a qué juegan, avisos dentro del juego, actividad, tu perfil personalizable, nivel,
+  insignias y comentarios.
+- Créala al empezar (un paso nuevo del inicio, que se puede saltar) o cuando quieras en **Ajustes → Cuenta y
+  amigos**. Se liga a tu perfil local.
 - La contraseña no sale de tu PC: se convierte en una clave (argon2) y el servidor solo guarda un hash. Al crearla te
   da un **código de recuperación** para cuando la olvides; guárdalo, solo se enseña una vez.
 

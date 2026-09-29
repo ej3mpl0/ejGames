@@ -3,6 +3,7 @@
 // Lo usan Ajustes → Cuenta y el paso «Tu cuenta» del onboarding.
 
 import { useState, type FormEvent, type ReactNode } from "react";
+import { Award, Bell, Frame, MessageSquare, Sparkles, Users } from "lucide-react";
 import { api, errMsg } from "../api/tauri";
 import type { AccountState, AccountStatus } from "../api/types";
 import { openSocial } from "../host/social";
@@ -10,6 +11,37 @@ import { useApp } from "../store/app";
 import { Button, Cycle, Field, Section, TextInput, Toggle, cx } from "./ui";
 
 type Mode = "register" | "login" | "recover";
+
+const PERKS: [ReactNode, string, string][] = [
+  [<Users size={18} />, "Amigos", "Añádelos y mira quién está en línea y a qué juega."],
+  [<Bell size={18} />, "Avisos dentro del juego", "Cuando un amigo se conecta o empieza a jugar."],
+  [<Sparkles size={18} />, "Actividad", "Las partidas, los logros y los juegos completados de tu gente."],
+  [<Frame size={18} />, "Tu perfil", "Avatar con marco, fondo animado, color y vitrinas con tus juegos."],
+  [<Award size={18} />, "Nivel e insignias", "Se ganan jugando: horas, logros, juegos al 100 %…"],
+  [<MessageSquare size={18} />, "Comentarios", "En tu perfil y en el de tus amigos."],
+];
+
+/** Lo que desbloquea la cuenta (y que sin ella ejGames funciona igual). */
+export function AccountPerks({ className }: { className?: string }) {
+  return (
+    <div className={className}>
+      <p className="mb-3 text-sm text-muted">
+        Crear una cuenta es <b className="text-fg">opcional</b>: sin ella, ejGames funciona exactamente igual. Con ella desbloqueas:
+      </p>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {PERKS.map(([icon, title, text]) => (
+          <li key={title} className="flex gap-3 rounded-[calc(var(--h-radius)*0.8)] bg-surface-2/70 p-3 ring-1 ring-line">
+            <span className="mt-0.5 text-accent">{icon}</span>
+            <span>
+              <b className="block text-sm">{title}</b>
+              <span className="block text-xs text-muted">{text}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 const USERNAME = /^[A-Za-z0-9_.-]{3,20}$/;
 
@@ -275,11 +307,11 @@ export function AccountPanel() {
   return (
     <div className="max-w-xl">
       <Section title={a.needsLogin ? "Tu sesión ha caducado" : "Cuenta de ejGames"}>
-        <p className="px-3 pb-2 text-sm text-muted">
-          {a.needsLogin
-            ? `Vuelve a entrar como ${a.username} para ver a tus amigos.`
-            : "Con una cuenta puedes añadir amigos, ver a qué juegan, recibir avisos dentro del juego y tener un perfil con tus juegos, logros e insignias. Es opcional: todo lo demás funciona sin ella."}
-        </p>
+        {a.needsLogin ? (
+          <p className="px-3 pb-2 text-sm text-muted">Vuelve a entrar como {a.username} para ver a tus amigos.</p>
+        ) : (
+          <AccountPerks className="px-3 pb-4 pt-1" />
+        )}
         <AccountAuth />
       </Section>
     </div>

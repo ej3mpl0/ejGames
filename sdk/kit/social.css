@@ -405,6 +405,21 @@
   color: var(--s-muted);
   line-height: 1.5;
 }
+.s-perks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 20px;
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+  font-size: 13.5px;
+}
+.s-perks li::before {
+  content: "✓ ";
+  color: var(--s-accent);
+  font-weight: 700;
+}
 .s-more {
   margin: 10px auto 0;
   display: flex;

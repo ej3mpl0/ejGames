@@ -145,7 +145,7 @@ export function ThemeFrame() {
         downloads: st.downloads,
         wishlist: st.wishlist,
         explore: st.settings?.exploreEnabled !== false,
-        account: st.account,
+        page: st.page,
       },
     });
   }
@@ -243,9 +243,9 @@ export function ThemeFrame() {
   // Lista de deseados → tema.
   const wishlist = useApp((s) => s.wishlist);
   useEffect(() => void (beats.current.ready && event("wishlist", wishlist)), [wishlist]);
-  // Cuenta y amigos → tema.
-  const account = useApp((s) => s.account);
-  useEffect(() => void (beats.current.ready && event("account", account)), [account]);
+  // Tu perfil (nivel, avatar, marco…) → tema.
+  const page = useApp((s) => s.page);
+  useEffect(() => void (beats.current.ready && event("page", page)), [page]);
   const exploreOn = useApp((s) => s.settings?.exploreEnabled !== false);
   useEffect(() => void (beats.current.ready && event("explore", { enabled: exploreOn })), [exploreOn]);
 

@@ -11,7 +11,7 @@
   "host": { "accent": "#1e9e1e", "surface": "#16181d", "radius": "6px", "font": "\"Segoe UI Variable Text\", \"Segoe UI\", sans-serif" },
   "sounds": { "preset": "xbox" },
   "overlay": { "style": "xbox" },
-  "features": { "explore": true, "guides": true, "social": true },
+  "features": { "explore": true, "guides": true, "profile": true },
   "windowControls": "host",
   "settings": [
     { "key": "accent", "type": "color", "label": "Color de acento", "default": "#107c10" },

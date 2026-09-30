@@ -11,23 +11,11 @@ import { useOverlayNav } from "../input/nav";
 import { PROFILE_COLORS, bytes } from "../lib/format";
 import { useApp } from "../store/app";
 import { Hints } from "../components/Hints";
-import { AccountCard } from "../components/AccountCard";
 
 export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) {
   const themes = useApp((s) => s.themes);
   const toast = useApp((s) => s.toast);
   const [step, setStep] = useState(0);
-  // Cuentas de ejGames: el último paso (opcional), tras crear el perfil.
-  const [accounts, setAccounts] = useState(false);
-  const [created, setCreated] = useState<number | null>(null);
-  // Creando la cuenta (código de recuperación en pantalla): sin «Seguir sin cuenta».
-  const [inFlow, setInFlow] = useState(false);
-  useEffect(() => {
-    api
-      .accountState()
-      .then((a) => setAccounts(a.enabled))
-      .catch(() => {});
-  }, []);
   const [name, setName] = useState("");
   const [color, setColor] = useState(PROFILE_COLORS[0]);
   const [theme, setTheme] = useState("steam");
@@ -70,28 +58,21 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
     try {
       const p = await api.createProfile(name.trim() || "Jugador", color, theme);
       await api.login(p.id);
-      const before = await api.getSettings().catch(() => null);
-      const settings = await api.updateSettings({
-        accountPromoSeen: [...(before?.accountPromoSeen ?? []), p.id],
+      await api.updateSettings({
         firstRunDone: true,
         exploreEnabled: explore,
         downloadDir: explore ? dlDir ?? "" : "",
       });
-      useApp.getState().set({ settings });
       for (const f of folders) await api.addFolder(f.path, f.suggestedMode);
-      // Con cuentas, un último paso (la cuenta se liga al perfil recién creado).
-      if (accounts) {
-        setCreated(p.id);
-        setBusy(false);
-        setStep(4);
-      } else onDone(p.id);
+      onDone(p.id);
     } catch (e) {
       toast("error", errMsg(e));
       setBusy(false);
     }
   }
 
-  const steps = ["Tu perfil", "Tu estilo", "Tus juegos", "Descargas", ...(accounts ? ["Tu cuenta"] : [])];
+  const steps = ["Tu perfil", "Tu estilo", "Tus juegos", "Descargas"];
+  const last = step === steps.length - 1;
   return (
     <div ref={ref} className="relative flex h-full flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,#1d2a4a,#090c12_60%)]">
       <div
@@ -267,15 +248,10 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
               )}
             </div>
           )}
-          {step === 4 && created != null && (
-            <div className="max-h-[70vh] overflow-y-auto p-1">
-              <AccountCard skipDone onFinish={() => onDone(created)} onStep={(k) => setInFlow(k !== "form")} />
-            </div>
-          )}
         </div>
 
         <div className="mt-8 flex items-center justify-between gap-6">
-          <Button variant="ghost" icon={<ArrowLeft size={16} />} onClick={() => setStep(step - 1)} disabled={step === 0 || step === 4}>
+          <Button variant="ghost" icon={<ArrowLeft size={16} />} onClick={() => setStep(step - 1)} disabled={step === 0}>
             Atrás
           </Button>
           <Hints
@@ -285,19 +261,13 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
               ["back", "Atrás"],
             ]}
           />
-          {step === 4 ? (
-            !inFlow && (
-              <Button variant="ghost" size="lg" onClick={() => created != null && onDone(created)}>
-                Seguir sin cuenta
-              </Button>
-            )
-          ) : step < 3 ? (
+          {!last ? (
             <Button variant="primary" size="lg" onClick={() => setStep(step + 1)} disabled={step === 0 && !name.trim()}>
               Siguiente <ArrowRight size={18} />
             </Button>
           ) : (
-            <Button variant="primary" size="lg" icon={accounts ? undefined : <Sparkles size={18} />} onClick={finish} disabled={busy || (explore && !dlDir)}>
-              {busy ? "Preparando…" : accounts ? "Siguiente" : "Empezar"}
+            <Button variant="primary" size="lg" icon={<Sparkles size={18} />} onClick={finish} disabled={busy || (explore && !dlDir)}>
+              {busy ? "Preparando…" : "Empezar"}
             </Button>
           )}
         </div>

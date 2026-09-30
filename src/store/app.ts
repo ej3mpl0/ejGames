@@ -8,7 +8,7 @@ import type {
   RunningGame,
   Settings,
   ThemeInfo,
-  AccountState,
+  ProfileCard,
   WishItem,
 } from "../api/types";
 
@@ -32,10 +32,8 @@ export type OverlayName =
   | "guides"
   | "trainer"
   | "map"
-  | "social"
+  | "profile"
   | "profile-editor"
-  | "recovery-code"
-  | "account-auth"
   | "onboarding";
 
 export interface Overlay {
@@ -62,8 +60,8 @@ interface State {
   downloads: DownloadItem[];
   /** Lista de deseados de la tienda (del perfil activo). */
   wishlist: WishItem[];
-  /** Cuenta de ejGames del perfil (amigos, perfil). */
-  account: AccountState | null;
+  /** Tu perfil en corto (nivel, avatar, marco…), el que reciben los temas. */
+  page: ProfileCard | null;
   overlays: Overlay[];
   toasts: Toast[];
   meta: { done: number; total: number };
@@ -102,7 +100,7 @@ export const useApp = create<State>((set, get) => ({
   running: [],
   downloads: [],
   wishlist: [],
-  account: null,
+  page: null,
   overlays: [],
   toasts: [],
   meta: { done: 0, total: 0 },

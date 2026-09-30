@@ -11,7 +11,7 @@
   "host": { "accent": "#3b82f6", "surface": "#10141d", "radius": "18px", "font": "\"Segoe UI Variable Display\", \"Segoe UI\", sans-serif" },
   "sounds": { "preset": "ps" },
   "overlay": { "style": "playstation" },
-  "features": { "explore": true, "guides": true, "social": true },
+  "features": { "explore": true, "guides": true, "profile": true },
   "windowControls": "host",
   "settings": [
     { "key": "accent", "type": "color", "label": "Color de acento", "default": "#3b82f6" },

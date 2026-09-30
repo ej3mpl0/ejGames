@@ -6,6 +6,7 @@ import { ThemeFrame } from "./host/ThemeFrame";
 import { playSound } from "./host/sounds";
 import { globalKey, reloadTheme, setBigPicture } from "./host/window";
 import { installDownload, locateInstall, mergeProgress, setDownloads } from "./host/downloads";
+import { refreshPage, setPage } from "./host/profile";
 import { padTypeOf, startGamepad } from "./input/gamepad";
 import { dispatchNav } from "./input/nav";
 import { playtime } from "./lib/format";
@@ -19,9 +20,7 @@ import { checkOnLaunch } from "./host/update";
 import { GameEditor } from "./overlays/GameEditor";
 import { GuidesOverlay } from "./overlays/Guides";
 import { ProfileEditorOverlay } from "./overlays/ProfileEditor";
-import { AccountAuthOverlay } from "./overlays/AccountAuth";
-import { RecoveryCodeOverlay } from "./overlays/RecoveryCode";
-import { SocialOverlay } from "./overlays/Social";
+import { ProfileOverlay } from "./overlays/Profile";
 import { MapOverlay } from "./overlays/Map";
 import { TrainerOverlay } from "./overlays/Trainer";
 import { Onboarding } from "./overlays/Onboarding";
@@ -56,27 +55,6 @@ async function loadLibrary() {
   useApp.getState().set({ games, collections, running });
 }
 
-/**
- * Las cuentas son opcionales, pero que se sepa que existen: la primera vez que
- * se entra en cada perfil sin cuenta, el diálogo con lo que desbloquea
- * («Novedad»). Una sola vez por perfil.
- */
-function accountPromo(profileId: number) {
-  const st = useApp.getState();
-  const seen = st.settings?.accountPromoSeen ?? [];
-  if (!st.account?.enabled || st.account.linked || seen.includes(profileId)) return;
-  setTimeout(() => {
-    const now = useApp.getState();
-    // Con otra cosa abierta (o ya en otro perfil), la próxima vez.
-    if (now.overlays.length || now.profile?.id !== profileId || now.account?.linked) return;
-    now.open("account-auth", { mode: "register", promo: true });
-    void api
-      .updateSettings({ accountPromoSeen: [...seen, profileId] })
-      .then((settings) => useApp.getState().set({ settings }))
-      .catch(() => {});
-  }, 2500);
-}
-
 export default function App() {
   const boot = useApp((s) => s.boot);
   const profile = useApp((s) => s.profile);
@@ -89,11 +67,11 @@ export default function App() {
   async function enter(p: Profile) {
     set({ profile: p });
     await loadLibrary();
-    set({ account: await api.accountState().catch(() => null), wishlist: await api.wishlist().catch(() => []) });
+    setPage(await api.profilePage().catch(() => null));
+    set({ wishlist: await api.wishlist().catch(() => []) });
     useApp.getState().closeAll();
     setPhase("main");
     checkOnLaunch();
-    accountPromo(p.id);
   }
 
   // Arranque.
@@ -128,13 +106,13 @@ export default function App() {
         if (!useApp.getState().profile) return;
         if (e.full) await loadLibrary();
         else if (e.ids?.length) useApp.getState().patchGames(await api.getGames(e.ids));
+        // Juegos nuevos o logros: el nivel y las insignias pueden cambiar.
+        refreshPage(3000);
       }),
       on("meta:progress", (m) => set({ meta: m })),
       on("scan:progress", (s) => set({ scan: s })),
       on("app:toast", (t) => useApp.getState().toast(t.kind, t.message)),
-      on("social:changed", (a) => set({ account: a })),
       on("wishlist:changed", (list) => set({ wishlist: list })),
-      on("social:notice", (n) => useApp.getState().toast("info", n.body ? `${n.title}: ${n.body}` : n.title, { label: "Amigos", run: () => useApp.getState().open("social") })),
       on("theme:changed", (t) => {
         // El elegido, no el que se ve: con su theme.json roto se ve Steam y,
         // al arreglarlo, tiene que volver.
@@ -162,6 +140,8 @@ export default function App() {
       on("game:state", async (e) => {
         set({ running: await api.runningGames() });
         window.dispatchEvent(new CustomEvent("ejg:game-state", { detail: e }));
+        // Partida guardada: horas, nivel e insignias al día.
+        if (e.state === "stopped") refreshPage(500);
         if (e.state === "stopped" && e.value && e.value >= 60) {
           const g = useApp.getState().games.find((x) => x.id === e.gameId);
           useApp.getState().toast("ok", `Sesión de ${playtime(e.value)}${g ? ` en ${g.title}` : ""} registrada`);
@@ -265,14 +245,10 @@ export default function App() {
             return <TrainerOverlay key={key} args={o.args} onClose={onClose} />;
           case "map":
             return <MapOverlay key={key} args={o.args} onClose={onClose} />;
-          case "social":
-            return <SocialOverlay key={key} args={o.args} onClose={onClose} />;
+          case "profile":
+            return <ProfileOverlay key={key} args={o.args} onClose={onClose} />;
           case "profile-editor":
             return <ProfileEditorOverlay key={key} onClose={onClose} />;
-          case "account-auth":
-            return <AccountAuthOverlay key={key} args={o.args} onClose={onClose} />;
-          case "recovery-code":
-            return <RecoveryCodeOverlay key={key} args={o.args} onClose={onClose} />;
           case "profiles":
             return (
               <ProfilePicker

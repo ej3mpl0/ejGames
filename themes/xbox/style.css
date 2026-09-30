@@ -167,7 +167,7 @@ img { display: block; }
 .gx-inner .g-section-title { background: rgba(22, 24, 29, 0.99); }
 .gx-inner .g-toc-item.is-on { box-shadow: inset 3px 0 0 var(--accent); }
 
-/* ─── amigos y perfiles (kit social, en la página de guías) ─── */
+/* ─── tu perfil (kit profile, en la página de guías) ─── */
 .gx-inner .s-view {
   --s-fg: #f3f3f3;
   --s-muted: rgba(243, 243, 243, 0.62);
@@ -183,5 +183,4 @@ img { display: block; }
   overflow-y: auto;
   scrollbar-width: none;
 }
-.gx-inner .s-btn.is-primary { background: var(--accent); }
 .gx-inner .s-view.s-profile { max-width: none; }

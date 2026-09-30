@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <title>Steam</title>
     <link rel="stylesheet" href="/_sdk/kit/guides.css" />
-    <link rel="stylesheet" href="/_sdk/kit/social.css" />
+    <link rel="stylesheet" href="/_sdk/kit/profile.css" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="store.css" />
     <script type="module" src="main.js"></script>
@@ -22,7 +22,7 @@
       <nav class="tabs" data-ejg-nodrag>
         <button class="tab" data-focus data-tab="store" id="tab-store">Tienda</button>
         <button class="tab" data-focus data-tab="library">Biblioteca</button>
-        <div class="tab-wrap" id="me-wrap" hidden>
+        <div class="tab-wrap" id="me-wrap">
           <button class="tab tab-me" data-focus id="tab-me"></button>
           <div class="tab-menu" id="me-menu"></div>
         </div>
@@ -31,7 +31,7 @@
         <button class="icon-btn" data-focus data-action="search" title="Buscar (Ctrl+F)"><svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg></button>
         <button class="icon-btn" data-focus data-action="stats" title="Estadísticas"><svg viewBox="0 0 24 24"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg></button>
         <button class="icon-btn" data-focus data-action="settings" title="Ajustes (Ctrl+,)"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
-        <button class="profile-btn" data-focus id="acct-btn" title="Tu cuenta"><span class="avatar" id="avatar"></span><span id="profile-name"></span><svg class="caret" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg></button>
+        <button class="profile-btn" data-focus id="acct-btn" title="Tu perfil"><span class="avatar" id="avatar"></span><span id="profile-name"></span><svg class="caret" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg></button>
         <div class="win">
           <button data-win="min" title="Minimizar"><svg viewBox="0 0 12 12"><path d="M2 6h8"/></svg></button>
           <button data-win="max" title="Maximizar"><svg viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8"/></svg></button>
@@ -61,7 +61,7 @@
     <footer class="bottombar" data-ejg-drag>
       <button class="bb-add" data-focus data-action="add" data-ejg-nodrag><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Añadir un juego</button>
       <button class="bb-dl" data-focus id="dl-footer" data-ejg-nodrag></button>
-      <div class="bb-right"><button class="bb-friends" data-focus id="friends-btn" data-ejg-nodrag hidden></button></div>
+      <div class="bb-right"></div>
     </footer>
     <div id="hints" class="hints"></div>
     <div id="lightbox" hidden></div>

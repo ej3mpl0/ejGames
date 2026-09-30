@@ -155,7 +155,6 @@ pub async fn delete_profile(st: St<'_>, id: i64) -> CmdResult<()> {
     blocking(move || s.db.with(|c| repo::delete_profile(c, id))).await?;
     if *st.profile.read() == Some(id) {
         *st.profile.write() = None;
-        crate::online::on_profile(st.inner(), None);
     }
     Ok(())
 }
@@ -178,14 +177,12 @@ pub async fn login(st: St<'_>, id: i64, pin: Option<String>) -> CmdResult<Profil
     *st.profile.write() = Some(id);
     st.settings.update(|s| s.last_profile = Some(id))?;
     watch_active_theme(st.inner());
-    crate::online::on_profile(st.inner(), Some(id));
     Ok(p)
 }
 
 #[tauri::command]
 pub async fn logout(st: St<'_>) -> CmdResult<()> {
     *st.profile.write() = None;
-    crate::online::on_profile(st.inner(), None);
     Ok(())
 }
 
@@ -1188,120 +1185,44 @@ pub async fn overlay_pin(st: St<'_>, url: Option<String>) -> CmdResult<()> {
     Ok(crate::overlay::pin_map(st.inner(), url)?)
 }
 
-// ───────────────────────────── cuenta y amigos ─────────────────────────────
+// ───────────────────────────── perfil (página al estilo Steam) ─────────────────────────────
 
-use crate::online;
+use crate::profile_page;
+
+/// La página de perfil del perfil activo (nivel, insignias, vitrinas, juegos, actividad).
+#[tauri::command]
+pub async fn profile_page(st: St<'_>) -> CmdResult<Value> {
+    let pid = active(&st)?;
+    let s = st.inner().clone();
+    blocking(move || profile_page::view(&s, pid)).await
+}
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WithCode {
-    state: online::AccountState,
-    /// Código de recuperación: solo se enseña una vez.
-    recovery_code: String,
+pub struct PageSaved {
+    profile: Profile,
+    page: Value,
 }
 
+/// Guarda cambios del perfil (solo los campos que llegan). Devuelve el perfil
+/// local (nombre y avatar) y la página al día.
 #[tauri::command]
-pub async fn account_state(st: St<'_>) -> CmdResult<online::AccountState> {
-    Ok(online::state(st.inner()))
+pub async fn profile_page_update(st: St<'_>, patch: Value) -> CmdResult<PageSaved> {
+    let pid = active(&st)?;
+    let s = st.inner().clone();
+    blocking(move || {
+        profile_page::update(&s, pid, &patch)?;
+        let profile = s.db.with(|c| repo::get_profile(c, pid))?;
+        Ok(PageSaved { profile, page: profile_page::view(&s, pid)? })
+    })
+    .await
 }
 
+/// Guarda una imagen elegida por el usuario (avatar, fondo o captura para la
+/// vitrina) y devuelve su URL.
 #[tauri::command]
-pub async fn account_register(st: St<'_>, username: String, password: String, display_name: Option<String>) -> CmdResult<WithCode> {
-    let (state, recovery_code) = online::register(st.inner(), &username, &password, display_name.as_deref().unwrap_or("")).await?;
-    Ok(WithCode { state, recovery_code })
-}
-
-#[tauri::command]
-pub async fn account_login(st: St<'_>, username: String, password: String) -> CmdResult<online::AccountState> {
-    Ok(online::login(st.inner(), &username, &password).await?)
-}
-
-#[tauri::command]
-pub async fn account_recover(st: St<'_>, username: String, code: String, password: String) -> CmdResult<WithCode> {
-    let (state, recovery_code) = online::recover(st.inner(), &username, &code, &password).await?;
-    Ok(WithCode { state, recovery_code })
-}
-
-#[tauri::command]
-pub async fn account_logout(st: St<'_>) -> CmdResult<online::AccountState> {
-    Ok(online::logout(st.inner()).await?)
-}
-
-#[tauri::command]
-pub async fn account_password(st: St<'_>, old: String, new: String) -> CmdResult<()> {
-    Ok(online::change_password(st.inner(), &old, &new).await?)
-}
-
-#[tauri::command]
-pub async fn account_new_code(st: St<'_>, password: String) -> CmdResult<String> {
-    Ok(online::new_recovery_code(st.inner(), &password).await?)
-}
-
-#[tauri::command]
-pub async fn account_delete(st: St<'_>, password: String) -> CmdResult<online::AccountState> {
-    Ok(online::delete_account(st.inner(), &password).await?)
-}
-
-#[tauri::command]
-pub async fn account_prefs(st: St<'_>, status: Option<String>, notify_online: Option<bool>, notify_playing: Option<bool>) -> CmdResult<online::AccountState> {
-    Ok(online::set_prefs(st.inner(), status, notify_online, notify_playing).await?)
-}
-
-#[tauri::command]
-pub async fn account_profile(st: St<'_>, patch: Value) -> CmdResult<Value> {
-    Ok(online::update_profile(st.inner(), patch).await?)
-}
-
-/// Sube una imagen elegida por el usuario (avatar, fondo) o una captura suya (vitrina).
-#[tauri::command]
-pub async fn account_image(st: St<'_>, kind: String, path: String) -> CmdResult<Value> {
-    Ok(online::upload_image(st.inner(), &kind, &path).await?)
-}
-
-/// Guarda el código de recuperación donde diga el usuario (diálogo de guardar).
-#[tauri::command]
-pub async fn save_text_file(path: String, text: String) -> CmdResult<()> {
-    let p = PathBuf::from(&path);
-    if p.extension().and_then(|e| e.to_str()).map(|e| !e.eq_ignore_ascii_case("txt")).unwrap_or(true) || text.len() > 16 * 1024 {
-        return Err(CmdError::Msg("Solo archivos .txt".into()));
-    }
-    blocking(move || Ok(std::fs::write(p, text)?)).await
-}
-
-#[tauri::command]
-pub async fn social_refresh(st: St<'_>) -> CmdResult<online::AccountState> {
-    online::sync_now(st.inner()).await?;
-    Ok(online::state(st.inner()))
-}
-
-#[tauri::command]
-pub async fn social_friend(st: St<'_>, action: String, target: Value) -> CmdResult<online::AccountState> {
-    Ok(online::friend(st.inner(), &action, target).await?)
-}
-
-#[tauri::command]
-pub async fn social_user(st: St<'_>, id: i64) -> CmdResult<Value> {
-    Ok(online::user(st.inner(), id).await?)
-}
-
-#[tauri::command]
-pub async fn social_comments(st: St<'_>, id: i64, before: Option<i64>) -> CmdResult<Value> {
-    Ok(online::comments(st.inner(), id, before).await?)
-}
-
-#[tauri::command]
-pub async fn social_comment(st: St<'_>, id: i64, text: String) -> CmdResult<()> {
-    Ok(online::post_comment(st.inner(), id, &text).await?)
-}
-
-#[tauri::command]
-pub async fn social_comment_delete(st: St<'_>, id: i64) -> CmdResult<()> {
-    Ok(online::delete_comment(st.inner(), id).await?)
-}
-
-#[tauri::command]
-pub async fn social_feed(st: St<'_>, before: Option<i64>) -> CmdResult<Value> {
-    Ok(online::feed(st.inner(), before).await?)
+pub async fn profile_image(st: St<'_>, kind: String, path: String) -> CmdResult<String> {
+    let s = st.inner().clone();
+    blocking(move || profile_page::image(&s, &kind, &path)).await
 }
 
 // ───────────────────────────── descargas ─────────────────────────────

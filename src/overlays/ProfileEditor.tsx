@@ -1,22 +1,24 @@
-// Editor del perfil de la cuenta, como «Editar perfil» de Steam: una página
-// con la navegación a la izquierda (General, Avatar, Fondo del perfil, Tema,
-// Insignia destacada, Vitrinas destacadas y Privacidad) y cada sección con sus
-// grupos, etiquetas en mayúsculas y «Cancelar / Guardar» abajo. Común a todos
-// los temas, como Ajustes.
+// Editor del perfil, como «Editar perfil» de Steam: una página con la
+// navegación a la izquierda (General, Avatar, Fondo del perfil, Tema, Insignia
+// destacada y Vitrinas destacadas) y cada sección con sus grupos, etiquetas en
+// mayúsculas y «Cancelar / Guardar» abajo. Común a todos los temas, como
+// Ajustes. Todo se guarda en el PC; el nombre y el avatar son los del perfil
+// local.
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { ArrowDown, ArrowUp, ChevronDown, Plus, X } from "lucide-react";
 import { api, errMsg } from "../api/tauri";
-import type { SocialProfile, SocialShowcase } from "../api/types";
-import { ProfilePreview } from "../components/social";
+import type { ProfileFields, ProfilePage, ProfileShowcase } from "../api/types";
+import { ProfilePreview } from "../components/profile";
+import { setPage } from "../host/profile";
 import { cx } from "../components/ui";
 import { autoNav, focusNav, pushNavFilter, useOverlayNav } from "../input/nav";
 import { activeTheme, useApp } from "../store/app";
-import { BACKGROUNDS, BADGES, COLORS, FRAMES, SHOWCASES, TIERS, avatar, badgeEl } from "../../sdk/kit/social.js";
+import { BACKGROUNDS, BADGES, COLORS, FRAMES, SHOWCASES, TIERS, avatar, badgeEl } from "../../sdk/kit/profile.js";
 import "./profile-editor.css";
 
-type Sec = "general" | "avatar" | "background" | "theme" | "badge" | "showcases" | "privacy";
+type Sec = "general" | "avatar" | "background" | "theme" | "badge" | "showcases";
 
 const SECS: { value: Sec; label: string }[] = [
   { value: "general", label: "General" },
@@ -25,10 +27,9 @@ const SECS: { value: Sec; label: string }[] = [
   { value: "theme", label: "Tema" },
   { value: "badge", label: "Insignia destacada" },
   { value: "showcases", label: "Vitrinas destacadas" },
-  { value: "privacy", label: "Privacidad" },
 ];
 
-type Draft = SocialProfile;
+type Draft = ProfileFields;
 type Opt<T extends string = string> = { value: T; label: string };
 
 const IMAGE_FILTERS = [{ name: "Imágenes", extensions: ["png", "jpg", "jpeg", "webp", "gif", "bmp"] }];
@@ -129,72 +130,41 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
-  const account = useApp((s) => s.account);
-  const games = useApp((s) => s.games);
   const toast = useApp((s) => s.toast);
-  const me = account?.social?.me;
+  const upsertProfile = useApp((s) => s.upsertProfile);
   // La vista previa con el perfil del tema que usas (cada tema tiene el suyo).
   const themeId = useApp((s) => activeTheme(s)?.id ?? "steam");
   const layout = ["ps5", "xbox", "switch", "cinema", "retro"].includes(themeId) ? themeId : "steam";
   const [sec, setSec] = useState<Sec>("general");
-  const [draft, setDraft] = useState<Draft | null>(me ? structuredClone(me.profile) : null);
+  // Lo guardado (para saber qué ha cambiado) y lo que se está editando.
+  const [page, setSaved] = useState<ProfilePage | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const ref = useOverlayNav<HTMLDivElement>({ onBack: onClose });
 
-  // Los mismos juegos que salen en el perfil (el resumen: jugados un minuto o con logros).
-  const played = useMemo(
-    () => games.filter((g) => g.playtime >= 60 || (g.achievements?.unlocked ?? 0) > 0).sort((a, b) => b.playtime - a.playtime),
-    [games],
-  );
+  useEffect(() => {
+    api
+      .profilePage()
+      .then((p) => {
+        setSaved(p);
+        setDraft(structuredClone(p.profile));
+      })
+      .catch((e) => setError(errMsg(e)));
+  }, []);
 
-  // La página de perfil tal cual la verán los demás (con la biblioteca local para las imágenes).
-  const preview = useMemo(() => {
-    if (!me || !draft) return null;
-    return {
-      id: me.id,
-      username: me.username,
-      name: draft.name,
-      avatarUrl: draft.avatarUrl,
-      frame: draft.frame,
-      level: me.level,
-      relation: "self",
-      memberSince: me.createdAt,
-      background: draft.background,
-      backgroundImageUrl: draft.backgroundImage ? draft.backgroundImageUrl : undefined,
-      color: draft.color,
-      country: draft.country,
-      profile: { ...draft, featuredBadge: draft.featuredBadge },
-      xp: me.xp,
-      badges: me.badges,
-      presence: { status: "online" },
-      friends: account?.social?.friends.length ?? 0,
-      topFriends: (account?.social?.friends ?? []).slice(0, 6),
-      summary: {
-        games: played.map((g) => ({
-          title: g.title,
-          minutes: Math.floor(g.playtime / 60),
-          last: g.lastPlayed,
-          ach: g.achievements ? [g.achievements.unlocked, g.achievements.total] : null,
-          headerUrl: g.media.header,
-          coverUrl: g.media.cover,
-        })),
-        stats: {
-          library: games.length,
-          minutes: Math.floor(played.reduce((s, g) => s + g.playtime, 0) / 60),
-          achievements: games.reduce((s, g) => s + (g.achievements?.unlocked ?? 0), 0),
-          perfect: games.filter((g) => g.achievements && g.achievements.total > 0 && g.achievements.unlocked === g.achievements.total).length,
-        },
-      },
-      activity: [],
-    };
-  }, [me, draft, played, games, account?.social?.friends]);
+  // Los mismos juegos que salen en el perfil (jugados un minuto o con logros).
+  const played = page?.summary.games ?? [];
 
-  if (!me || !draft || !preview) {
+  // La página de perfil tal cual quedará.
+  const preview = useMemo(() => (page && draft ? { ...page, name: draft.name, profile: draft } : null), [page, draft]);
+
+  if (!page || !draft || !preview) {
     return (
       <div ref={ref} className="pe overlay-enter" data-focus-trap>
         <div className="pe-empty">
-          <p>Entra en tu cuenta de ejGames para editar tu perfil.</p>
+          <p>{error ?? "Cargando tu perfil…"}</p>
           <button type="button" data-nav className="pe-btn" onClick={onClose}>
             Volver
           </button>
@@ -204,19 +174,18 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
   }
 
   const set = (p: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...p } : d));
-  const KEYS: (keyof Draft)[] = ["name", "realName", "country", "bio", "avatar", "backgroundImage", "frame", "background", "color", "showcases", "featuredBadge", "privacy", "comments"];
-  // Las vitrinas se comparan sin las URL (el servidor guarda hashes).
-  const plain = (d: Draft, k: keyof Draft) => JSON.stringify(k === "showcases" ? d.showcases.map(({ urls: _u, ...x }) => x) : (d[k] ?? null));
-  const changed = KEYS.filter((k) => plain(draft, k) !== plain(me.profile, k));
+  const KEYS: (keyof Draft)[] = ["name", "avatarUrl", "realName", "country", "bio", "backgroundImageUrl", "frame", "background", "color", "showcases", "featuredBadge"];
+  const plain = (d: Draft, k: keyof Draft) => JSON.stringify(d[k] ?? null);
+  const changed = KEYS.filter((k) => plain(draft, k) !== plain(page.profile, k));
   const showcases = draft.showcases;
-  const setShowcases = (list: SocialShowcase[]) => set({ showcases: list });
+  const setShowcases = (list: ProfileShowcase[]) => set({ showcases: list });
 
-  async function upload(kind: "avatar" | "background" | "shot") {
+  async function pick(kind: "avatar" | "background" | "shot") {
     const path = await openDialog({ multiple: false, filters: IMAGE_FILTERS });
     if (typeof path !== "string") return null;
     setBusy(kind);
     try {
-      return await api.accountImage(kind, path);
+      return await api.profileImage(kind, path);
     } catch (e) {
       toast("error", errMsg(e));
       return null;
@@ -227,12 +196,17 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
 
   // Guardar no cierra (como en Steam): el perfil de detrás se pone al día solo.
   async function save() {
-    if (!changed.length) return;
+    if (!changed.length || !draft) return;
+    if (!draft.name.trim()) return toast("error", "El nombre no puede estar vacío.");
     setBusy("save");
     try {
       const patch: Record<string, unknown> = {};
-      for (const k of changed) patch[k] = k === "showcases" ? draft!.showcases.map(({ urls: _u, ...s }) => s) : (draft![k] ?? null);
-      await api.accountProfile(patch);
+      for (const k of changed) patch[k] = draft[k] ?? null;
+      const r = await api.profilePageUpdate(patch);
+      upsertProfile(r.profile);
+      setPage(r.page);
+      setSaved(r.page);
+      setDraft(structuredClone(r.page.profile));
       toast("ok", "Cambios guardados");
     } catch (e) {
       toast("error", errMsg(e));
@@ -249,8 +223,7 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
     case "general":
       body = (
         <>
-          <p className="pe-desc">Pon el nombre de tu perfil y tus datos. Con tu nombre real y tu país, a tus amigos les cuesta menos encontrarte.</p>
-          <p className="pe-desc">Tu nombre de perfil y tu avatar son lo que ven los demás de ti en ejGames.</p>
+          <p className="pe-desc">Pon el nombre de tu perfil y tus datos. El nombre y el avatar son los de tu perfil de ejGames (también salen al elegir perfil).</p>
           <Group title="Acerca de">
             <Label>Nombre del perfil</Label>
             <input data-nav data-autofocus className="pe-input" value={draft.name} maxLength={32} onChange={(e) => set({ name: e.target.value })} />
@@ -271,7 +244,7 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
     case "avatar":
       body = (
         <>
-          <p className="pe-desc">Elige tu avatar. Se admiten JPG, PNG, WEBP y GIF (sin animación); se recorta en cuadrado a 184 × 184.</p>
+          <p className="pe-desc">Elige tu avatar. Se admiten JPG, PNG, WEBP y GIF (sin animación); se recorta en cuadrado.</p>
           <div className="pe-avatar-row">
             <div className="pe-avatar-big">
               <KitNode node={avatar({ avatarUrl: draft.avatarUrl, frame: draft.frame, name: draft.name }, { size: "xl" })} />
@@ -287,22 +260,22 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
                 className="pe-btn is-primary"
                 disabled={busy === "avatar"}
                 onClick={() =>
-                  void upload("avatar").then((r) => {
-                    if (r) set({ avatar: r.hash, avatarUrl: r.url ?? undefined });
+                  void pick("avatar").then((url) => {
+                    if (url) set({ avatarUrl: url });
                   })
                 }
               >
-                {busy === "avatar" ? "Subiendo…" : "Subir tu avatar"}
+                {busy === "avatar" ? "Cargando…" : "Elegir tu avatar"}
               </button>
-              {draft.avatar && (
-                <button type="button" data-nav className="pe-btn" onClick={() => set({ avatar: null, avatarUrl: undefined })}>
+              {draft.avatarUrl && (
+                <button type="button" data-nav className="pe-btn" onClick={() => set({ avatarUrl: null })}>
                   Quitar el avatar
                 </button>
               )}
             </div>
           </div>
           <Group title="Marco del avatar">
-            <p className="pe-desc">El marco rodea tu avatar en tu perfil, en la lista de amigos y en los comentarios.</p>
+            <p className="pe-desc">El marco rodea tu avatar en tu perfil y en los menús de los temas.</p>
             <div className="pe-grid pe-grid-frames">
               {FRAMES.map((f: { id: string; name: string }) => (
                 <button key={f.id || "none"} type="button" data-nav className={tile(draft.frame === f.id)} onClick={() => set({ frame: f.id })}>
@@ -316,12 +289,12 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
       );
       break;
     case "background": {
-      const cur = draft.backgroundImage ? "image" : draft.background;
+      const cur = draft.backgroundImageUrl ? "image" : draft.background;
       body = (
         <>
           <p className="pe-desc">Elige el fondo de tu perfil: uno animado o una imagen tuya (1920 × 1080; se ve arriba y centrada, como en Steam).</p>
-          <div className={cx("pe-bg-preview s-view s-profile", !draft.backgroundImage && draft.background && `s-bg-${draft.background}`, draft.backgroundImage && "has-image", (draft.backgroundImage || draft.background) && "has-bg")}>
-            <span className="s-backdrop" style={draft.backgroundImageUrl && draft.backgroundImage ? { backgroundImage: `url("${draft.backgroundImageUrl}")` } : undefined} />
+          <div className={cx("pe-bg-preview s-view s-profile", !draft.backgroundImageUrl && draft.background && `s-bg-${draft.background}`, draft.backgroundImageUrl && "has-image", (draft.backgroundImageUrl || draft.background) && "has-bg")}>
+            <span className="s-backdrop" style={draft.backgroundImageUrl ? { backgroundImage: `url("${draft.backgroundImageUrl}")` } : undefined} />
           </div>
           <div className="pe-actions-row">
             <button
@@ -330,15 +303,15 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
               className="pe-btn is-primary"
               disabled={busy === "background"}
               onClick={() =>
-                void upload("background").then((r) => {
-                  if (r) set({ backgroundImage: r.hash, backgroundImageUrl: r.url ?? undefined });
+                void pick("background").then((url) => {
+                  if (url) set({ backgroundImageUrl: url });
                 })
               }
             >
-              {busy === "background" ? "Subiendo…" : "Subir una imagen"}
+              {busy === "background" ? "Cargando…" : "Elegir una imagen"}
             </button>
-            {(draft.backgroundImage || draft.background) && (
-              <button type="button" data-nav className="pe-btn" onClick={() => set({ background: "", backgroundImage: null, backgroundImageUrl: undefined })}>
+            {(draft.backgroundImageUrl || draft.background) && (
+              <button type="button" data-nav className="pe-btn" onClick={() => set({ background: "", backgroundImageUrl: null })}>
                 Quitar el fondo
               </button>
             )}
@@ -351,7 +324,7 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
                   type="button"
                   data-nav
                   className={tile(cur === b.id)}
-                  onClick={() => set({ background: b.id, backgroundImage: null, backgroundImageUrl: undefined })}
+                  onClick={() => set({ background: b.id, backgroundImageUrl: null })}
                 >
                   <span className={cx("pe-bg-thumb s-view s-profile", b.id && `s-bg-${b.id} has-bg`)}>
                     <span className="s-backdrop" />
@@ -402,7 +375,7 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
       body = (
         <>
           <p className="pe-desc">Elige la insignia que sale en la cabecera de tu perfil, junto a tu nivel.</p>
-          {me.badges.length ? (
+          {page.badges.length ? (
             <div className="pe-grid pe-grid-badges">
               <button type="button" data-nav className={tile(!draft.featuredBadge)} onClick={() => set({ featuredBadge: "" })}>
                 <span className="pe-badge-none">
@@ -413,7 +386,7 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
                   <small>No enseñar ninguna insignia</small>
                 </span>
               </button>
-              {me.badges.map((b) => {
+              {page.badges.map((b) => {
                 const def = BADGES[b.id as keyof typeof BADGES];
                 return (
                   <button key={b.id} type="button" data-nav className={tile(draft.featuredBadge === b.id)} onClick={() => set({ featuredBadge: b.id })}>
@@ -429,19 +402,19 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
               })}
             </div>
           ) : (
-            <p className="pe-note">Aún no tienes insignias. Se consiguen jugando: horas, logros, juegos al 100 %, juegos distintos, años en ejGames y amigos.</p>
+            <p className="pe-note">Aún no tienes insignias. Se consiguen jugando: horas, logros, juegos al 100 %, juegos distintos y años con tu perfil.</p>
           )}
         </>
       );
       break;
     case "showcases": {
-      const free = (SHOWCASES as { type: SocialShowcase["type"]; name: string }[]).filter((d) => !showcases.some((s) => s.type === d.type));
+      const free = (SHOWCASES as { type: ProfileShowcase["type"]; name: string }[]).filter((d) => !showcases.some((s) => s.type === d.type));
       body = (
         <>
-          <p className="pe-desc">Elige hasta 6 vitrinas y su orden. Salen en tu perfil por encima de la actividad reciente y de los comentarios.</p>
+          <p className="pe-desc">Elige hasta 6 vitrinas y su orden. Salen en tu perfil por encima de la actividad reciente.</p>
           {showcases.map((s, i) => {
-            const def = (SHOWCASES as { type: SocialShowcase["type"]; name: string }[]).find((d) => d.type === s.type);
-            const patch = (p: Partial<SocialShowcase>) => setShowcases(showcases.map((x, k) => (k === i ? { ...x, ...p } : x)));
+            const def = (SHOWCASES as { type: ProfileShowcase["type"]; name: string }[]).find((d) => d.type === s.type);
+            const patch = (p: Partial<ProfileShowcase>) => setShowcases(showcases.map((x, k) => (k === i ? { ...x, ...p } : x)));
             const move = (d: number) => {
               const j = i + d;
               if (j < 0 || j >= showcases.length) return;
@@ -480,16 +453,9 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
                   )}
                   {s.type === "screenshots" && (
                     <div className="pe-shots">
-                      {(s.items ?? []).map((hash, k) => (
-                        <button
-                          key={hash}
-                          type="button"
-                          data-nav
-                          title="Quitar"
-                          className="pe-shot"
-                          onClick={() => patch({ items: (s.items ?? []).filter((x) => x !== hash), urls: (s.urls ?? []).filter((_, n) => n !== k) })}
-                        >
-                          {s.urls?.[k] && <img src={s.urls[k]} alt="" />}
+                      {(s.items ?? []).map((url) => (
+                        <button key={url} type="button" data-nav title="Quitar" className="pe-shot" onClick={() => patch({ items: (s.items ?? []).filter((x) => x !== url) })}>
+                          <img src={url} alt="" />
                           <X size={14} className="pe-shot-x" />
                         </button>
                       ))}
@@ -500,12 +466,12 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
                           className="pe-shot is-add"
                           disabled={busy === "shot"}
                           onClick={() =>
-                            void upload("shot").then((r) => {
-                              if (r) patch({ items: [...(s.items ?? []), r.hash], urls: [...(s.urls ?? []), r.url ?? ""] });
+                            void pick("shot").then((url) => {
+                              if (url) patch({ items: [...(s.items ?? []), url] });
                             })
                           }
                         >
-                          {busy === "shot" ? "Subiendo…" : "+ Añadir captura"}
+                          {busy === "shot" ? "Cargando…" : "+ Añadir captura"}
                         </button>
                       )}
                     </div>
@@ -543,46 +509,11 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
               )}
             </div>
           )}
-          {!showcases.length && <p className="pe-note">Sin vitrinas, tu perfil enseña la actividad reciente y los comentarios.</p>}
+          {!showcases.length && <p className="pe-note">Sin vitrinas, tu perfil enseña la actividad reciente.</p>}
         </>
       );
       break;
     }
-    case "privacy":
-      body = (
-        <>
-          <p className="pe-desc">Decide quién ve tu perfil y quién puede comentar en él.</p>
-          <Group title="Mi perfil">
-            <div className="pe-priv">
-              <p>Tus juegos, horas, logros, amigos y actividad. Si es privado, los demás solo ven tu nombre, tu avatar, tu nivel y tu fondo.</p>
-              <Select
-                value={draft.privacy}
-                options={[
-                  { value: "public", label: "Público" },
-                  { value: "friends", label: "Solo amigos" },
-                  { value: "private", label: "Privado" },
-                ]}
-                onChange={(v) => set({ privacy: v })}
-              />
-            </div>
-          </Group>
-          <Group title="Comentarios">
-            <div className="pe-priv">
-              <p>Quién puede escribir en tu perfil. Tú siempre puedes borrar cualquier comentario.</p>
-              <Select
-                value={draft.comments}
-                options={[
-                  { value: "public", label: "Público" },
-                  { value: "friends", label: "Solo amigos" },
-                  { value: "off", label: "Nadie" },
-                ]}
-                onChange={(v) => set({ comments: v })}
-              />
-            </div>
-          </Group>
-        </>
-      );
-      break;
   }
 
   const title = SECS.find((s) => s.value === sec)!.label;
@@ -592,7 +523,7 @@ export function ProfileEditorOverlay({ onClose }: { onClose: () => void }) {
         <header className="pe-top">
           <KitNode node={avatar({ avatarUrl: draft.avatarUrl, frame: draft.frame, name: draft.name }, { size: "l" })} />
           <div className="pe-crumb">
-            <span className="pe-crumb-name">{draft.name || me.username}</span>
+            <span className="pe-crumb-name">{draft.name || page.name}</span>
             <span className="pe-crumb-sep">»</span>
             <span>Editar perfil</span>
           </div>

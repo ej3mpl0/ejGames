@@ -1,4 +1,4 @@
-/* Amigos y perfiles del kit (social.js). Cada tema pone su piel con:
+/* El perfil del kit (profile.js). Cada tema pone su piel con:
    --s-fg, --s-muted, --s-accent, --s-bg, --s-surface, --s-surface-2, --s-line,
    --s-radius, --s-focus, --s-font. Los marcos, fondos, colores e insignias son
    los mismos en todos los temas: son del perfil de cada uno. */
@@ -35,39 +35,6 @@
 }
 
 /* ─── piezas ─── */
-.s-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 34px;
-  padding: 0 14px;
-  border-radius: var(--s-radius);
-  background: var(--s-surface-2);
-  font-size: 13.5px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.s-btn.is-primary {
-  background: var(--s-accent);
-  color: #fff;
-}
-.s-btn.is-danger {
-  background: #c0392b;
-  color: #fff;
-}
-.s-btn:hover,
-.s-btn.is-focused {
-  box-shadow: var(--s-focus);
-}
-.s-sub {
-  margin: 16px 2px 6px;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--s-muted);
-}
 .s-empty {
   padding: 26px 12px;
   text-align: center;
@@ -75,31 +42,8 @@
   font-size: 14px;
   line-height: 1.5;
 }
-.s-msg {
-  margin: 8px 0;
-  padding: 8px 12px;
-  border-radius: var(--s-radius);
-  background: var(--s-surface);
-  border-left: 3px solid var(--s-accent);
-  font-size: 13px;
-}
-.s-msg.is-warn {
-  border-left-color: #f5c518;
-}
-.s-bar {
-  display: block;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--s-surface-2);
-  overflow: hidden;
-}
-.s-bar i {
-  display: block;
-  height: 100%;
-  background: var(--s-accent);
-}
 
-/* avatar con marco y punto de presencia */
+/* avatar con marco */
 .s-avatar {
   --size: 40px;
   position: relative;
@@ -133,37 +77,6 @@
   color: #fff;
   font-weight: 700;
   font-size: calc(var(--size) * 0.38);
-}
-.s-dot {
-  position: absolute;
-  right: -3px;
-  bottom: -3px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid var(--s-bg);
-  background: #6b7280;
-}
-.s-avatar.is-online .s-dot,
-.s-ppresence.is-online .s-dot {
-  background: #57cbde;
-}
-.s-avatar.is-playing .s-dot,
-.s-ppresence.is-playing .s-dot {
-  background: #90ba3c;
-}
-.s-avatar.is-away .s-dot,
-.s-ppresence.is-away .s-dot {
-  background: #e3a23b;
-}
-.s-avatar.is-online {
-  box-shadow: 0 0 0 2px #57cbde;
-}
-.s-avatar.is-playing {
-  box-shadow: 0 0 0 2px #90ba3c;
-}
-.s-avatar.is-away {
-  box-shadow: 0 0 0 2px #e3a23b;
 }
 
 /* nivel: el círculo de Steam (friendPlayerLevel) */
@@ -219,226 +132,6 @@
 }
 .s-badge-txt small {
   color: var(--s-muted);
-}
-.s-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 18px;
-}
-.s-badges.is-small {
-  gap: 8px;
-}
-
-/* ─── lista de amigos ─── */
-.s-friends {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-.s-me {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 4px 2px 12px;
-}
-.s-me-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-  padding: 6px;
-  border-radius: var(--s-radius);
-}
-.s-me-card:hover,
-.s-me-card.is-focused {
-  background: var(--s-surface);
-  box-shadow: var(--s-focus);
-}
-.s-status {
-  font-size: 12.5px;
-}
-.s-status::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #57cbde;
-}
-.s-status.is-away::before {
-  background: #e3a23b;
-}
-.s-status.is-invisible::before {
-  background: #6b7280;
-}
-.s-tabs {
-  display: flex;
-  gap: 6px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--s-line);
-}
-.s-tab {
-  padding: 7px 14px;
-  border-radius: var(--s-radius);
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--s-muted);
-}
-.s-tab.is-on {
-  background: var(--s-surface-2);
-  color: var(--s-fg);
-}
-.s-tab:hover,
-.s-tab.is-focused {
-  box-shadow: var(--s-focus);
-}
-.s-panel {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  padding: 4px 2px 12px;
-}
-.s-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin: 10px 0 4px;
-}
-.s-code {
-  font-size: 12.5px;
-  color: var(--s-muted);
-}
-.s-code b {
-  color: var(--s-fg);
-  letter-spacing: 0.04em;
-}
-.s-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.s-row,
-.s-act {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 7px 10px;
-  border-radius: var(--s-radius);
-}
-.s-row:hover,
-.s-row.is-focused,
-.s-act:hover,
-.s-act.is-focused {
-  background: var(--s-surface);
-  box-shadow: var(--s-focus);
-}
-.s-row-main,
-.s-act-main {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex: 1;
-  min-width: 0;
-}
-.s-row-name {
-  font-size: 14.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.s-row-sub,
-.s-act-main small {
-  font-size: 12.5px;
-  color: var(--s-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.s-row.is-playing .s-row-name,
-.s-row.is-playing .s-row-sub {
-  color: #a4d007;
-}
-.s-row.is-online .s-row-name {
-  color: #57cbde;
-}
-.s-row.is-offline {
-  opacity: 0.72;
-}
-.s-req {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.s-req .s-row {
-  flex: 1;
-}
-.s-act-text {
-  font-size: 13.5px;
-  line-height: 1.35;
-  white-space: normal;
-}
-.s-act-img {
-  width: 46px;
-  height: 46px;
-  border-radius: 4px;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-.s-cta {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 36px 16px;
-  text-align: center;
-}
-.s-cta b {
-  font-size: 18px;
-}
-.s-cta p {
-  margin: 0;
-  max-width: 440px;
-  color: var(--s-muted);
-  line-height: 1.5;
-}
-.s-perks {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 20px;
-  margin: 4px 0 8px;
-  padding: 0;
-  list-style: none;
-  text-align: left;
-  font-size: 13.5px;
-}
-.s-perks li::before {
-  content: "✓ ";
-  color: var(--s-accent);
-  font-weight: 700;
-}
-.s-perks li.s-soon {
-  color: var(--s-muted);
-}
-.s-perks li.s-soon::before {
-  content: "☁ ";
-  color: var(--s-muted);
-}
-.s-soon-tag {
-  margin-left: 6px;
-  padding: 1px 6px;
-  border-radius: 99px;
-  border: 1px solid var(--s-line);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.s-more {
-  margin: 10px auto 0;
-  display: flex;
 }
 
 /* ─── perfil: la página de perfil de Steam (profilev2) ───
@@ -825,44 +518,6 @@
 .s-pbtn.is-focused {
   box-shadow: var(--s-pfocus);
 }
-.s-pmenu {
-  position: absolute;
-  z-index: 5;
-  right: 0;
-  margin-top: 4px;
-  min-width: 220px;
-  padding: 4px 0;
-  background: #3d4450;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
-}
-.s-pmenu-item {
-  display: block;
-  width: 100%;
-  padding: 7px 14px;
-  color: #dcdedf;
-  font-size: 13px;
-}
-.s-pmenu-item:hover,
-.s-pmenu-item.is-focused {
-  background: #dcdedf;
-  color: #171d25;
-}
-.s-pmenu-item.is-danger {
-  color: #ff7b7b;
-}
-.s-pmenu-item.is-danger:hover,
-.s-pmenu-item.is-danger.is-focused {
-  background: #c0392b;
-  color: #fff;
-}
-.s-pmsg {
-  max-width: 976px;
-  margin: 0 auto;
-  padding: 8px 24px;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  font-size: 13px;
-}
 
 /* ── contenido: dos columnas ── */
 .s-pc {
@@ -882,11 +537,6 @@
   display: block;
   min-height: 240px;
   padding-bottom: 120px;
-}
-.s-private {
-  padding: 12px 0;
-  color: #39838d;
-  font-size: 17px;
 }
 .s-lc {
   min-width: 0;
@@ -1177,163 +827,6 @@
   box-shadow: 1px 1px 1px #353535;
 }
 
-/* ── comentarios ── */
-.s-cthread {
-  margin-top: 12px;
-  border-radius: 5px;
-  overflow: hidden;
-}
-.s-cthread-head {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 10px;
-  background: var(--sc-head);
-  background: linear-gradient(90deg, var(--sc-head-left) 0%, var(--sc-head) 90%);
-  font-family: "Motiva Sans", Arial, Helvetica, sans-serif;
-  font-weight: 200;
-  font-size: 16px;
-  line-height: 30px;
-  color: #fff;
-}
-.s-cthread-count {
-  font-size: 12px;
-  font-family: Arial, Helvetica, sans-serif;
-}
-.s-centry {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 10px;
-  padding: 8px;
-  min-height: 44px;
-  background: rgba(0, 0, 0, 0.2);
-}
-.s-centry .s-avatar {
-  --size: 32px;
-  border-radius: 0;
-}
-.s-centry-box {
-  flex: 1;
-  min-width: 0;
-  min-height: 32px;
-  padding: 7px 6px;
-  border-radius: 4px;
-  border-left: 1px solid #000;
-  border-top: 1px solid #000;
-  border-right: 1px solid #354357;
-  border-bottom: 1px solid #354357;
-  background: rgba(0, 0, 0, 0.4);
-  color: #8f98a0;
-  font-size: 12px;
-  cursor: text;
-}
-.s-centry-box:hover,
-.s-centry-box.is-focused {
-  box-shadow: var(--s-pfocus);
-  color: #c6d4df;
-}
-/* btn_green_white_innerfade btn_small */
-.s-cbtn {
-  flex-basis: 100%;
-  display: flex;
-  justify-content: flex-end;
-  padding: 0;
-  background: none;
-}
-.s-cbtn > span {
-  padding: 0 15px;
-  border-radius: 2px;
-  font-size: 12px;
-  line-height: 24px;
-  color: #d2efa9;
-  background: linear-gradient(to right, #75b022 5%, #588a1b 95%);
-}
-.s-cbtn:hover > span,
-.s-cbtn.is-focused > span {
-  color: #fff;
-  background: linear-gradient(to right, #8ed629 5%, #6aa621 95%);
-}
-.s-cbtn.is-focused > span {
-  box-shadow: var(--s-pfocus);
-}
-.s-comments {
-  padding: 10px 10px 10px 0;
-}
-.s-cthread-empty {
-  padding: 10px 11px;
-  color: #8f98a0;
-}
-.s-comment {
-  display: flex;
-  gap: 16px;
-  padding: 8px 0 8px 11px;
-  margin-bottom: 8px;
-  min-height: 40px;
-}
-.s-comment:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-.s-comment-av {
-  flex-shrink: 0;
-  align-self: flex-start;
-  padding: 1px;
-  background: linear-gradient(to bottom, rgba(106, 106, 106, 1) 5%, rgba(85, 85, 85, 1) 95%);
-}
-.s-comment-av .s-avatar {
-  --size: 32px;
-  border-radius: 0;
-}
-.s-comment-av.is-focused {
-  box-shadow: var(--s-pfocus);
-}
-.s-comment-main {
-  flex: 1;
-  min-width: 0;
-}
-.s-comment-author {
-  display: flex;
-  align-items: baseline;
-  gap: 6px 16px;
-  flex-wrap: wrap;
-  line-height: 16px;
-}
-.s-comment-name {
-  font-size: 14px;
-  color: #ebebeb;
-}
-.s-comment-time {
-  flex: 1;
-  font-size: 13px;
-  color: #56707f;
-}
-.s-comment-del {
-  padding: 0 8px;
-  font-size: 11px;
-  color: #b0aeac;
-  visibility: hidden;
-}
-.s-comment:hover .s-comment-del,
-.s-comment-del.is-focused {
-  visibility: visible;
-}
-.s-comment-del:hover,
-.s-comment-del.is-focused {
-  text-decoration: underline;
-  box-shadow: none;
-  color: #fff;
-}
-.s-comment-text {
-  margin-top: 4px;
-  font-size: 13px;
-  line-height: 18px;
-  color: #fff;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
 /* ── columna derecha ── */
 .s-rc {
   padding: 10px;
@@ -1351,10 +844,6 @@
   font-size: 20px;
   color: #898989;
 }
-.s-ingame.is-online .s-ingame-head,
-.s-ingame.is-away .s-ingame-head {
-  color: #57cbde;
-}
 .s-ingame.is-playing .s-ingame-head {
   color: #90ba3c;
 }
@@ -1362,10 +851,6 @@
   margin: 4px 0 12px;
   font-size: 15px;
   color: #90ba3c;
-}
-.s-ingame-last {
-  margin-top: 4px;
-  color: #898989;
 }
 .s-rblock {
   margin-bottom: 40px;
@@ -1408,79 +893,11 @@
   display: flex;
   flex-direction: column;
 }
-/* friendBlock */
-.s-fblock {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  height: 44px;
-  margin-bottom: 4px;
-  padding: 4px;
-  font-size: 11px;
-  line-height: 13px;
-  color: #ebebeb;
-  background: none;
-}
-.s-fblock:hover,
-.s-fblock.is-focused {
-  background: #3a3a3a;
-}
-.s-fblock.is-focused {
-  box-shadow: var(--s-pfocus);
-}
-.s-fblock .s-avatar {
-  padding: 1px;
-  border-radius: 0;
-  background: linear-gradient(to bottom, rgba(106, 106, 106, 1) 5%, rgba(85, 85, 85, 1) 95%);
-}
-.s-fblock.is-online .s-avatar,
-.s-fblock.is-away .s-avatar {
-  background: linear-gradient(to bottom, rgba(83, 164, 196, 1) 5%, rgba(69, 128, 151, 1) 95%);
-}
-.s-fblock.is-playing .s-avatar {
-  background: linear-gradient(to bottom, rgba(143, 185, 59, 1) 5%, rgba(110, 140, 49, 1) 95%);
-}
 .s-avatar-fb {
   --size: 34px;
 }
-.s-fblock .s-avatar img,
-.s-fblock .s-avatar-ph {
-  border-radius: 0;
-}
-.s-fblock-main {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.s-fblock-name,
-.s-fblock-sub {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.s-fblock-sub {
-  color: #898989;
-}
-.s-fblock.is-online .s-fblock-name,
-.s-fblock.is-online .s-fblock-sub,
-.s-fblock.is-away .s-fblock-name,
-.s-fblock.is-away .s-fblock-sub {
-  color: #57cbde;
-}
-.s-fblock.is-playing .s-fblock-name,
-.s-fblock.is-playing .s-fblock-sub {
-  color: #90ba3c;
-}
 .s-profile .s-level {
   color: #fff;
-}
-.s-fblock .s-level {
-  align-self: flex-start;
-  margin: 4px 4px 0 0;
 }
 
 /* enlaces a las insignias (el nivel de la cabecera y «Insignias N») */
@@ -1903,8 +1320,8 @@
 }
 /* ─── perfiles de los demás temas (s-lx) ───
    Toman los colores del tema (--s-fg, --s-muted, --s-bg, --s-surface…) y el
-   del tema del perfil de cada usuario (--s-pc). Las piezas de las vitrinas y
-   los comentarios son las de Steam, vestidas aquí. */
+   del tema del perfil (--s-pc). Las piezas de las vitrinas son las de Steam,
+   vestidas aquí. */
 .s-lx {
   background: var(--s-bg);
   color: var(--s-fg);
@@ -1929,20 +1346,9 @@
 .s-lx.has-image .s-backdrop {
   background: #000 no-repeat center / cover;
 }
-.s-lx-msg {
-  margin: 12px 0;
-  padding: 10px 14px;
-  border-radius: var(--s-radius);
-  background: var(--s-surface);
-  border-left: 3px solid var(--s-pc);
-}
-.s-lx-none,
-.s-lx-private {
+.s-lx-none {
   padding: 18px 0;
   color: var(--s-muted);
-}
-.s-lx-private {
-  font-size: 18px;
 }
 .s-lx-presence {
   display: inline-flex;
@@ -1956,13 +1362,6 @@
   height: 10px;
   border-radius: 50%;
   background: #6b7280;
-}
-.s-lx-presence.is-online .s-lx-dot,
-.s-lx-presence.is-away .s-lx-dot {
-  background: #3ddc84;
-}
-.s-lx-presence.is-away .s-lx-dot {
-  background: #e3a23b;
 }
 .s-lx-presence.is-playing {
   color: var(--s-fg);
@@ -2033,21 +1432,6 @@
 .s-lx .s-pbtn.is-open > span {
   background: none;
 }
-.s-lx .s-pmenu {
-  left: 0;
-  right: auto;
-  border-radius: var(--s-radius);
-  background: var(--s-surface-2);
-  backdrop-filter: blur(12px);
-}
-.s-lx .s-pmenu-item {
-  color: var(--s-fg);
-}
-.s-lx .s-pmenu-item:hover,
-.s-lx .s-pmenu-item.is-focused {
-  background: var(--s-fg);
-  color: var(--s-bg);
-}
 .s-lx-level {
   display: flex;
   align-items: center;
@@ -2112,13 +1496,6 @@ button.s-lx-level {
 }
 .s-lx-tab.is-focused {
   box-shadow: var(--s-focus);
-}
-.s-lx-tab-n {
-  padding: 0 7px;
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--s-fg) 14%, transparent);
-  font-size: 12px;
-  line-height: 20px;
 }
 .s-lx-tab-ico svg {
   width: 22px;
@@ -2236,46 +1613,10 @@ button.s-lx-level {
 .s-lx-badge.is-locked .s-lx-badge-main b {
   color: var(--s-muted);
 }
-/* amigos */
-.s-lx-friends {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 10px;
-}
-.s-lx-friend {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 12px;
-  border-radius: var(--s-radius);
-  background: var(--s-surface);
-  color: var(--s-fg);
-}
-.s-lx-friend:hover,
-.s-lx-friend.is-focused {
-  box-shadow: var(--s-focus);
-}
-.s-lx-friend-main {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
-.s-lx-friend-main small {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--s-muted);
-  font-size: 13px;
-}
-.s-lx-friend.is-playing .s-lx-friend-main small {
-  color: var(--s-pc);
-}
 .s-lx .s-level {
   color: var(--s-fg);
 }
-/* vitrinas y comentarios con las piezas de Steam */
+/* vitrinas con las piezas de Steam */
 .s-lx .s-cbg {
   margin-bottom: 10px;
   padding: 16px;
@@ -2342,99 +1683,6 @@ button.s-lx-level {
   border-radius: calc(var(--s-radius) * 0.7);
   background: var(--s-surface-2);
   color: var(--s-fg);
-}
-.s-lx .s-cthread {
-  margin-top: 30px;
-  border-radius: 0;
-  overflow: visible;
-}
-.s-lx .s-cthread-head {
-  padding: 0 0 12px;
-  background: none;
-  font-family: inherit;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--s-fg);
-}
-.s-lx .s-cthread-count {
-  color: var(--s-muted);
-  font-size: 14px;
-}
-.s-lx .s-centry {
-  margin: 0;
-  padding: 12px;
-  border-radius: var(--s-radius);
-  background: var(--s-surface);
-}
-.s-lx .s-centry .s-avatar {
-  --size: 40px;
-  border-radius: 50%;
-}
-.s-lx .s-centry .s-avatar img,
-.s-lx .s-centry .s-avatar-ph {
-  border-radius: 50%;
-}
-.s-lx .s-centry-box {
-  min-height: 40px;
-  border: 1px solid var(--s-line);
-  border-radius: calc(var(--s-radius) * 0.7);
-  background: var(--s-bg);
-  color: var(--s-muted);
-  font-size: 14px;
-}
-.s-lx .s-cbtn > span {
-  border-radius: calc(var(--s-radius) * 0.7);
-  background: var(--s-pc);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 34px;
-}
-.s-lx .s-cbtn:hover > span,
-.s-lx .s-cbtn.is-focused > span {
-  background: var(--s-pc);
-  filter: brightness(1.12);
-}
-.s-lx .s-comments {
-  padding: 8px 0;
-}
-.s-lx .s-comment {
-  padding: 12px;
-  border-radius: var(--s-radius);
-}
-.s-lx .s-comment:hover {
-  background: var(--s-surface);
-}
-.s-lx .s-comment-av {
-  padding: 0;
-  background: none;
-}
-.s-lx .s-comment-av .s-avatar {
-  --size: 40px;
-  border-radius: 50%;
-}
-.s-lx .s-comment-av .s-avatar img,
-.s-lx .s-comment-av .s-avatar-ph {
-  border-radius: 50%;
-}
-.s-lx .s-comment-av.is-focused {
-  border-radius: 50%;
-  box-shadow: var(--s-focus);
-}
-.s-lx .s-comment-name {
-  font-weight: 700;
-  color: var(--s-fg);
-}
-.s-lx .s-comment-time {
-  color: var(--s-muted);
-}
-.s-lx .s-comment-text {
-  color: var(--s-fg);
-  font-size: 15px;
-  line-height: 1.5;
-}
-.s-lx .s-comment-del {
-  color: var(--s-muted);
 }
 
 /* ── PS5: portada, avatar redondo grande, nivel con su estrella y pestañas ── */
@@ -3072,22 +2320,16 @@ button.s-lx-level {
   box-shadow: 0 0 6px var(--s-accent);
 }
 .s-layout-retro .s-lx-title,
-.s-layout-retro .s-cthread-head,
 .s-layout-retro .s-pbtn,
 .s-layout-retro .s-lx-badge-main b,
 .s-layout-retro .s-lx-badge-main small,
 .s-layout-retro .s-stat-l,
-.s-layout-retro .s-cbtn > span,
-.s-layout-retro .s-centry-box,
-.s-layout-retro .s-lx-none,
-.s-layout-retro .s-lx-private,
-.s-layout-retro .s-pmenu-item {
+.s-layout-retro .s-lx-none {
   font-family: "Press Start 2P", Consolas, monospace;
   font-weight: 400;
   letter-spacing: 1px;
 }
-.s-layout-retro .s-lx-title,
-.s-layout-retro .s-cthread-head {
+.s-layout-retro .s-lx-title {
   font-size: 14px;
   color: var(--s-accent);
 }
@@ -3112,24 +2354,14 @@ button.s-lx-level {
   font-size: 11px;
 }
 .s-layout-retro .s-lx-badge-main small,
-.s-layout-retro .s-stat-l,
-.s-layout-retro .s-centry-box {
+.s-layout-retro .s-stat-l {
   font-size: 9px;
 }
-.s-layout-retro .s-cbtn > span {
-  border-radius: 0;
-  background: var(--s-accent);
-  color: var(--s-bg);
-  font-size: 10px;
-}
-.s-layout-retro .s-lx-none,
-.s-layout-retro .s-lx-private {
+.s-layout-retro .s-lx-none {
   font-size: 11px;
 }
 .s-layout-retro .s-lx-badge,
-.s-layout-retro .s-lx-friend,
-.s-layout-retro .s-cbg,
-.s-layout-retro .s-centry {
+.s-layout-retro .s-cbg {
   border: 2px solid var(--s-line);
 }
 .s-rt-table {

@@ -11,7 +11,7 @@ import { clock } from "/_sdk/kit/clock.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { createGuideView } from "/_sdk/kit/guides.js";
-import { createSocialView } from "/_sdk/kit/social.js";
+import { createProfilePages } from "/_sdk/kit/profile.js";
 import { percent } from "/_sdk/kit/store.js";
 import { createStore } from "./store.js";
 
@@ -292,8 +292,9 @@ $("#help").addEventListener("click", () => state.selected && openGuides(state.se
 let guideView = null;
 let guideReturn = null;
 const guidesLayer = $("#guides");
-// ─────────────── amigos y perfiles (en la capa de la ayuda del juego) ───────────────
-function openSocial(start = "friends", userId = null) {
+// ─────────────── tu perfil e insignias (en la capa de la ayuda del juego) ───────────────
+/** start: "profile" | "badges". */
+function openProfile(start = "profile") {
   stopHome();
   shop.closeDownloads();
   guideView?.destroy();
@@ -301,31 +302,12 @@ function openSocial(start = "friends", userId = null) {
   $("#gh-bg").style.backgroundImage = "";
   guidesLayer.hidden = false;
   document.documentElement.dataset.panel = "guides";
-  guideView = createSocialView({ ejg, root: $("#gh-inner"), focus, start, userId, layout: "ps5", onExit: closeGuides, onChange: () => updateHints() });
+  guideView = createProfilePages({ ejg, root: $("#gh-inner"), focus, start, layout: "ps5", onExit: closeGuides, onChange: () => updateHints() });
   updateHints();
   ejg.sound.play("open");
 }
 
-/** «3» amigos en línea o «+1» solicitud, para el botón de Amigos. */
-function friendsBadge() {
-  const a = ejg.account.state;
-  if (!a?.linked || a.needsLogin) return "";
-  const req = a.social?.incoming?.length || 0;
-  if (req) return `+${req}`;
-  const online = (a.social?.friends || []).filter((f) => f.presence.status !== "offline").length;
-  return online ? String(online) : "";
-}
-
-function renderFriendsIco() {
-  const a = ejg.account.state;
-  $("#friends-ico").hidden = !a?.enabled;
-  const n = friendsBadge();
-  $("#fr-badge").hidden = !n;
-  $("#fr-badge").textContent = n;
-}
-$("#friends-ico").addEventListener("click", () => openSocial("friends"));
-ejg.account.onChange(renderFriendsIco);
-renderFriendsIco();
+$("#profile-ico").addEventListener("click", () => openProfile("profile"));
 
 function openGuides(gameId, guideId = null) {
   const g = ejg.library.byId(gameId);
@@ -638,9 +620,9 @@ ejg.explore.onEnabled(() => {
   updateDownloadsUi();
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
-ejg.ui.onView(({ view, slug, gameId, guideId, userId, tab }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId }) => {
   if (view === "guides" && gameId) return openGuides(gameId, guideId);
-  if (view === "friends" || view === "profile" || view === "badges") return openSocial(view === "friends" ? tab || "friends" : view, userId ?? null);
+  if (view === "profile" || view === "badges") return openProfile(view);
   closeGuides();
   if (view === "downloads") return stopHome(), shop.openDownloads();
   if (!ejg.explore.enabled) return;

@@ -29,7 +29,7 @@ const summaryCount = (n: OverlayNotice) => parseInt(n.title, 10) || 0;
 /** Cuánto se queda en pantalla. Los raros, más (como en Xbox). */
 export function noticeMs(n: OverlayNotice) {
   if (n.kind === "summary") return 9000;
-  if (n.kind === "info" || n.kind === "friend") return 5500;
+  if (n.kind === "info") return 5500;
   if (n.kind === "screenshot") return 4500;
   return isRare(n) ? 9000 : 6500;
 }
@@ -416,11 +416,9 @@ const VIEWS: Record<NoticeStyle, (p: P) => ReactNode> = {
 export function NoticeView({ n, leaving }: { n: OverlayNotice; leaving?: boolean }) {
   const look = n.look;
   const View = VIEWS[look.style] ?? Plain;
-  // Los de amigos, con el aspecto de un aviso informativo de su plataforma.
-  const shown: OverlayNotice = n.kind === "friend" ? { ...n, kind: "info", game: "Amigos" } : n;
   return (
-    <div className={cls("nt", `nt-at-${look.corner}`, leaving && "leaving", n.kind === "friend" && "is-friend")} data-style={look.style}>
-      <View n={shown} look={look} />
+    <div className={cls("nt", `nt-at-${look.corner}`, leaving && "leaving")} data-style={look.style}>
+      <View n={n} look={look} />
     </div>
   );
 }

@@ -14,7 +14,7 @@ const MAX_IMAGE: usize = 10 * 1024 * 1024;
 const EXTS: [&str; 4] = ["jpg", "png", "webp", "gif"];
 /// Hosts de los que salen las imágenes de las fichas, el arte de Steam y las
 /// guías de la comunidad (con las miniaturas de sus vídeos).
-const HOSTS: [&str; 11] = [
+const HOSTS: [&str; 9] = [
     "imageban.ru",
     "riotpixels.net",
     "riotpixels.com",
@@ -24,9 +24,6 @@ const HOSTS: [&str; 11] = [
     "steamusercontent.com",
     "steamuserimages-a.akamaihd.net",
     "i.ytimg.com",
-    // Portadas de los juegos de los amigos (las que eligieron en su biblioteca).
-    "images.igdb.com",
-    "steamgriddb.com",
 ];
 
 static MAP: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(Default::default);
@@ -63,18 +60,6 @@ pub fn proxy(url: &str) -> Option<String> {
     }
     m.insert(id.clone(), url);
     Some(format!("http://ejg-media.localhost/x/{id}"))
-}
-
-/// Como `proxy`, sin mirar el host: para URL que construye el núcleo (las
-/// imágenes de la API de cuentas, por su hash).
-pub fn proxy_trusted(url: String) -> String {
-    let id = id_of(&url);
-    let mut m = MAP.lock();
-    if m.len() > 20_000 {
-        m.clear();
-    }
-    m.insert(id.clone(), url);
-    format!("http://ejg-media.localhost/x/{id}")
 }
 
 /// URL original de una portada (las de populares vienen por el CDN de wp.com).

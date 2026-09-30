@@ -1,22 +1,19 @@
-//! Resumen de la biblioteca que ven los amigos (juegos, horas, logros) y lo
-//! que sale de él: experiencia, nivel e insignias. Se calcula aquí con la BD
-//! local y solo se sube cuando cambia su hash.
+//! Resumen de la biblioteca de un perfil (juegos, horas, logros) y lo que sale
+//! de él: experiencia, nivel e insignias. Todo con la BD local.
 
 use crate::db::repo;
-use crate::state::AppState;
+use rusqlite::Connection;
 use serde::Serialize;
 use serde_json::{json, Value};
-use sha2::{Digest, Sha256};
 
-/// Insignias: id, umbrales de cada nivel (tier) y de qué se miden.
-pub const BADGES: [(&str, &[i64]); 7] = [
+/// Insignias: id y umbrales de cada nivel (tier).
+pub const BADGES: [(&str, &[i64]); 6] = [
     ("collector", &[5, 10, 25, 50, 100, 250]),
     ("achiever", &[10, 50, 100, 250, 500, 1000, 2500]),
     ("marathon", &[10, 50, 100, 250, 500, 1000]),
     ("completionist", &[1, 3, 5, 10, 25, 50]),
     ("explorer", &[5, 10, 25, 50, 100]),
     ("veteran", &[1, 2, 3, 4, 5]),
-    ("social", &[1, 5, 10, 25, 50]),
 ];
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize)]
@@ -29,8 +26,8 @@ pub struct Stats {
     pub achievements: i64,
     /// Juegos con todos los logros.
     pub perfect: i64,
+    /// Años desde que se creó el perfil.
     pub years: i64,
-    pub friends: i64,
 }
 
 pub fn tier(value: i64, thresholds: &[i64]) -> i64 {
@@ -45,7 +42,6 @@ pub fn badges(s: &Stats) -> Vec<(String, i64)> {
         "completionist" => s.perfect,
         "explorer" => s.played,
         "veteran" => s.years,
-        "social" => s.friends,
         _ => 0,
     };
     BADGES
@@ -70,10 +66,11 @@ pub fn level_of(xp: i64) -> i64 {
     n
 }
 
-/// El resumen con su hash (el hash no depende del orden de los juegos).
-pub fn build(st: &AppState, profile_id: i64, member_since: i64, friends: i64) -> anyhow::Result<(String, Value)> {
-    let lib = st.db.with(|c| repo::library(c, profile_id))?;
-    let mut s = Stats { games: lib.len() as i64, years: (crate::util::now() - member_since).max(0) / (365 * 86400), friends, ..Default::default() };
+/// El resumen de la biblioteca (para las vitrinas, la actividad reciente y
+/// las pestañas de juegos) con su experiencia, nivel e insignias.
+pub fn build(c: &Connection, profile_id: i64, member_since: i64) -> rusqlite::Result<Value> {
+    let lib = repo::library(c, profile_id)?;
+    let mut s = Stats { games: lib.len() as i64, years: (crate::util::now() - member_since).max(0) / (365 * 86400), ..Default::default() };
     let mut games: Vec<Value> = vec![];
     for g in &lib {
         let ach = g.achievements.as_ref();
@@ -90,42 +87,30 @@ pub fn build(st: &AppState, profile_id: i64, member_since: i64, friends: i64) ->
         if g.playtime < 60 && ach.map(|a| a.unlocked == 0).unwrap_or(true) {
             continue;
         }
-        // Portada pública (la de Steam): la ven los amigos desde su PC.
-        let remote = |kind| st.db.with(|c| repo::selected_remote_url(c, g.id, kind)).ok().flatten().filter(|u| u.starts_with("https://"));
-        let (cover, header) = (remote("cover"), remote("header"));
         games.push(json!({
+            "id": g.id,
             "title": g.title,
             "minutes": g.playtime / 60,
             "last": g.last_played,
             "ach": ach.map(|a| vec![a.unlocked, a.total]),
-            "cover": cover,
-            "header": header,
+            "coverUrl": g.media.cover,
+            "headerUrl": g.media.header,
         }));
     }
     games.sort_by(|a, b| b["minutes"].as_i64().cmp(&a["minutes"].as_i64()).then_with(|| a["title"].as_str().cmp(&b["title"].as_str())));
-    games.truncate(500);
     // Lo de la columna derecha del perfil: horas de las dos últimas semanas y capturas.
     let since = crate::util::now() - 14 * 86400;
-    let (recent, shots) = st.db.with(|c| {
-        let recent: i64 = c.query_row("SELECT COALESCE(SUM(duration_s), 0) / 60 FROM sessions WHERE profile_id = ?1 AND started_at >= ?2", rusqlite::params![profile_id, since], |r| r.get(0))?;
-        let shots: i64 = c.query_row(
-            "SELECT COUNT(*) FROM screenshots WHERE game_id IN (SELECT game_id FROM profile_game WHERE profile_id = ?1)",
-            [profile_id],
-            |r| r.get(0),
-        )?;
-        Ok::<_, rusqlite::Error>((recent, shots))
-    })?;
+    let recent: i64 = c.query_row("SELECT COALESCE(SUM(duration_s), 0) / 60 FROM sessions WHERE profile_id = ?1 AND started_at >= ?2", rusqlite::params![profile_id, since], |r| r.get(0))?;
+    let shots: i64 = c.query_row("SELECT COUNT(*) FROM screenshots WHERE game_id IN (SELECT game_id FROM profile_game WHERE profile_id = ?1)", [profile_id], |r| r.get(0))?;
     let b = badges(&s);
     let xp = xp(&s, &b);
-    let body = json!({
+    Ok(json!({
         "games": games,
-        "stats": { "minutes": s.minutes, "achievements": s.achievements, "perfect": s.perfect, "library": s.games, "recent": recent, "shots": shots },
+        "stats": { "minutes": s.minutes, "achievements": s.achievements, "perfect": s.perfect, "library": s.games, "played": s.played, "recent": recent, "shots": shots },
         "xp": xp,
         "level": level_of(xp),
         "badges": b.iter().map(|(id, t)| json!({ "id": id, "tier": t })).collect::<Vec<_>>(),
-    });
-    let hash: String = Sha256::digest(serde_json::to_vec(&body)?).iter().map(|b| format!("{b:02x}")).collect();
-    Ok((hash, body))
+    }))
 }
 
 #[cfg(test)]
@@ -144,7 +129,7 @@ mod tests {
 
     #[test]
     fn badges_and_xp() {
-        let s = Stats { games: 30, played: 6, minutes: 120 * 60, achievements: 55, perfect: 1, years: 0, friends: 5 };
+        let s = Stats { games: 30, played: 6, minutes: 120 * 60, achievements: 55, perfect: 1, years: 0 };
         let b = badges(&s);
         let get = |id: &str| b.iter().find(|(x, _)| x == id).map(|(_, t)| *t);
         assert_eq!(get("collector"), Some(3));
@@ -153,8 +138,7 @@ mod tests {
         assert_eq!(get("completionist"), Some(1));
         assert_eq!(get("explorer"), Some(1));
         assert_eq!(get("veteran"), None);
-        assert_eq!(get("social"), Some(2));
-        // 1200 (horas) + 1100 (logros) + 300 (100 %) + 240 (jugados) + 12 niveles × 50.
-        assert_eq!(xp(&s, &b), 1200 + 1100 + 300 + 240 + 600);
+        // 1200 (horas) + 1100 (logros) + 300 (100 %) + 240 (jugados) + 10 niveles × 50.
+        assert_eq!(xp(&s, &b), 1200 + 1100 + 300 + 240 + 500);
     }
 }

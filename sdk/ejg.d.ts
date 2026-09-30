@@ -361,28 +361,53 @@ export interface GuideShelfItem {
   progress?: GuideProgress | null;
 }
 
-export interface SocialUser {
+/** Tu perfil en corto (`ejg.profiles.me`). Todo es local: se guarda en el PC. */
+export interface ProfileCard {
   id: number;
-  username: string;
   name: string;
-  avatarUrl?: string;
-  frame?: string;
-  level?: number;
+  avatarUrl?: string | null;
+  /** Marco del avatar (id del kit: "", "gold", "neon"…). */
+  frame: string;
+  /** Fondo animado (id del kit) o "". */
+  background: string;
+  backgroundImageUrl?: string | null;
+  /** Tema del perfil (id del kit) o "". */
+  color: string;
+  level: number;
+  xp: number;
+  badges: { id: string; tier: number }[];
+  featuredBadge: string;
 }
 
-export interface SocialFriend extends SocialUser {
-  presence: { status: "online" | "away" | "offline"; game?: string | null; since?: number | null; lastSeen?: number };
-}
-
-export interface AccountState {
-  enabled: boolean;
-  linked: boolean;
-  username?: string | null;
-  userId?: number | null;
-  needsLogin: boolean;
-  status: "online" | "away" | "invisible";
-  offline: boolean;
-  social?: { me: any; friends: SocialFriend[]; incoming: SocialUser[]; outgoing: SocialUser[]; blocked: SocialUser[] } | null;
+/** Tu perfil entero (`ejg.profiles.view()`), como lo pinta el kit (profile.js). */
+export interface ProfilePage {
+  id: number;
+  name: string;
+  memberSince: number;
+  level: number;
+  xp: number;
+  badges: { id: string; tier: number }[];
+  profile: {
+    name: string;
+    avatarUrl?: string | null;
+    realName: string;
+    country: string;
+    bio: string;
+    backgroundImageUrl?: string | null;
+    frame: string;
+    background: string;
+    color: string;
+    showcases: { type: string; game?: string; title?: string; text?: string; items?: string[] }[];
+    featuredBadge: string;
+  };
+  summary: {
+    games: { id: number; title: string; minutes: number; last?: number | null; ach?: [number, number] | null; coverUrl?: string; headerUrl?: string }[];
+    stats: { minutes: number; achievements: number; perfect: number; library: number; played: number; recent: number; shots: number };
+  };
+  /** Lo último: partidas de 5 minutos o más, logros y juegos completados. */
+  activity: { id: number; kind: "played" | "achievement" | "completed"; at: number; data: { game: string; minutes?: number; name?: string; rarity?: number | null; iconUrl?: string | null } }[];
+  /** A qué juegas ahora (o null). */
+  presence: { status: "online"; game: string; since?: number | null } | null;
 }
 
 /** Trainer instalado para un juego (resumen). */
@@ -451,27 +476,33 @@ export interface Ejg {
     isRunning(id: number): boolean;
     onState(fn: (e: { gameId: number; state: "launching" | "running" | "stopped"; value?: number }) => void): () => void;
   };
-  profiles: { current(): Profile | null; switch(): Promise<void> };
+  profiles: {
+    current(): Profile | null;
+    switch(): Promise<void>;
+    readonly me: ProfileCard | null;
+    onChange(fn: (me: ProfileCard | null) => void): () => void;
+    view(): Promise<ProfilePage>;
+    open(): Promise<void>;
+    badges(): Promise<void>;
+    edit(): Promise<void>;
+  };
   stats: { get(days?: number): Promise<any>; recent(limit?: number): Promise<any[]> };
   storage: { getAll(): Promise<Record<string, any>>; get(key: string): Promise<any>; set(key: string, value: any): Promise<void> };
   ui: {
     open(
       name:
         | "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads"
-        | "guides" | "trainer" | "map" | "friends" | "profile" | "badges" | "account" | "account-login" | "profile-editor",
+        | "guides" | "trainer" | "map" | "profile" | "badges" | "profile-editor",
       args?: any,
     ): Promise<void>;
     toast(message: string, kind?: "info" | "ok" | "error"): Promise<void>;
     /** El host pide abrir una vista del tema (menú rápido, Ctrl+E, Ctrl+J, el indicador de descargas…). */
     onView(
       fn: (e: {
-        view: "explore" | "downloads" | "repack" | "guides" | "friends" | "profile" | "badges";
+        view: "explore" | "downloads" | "repack" | "guides" | "profile" | "badges";
         slug?: string;
         gameId?: number;
         guideId?: string | null;
-        userId?: number | null;
-        /** Amigos: la pestaña (friends | requests | activity). */
-        tab?: string | null;
       }) => void,
     ): () => void;
     /** Teclado en pantalla del host: el texto escrito o null si se cancela. */
@@ -507,41 +538,6 @@ export interface Ejg {
     progress(gameId: number, guide: { id: string; title: string; author?: string; authors?: string[] }, section: number, scroll: number): Promise<void>;
     openInBrowser(id: string): Promise<void>;
     openLink(href: string): Promise<void>;
-  };
-  /** Cuenta de ejGames del perfil (amigos, presencia, perfil). */
-  account: {
-    readonly state: AccountState | null;
-    onChange(fn: (a: AccountState | null) => void): () => void;
-    setStatus(status: "online" | "away" | "invisible"): Promise<AccountState>;
-    openEditor(): Promise<void>;
-    /** Diálogo para crear la cuenta o entrar. */
-    openLogin(mode?: "register" | "login"): Promise<void>;
-  };
-  friends: {
-    readonly list: SocialFriend[];
-    readonly requests: { incoming: SocialUser[]; outgoing: SocialUser[]; blocked: SocialUser[] };
-    onChange(fn: (friends: SocialFriend[]) => void): () => void;
-    add(usernameOrCode: string): Promise<AccountState>;
-    accept(id: number): Promise<AccountState>;
-    decline(id: number): Promise<AccountState>;
-    remove(id: number): Promise<AccountState>;
-    block(id: number): Promise<AccountState>;
-    unblock(id: number): Promise<AccountState>;
-    refresh(): Promise<AccountState>;
-    open(tab?: "friends" | "requests" | "activity"): Promise<void>;
-  };
-  profiles: {
-    view(id: number): Promise<any>;
-    open(id: number): Promise<void>;
-    badges(id?: number | null): Promise<void>;
-  };
-  comments: {
-    list(userId: number, before?: number): Promise<{ items: any[] }>;
-    post(userId: number, text: string): Promise<void>;
-    remove(commentId: number): Promise<void>;
-  };
-  activity: {
-    feed(before?: number): Promise<{ items: any[] }>;
   };
   /** Trucos con los trainers de FLiNG (buscar e instalar, siempre en la ventana del host). */
   trainer: {

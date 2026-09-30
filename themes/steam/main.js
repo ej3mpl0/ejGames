@@ -10,7 +10,7 @@ import { visible, sort, search, inCollection, canUninstall, SORTS } from "/_sdk/
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { downloadLabel, percent, speed } from "/_sdk/kit/store.js";
-import { createSocialView, avatar as kitAvatar, levelBadge } from "/_sdk/kit/social.js";
+import { createProfilePages, avatar as kitAvatar, levelBadge } from "/_sdk/kit/profile.js";
 import { createGuideView, starsText } from "/_sdk/kit/guides.js";
 import { createStore } from "./store.js";
 
@@ -130,7 +130,7 @@ function openMenu(anchor, items, { cls = "", first = false } = {}) {
           : h(
             "button",
             {
-              class: "menu-item" + (it.danger ? " danger" : "") + (it.on ? " on" : "") + (it.primary ? " primary" : "") + (it.dot ? ` has-dot dot-${it.dot}` : ""),
+              class: "menu-item" + (it.danger ? " danger" : "") + (it.on ? " on" : ""),
               "data-focus": "",
               onclick: () => {
                 closeMenu();
@@ -795,52 +795,23 @@ function openGuides(gameId, guideId = null) {
   render();
 }
 
-// ─────────────── amigos y perfiles (en la misma página que las guías) ───────────────
-/** start: "friends" | "profile" (userId: null = el tuyo). */
-function openSocial(start = "friends", userId = null) {
-  pushView("guides", { gameId: null, social: { start, userId } });
+// ─────────────── tu perfil e insignias (en la misma página que las guías) ───────────────
+/** start: "profile" | "badges". */
+function openProfilePage(start = "profile") {
+  pushView("guides", { gameId: null, profilePage: { start } });
   render();
 }
 
-function renderSocial() {
-  const key = `${state.social.start}:${state.social.userId}`;
-  if (guideView && guideRoot?.isConnected && guideRoot.dataset.social === key) return;
+function renderProfilePage() {
+  const key = state.profilePage.start;
+  if (guideView && guideRoot?.isConnected && guideRoot.dataset.profile === key) return;
   dropGuides();
-  guideRoot = h("div", { class: "guides-body social-body", "data-social": key });
-  main.replaceChildren(
-    h(
-      "div",
-      { class: "guides-page social-page" },
-      h("div", { class: "guides-top" }, h("span", { class: "guides-crumb" }, ({ profile: "Perfil", badges: "Insignias", activity: "Actividad", requests: "Solicitudes" })[state.social.start] || "Amigos")),
-      guideRoot,
-    ),
-  );
+  guideRoot = h("div", { class: "guides-body profile-body", "data-profile": key });
+  main.replaceChildren(h("div", { class: "guides-page profile-page" }, guideRoot));
   main.scrollTop = 0;
-  guideView = createSocialView({ ejg, root: guideRoot, focus, start: state.social.start, userId: state.social.userId, onExit: () => back(), onChange: () => updateHints() });
+  guideView = createProfilePages({ ejg, root: guideRoot, focus, start: key, onExit: () => back(), onChange: () => updateHints() });
   updateHints();
 }
-
-/** Botón «Amigos» de la barra inferior, como el «Amigos y chat» de Steam. */
-function renderFriendsButton() {
-  const a = ejg.account.state;
-  const btn = $("#friends-btn");
-  btn.hidden = !a?.enabled;
-  if (!a?.enabled) return;
-  const friends = a.social?.friends || [];
-  const online = friends.filter((f) => f.presence.status !== "offline").length;
-  const req = a.social?.incoming?.length || 0;
-  btn.replaceChildren(
-    ...[
-      h("span", { html: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 5"/></svg>' }),
-      a.linked && !a.needsLogin ? "Amigos" : "Amigos: entrar",
-      a.linked && online ? h("span", { class: "bb-count" }, String(online)) : null,
-      req ? h("span", { class: "bb-count is-req" }, `+${req}`) : null,
-    ].filter(Boolean),
-  );
-}
-$("#friends-btn").addEventListener("click", () => openSocial("friends"));
-ejg.account.onChange(renderFriendsButton);
-renderFriendsButton();
 
 /** La página de guías: la del juego, con su arte difuminado detrás. */
 function renderGuides() {
@@ -1011,12 +982,12 @@ function stopMedia() {
 
 /** Entra en una vista de la biblioteca recordando la actual para «Atrás». */
 function pushView(view, extra = {}) {
-  if (state.tab === "library") state.prev.push({ view: state.view, gameId: state.gameId, collection: state.collection, social: state.social, scroll: main.scrollTop });
+  if (state.tab === "library") state.prev.push({ view: state.view, gameId: state.gameId, collection: state.collection, profilePage: state.profilePage, scroll: main.scrollTop });
   if (state.prev.length > 30) state.prev.shift();
   stopMedia();
   state.tab = "library";
   state.view = view;
-  state.social = null;
+  state.profilePage = null;
   Object.assign(state, extra);
 }
 
@@ -1039,7 +1010,7 @@ function goLibrary(view) {
   state.view = view;
   state.gameId = null;
   state.collection = null;
-  state.social = null;
+  state.profilePage = null;
   render();
   main.scrollTop = 0;
   focus.first(main);
@@ -1051,8 +1022,8 @@ function back() {
   if (meMenu.contains(focus.current)) return focus.focus(meTab, { silent: true }), true;
   // En una guía: vuelve a la lista (o a la ficha, si se abrió desde ella).
   if (inGuides() && guideView.mode === "reader") return guideView.nav("back");
-  // En amigos: del perfil abierto vuelve a la lista.
-  if (inGuides() && state.social && guideView.depth > 1) return guideView.nav("back");
+  // En las insignias abiertas desde el perfil: vuelve al perfil.
+  if (inGuides() && state.profilePage && guideView.depth > 1) return guideView.nav("back");
   if (shop.back()) return true;
   if (state.tab !== "library") return false;
   const p = state.prev.pop();
@@ -1063,7 +1034,7 @@ function back() {
   }
   const last = state.gameId;
   stopMedia();
-  Object.assign(state, { view: p.view, gameId: p.gameId, collection: p.collection, social: p.social || null });
+  Object.assign(state, { view: p.view, gameId: p.gameId, collection: p.collection, profilePage: p.profilePage || null });
   render();
   main.scrollTop = p.scroll || 0;
   const el = (last && (main.querySelector(`[data-game-id="${last}"]`) || sideList.querySelector(`[data-game-id="${last}"]`))) || null;
@@ -1099,9 +1070,9 @@ function updateHistory() {
 }
 
 function renderTabs() {
-  // Las descargas son parte de la biblioteca (en Steam también). Amigos,
-  // perfiles e insignias son de la pestaña con tu nombre.
-  const me = state.tab === "library" && state.view === "guides" && !!state.social;
+  // Las descargas son parte de la biblioteca (en Steam también). Tu perfil y
+  // tus insignias son de la pestaña con tu nombre.
+  const me = state.tab === "library" && state.view === "guides" && !!state.profilePage;
   const on = me ? "me" : state.tab === "downloads" ? "library" : state.tab;
   document.querySelectorAll(".tab[data-tab]").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === on)));
   meTab.setAttribute("aria-selected", String(me));
@@ -1109,8 +1080,8 @@ function renderTabs() {
 
 function render() {
   renderTabs();
-  // Amigos, perfiles e insignias van a página entera, sin la barra de la biblioteca.
-  document.documentElement.dataset.view = isShop() ? state.tab : state.view === "guides" && state.social ? "social" : "library";
+  // Tu perfil y tus insignias van a página entera, sin la barra de la biblioteca.
+  document.documentElement.dataset.view = isShop() ? state.tab : state.view === "guides" && state.profilePage ? "profile" : "library";
   updateHints();
   updateDownloadsUi();
   if (isShop()) {
@@ -1119,7 +1090,7 @@ function render() {
   }
   renderSidebar();
   if (state.view === "game") renderGame(state.gameId);
-  else if (state.view === "guides") state.social ? renderSocial() : renderGuides();
+  else if (state.view === "guides") state.profilePage ? renderProfilePage() : renderGuides();
   else if (state.view === "collections") renderCollections();
   else if (state.view === "collection") renderCollection();
   else renderHome();
@@ -1196,9 +1167,9 @@ ejg.explore.onEnabled(() => {
   else updateDownloadsUi();
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
-ejg.ui.onView(({ view, slug, gameId, guideId, userId, tab }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId }) => {
   if (view === "guides" && gameId) return openGuides(gameId, guideId);
-  if (view === "friends" || view === "profile" || view === "badges") return openSocial(view === "friends" ? tab || "friends" : view, userId ?? null);
+  if (view === "profile" || view === "badges") return openProfilePage(view);
   if (view === "downloads") return goTab("downloads");
   if (!ejg.explore.enabled) return;
   goTab("store");
@@ -1215,120 +1186,64 @@ document.querySelector('[data-win="min"]').onclick = () => ejg.window.minimize()
 document.querySelector('[data-win="max"]').onclick = () => ejg.window.maximize();
 document.querySelector('[data-win="close"]').onclick = () => ejg.window.close();
 
-// ─────────────── tu cuenta: el avatar de arriba y la pestaña con tu nombre ───────────────
-// Como en el cliente de Steam: tu foto abre el menú de la cuenta y, a la
+// ─────────────── tu perfil: el avatar de arriba y la pestaña con tu nombre ───────────────
+// Como en el cliente de Steam: tu foto abre el menú de tu perfil y, a la
 // derecha de Biblioteca, tu nombre lleva a tu perfil y al pasar por encima
-// enseña Actividad, Perfil, Amigos, Insignias… Sin cuenta, las dos invitan a
-// crearla (es opcional).
+// enseña Perfil, Insignias y Editar perfil.
 const acctBtn = $("#acct-btn");
-const meWrap = $("#me-wrap");
 const meTab = $("#tab-me");
+const meWrap = $("#me-wrap");
 const meMenu = $("#me-menu");
-const STATUS_TXT = { online: "En línea", away: "Ausente", invisible: "Invisible" };
 
-function account() {
-  const a = ejg.account.state;
-  const linked = !!(a?.enabled && a.linked && !a.needsLogin);
-  const me = linked ? a.social?.me : null;
-  const name = me?.profile?.name || (linked ? a.username : "") || ejg.profile?.name || "";
-  return { a, linked, me, name };
+function me() {
+  const card = ejg.profiles.me;
+  return { card, name: card?.name || ejg.profile?.name || "" };
 }
 
 function renderProfile() {
   const p = ejg.profile;
-  const { a, linked, me, name } = account();
-  const url = me ? me.profile?.avatarUrl : p?.avatar;
+  const { card, name } = me();
+  const url = card?.avatarUrl || p?.avatar;
   const av = $("#avatar");
   av.textContent = url ? "" : (name || "?")[0].toUpperCase();
   av.style.backgroundImage = url ? `url("${url}")` : "";
-  av.style.backgroundColor = me ? "" : p?.color || "";
+  av.style.backgroundColor = url ? "" : p?.color || "";
   $("#profile-name").textContent = name;
-  acctBtn.dataset.status = linked ? a.status || "online" : "";
-  acctBtn.title = a?.enabled ? "Tu cuenta" : "Cambiar de perfil";
-  // La pestaña con tu nombre (solo si esta versión tiene cuentas).
-  meWrap.hidden = !a?.enabled;
-  if (!a?.enabled) return;
-  meTab.replaceChildren(linked ? name : p?.name || "Cuenta", ...(!linked && !a.needsLogin ? [h("span", { class: "tab-new" }, "Nuevo")] : []));
-  const item = (label, run, extra) => h("button", { class: "tab-menu-item", "data-focus": "", onclick: run }, label, extra || null);
-  const req = a.social?.incoming?.length || 0;
-  const online = (a.social?.friends || []).filter((f) => f.presence.status !== "offline").length;
-  meMenu.replaceChildren(
-    ...(linked
-      ? [
-          item("Actividad", () => openSocial("activity")),
-          item("Perfil", () => openSocial("profile")),
-          item("Amigos", () => openSocial("friends"), online ? h("span", { class: "tab-menu-count" }, `${online} en línea`) : null),
-          req ? item("Solicitudes", () => openSocial("requests"), h("span", { class: "tab-menu-count is-req" }, `+${req}`)) : null,
-          item("Insignias", () => openSocial("badges")),
-          item("Editar perfil", () => ejg.account.openEditor()),
-        ]
-      : [
-          h("div", { class: "tab-menu-note" }, a.needsLogin ? "Tu sesión ha caducado." : "Amigos, actividad, nivel, insignias y un perfil como este. Gratis y opcional."),
-          item(a.needsLogin ? "Volver a entrar" : "Crear cuenta", () => ejg.account.openLogin(a.needsLogin ? "login" : "register")),
-          a.needsLogin ? null : item("Iniciar sesión", () => ejg.account.openLogin("login")),
-        ]
-    ).filter(Boolean),
-  );
+  meTab.replaceChildren(name || "Perfil");
+  const item = (label, run) => h("button", { class: "tab-menu-item", "data-focus": "", onclick: run }, label);
+  meMenu.replaceChildren(item("Perfil", () => openProfilePage("profile")), item("Insignias", () => openProfilePage("badges")), item("Editar perfil", () => ejg.profiles.edit()));
   renderTabs();
 }
 
-meTab.addEventListener("click", () => {
-  const { a, linked } = account();
-  if (linked) openSocial("profile");
-  else ejg.account.openLogin(a?.needsLogin ? "login" : "register");
-});
+meTab.addEventListener("click", () => openProfilePage("profile"));
 // Con ratón el submenú sale al pasar por encima (CSS); al elegir, se esconde.
 meMenu.addEventListener("click", () => meWrap.classList.add("is-done"));
 meWrap.addEventListener("mouseleave", () => meWrap.classList.remove("is-done"));
 
-/** El menú de tu foto: tú arriba, tu perfil, tu estado y la cuenta. */
-function openAccountMenu() {
-  const { a, linked, me, name } = account();
-  if (!a?.enabled) return ejg.ui.open("profiles");
-  const status = a.status || "online";
-  const head = linked
-    ? h(
-        "div",
-        { class: "acct-head" },
-        kitAvatar({ ...me, avatarUrl: me?.profile?.avatarUrl, frame: me?.profile?.frame, name }, { size: "l" }),
-        h(
-          "div",
-          { class: "acct-who" },
-          h("b", { class: `acct-name is-${status}` }, name),
-          h("small", null, `@${a.username}`),
-          h("small", { class: "acct-lvl" }, "Nivel ", levelBadge(me?.level || 0)),
-        ),
-      )
-    : h(
-        "div",
-        { class: "acct-head is-promo" },
-        h("div", { class: "acct-promo-title" }, a.needsLogin ? "Tu sesión ha caducado" : "Crea tu cuenta de ejGames"),
-        h("p", null, a.needsLogin ? `Vuelve a entrar como ${a.username} para ver a tus amigos.` : "Amigos y a qué juegan, avisos dentro del juego, actividad, nivel e insignias y un perfil como el de Steam. Es gratis y opcional."),
-      );
-  const items = linked
-    ? [
-        { node: head },
-        "-",
-        { label: "Ver mi perfil", run: () => openSocial("profile") },
-        { label: "Editar perfil", run: () => ejg.account.openEditor() },
-        { label: "Amigos", run: () => openSocial("friends") },
-        { label: "Insignias", run: () => openSocial("badges") },
-        "-",
-        ...["online", "away", "invisible"].map((s) => ({ label: STATUS_TXT[s], dot: s, on: status === s, run: () => ejg.account.setStatus(s) })),
-        "-",
-        { label: "Detalles de la cuenta", run: () => ejg.ui.open("account") },
-        { label: "Cambiar de perfil…", run: () => ejg.ui.open("profiles") },
-      ]
-    : [
-        { node: head },
-        { label: a.needsLogin ? "Volver a entrar" : "Crear cuenta", primary: true, run: () => ejg.account.openLogin(a.needsLogin ? "login" : "register") },
-        ...(a.needsLogin ? [] : [{ label: "Ya tengo cuenta: iniciar sesión", run: () => ejg.account.openLogin("login") }]),
-        "-",
-        { label: "Cambiar de perfil…", run: () => ejg.ui.open("profiles") },
-      ];
-  openMenu(acctBtn, items, { cls: "acct-menu", first: true });
+/** El menú de tu foto: tú arriba (con tu nivel), tu perfil y cambiar de perfil. */
+function openProfileMenu() {
+  const { card, name } = me();
+  const head = h(
+    "div",
+    { class: "acct-head" },
+    kitAvatar({ avatarUrl: card?.avatarUrl || ejg.profile?.avatar, frame: card?.frame || "", name }, { size: "l" }),
+    h("div", { class: "acct-who" }, h("b", { class: "acct-name" }, name), h("small", { class: "acct-lvl" }, "Nivel ", levelBadge(card?.level || 0))),
+  );
+  openMenu(
+    acctBtn,
+    [
+      { node: head },
+      "-",
+      { label: "Ver mi perfil", run: () => openProfilePage("profile") },
+      { label: "Editar perfil", run: () => ejg.profiles.edit() },
+      { label: "Insignias", run: () => openProfilePage("badges") },
+      "-",
+      { label: "Cambiar de perfil…", run: () => ejg.ui.open("profiles") },
+    ],
+    { cls: "acct-menu", first: true },
+  );
 }
-acctBtn.addEventListener("click", openAccountMenu);
+acctBtn.addEventListener("click", openProfileMenu);
 
 function renderWallpaper() {
   const w = $("#wallpaper");
@@ -1404,7 +1319,7 @@ ejg.on("settings", () => {
   render();
 });
 ejg.on("profile", renderProfile);
-ejg.account.onChange(renderProfile);
+ejg.profiles.onChange(renderProfile);
 
 const hintBar = hints(document.getElementById("hints"), []);
 function updateHints() {

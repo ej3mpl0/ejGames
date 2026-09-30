@@ -34,6 +34,8 @@ biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
   sigue valiendo).
 - `ejg.ui.open` y `ui.onView` ya no tienen `friends`, `account` ni `account-login`.
 
+## 0.7.3
+
 **Tienda: lista de deseados**
 - Guarda los juegos que quieres desde su ficha («Añadir a tu lista de deseados») y tenlos a mano en su sección de la
   tienda, con cuándo los añadiste, su tamaño, su estado al día (descargando, instalado, en tu biblioteca) y el botón

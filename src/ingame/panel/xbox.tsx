@@ -2,10 +2,9 @@
 // iconos arriba, listas de rectángulos y el foco blanco y grueso de la consola.
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Activity, BookOpen, Download, Gamepad2, House, Image as ImageIcon, MapIcon, Music2, NotebookPen, Trophy, Users, WandSparkles } from "lucide-react";
+import { Activity, BookOpen, Download, Gamepad2, House, Image as ImageIcon, MapIcon, Music2, NotebookPen, Trophy, WandSparkles } from "lucide-react";
 import { GuidesPane } from "../../components/guide";
 import { MapPane } from "../../components/map";
-import { SocialPane } from "../../components/social";
 import { TrainerPane } from "../../components/trainer";
 import { Hints } from "../../components/Hints";
 import { useOverlayNav } from "../../input/nav";
@@ -29,12 +28,11 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hoursLabel, Img, PadIcon, pctNum, shortDate } from "./parts";
 import "./xbox.css";
 
-type Tab = "home" | "ach" | "friends" | "guides" | "trainer" | "map" | "shots" | "media" | "notes" | "perf" | "dl";
+type Tab = "home" | "ach" | "guides" | "trainer" | "map" | "shots" | "media" | "notes" | "perf" | "dl";
 
 const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: "home", label: "Inicio", icon: <House /> },
   { id: "ach", label: "Logros", icon: <Trophy /> },
-  { id: "friends", label: "Amigos", icon: <Users /> },
   { id: "guides", label: "Guías", icon: <BookOpen /> },
   { id: "trainer", label: "Trucos", icon: <WandSparkles /> },
   { id: "map", label: "Mapa", icon: <MapIcon /> },
@@ -186,13 +184,6 @@ export function XboxPanel({ p }: { p: Panel }) {
         </div>
       );
       break;
-    case "friends":
-      body = (
-        <div className="pn-guides">
-          <SocialPane inPanel layout="xbox" />
-        </div>
-      );
-      break;
     case "trainer":
       body = (
         <div className="pn-guides">
@@ -244,7 +235,7 @@ export function XboxPanel({ p }: { p: Panel }) {
 
   return (
     <div ref={ref} className="pn-xbox" style={style} onMouseDown={(e) => e.target === e.currentTarget && p.actions.close()}>
-      <aside className={cls("xb-guide", (tab === "guides" || tab === "trainer" || tab === "map" || tab === "friends") && "is-guides", ((tab === "guides" && reading) || tab === "map") && "is-reading")}>
+      <aside className={cls("xb-guide", (tab === "guides" || tab === "trainer" || tab === "map") && "is-guides", ((tab === "guides" && reading) || tab === "map") && "is-reading")}>
         <header className="xb-top">
           <div className="xb-me">
             {p.art.icon ? <Img src={p.art.icon} className="xb-me-pic" /> : <Gamepad2 className="xb-me-pic ph" />}

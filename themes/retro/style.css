@@ -133,7 +133,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 #guides .g-toc-item.is-on, #guides .g-toc-item.is-focused { background: var(--hi2); color: var(--bg); box-shadow: none; }
 #guides .g-end { color: var(--hi); font-family: "Press Start 2P", Consolas, monospace; font-size: calc(var(--fs) * 0.7); }
 
-/* ─── amigos y perfiles (kit social, en la pantalla de guías) ─── */
+/* ─── tu perfil (kit profile, en la pantalla de guías) ─── */
 #guides .s-view {
   --s-fg: var(--fg);
   --s-muted: var(--dim);
@@ -150,11 +150,5 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   scrollbar-width: none;
   text-shadow: none;
 }
-/* Pixelada solo donde no hay mayúsculas con tilde (la fuente no las trae). */
-#guides .s-tab { font-family: "Press Start 2P", Consolas, monospace; font-weight: 400; letter-spacing: 1px; }
-#guides .s-sub { color: var(--hi2); letter-spacing: 2px; }
-#guides .s-btn { border: 2px solid var(--hi2); background: none; color: var(--hi2); }
-#guides .s-btn.is-primary, #guides .s-btn.is-focused, #guides .s-btn:hover { background: var(--hi2); color: var(--bg); box-shadow: none; }
-#guides .s-tab { font-size: calc(var(--fs) * 0.6); }
 #guides .s-avatar, #guides .s-avatar img, #guides .s-avatar-ph { border-radius: 0; image-rendering: pixelated; }
-.foot .friends { margin-left: 8px; }
+.foot .profile { margin-left: 8px; }

@@ -5,7 +5,6 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { GuidesPane } from "../../components/guide";
 import { MapPane } from "../../components/map";
-import { SocialPane } from "../../components/social";
 import { TrainerPane } from "../../components/trainer";
 import { Hints } from "../../components/Hints";
 import { useOverlayNav } from "../../input/nav";
@@ -31,7 +30,7 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dayLabel, dur, hoursLabel } from "./parts";
 import "./ejgames.css";
 
-type Sec = "ach" | "friends" | "guides" | "cheats" | "map" | "shots" | "notes" | "music" | "perf" | "dl";
+type Sec = "ach" | "guides" | "cheats" | "map" | "shots" | "notes" | "music" | "perf" | "dl";
 
 export function EjGamesPanel({ p }: { p: Panel }) {
   const d = p.data;
@@ -54,7 +53,6 @@ export function EjGamesPanel({ p }: { p: Panel }) {
 
   const secs: { id: Sec; label: string; info: string }[] = [
     { id: "ach", label: "Logros", info: p.ach.total ? `${p.ach.got}/${p.ach.total}` : "—" },
-    { id: "friends", label: "Amigos", info: "" },
     { id: "guides", label: "Guías", info: "" },
     { id: "cheats", label: "Trucos", info: "" },
     { id: "map", label: "Mapa", info: "" },
@@ -113,13 +111,6 @@ export function EjGamesPanel({ p }: { p: Panel }) {
       body = (
         <div className="pn-guides">
           <GuidesPane gameId={d.gameId} onMenu={p.actions.close} />
-        </div>
-      );
-      break;
-    case "friends":
-      body = (
-        <div className="pn-guides">
-          <SocialPane inPanel layout="steam" />
         </div>
       );
       break;
@@ -221,7 +212,7 @@ export function EjGamesPanel({ p }: { p: Panel }) {
           <h2>{secs.find((s) => s.id === sec)!.label}</h2>
           {actions}
         </header>
-        <div className={cls("ej-main-body", (sec === "guides" || sec === "cheats" || sec === "map" || sec === "friends") && "is-guides")}>{body}</div>
+        <div className={cls("ej-main-body", (sec === "guides" || sec === "cheats" || sec === "map") && "is-guides")}>{body}</div>
         {viewer != null && <CaptureViewer k="ej" list={d.captures} index={viewer} onIndex={setViewer} onClose={() => setViewer(null)} />}
       </section>
       <Message k="ej" p={p} />

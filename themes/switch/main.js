@@ -12,7 +12,7 @@ import { clock } from "/_sdk/kit/clock.js";
 import { isActive } from "/_sdk/kit/store.js";
 import { createShop } from "./store.js";
 import { createGuideView } from "/_sdk/kit/guides.js";
-import { createSocialView } from "/_sdk/kit/social.js";
+import { createProfilePages } from "/_sdk/kit/profile.js";
 
 const ejg = await window.ejg.ready();
 const $ = (s) => document.querySelector(s);
@@ -158,39 +158,21 @@ options.addEventListener("click", (e) => e.target === options && closeOptions())
 // ─────────────── guías de la comunidad ───────────────
 let guideView = null;
 let guideFrom = null;
-// ─────────────── amigos y perfiles (en la vista de las guías) ───────────────
-function openSocial(start = "friends", userId = null) {
+// ─────────────── tu perfil e insignias (en la vista de las guías) ───────────────
+/** start: "profile" | "badges". */
+function openProfile(start = "profile") {
   if (state.view !== "guides") guideFrom = { view: state.view, focus: focus.current };
   dropGuides();
   const root = $("#guides");
   const box = h("div", { class: "gs-page" });
-  root.replaceChildren(h("header", { class: "gs-head" }, h("div", null, h("small", null, "Tu cuenta de ejGames"), h("b", null, ({ profile: "Perfil", badges: "Insignias", activity: "Actividad", requests: "Solicitudes" })[start] || "Amigos"))), box);
+  root.replaceChildren(h("header", { class: "gs-head" }, h("div", null, h("small", null, "Tu perfil de ejGames"), h("b", null, start === "badges" ? "Insignias" : "Perfil"))), box);
   setView("guides");
-  guideView = createSocialView({ ejg, root: box, focus, start, userId, layout: "switch", onExit: closeGuides, onChange: () => updateHints() });
+  guideView = createProfilePages({ ejg, root: box, focus, start, layout: "switch", onExit: closeGuides, onChange: () => updateHints() });
   updateHints();
   ejg.sound.play("open");
 }
 
-/** «3» amigos en línea o «+1» solicitud, para el botón de Amigos. */
-function friendsBadge() {
-  const a = ejg.account.state;
-  if (!a?.linked || a.needsLogin) return "";
-  const req = a.social?.incoming?.length || 0;
-  if (req) return `+${req}`;
-  const online = (a.social?.friends || []).filter((f) => f.presence.status !== "offline").length;
-  return online ? String(online) : "";
-}
-
-function renderFriendsCircle() {
-  const a = ejg.account.state;
-  $("#c-friends").hidden = !a?.enabled;
-  const n = friendsBadge();
-  $("#fr-badge").hidden = !n;
-  $("#fr-badge").textContent = n;
-}
-$("#c-friends").addEventListener("click", () => openSocial("friends"));
-ejg.account.onChange(renderFriendsCircle);
-renderFriendsCircle();
+$("#c-profile").addEventListener("click", () => openProfile("profile"));
 
 function openGuides(gameId, guideId = null) {
   const g = ejg.library.byId(gameId);
@@ -366,10 +348,10 @@ ejg.explore.onEnabled(() => {
   }
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
-ejg.ui.onView(({ view, slug, gameId, guideId, userId, tab }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId }) => {
   if (!options.hidden) closeOptions();
   if (view === "guides" && gameId) return openGuides(gameId, guideId);
-  if (view === "friends" || view === "profile" || view === "badges") return openSocial(view === "friends" ? tab || "friends" : view, userId ?? null);
+  if (view === "profile" || view === "badges") return openProfile(view);
   if (view === "downloads") return shop.open("downloads");
   if (!ejg.explore.enabled) return;
   shop.open(view === "repack" ? "repack" : "explore", slug);

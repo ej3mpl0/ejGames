@@ -13,7 +13,7 @@
   var seq = 0;
   var pending = new Map();
   var listeners = new Map();
-  var state = { init: null, settings: {}, library: [], collections: [], profile: null, running: [], input: { source: "mouse", pad: "xbox" }, downloads: [], wishlist: [], explore: true };
+  var state = { init: null, settings: {}, library: [], collections: [], profile: null, running: [], input: { source: "mouse", pad: "xbox" }, downloads: [], wishlist: [], explore: true, page: null };
   var readyResolve;
   var readyPromise = new Promise(function (r) { readyResolve = r; });
   var initialized = false;
@@ -117,7 +117,7 @@
       state.downloads = m.data.downloads || [];
       state.wishlist = m.data.wishlist || [];
       state.explore = m.data.explore !== false;
-      state.account = m.data.account || null;
+      state.page = m.data.page || null;
       root.setAttribute("data-mode", m.data.mode || "desktop");
       applyInput();
       applySettings(m.data.settings);
@@ -159,7 +159,7 @@
         case "downloads": state.downloads = d || []; break;
         case "wishlist": state.wishlist = d || []; break;
         case "explore": state.explore = !!(d && d.enabled); break;
-        case "account": state.account = d || null; break;
+        case "page": state.page = d || null; break;
       }
       emit(m.name, d);
     }
@@ -277,8 +277,23 @@
       onState: function (fn) { return on("game-state", fn); },
     },
     profiles: {
+      /** Perfil local activo: {id, name, avatar, color, themeId}. */
       current: function () { return state.profile; },
+      /** Selector de perfiles del host. */
       switch: function () { return call("ui.open", { name: "profiles" }); },
+      /** Tu perfil en corto (sin llamada): {id, name, avatarUrl, frame, background, backgroundImageUrl, color, level, xp, badges, featuredBadge}. */
+      get me() { return state.page; },
+      /** Cambió tu perfil: al guardar en el editor, al subir de nivel o al ganar una insignia. */
+      onChange: function (fn) { return on("page", fn); },
+      /** Tu perfil entero: lo de `me` y además profile (resumen, vitrinas…), summary (juegos y estadísticas),
+       *  activity (partidas y logros) y presence (a qué juegas ahora). */
+      view: function () { return call("profiles.view"); },
+      /** Tu perfil en la ventana del host (o en el tema, si lo pinta). */
+      open: function () { return call("ui.open", { name: "profile" }); },
+      /** Página de insignias (nivel, experiencia y lo que falta para cada una). */
+      badges: function () { return call("ui.open", { name: "badges" }); },
+      /** Editor del perfil del host (avatar, marco, fondo, vitrinas…). */
+      edit: function () { return call("ui.open", { name: "profile-editor" }); },
     },
     stats: {
       get: function (days) { return call("stats.get", { days: days }); },
@@ -291,8 +306,7 @@
     },
     ui: {
       /** settings | game | profiles | search | add-folder | stats | theme | collections | menu | explore | downloads
-       *  | guides, trainer, map ({id: gameId}) | friends ({tab}) | profile, badges ({id: userId}) | account | account-login ({mode})
-       *  | profile-editor */
+       *  | guides, trainer, map ({id: gameId}) | profile | badges | profile-editor */
       open: function (name, args) { return call("ui.open", { name: name, args: args || null }); },
       toast: function (message, kind) { return call("ui.toast", { message: message, kind: kind || "info" }); },
       /** El host pide abrir una vista del tema: fn({view: "explore"|"downloads"|"repack"|"guides", slug?, gameId?, guideId?}). */
@@ -360,54 +374,6 @@
       /** Ventana de trucos del host: buscar, ver opciones, instalar (lo confirma
        *  el usuario) y gestionar. Durante la partida, se usan desde el overlay. */
       open: function (gameId) { return call("ui.open", { name: "trainer", args: { id: gameId } }); },
-    },
-    account: {
-      /** Cuenta de ejGames del perfil: {enabled, linked, username, needsLogin, status, social: {me, friends, incoming, outgoing, blocked}}. */
-      get state() { return state.account; },
-      onChange: function (fn) { return on("account", fn); },
-      /** online | away | invisible */
-      setStatus: function (status) { return call("account.setStatus", { status: status }); },
-      /** Editor del perfil del host (avatar, marco, fondo, vitrinas…). */
-      openEditor: function () { return call("ui.open", { name: "profile-editor" }); },
-      /** El diálogo para crear la cuenta ("register") o entrar ("login"). */
-      openLogin: function (mode) { return call("ui.open", { name: "account-login", args: { mode: mode === "login" ? "login" : "register" } }); },
-    },
-    friends: {
-      /** Amigos con su presencia: [{id, username, name, avatarUrl, frame, level, presence: {status, game, since, lastSeen}}]. */
-      get list() { return (state.account && state.account.social && state.account.social.friends) || []; },
-      /** Solicitudes: {incoming, outgoing, blocked}. */
-      get requests() {
-        var s = (state.account && state.account.social) || {};
-        return { incoming: s.incoming || [], outgoing: s.outgoing || [], blocked: s.blocked || [] };
-      },
-      onChange: function (fn) { return on("account", function (a) { fn((a && a.social && a.social.friends) || []); }); },
-      /** Por nombre de usuario o código de amigo. */
-      add: function (user) { return call("friends.add", { user: user }); },
-      accept: function (id) { return call("friends.accept", { id: id }); },
-      decline: function (id) { return call("friends.decline", { id: id }); },
-      remove: function (id) { return call("friends.remove", { id: id }); },
-      block: function (id) { return call("friends.block", { id: id }); },
-      unblock: function (id) { return call("friends.unblock", { id: id }); },
-      refresh: function () { return call("friends.refresh"); },
-      /** Amigos (del tema si los pinta; si no, la ventana del host). tab: friends | requests | activity. */
-      open: function (tab) { return call("ui.open", { name: "friends", args: { tab: tab || null } }); },
-    },
-    profiles: {
-      /** Un perfil (el tuyo con tu id): nombre, avatar, fondo, nivel, insignias, vitrinas, juegos, actividad… */
-      view: function (id) { return call("profiles.view", { id: id }); },
-      /** Perfil en la ventana del host. */
-      open: function (id) { return call("ui.open", { name: "profile", args: { id: id } }); },
-      /** Página de insignias (nivel, experiencia y lo que falta para cada una). */
-      badges: function (id) { return call("ui.open", { name: "badges", args: { id: id == null ? null : id } }); },
-    },
-    comments: {
-      list: function (userId, before) { return call("comments.list", { id: userId, before: before == null ? null : before }); },
-      post: function (userId, text) { return call("comments.post", { id: userId, text: text }); },
-      remove: function (commentId) { return call("comments.remove", { id: commentId }); },
-    },
-    activity: {
-      /** Lo último de tus amigos: {items: [{id, kind, data, at, user}]}. Para seguir, `before` = id del último. */
-      feed: function (before) { return call("activity.feed", { before: before == null ? null : before }); },
     },
     maps: {
       /** Mapa de Map Genie del juego: {game: {name, maps: [nombre]} | null, none}. */

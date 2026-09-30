@@ -21,7 +21,8 @@ src-tauri/src/     núcleo en Rust
   guides/          guías de la comunidad de Steam: HTML → bloques seguros, guardadas y progreso
   trainers/        trainers de FLiNG: búsqueda, ficha, instalación, proceso durante la partida y SendInput
   maps.rs          catálogo de Map Genie (sitemap), emparejado por título y elección manual
-  online/          cuentas: argon2 y DPAPI, sondeo /v1/sync, presencia, avisos de amigos, resumen, nivel e insignias
+  profile_page/    el perfil al estilo Steam de cada perfil local: resumen, vitrinas, nivel e insignias
+  activity.rs      historial de partidas y logros por perfil (sobrevive a desinstalar; para el perfil y el resumen del año)
   protocols.rs     ejg-media (Range) y ejg-theme / ejg-safe (CSP + sandbox)
   lifecycle.rs     ventana, bandeja, modo ahorro (EcoQoS + recorte de memoria)
   update.rs        versiones nuevas desde GitHub Releases (descarga + SHA-256 + instalador pasivo)
@@ -29,8 +30,6 @@ src/               host en React: ajustes, editor de juego, perfiles, estadísti
 sdk/               SDK de temas (window.ejg) y kit de utilidades
 themes/            temas de serie
 installer-app/     instalador que se publica (Tauri): lleva dentro el NSIS y lo ejecuta en silencio
-server/            API de cuentas (Cloudflare Worker + D1): usuarios, sesiones, amigos, presencia, perfiles, imágenes
-relay/             relay de la tienda (Cloudflare Worker) para quien tenga la web bloqueada
 docs/              esta documentación (Mintlify)
 examples/          el tema de ejemplo de la guía
 ```

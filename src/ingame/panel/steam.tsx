@@ -3,10 +3,9 @@
 // de herramientas. A la derecha, lo que suena y cómo va el PC.
 
 import { useState, type ReactNode } from "react";
-import { Activity, BookOpen, Download, Gamepad2, Image as ImageIcon, MapIcon, Music2, NotebookPen, Power, Trophy, Users, WandSparkles } from "lucide-react";
+import { Activity, BookOpen, Download, Gamepad2, Image as ImageIcon, MapIcon, Music2, NotebookPen, Power, Trophy, WandSparkles } from "lucide-react";
 import { GuidesPane } from "../../components/guide";
 import { MapPane } from "../../components/map";
-import { SocialPane } from "../../components/social";
 import { TrainerPane } from "../../components/trainer";
 import { Hints } from "../../components/Hints";
 import { useOverlayNav } from "../../input/nav";
@@ -32,11 +31,10 @@ import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hoursLabel, Img, PadIcon, pctNum, shortDate } from "./parts";
 import "./steam.css";
 
-type Tab = "ach" | "friends" | "guides" | "trainer" | "map" | "shots" | "notes" | "music" | "perf" | "dl";
+type Tab = "ach" | "guides" | "trainer" | "map" | "shots" | "notes" | "music" | "perf" | "dl";
 
 const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: "ach", label: "Logros", icon: <Trophy /> },
-  { id: "friends", label: "Amigos", icon: <Users /> },
   { id: "guides", label: "Guías", icon: <BookOpen /> },
   { id: "trainer", label: "Trucos", icon: <WandSparkles /> },
   { id: "map", label: "Mapa", icon: <MapIcon /> },
@@ -146,15 +144,6 @@ export function SteamPanel({ p }: { p: Panel }) {
         <Window title="Guías de la comunidad">
           <div className="pn-guides">
             <GuidesPane gameId={d.gameId} onMenu={p.actions.close} />
-          </div>
-        </Window>
-      );
-      break;
-    case "friends":
-      body = (
-        <Window title="Amigos">
-          <div className="pn-guides">
-            <SocialPane inPanel layout="steam" />
           </div>
         </Window>
       );

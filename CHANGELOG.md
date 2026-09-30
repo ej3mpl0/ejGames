@@ -5,7 +5,34 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
-## 0.7.3
+## 0.8.0
+
+**Sin cuentas ni amigos: tu perfil, en tu PC**
+- Fuera las cuentas de ejGames, los amigos, las solicitudes, el estado (en línea, ausente…), la actividad de los
+  amigos y los comentarios, y con ellos el servidor (`server/`, Cloudflare Workers + D1). No hay nada que crear ni que
+  tener conectado.
+- El **perfil** se queda como estaba (el de Steam en Steam y el suyo en cada tema, con marco, fondo, tema del
+  perfil, resumen, vitrinas, nivel e insignias), pero ahora es **de cada perfil local y se guarda en el PC**. Su nombre
+  y su avatar son los del perfil local.
+- Lo que tuvieras en la cuenta (resumen, país, marco, fondo, tema, vitrinas e insignia destacada) pasa solo a tu
+  perfil; las imágenes que estaban en el servidor, no.
+- El nivel y las insignias salen de tu biblioteca, tus horas y tus logros. La insignia Social desaparece y Veterano
+  cuenta los años de tu perfil.
+- **Historial** de partidas, logros y juegos completados de cada perfil, que se queda aunque desinstales el juego (se
+  rellena con lo que ya había). La actividad del perfil sale de ahí, y es la base para un resumen del año.
+- El perfil está en «Mi perfil» del menú rápido, en **Ajustes → Perfil** (Ver mi perfil, Editar perfil) y en cada
+  tema: tu nombre junto a Biblioteca y el menú de tu foto en Steam, y un botón de Perfil en PS5, Xbox, Switch, Cine y
+  Retro, donde estaba el de Amigos.
+- El overlay dentro del juego pierde la pestaña Amigos y los avisos de amigos; el inicio, el paso de la cuenta.
+
+**Para temas**
+- Fuera `ejg.account`, `ejg.friends`, `ejg.comments` y `ejg.activity`. `ejg.profiles` trae tu perfil: `me` (nivel,
+  avatar, marco…), `onChange`, `view()`, `open()`, `badges()` y `edit()`, además de `current()` y `switch()` (que no
+  llegaban a los temas por un nombre repetido).
+- El kit pasa de `social.js` / `social.css` a `profile.js` / `profile.css`: `createProfilePages` (perfil e insignias)
+  en lugar de `createSocialView`, y sin `createFriendsView`. En `theme.json`, `"features": {"profile": true}` (`social`
+  sigue valiendo).
+- `ejg.ui.open` y `ui.onView` ya no tienen `friends`, `account` ni `account-login`.
 
 **Tienda: lista de deseados**
 - Guarda los juegos que quieres desde su ficha («Añadir a tu lista de deseados») y tenlos a mano en su sección de la

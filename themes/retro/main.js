@@ -11,7 +11,7 @@ import { hints } from "/_sdk/kit/hints.js";
 import { SIZES, drawCover, quantize } from "./pixel.js";
 import { createStore } from "./store.js";
 import { createGuideView } from "/_sdk/kit/guides.js";
-import { createSocialView } from "/_sdk/kit/social.js";
+import { createProfilePages } from "/_sdk/kit/profile.js";
 
 const ejg = await window.ejg.ready();
 const $ = (s) => document.querySelector(s);
@@ -230,36 +230,18 @@ let guideView = null;
 const guidesEl = $("#guides");
 // Las pistas de la vista del kit, en el inglés arcade del tema (la fuente no trae «Ó», «Á»…).
 const GUIDE_HINTS = { Leer: "READ", "Sección": "SECTION", Guardar: "SAVE", "Quitar de guardadas": "UNSAVE", Steam: "STEAM", Volver: "BACK", "Atrás": "BACK", Cerrar: "CLOSE", Ir: "GO", Buscar: "SEARCH" };
-// ─────────────── amigos y perfiles (en la pantalla de las guías) ───────────────
-function openSocial(start = "friends", userId = null) {
+// ─────────────── tu perfil e insignias (en la pantalla de las guías) ───────────────
+/** start: "profile" | "badges". */
+function openProfile(start = "profile") {
   if (!detail.hidden) closeDetail(true);
   guideView?.destroy();
   guidesEl.hidden = false;
-  guideView = createSocialView({ ejg, root: guidesEl, focus, start, userId, layout: "retro", onExit: closeGuides, onChange: () => updateHints() });
+  guideView = createProfilePages({ ejg, root: guidesEl, focus, start, layout: "retro", onExit: closeGuides, onChange: () => updateHints() });
   updateHints();
   ejg.sound.play("open");
 }
 
-/** «3» amigos en línea o «+1» solicitud, para el botón de Amigos. */
-function friendsBadge() {
-  const a = ejg.account.state;
-  if (!a?.linked || a.needsLogin) return "";
-  const req = a.social?.incoming?.length || 0;
-  if (req) return `+${req}`;
-  const online = (a.social?.friends || []).filter((f) => f.presence.status !== "offline").length;
-  return online ? String(online) : "";
-}
-
-function renderFriendsBtn() {
-  const a = ejg.account.state;
-  const b = $("#friends-btn");
-  b.hidden = !a?.enabled;
-  const n = friendsBadge();
-  b.textContent = `♥ FRIENDS${n ? ` ${n}` : ""}`;
-}
-$("#friends-btn").addEventListener("click", () => openSocial("friends"));
-ejg.account.onChange(renderFriendsBtn);
-renderFriendsBtn();
+$("#profile-btn").addEventListener("click", () => openProfile("profile"));
 
 function openGuides(gameId, guideId = null) {
   const g = ejg.library.byId(gameId);
@@ -404,9 +386,9 @@ function updateStatus() {
   if (!inLib()) statusEl.hidden = true;
   else shop.status(statusEl);
 }
-ejg.ui.onView(({ view, slug, gameId, guideId, userId, tab }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId }) => {
   if (view === "guides" && gameId) return openGuides(gameId, guideId);
-  if (view === "friends" || view === "profile" || view === "badges") return openSocial(view === "friends" ? tab || "friends" : view, userId ?? null);
+  if (view === "profile" || view === "badges") return openProfile(view);
   closeGuides();
   if (view === "downloads") return goTab("downloads");
   if (!ejg.explore.enabled) return;

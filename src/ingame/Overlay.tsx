@@ -13,7 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api } from "../api/tauri";
-import type { AccountState, NavAction, OverlayLive, OverlayNotice, OverlayPanel, OverlayPin } from "../api/types";
+import type { NavAction, OverlayLive, OverlayNotice, OverlayPanel, OverlayPin } from "../api/types";
 import { MapHost, useMapHost } from "../components/map";
 import { padTypeOf } from "../input/gamepad";
 import { configureSounds } from "../host/sounds";
@@ -58,18 +58,12 @@ export function Overlay() {
       listen<OverlayPanel | null>("overlay:panel", (e) => openPanel(e.payload)),
       listen<OverlayLive>("overlay:live", (e) => setLive(e.payload)),
       listen<OverlayPin | null>("overlay:pin", (e) => setPin(e.payload)),
-      // Amigos: esta ventana tiene su propio estado (es otro webview).
-      listen<AccountState>("social:changed", (e) => useApp.setState({ account: e.payload })),
       listen<NavAction>("overlay:nav", (e) => {
         useApp.getState().set({ inputSource: "gamepad" });
         dispatchNav(e.payload, false, "gamepad");
       }),
     ];
     Promise.all(subs).then(async () => {
-      void api
-        .accountState()
-        .then((account) => useApp.setState({ account }))
-        .catch(() => {});
       const init = await api.overlayReady();
       if (init.notices.length) setQueue((q) => [...q, ...init.notices]);
       if (init.panel) openPanel(init.panel);
@@ -139,7 +133,7 @@ export function Overlay() {
     setShown((s) => [...s, ...take]);
     for (const n of take) {
       // El sonido, a la vez que la animación de entrada (la captura ya sonó).
-      if (n.kind !== "info" && n.kind !== "screenshot" && n.kind !== "friend") void api.overlayChime(isRare(n)).catch(() => {});
+      if (n.kind !== "info" && n.kind !== "screenshot") void api.overlayChime(isRare(n)).catch(() => {});
       setTimeout(() => setShown((s) => s.map((x) => (x.id === n.id ? { ...x, leaving: true } : x))), noticeMs(n));
       setTimeout(() => setShown((s) => s.filter((x) => x.id !== n.id)), noticeMs(n) + LEAVE_MS);
     }

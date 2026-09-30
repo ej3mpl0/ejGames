@@ -85,7 +85,7 @@ export interface NoticeLook {
 
 export interface OverlayNotice {
   id: number;
-  kind: "achievement" | "info" | "summary" | "screenshot" | "friend";
+  kind: "achievement" | "info" | "summary" | "screenshot";
   gameId?: number | null;
   game?: string | null;
   title: string;
@@ -375,7 +375,8 @@ export interface ThemeInfo {
   windowControls?: "host" | "theme" | null;
   overlay?: { style?: NoticeStyle } | null;
   /** Vistas propias del tema (sin ellas, el host abre las suyas). */
-  features?: { explore?: boolean; guides?: boolean; social?: boolean } | null;
+  /** `social` es el nombre de antes de `profile` (0.7). */
+  features?: { explore?: boolean; guides?: boolean; profile?: boolean; social?: boolean } | null;
   builtin: boolean;
   dir: string;
   previewUrl?: string | null;
@@ -409,8 +410,6 @@ export interface Settings {
   screenshotDir: string;
   achievementDirs: string[];
   firstRunDone: boolean;
-  /** Perfiles que ya han visto el aviso de las cuentas. */
-  accountPromoSeen: number[];
   exploreEnabled: boolean;
   exploreHideAdult: boolean;
   downloadDir: string;
@@ -817,95 +816,77 @@ export interface TrainerLive {
   elevated: boolean;
 }
 
-// ───────────────────────────── cuenta y amigos ─────────────────────────────
+// ───────────────────────────── perfil (página al estilo Steam) ─────────────────────────────
 
-export type AccountStatus = "online" | "away" | "invisible";
-
-export interface SocialPresence {
-  status: "online" | "away" | "offline";
-  game?: string | null;
-  since?: number | null;
-  lastSeen?: number;
-}
-
-export interface SocialUser {
-  id: number;
-  username: string;
-  name: string;
-  avatar?: string | null;
-  avatarUrl?: string;
-  frame?: string;
-  level?: number;
-}
-
-export interface SocialFriend extends SocialUser {
-  since?: number;
-  presence: SocialPresence;
-}
-
-export interface SocialShowcase {
+export interface ProfileShowcase {
   type: "featured" | "favorite" | "stats" | "recent" | "achievements" | "badges" | "screenshots" | "text";
   game?: string;
   title?: string;
   text?: string;
+  /** Capturas: URL ejg-media. */
   items?: string[];
-  urls?: string[];
 }
 
-export interface SocialProfile {
+/** Lo que se edita del perfil (el nombre y el avatar son los del perfil local). */
+export interface ProfileFields {
   name: string;
+  avatarUrl?: string | null;
   realName: string;
   country: string;
   bio: string;
-  avatar?: string | null;
-  avatarUrl?: string;
-  backgroundImage?: string | null;
-  backgroundImageUrl?: string;
+  backgroundImageUrl?: string | null;
   frame: string;
   background: string;
   color: string;
-  showcases: SocialShowcase[];
+  showcases: ProfileShowcase[];
   featuredBadge: string;
-  privacy: "public" | "friends" | "private";
-  comments: "public" | "friends" | "off";
 }
 
-export interface SocialMe {
+export interface ProfileBadge {
+  id: string;
+  tier: number;
+}
+
+export interface ProfileGame {
   id: number;
-  username: string;
-  friendCode: string;
-  createdAt: number;
-  status: string;
-  profile: SocialProfile;
-  xp: number;
+  title: string;
+  minutes: number;
+  last?: number | null;
+  ach?: [number, number] | null;
+  coverUrl?: string;
+  headerUrl?: string;
+}
+
+/** La página de perfil entera (`profile_page`). */
+export interface ProfilePage {
+  id: number;
+  name: string;
+  memberSince: number;
   level: number;
-  badges: { id: string; tier: number }[];
+  xp: number;
+  badges: ProfileBadge[];
+  profile: ProfileFields;
+  summary: {
+    games: ProfileGame[];
+    stats: { minutes: number; achievements: number; perfect: number; library: number; played: number; recent: number; shots: number };
+  };
+  activity: { id: number; kind: "played" | "achievement" | "completed"; at: number; data: Record<string, unknown> }[];
+  presence: { status: "online"; game: string; since?: number | null } | null;
 }
 
-export interface SocialSync {
-  rev: number;
-  me: SocialMe;
-  friends: SocialFriend[];
-  incoming: (SocialUser & { at: number })[];
-  outgoing: (SocialUser & { at: number })[];
-  blocked: SocialUser[];
-  lastComment: number;
-}
-
-export interface AccountState {
-  /** Esta versión tiene servidor de cuentas. */
-  enabled: boolean;
-  profileId?: number | null;
-  linked: boolean;
-  username?: string | null;
-  userId?: number | null;
-  /** Ligada, pero la sesión caducó. */
-  needsLogin: boolean;
-  status: AccountStatus;
-  notifyOnline: boolean;
-  notifyPlaying: boolean;
-  offline: boolean;
-  social?: SocialSync | null;
+/** Lo corto del perfil, lo que reciben los temas (`ejg.profiles.me`). */
+export interface ProfileCard {
+  id: number;
+  name: string;
+  avatarUrl?: string | null;
+  frame: string;
+  background: string;
+  backgroundImageUrl?: string | null;
+  color: string;
+  level: number;
+  xp: number;
+  badges: ProfileBadge[];
+  featuredBadge: string;
 }
 
 // ───────────────────────────── mapas (Map Genie) ─────────────────────────────

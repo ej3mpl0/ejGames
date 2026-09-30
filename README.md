@@ -21,9 +21,8 @@
 * **Explorar y Descargas**: tienda de repacks con torrent integrado y un botón **Instalar** que deja el juego en tu
   biblioteca.
 * **Logros** de Steam y de los juegos sueltos, con **avisos dentro del juego** al estilo de cada plataforma.
-* **Amigos y perfiles al estilo Steam**: a qué juegan tus amigos (con avisos dentro del juego), su actividad y un
-  perfil con marcos, fondos animados, vitrinas, nivel e insignias. La cuenta es opcional: sin ella todo lo demás
-  funciona igual, y con ella se desbloquea todo esto.
+* **Tu perfil al estilo Steam**: marcos, fondos animados, vitrinas, nivel e insignias que se ganan jugando. Sin
+  cuentas: todo se guarda en tu PC.
 * **Overlay dentro del juego** con guías de la comunidad de Steam, **trucos** (trainers de FLiNG que tú decides
   instalar) y **mapas interactivos** de Map Genie que se pueden anclar encima del juego.
 * **6 temas de serie** (Steam, PS5, Xbox, Switch, Cinema y Retro) que se tunean sin código, o el tuyo desde cero con

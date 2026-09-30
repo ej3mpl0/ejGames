@@ -771,7 +771,7 @@ pub fn record_session(c: &Connection, profile: i64, game: i64, start: i64, end: 
          WHERE profile_id = ?1 AND game_id = ?2",
         params![profile, game, dur, end],
     )?;
-    Ok(())
+    crate::activity::played(c, profile, game, start, end)
 }
 
 // ───────────────────────────── media ─────────────────────────────

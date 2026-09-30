@@ -12,7 +12,3 @@ installer-app/src-tauri/target
 installer-app/src-tauri/gen
 relay/.dev.vars
 relay/.wrangler/
-
-# API de cuentas: clave y URL (fuera de git) y el D1 local de wrangler dev
-server/.dev.vars
-server/.wrangler/

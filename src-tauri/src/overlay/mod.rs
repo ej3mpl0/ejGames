@@ -530,27 +530,6 @@ pub fn chime(st: &AppState, rare: bool) {
     let _ = rare;
 }
 
-/// Aviso de un amigo (se conecta, empieza a jugar, te manda una solicitud).
-pub fn notify_friend(st: &Arc<AppState>, title: String, body: Option<String>, icon: Option<String>) {
-    notify(
-        st,
-        Notice {
-            id: next_id(st),
-            kind: "friend".into(),
-            game_id: None,
-            game: None,
-            title,
-            body,
-            icon,
-            rarity: None,
-            at: crate::util::now(),
-            score: None,
-            progress: None,
-            look: Look::default(),
-        },
-    );
-}
-
 /// Aviso de logro nuevo (con su icono ya en caché para que salga al instante).
 pub fn notify_achievement(st: &Arc<AppState>, game_id: i64, u: &NewUnlock) {
     let def = st.db.with(|c| achievements::def_of(c, game_id, &u.api_name)).ok().flatten();
@@ -561,20 +540,14 @@ pub fn notify_achievement(st: &Arc<AppState>, game_id: i64, u: &NewUnlock) {
         Some((appid, d)) => (appid, d.name, d.description, d.icon, d.global_pct),
         None => (None, achievements::pretty_name(&u.api_name), None, None, None),
     };
-    let mut remote_icon = None;
     if let (Some(a), Some(f)) = (appid, icon_file.as_deref()) {
         if achievements::valid_icon_name(f) {
             let url = achievements::icon_remote(a, f);
-            remote_icon = Some(url.clone());
             let st2 = st.clone();
             let _ = tauri::async_runtime::block_on(async move {
                 tokio::time::timeout(Duration::from_secs(3), crate::media::download::cached_remote(&st2, &url)).await
             });
         }
-    }
-    // A la actividad de la cuenta (lo ven los amigos).
-    if let Some(g) = game.as_deref() {
-        crate::online::achievement(st, g, &name, remote_icon, rarity, progress);
     }
     notify(
         st,

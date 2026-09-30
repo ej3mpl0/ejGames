@@ -1,20 +1,18 @@
-// Amigos y perfiles en React (ventanas del host y paneles del overlay): monta
-// las vistas del kit (sdk/kit/social.js) con el objeto `ejg` del host. Van
-// dentro de un `.gd-pane`, así que cada panel del overlay les da su aspecto
-// con las mismas variables que las guías.
+// Tu perfil en React (ventanas del host): monta las vistas del kit
+// (sdk/kit/profile.js) con el objeto `ejg` del host. Van dentro de un
+// `.gd-pane`, con las mismas variables que las guías.
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { NavAction } from "../api/types";
-import { hostEjg, kitFocus } from "../host/social";
-import { pushNavFilter } from "../input/nav";
-import { createBadgesView, createFriendsView, createProfileView } from "../../sdk/kit/social.js";
-import "../../sdk/kit/social.css";
+import { hostEjg, kitFocus } from "../host/profile";
+import { createBadgesView, createProfileView } from "../../sdk/kit/profile.js";
+import "../../sdk/kit/profile.css";
 import "./guide.css";
-import "./social.css";
+import "./profile.css";
 
-type Screen = { kind: "friends"; tab?: string } | { kind: "profile"; id: number | null } | { kind: "badges"; id: number | null };
+type Screen = "profile" | "badges";
 
-export interface SocialHandle {
+export interface ProfileHandle {
   /** Acción del mando; true si la ha usado la vista. */
   nav: (a: NavAction) => boolean;
   hints: () => [NavAction, string][];
@@ -26,24 +24,18 @@ interface View {
   destroy: () => void;
 }
 
-export const SocialPane = forwardRef<
-  SocialHandle,
+export const ProfilePane = forwardRef<
+  ProfileHandle,
   {
-    /** friends | requests | activity (pestañas de la lista), profile o badges. */
-    start?: string;
-    userId?: number | null;
+    start?: Screen;
     onExit?: () => void;
     onScreen?: (s: Screen) => void;
     className?: string;
-    /** Dentro de un panel del overlay: la vista solo se queda con «Atrás» cuando hay un perfil abierto. */
-    inPanel?: boolean;
-    /** Diseño del perfil (el del tema o el panel del overlay): steam, ps5, xbox, switch, cinema, retro. */
+    /** Diseño del perfil (el del tema): steam, ps5, xbox, switch, cinema, retro. */
     layout?: string;
   }
->(function SocialPane({ start = "friends", userId = null, onExit, onScreen, className, inPanel, layout = "steam" }, ref) {
-  const [stack, setStack] = useState<Screen[]>(
-    start === "profile" || start === "badges" ? [{ kind: start, id: userId }] : [{ kind: "friends", tab: start }],
-  );
+>(function ProfilePane({ start = "profile", onExit, onScreen, className, layout = "steam" }, ref) {
+  const [stack, setStack] = useState<Screen[]>([start]);
   const box = useRef<HTMLDivElement>(null);
   const view = useRef<View | null>(null);
   const [, bump] = useState(0);
@@ -53,19 +45,12 @@ export const SocialPane = forwardRef<
   depth.current = stack.length;
   const top = stack[stack.length - 1];
 
-  // En un panel: «Atrás» cierra el perfil abierto; en la lista, sigue al panel.
-  useEffect(() => {
-    if (!inPanel) return;
-    return pushNavFilter((a) => a === "back" && !!view.current?.nav("back"));
-  }, [inPanel]);
-
   useEffect(() => {
     const root = box.current;
     if (!root) return;
     const ejg = hostEjg();
     const focus = kitFocus(root);
-    const open = (id: number) => setStack((s) => [...s, { kind: "profile", id }]);
-    const badges = (id: number) => setStack((s) => [...s, { kind: "badges", id }]);
+    const push = (s: Screen) => setStack((st) => [...st, s]);
     const back = () => {
       if (depth.current > 1) {
         setStack((s) => s.slice(0, -1));
@@ -79,12 +64,11 @@ export const SocialPane = forwardRef<
       return false;
     };
     const onChange = () => bump((n) => n + 1);
+    // Steam tiene su página de insignias; los demás, su pestaña del perfil.
     view.current = (
-      top.kind === "friends"
-        ? createFriendsView({ ejg, root, focus, tab: top.tab, onProfile: open, onExit: back, onChange })
-        : top.kind === "badges" && layout === "steam"
-          ? createBadgesView({ ejg, root, focus, userId: top.id, onProfile: open, onExit: back, onChange })
-          : createProfileView({ ejg, root, focus, layout, tab: top.kind === "badges" ? "badges" : "profile", userId: top.id, onProfile: open, onBadges: badges, onExit: back, onChange })
+      top === "badges" && layout === "steam"
+        ? createBadgesView({ ejg, root, focus, onProfile: () => (depth.current > 1 ? back() : push("profile")), onExit: back, onChange })
+        : createProfileView({ ejg, root, focus, layout, tab: top, onBadges: () => push("badges"), onExit: back, onChange })
     ) as unknown as View;
     onScreen?.(top);
     return () => {

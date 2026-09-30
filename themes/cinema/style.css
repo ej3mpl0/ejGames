@@ -146,7 +146,7 @@ body.playing-hero .hero-desc { opacity: 0; }
 .cg-inner .g-toc-box { background: #141414; }
 .cg-inner .g-toc-item.is-on { box-shadow: inset 3px 0 0 var(--accent); }
 
-/* ─── amigos y perfiles (kit social, en la capa de guías) ─── */
+/* ─── tu perfil (kit profile, en la capa de guías) ─── */
 .cg-inner .s-view {
   --s-fg: #fff;
   --s-muted: rgba(255, 255, 255, 0.65);
@@ -163,5 +163,4 @@ body.playing-hero .hero-desc { opacity: 0; }
   overflow-y: auto;
   scrollbar-width: none;
 }
-.cg-inner .s-friends .s-tab.is-on { background: #fff; color: #000; }
 .cg-inner .s-view.s-profile { max-width: none; }

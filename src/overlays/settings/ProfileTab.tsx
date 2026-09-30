@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { ImagePlus, KeyRound, LogOut, Trash2 } from "lucide-react";
+import { ImagePlus, KeyRound, LogOut, PenLine, Trash2, UserRound } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
+import { openProfile, refreshPage } from "../../host/profile";
 import { Button, Cycle, Section, Slider, TextInput, Toggle, cx } from "../../components/ui";
 import { PROFILE_COLORS } from "../../lib/format";
 import { useApp } from "../../store/app";
@@ -21,6 +22,7 @@ export function ProfileTab() {
   async function patch(p: Parameters<typeof api.updateProfile>[1]) {
     try {
       upsert(await api.updateProfile(profile.id, p));
+      refreshPage();
     } catch (e) {
       toast("error", errMsg(e));
     }
@@ -52,16 +54,35 @@ export function ProfileTab() {
               onClick={async () => {
                 const path = await openDialog({ multiple: false, filters: [{ name: "Imagen", extensions: ["png", "jpg", "jpeg", "webp", "gif"] }] });
                 if (typeof path === "string") upsert(await api.setAvatar(profile.id, path));
+                refreshPage();
               }}
             >
               Cambiar avatar
             </Button>
             {profile.avatar && (
-              <Button size="sm" variant="ghost" onClick={async () => upsert(await api.setAvatar(profile.id, null))}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={async () => {
+                  upsert(await api.setAvatar(profile.id, null));
+                  refreshPage();
+                }}
+              >
                 Quitar avatar
               </Button>
             )}
           </div>
+        </div>
+        <p className="px-3 text-xs text-muted">
+          Tu perfil al estilo Steam (resumen, marco, fondo, vitrinas, nivel e insignias) se guarda en este PC, como tus horas y tus logros.
+        </p>
+        <div className="flex flex-wrap gap-2 p-3">
+          <Button size="sm" icon={<UserRound size={14} />} onClick={() => openProfile("profile")}>
+            Ver mi perfil
+          </Button>
+          <Button size="sm" variant="ghost" icon={<PenLine size={14} />} onClick={() => openProfile("profile-editor")}>
+            Editar perfil
+          </Button>
         </div>
       </Section>
 

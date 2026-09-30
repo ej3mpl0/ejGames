@@ -144,7 +144,7 @@ img { display: block; }
 .gs-page .g-toc-box { background: var(--card); }
 .gs-page .g-zoom-close { color: #fff !important; }
 
-/* ─── amigos y perfiles (kit social, en la vista de guías) ─── */
+/* ─── tu perfil (kit profile, en la vista de guías) ─── */
 .gs-page .s-view {
   --s-fg: var(--fg);
   --s-muted: var(--muted);
@@ -159,6 +159,3 @@ img { display: block; }
   overflow-y: auto;
   scrollbar-width: none;
 }
-.gs-page .s-friends .s-row-name { font-weight: 700; }
-.gs-page .s-row.is-online .s-row-name { color: #0a7f9c; }
-.gs-page .s-row.is-playing .s-row-name, .gs-page .s-row.is-playing .s-row-sub { color: #4f7a00; }

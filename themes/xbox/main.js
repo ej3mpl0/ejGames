@@ -11,7 +11,7 @@ import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { createDownloads, percent, speed } from "/_sdk/kit/store.js";
 import { createGuideView, starsText } from "/_sdk/kit/guides.js";
-import { createSocialView } from "/_sdk/kit/social.js";
+import { createProfilePages } from "/_sdk/kit/profile.js";
 import { createStore } from "./store.js";
 
 const ejg = await window.ejg.ready();
@@ -392,9 +392,9 @@ ejg.explore.onEnabled(() => {
   else updateQueueUi();
 });
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
-ejg.ui.onView(({ view, slug, gameId, guideId, userId, tab }) => {
+ejg.ui.onView(({ view, slug, gameId, guideId }) => {
   if (view === "guides" && gameId) return openGuides(gameId, guideId);
-  if (view === "friends" || view === "profile" || view === "badges") return openSocial(view === "friends" ? tab || "friends" : view, userId ?? null);
+  if (view === "profile" || view === "badges") return openProfile(view);
   closeGuides();
   if (!player.hidden) closePlayer();
   if (!hub.hidden) closeHub();
@@ -436,38 +436,19 @@ let guideView = null;
 let guideReturn = null;
 const guidesPage = $("#guides");
 
-// ─────────────── amigos y perfiles (en la página de las guías) ───────────────
-function openSocial(start = "friends", userId = null) {
+// ─────────────── tu perfil e insignias (en la página de las guías) ───────────────
+/** start: "profile" | "badges". */
+function openProfile(start = "profile") {
   guideView?.destroy();
   if (!guideView) guideReturn = focus.current;
   $("#gx-bg").style.backgroundImage = "";
   guidesPage.hidden = false;
-  guideView = createSocialView({ ejg, root: $("#gx-inner"), focus, start, userId, layout: "xbox", onExit: closeGuides, onChange: () => updateHints() });
+  guideView = createProfilePages({ ejg, root: $("#gx-inner"), focus, start, layout: "xbox", onExit: closeGuides, onChange: () => updateHints() });
   updateHints();
   ejg.sound.play("open");
 }
 
-/** «3» amigos en línea o «+1» solicitud, para el botón de Amigos. */
-function friendsBadge() {
-  const a = ejg.account.state;
-  if (!a?.linked || a.needsLogin) return "";
-  const req = a.social?.incoming?.length || 0;
-  if (req) return `+${req}`;
-  const online = (a.social?.friends || []).filter((f) => f.presence.status !== "offline").length;
-  return online ? String(online) : "";
-}
-
-function renderFriendsBtn() {
-  const a = ejg.account.state;
-  $("#friends-btn").hidden = !a?.enabled;
-  $("#fr-badge").textContent = friendsBadge();
-  // El rincón de arriba, como en Xbox: tu estado en la cuenta.
-  const me = a?.linked && !a.needsLogin ? a.social?.me : null;
-  $("#status").textContent = me ? (a.status === "invisible" ? "Invisible" : a.status === "away" ? "Ausente" : "En línea") : "Sin conexión";
-}
-$("#friends-btn").addEventListener("click", () => openSocial("friends"));
-ejg.account.onChange(renderFriendsBtn);
-renderFriendsBtn();
+$("#profile-btn").addEventListener("click", () => openProfile("profile"));
 
 function openGuides(gameId, guideId = null) {
   const g = ejg.library.byId(gameId);

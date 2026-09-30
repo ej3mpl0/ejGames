@@ -29,6 +29,9 @@ import {
   WISH_SORTS,
   sortWishlist,
   toggleWish,
+  HYPERVISOR,
+  hypervisorInfo,
+  repackName,
 } from "/_sdk/kit/store.js";
 
 export const I = {
@@ -159,7 +162,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
       "button",
       { class: "es-tile", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), title: r.title },
       h("div", { class: "es-art" }, art(r.cover, r.title), tag(r), wishMark(r)),
-      h("b", { class: "es-name" }, r.title),
+      repackName(r, "b", { class: "es-name" }),
       h("span", { class: "es-size" }, sizeText(r.repackSize) || " "),
     );
   }
@@ -177,7 +180,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
       "button",
       { class: "es-feat", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), title: r.title },
       h("div", { class: "es-feat-img" }, img(r.hero, { loading: "eager" }), tag(r), wishMark(r)),
-      h("b", null, r.title),
+      repackName(r),
       h("span", null, [r.genres.slice(0, 3).map(genreLabel).join(", "), sizeText(r.repackSize)].filter(Boolean).join(" · ")),
     );
   }
@@ -321,7 +324,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
       row("f-genre", "Género", f.genres.length ? f.genres.map(genreName).join(", ") : "Todos", () => openPicker("genre")),
       row("f-size", "Tamaño de la descarga", SIZES.find((o) => o.gb === (f.maxGb || null))?.label || "", () => openPicker("size")),
       row("f-owned", "Ocultar los que ya tengo", f.hideOwned ? "Sí" : "No", () => store.browse({ hideOwned: !f.hideOwned }), toggle),
-      filterCount(f) ? h("div", { class: "es-set-foot" }, pill("Quitar los filtros", "", () => store.clearFilters(), "f-clear")) : null,
+      ...(filterCount(f) ? [h("div", { class: "es-set-foot" }, pill("Quitar los filtros", "", () => store.clearFilters(), "f-clear"))] : []),
     );
     if (key) {
       const el = catRows.querySelector(`[data-key="${key}"]`) || catRows.querySelector("[data-focus]");
@@ -530,6 +533,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
       ["Versión", d.version],
       ["Repack", d.number ? `#${d.number}` : null],
       ["Descarga selectiva", d.selective ? "Sí: idiomas y extras opcionales" : null],
+      [HYPERVISOR.title, d.hypervisor ? "Sí: para jugar hay que desactivar un rato la seguridad de Windows" : null, "hv-row"],
     ].filter((r) => r[1]);
     let desc = null;
     if (d.description) {
@@ -554,10 +558,12 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
         h(
           "div",
           { class: "fi-side" },
-          h("h1", null, d.title),
+          repackName(d, "h1"),
           d.companies ? h("div", { class: "fi-pub" }, d.companies) : null,
           chips(d),
           facts.length ? h("div", { class: "fi-facts" }, ...facts.map(([k, v]) => h("div", null, h("span", null, k), h("b", null, v)))) : null,
+          // Como los avisos de la eShop (tarjeta clara con su icono): justo antes de Descargar.
+          hypervisorInfo(ejg, d),
           h(
             "div",
             { class: "fi-actions", "data-focus-group": "fi-actions" },
@@ -579,7 +585,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
             ? h("div", { class: "fi-card", "data-focus": "" }, h("h3", null, "Características del repack"), h("ul", { class: "fi-feat" }, ...d.features.map((f) => h("li", null, f))))
             : null,
         ),
-        h("div", { class: "fi-card", "data-focus": "" }, h("h3", null, "Información"), ...info.map(([k, v]) => h("div", { class: "fi-row" }, h("span", null, k), h("b", null, v)))),
+        h("div", { class: "fi-card", "data-focus": "" }, h("h3", null, "Información"), ...info.map(([k, v, cls]) => h("div", { class: "fi-row" + (cls ? " " + cls : "") }, h("span", null, k), h("b", null, v)))),
       ),
       similarSec(d),
     );
@@ -688,7 +694,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
   /** Una fila: arte, nombre, géneros, tamaño y fecha con su etiqueta de estado, y «Quitar». */
   function wishRow(r) {
     const artBox = h("div", { class: "wl-art" });
-    const name = h("b");
+    let name = h("b");
     const info = h("span", { class: "wl-info" });
     const meta = h("span", { class: "wl-meta" });
     const tagBox = h("span", { class: "wl-tag" });
@@ -708,11 +714,14 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
         cover = r.cover;
         artBox.replaceChildren(art(r.cover, r.title));
       }
-      const s = `${r.title}|${r.repackSize}|${r.date}|${tileSig(r)}`;
+      const s = `${r.title}|${r.hypervisor}|${r.repackSize}|${r.date}|${tileSig(r)}`;
       if (s === sig) return;
       sig = s;
       item.title = r.title;
-      name.textContent = r.title;
+      // El nombre, con la etiqueta HV si la lleva.
+      const n = repackName(r);
+      name.replaceWith(n);
+      name = n;
       info.textContent = (r.genres || []).slice(0, 3).map(genreLabel).join(", ");
       meta.textContent = [sizeText(r.repackSize), r.date ? `Publicado el ${date(r.date)}` : ""].filter(Boolean).join(" · ");
       const t = tag(r);
@@ -841,8 +850,10 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
         "div",
         { class: "dd-head" },
         h("div", { class: "dd-ico" }, art(d.cover, d.title)),
-        h("div", null, h("b", null, d.title), h("span", null, [d.version, sizeText(d.repackSize)].filter(Boolean).join(" · "))),
+        h("div", null, repackName(d), h("span", null, [d.version, sizeText(d.repackSize)].filter(Boolean).join(" · "))),
       ),
+      // Aviso del crack de hipervisor, como los avisos de la consola (círculo rojo con «!»).
+      ...(prep.hypervisor ? [h("div", { class: "hv-warn" }, icon("alert", "ico hv-warn-ico"), h("p", null, HYPERVISOR.download))] : []),
       h("div", { class: "dd-space" }, h("div", null, h("span", null, "Espacio necesario"), need), h("div", null, h("span", null, "Espacio disponible"), avail)),
       h(
         "div",
@@ -858,10 +869,10 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
         }),
       ),
       ...groups.map(([title, list]) => h("div", { class: "dd-group" }, h("h4", null, title), h("div", { class: "dd-chks", "data-focus-group": "dd-" + title }, ...list.map(check)))),
-      groups.length ? h("p", { class: "dd-note" }, "En el instalador, desmarca lo que no hayas descargado.") : null,
-      prep.installSize
-        ? h("p", { class: "dd-note" }, `El juego instalado ocupará ${sizeText(prep.installSize)}${prep.installFreeBytes != null ? ` (quedan ${bytes(prep.installFreeBytes)} en ${prep.installDir})` : ""}.`)
-        : null,
+      ...(groups.length ? [h("p", { class: "dd-note" }, "En el instalador, desmarca lo que no hayas descargado.")] : []),
+      ...(prep.installSize
+        ? [h("p", { class: "dd-note" }, `El juego instalado ocupará ${sizeText(prep.installSize)}${prep.installFreeBytes != null ? ` (quedan ${bytes(prep.installFreeBytes)} en ${prep.installDir})` : ""}.`)]
+        : []),
       err,
     );
     ok.onclick = async () => {

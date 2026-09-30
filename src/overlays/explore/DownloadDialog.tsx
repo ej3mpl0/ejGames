@@ -2,14 +2,14 @@
 // opcionales), carpeta de destino y espacio libre.
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, FolderOpen, HardDrive, Lock } from "lucide-react";
+import { Download, FolderOpen, HardDrive, Lock, ShieldAlert } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
 import type { PreparedDownload } from "../../api/types";
 import { Button, Spinner, cx } from "../../components/ui";
 import { Hints } from "../../components/Hints";
 import { pickFolder } from "../../host/downloads";
 import { useOverlayNav } from "../../input/nav";
-import { sizeText } from "./shared";
+import { HV, sizeText } from "./shared";
 import { bytes } from "../../lib/format";
 import { useApp } from "../../store/app";
 // @ts-ignore módulo JS del kit
@@ -100,6 +100,12 @@ export function DownloadDialog({ slug, title, onClose, onStarted }: { slug: stri
           {error && <p className="py-8 text-center text-sm text-red-300">{error}</p>}
           {prep && sel && (
             <>
+              {prep.hypervisor && (
+                <div className="mb-4 flex gap-3 rounded-[var(--h-radius)] bg-red-500/10 p-3 text-sm leading-snug ring-1 ring-red-400/30">
+                  <ShieldAlert size={16} className="mt-0.5 shrink-0 text-red-300" />
+                  <span className="flex-1 text-fg/90">{HV.download}</span>
+                </div>
+              )}
               <div className="mb-4 flex items-center gap-3 rounded-[var(--h-radius)] bg-surface-2/70 p-3 text-sm ring-1 ring-line">
                 <Lock size={16} className="shrink-0 text-muted" />
                 <span className="flex-1">

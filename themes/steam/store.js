@@ -29,6 +29,9 @@ import {
   WISH_SORTS,
   sortWishlist,
   toggleWish,
+  HYPERVISOR,
+  hypervisorInfo,
+  repackName,
 } from "/_sdk/kit/store.js";
 
 const I = {
@@ -48,6 +51,7 @@ const I = {
   globe: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9S9.5 5.5 12 3Z"/></svg>',
   caret: '<svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>',
   heart: '<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6.2 5 5 0 0 1 21.2 11c-2.2 4.6-9.2 9-9.2 9Z"/></svg>',
+  shield: '<svg viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6Z"/><path d="M12 8v5M12 16.5h.01"/></svg>',
 };
 
 /** Categorías de la portada («Explora por categoría»): id del género y su tono. */
@@ -251,7 +255,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
       h(
         "div",
         { class: "car-side" },
-        h("h3", null, r.title),
+        repackName(r, "h3"),
         grid,
         h("div", { class: "car-reason" }, h("b", null, "Ya disponible"), h("span", null, "Popular hoy")),
         h("div", { class: "car-tags" }, ...r.genres.slice(0, 4).map((g) => h("span", null, genreLabel(g)))),
@@ -296,7 +300,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
       "button",
       { class: "bigcap", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), title: r.title },
       wide(r),
-      h("div", { class: "bigcap-info" }, h("b", null, r.title), h("div", { class: "bigcap-foot" }, h("span", { class: "bigcap-tags" }, genres(r, 2)), badge(r) || price(r))),
+      h("div", { class: "bigcap-info" }, repackName(r), h("div", { class: "bigcap-foot" }, h("span", { class: "bigcap-tags" }, genres(r, 2)), badge(r) || price(r))),
     );
   }
   function pagedRow(id, title, items, per = 4, render = bigCap, more = () => openList(id), moreLabel = "Ver más") {
@@ -349,7 +353,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
       preview.dataset.slug = r.slug;
       const box = h("div", { class: "tp-shots" });
       preview.replaceChildren(
-        h("h4", null, r.title),
+        repackName(r, "h4"),
         h("div", { class: "tp-meta" }, r.version ? h("span", null, r.version) : null, h("span", null, `Descarga: ${sizeText(r.repackSize) || "—"}`)),
         h("div", { class: "tp-tags" }, ...r.genres.slice(0, 5).map((g) => h("span", null, genreLabel(g)))),
         box,
@@ -366,7 +370,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
         "button",
         { class: "trow", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), onmouseenter: () => showPreview(r) },
         wide(r, "trow-cap"),
-        h("div", { class: "trow-main" }, h("b", null, r.title), h("span", { class: "trow-plat", html: I.win }), h("span", { class: "trow-tags" }, genres(r))),
+        h("div", { class: "trow-main" }, repackName(r), h("span", { class: "trow-plat", html: I.win }), h("span", { class: "trow-tags" }, genres(r))),
         h("div", { class: "trow-price" }, badge(r) || price(r)),
       );
       el.addEventListener("ejg-focus", () => showPreview(r));
@@ -456,7 +460,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
       "button",
       { class: "srow", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug) },
       wide(r, "srow-cap"),
-      h("div", { class: "srow-main" }, h("b", null, r.title), h("span", { class: "trow-plat", html: I.win })),
+      h("div", { class: "srow-main" }, repackName(r), h("span", { class: "trow-plat", html: I.win })),
       h("span", { class: "srow-date" }, date(r.date)),
       h("span", { class: "srow-size" }, badge(r) || price(r)),
     );
@@ -683,7 +687,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
       h(
         "div",
         { class: "wrow-main" },
-        h("button", { class: "wrow-title", "data-focus": "", onclick: () => openRepack(r.slug) }, r.title),
+        repackName(r, "button", { class: "wrow-title", "data-focus": "", onclick: () => openRepack(r.slug) }),
         h("div", { class: "wrow-meta" }, h("span", { class: "trow-plat", html: I.win }), h("span", null, `Publicado: ${date(r.date)}`)),
         r.genres.length ? h("div", { class: "wrow-tags" }, ...r.genres.slice(0, 5).map((g) => h("span", null, genreLabel(g)))) : null,
       ),
@@ -842,7 +846,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
         h(
           "div",
           { class: "app-head" },
-          h("h1", { class: "app-title" }, d.title),
+          repackName(d, "h1", { class: "app-title" }),
           h("div", { class: "app-head-acts" }, wishButton(d), d.url ? h("button", { class: "btn-steam-sm", "data-focus": "", onclick: () => ejg.explore.openPage(d.slug) }, "Ver la ficha en FitGirl") : null),
         ),
         h(
@@ -865,6 +869,8 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
           h(
             "div",
             null,
+            // Como el aviso de «Acceso anticipado» de Steam: antes de la compra.
+            hypervisorInfo(ejg, d),
             h(
               "div",
               { class: "buy" },
@@ -889,6 +895,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
               { class: "side-box cats" },
               h("div", { class: "cat" }, icon("win"), h("span", null, "Windows")),
               d.selective ? h("div", { class: "cat" }, icon("check"), h("span", null, "Descarga selectiva")) : null,
+              d.hypervisor ? h("div", { class: "cat hv-cat", title: HYPERVISOR.tip }, icon("shield"), h("span", null, HYPERVISOR.title)) : null,
               h("div", { class: "cat" }, icon("down"), h("span", null, "Torrent integrado")),
             ),
             h(
@@ -968,6 +975,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
       ["Contenido opcional", sel.optional],
     ].filter(([, l]) => l.length);
     body.replaceChildren(
+      ...(prep.hypervisor ? [h("div", { class: "hv-warn" }, icon("shield"), h("p", null, HYPERVISOR.download))] : []),
       h("div", { class: "dlg-space" }, h("div", null, h("span", null, "Espacio necesario"), need), h("div", null, h("span", null, "Espacio disponible"), avail)),
       h(
         "div",

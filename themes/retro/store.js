@@ -27,6 +27,10 @@ import {
   WISH_SORTS,
   sortWishlist,
   toggleWish,
+  HYPERVISOR,
+  hypervisorInfo,
+  hypervisorTag,
+  repackName,
 } from "/_sdk/kit/store.js";
 import { pixelate } from "./pixel.js";
 
@@ -50,6 +54,8 @@ const STATE = {
   error: "ERROR",
 };
 const up = (s) => String(s || "").toUpperCase();
+/** Nombre del repack en mayúsculas con el sello «HV» detrás si es crack de hipervisor. */
+const upName = (r, tag, props) => repackName({ ...r, title: up(r.title) }, tag, props);
 const run = (p) => Promise.resolve(p).catch((e) => window.ejg.ui.toast(e.message || String(e), "error"));
 
 /** Barra de bloques ▓▓▓▓░░░░ (n celdas). */
@@ -173,13 +179,16 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
   function item(r) {
     const [t, cls] = tag(r);
     const inWish = view.sec === "wish";
+    // Nombre (con el sello HV si toca) y, fuera de DESEADOS, el ♥ delante.
+    const name = repackName(r, "span", { class: "s-t" });
+    if (!inWish && wish.has(r.slug)) name.prepend(heart());
     return h(
       "li",
       null,
       h(
         "button",
         { class: "item s-item", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug) },
-        h("span", { class: "s-t" }, !inWish && wish.has(r.slug) ? heart() : null, r.title),
+        name,
         h("span", { class: "s-tag " + cls }, t),
         h("span", { class: "s-size" }, shortSize(r.repackSize)),
         // En DESEADOS, ✕ para quitarlo con el ratón (con mando o teclado, X).
@@ -294,7 +303,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     const [t] = tag(r);
     const row = (k, v) => (v ? h("div", null, h("span", null, k), h("b", null, v)) : null);
     ui.info.replaceChildren(
-      h("h3", { class: "s-title" }, up(r.title)),
+      upName(r, "h3", { class: "s-title" }),
       ...[
         row("VERSIÓN", up(r.version) || "—"),
         row("TAMAÑO", up(sizeText(r.repackSize)) || "¿?"),
@@ -658,6 +667,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
           row("DESCARGA", up(sizeText(d.repackSize))),
           row("INSTALADO", up(sizeText(d.installSize))),
           row("SELECTIVA", d.selective ? "SÍ · IDIOMAS Y EXTRAS" : null),
+          d.hypervisor ? h("tr", { class: "hv-row", title: HYPERVISOR.tip }, h("th", null, "CRACK"), h("td", null, hypervisorTag(d), " HIPERVISOR")) : null,
           row("ESTADO", tag(d)[0] || "DISPONIBLE"),
         ].filter(Boolean),
       ),
@@ -669,8 +679,15 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
       if (lines.every((l) => l.startsWith("• "))) desc.append(h("ul", { class: "f-feat" }, ...lines.map((l) => h("li", null, l.slice(2)))));
       else lines.forEach((l) => desc.append(l.startsWith("• ") ? h("ul", { class: "f-feat" }, h("li", null, l.slice(2))) : h("p", null, l)));
     }
+    // Crack de hipervisor: pantalla de «WARNING» de recreativa encima de los datos,
+    // a la altura del botón de descarga. Los botones, como los demás de la ficha.
+    const hv = hypervisorInfo(ejg, d, {
+      labels: { moreLabel: "▼ PASOS Y RIESGOS", lessLabel: "▲ OCULTAR DETALLES", guideLabel: up(HYPERVISOR.guideLabel) },
+    });
+    hv?.querySelectorAll(".hv-more, .hv-guide").forEach((b) => b.classList.add("pbtn"));
+    hv?.setAttribute("data-focus-group", "hv");
     ficha.replaceChildren(
-      h("div", { class: "f-head" }, h("div", { class: "f-titles" }, h("h2", null, up(d.title)), d.version ? h("div", { class: "f-ver" }, up(d.version)) : null), back),
+      h("div", { class: "f-head" }, h("div", { class: "f-titles" }, upName(d, "h2"), d.version ? h("div", { class: "f-ver" }, up(d.version)) : null), back),
       h(
         "div",
         { class: "f-grid" },
@@ -688,7 +705,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
             .slice(0, 3)
             .map((g) => h("button", { class: "pbtn wide", "data-focus": "", onclick: () => openAll({ genres: [g.id] }) }, `MÁS DE ${up(g.name)} ▶`)),
         ),
-        h("div", { class: "f-data" }, h("h3", { class: "f-h" }, "▶ DATOS"), table),
+        h("div", { class: "f-data" }, hv, h("h3", { class: "f-h" }, "▶ DATOS"), table),
         shots.length ? h("div", { class: "f-shots" }, h("h3", { class: "f-h" }, `▶ CAPTURAS (${shots.length})`), h("div", { class: "f-screen" }, screenC), thumbs) : null,
       ),
       h(
@@ -721,7 +738,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
           h(
             "li",
             null,
-            h("button", { class: "item s-item", "data-focus": "", onclick: () => openRepack(r.slug) }, h("span", { class: "s-t" }, r.title), h("span", { class: "s-size" }, shortSize(r.repackSize))),
+            h("button", { class: "item s-item", "data-focus": "", onclick: () => openRepack(r.slug) }, repackName(r, "span", { class: "s-t" }), h("span", { class: "s-size" }, shortSize(r.repackSize))),
           ),
         ),
       );
@@ -744,7 +761,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     const wait = h("p", { class: "rpg-wait" }, "BUSCANDO EL TORRENT", h("span", { class: "dots" }));
     const cancel = h("button", { class: "rpg-btn", "data-focus": "", onclick: () => closeDialog() }, "CANCELAR");
     const foot = h("div", { class: "rpg-foot" }, cancel);
-    const w = rpgWindow("DESCARGAR", h("p", { class: "rpg-name" }, up(d.title)), wait, foot);
+    const w = rpgWindow("DESCARGAR", upName(d, "p", { class: "rpg-name" }), wait, foot);
     dialog = { layer: w.layer, slug: d.slug, prep: null, prev: focus.current };
     ejg.sound.play("open");
     focus.focus(cancel, { instant: true, silent: true });
@@ -796,6 +813,10 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     ].filter(([, l]) => l.length);
     const base = sel.required.reduce((a, f) => a + f.size, 0);
     const body = [
+      // Crack de hipervisor: aviso con el sello HV antes de todo lo demás.
+      prep.hypervisor
+        ? h("div", { class: "hv-warn", role: "note" }, h("span", { class: "hv-warn-k", "aria-hidden": "true" }, HYPERVISOR.badge), h("p", null, HYPERVISOR.download))
+        : null,
       lead("ESPACIO NECESARIO", need),
       lead("ESPACIO LIBRE", avail),
       h(

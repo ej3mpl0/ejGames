@@ -153,6 +153,9 @@ pub struct Post {
     pub install_size: Option<String>,
     pub description: Option<String>,
     pub selective: bool,
+    /// Crack de hipervisor (sello «HYPERVISOR» en la cabecera): para jugar hay
+    /// que desactivar un rato la seguridad de Windows basada en virtualización.
+    pub hypervisor: bool,
 }
 
 fn capture(re: &Regex, s: &str) -> Option<String> {
@@ -167,6 +170,9 @@ pub fn parse_post(content: &str, title: &str) -> Post {
     let (mut name, mut version) = split_title(title);
     if let Some(h3) = FIRST_H3.captures(content).map(|c| c[1].to_string()) {
         p.number = NUMBER.captures(&text(&h3)).and_then(|c| c[1].parse().ok());
+        // El sello va junto al número, fuera del nombre. Solo cuenta ahí: las
+        // fichas con una versión HV antigua en un desplegable no lo llevan.
+        p.hypervisor = text(&STRONG.replace(&h3, "")).to_ascii_uppercase().contains("HYPERVISOR");
         if let Some(strong) = STRONG.captures(&h3).map(|c| c[1].to_string()) {
             let grey = GREY.captures(&strong).map(|c| text(&c[1])).filter(|v| !v.is_empty());
             let n = text(&GREY.replace_all(&strong, ""));
@@ -320,6 +326,34 @@ Take command.</p>
         assert!(d.starts_with("ELDEN RING NIGHTREIGN is a standalone adventure."), "{d}");
         assert!(d.contains("BECOME A HERO\nTake command."), "{d}");
         assert!(d.contains("• Digital Artbook & Mini Soundtrack"), "{d}");
+        assert!(!p.hypervisor);
+    }
+
+    #[test]
+    fn hypervisor() {
+        let hv = r##"<h3><span style="color: #339966;">#7194 <span style="color: white; background-color:red; border-radius: 3px">&nbsp;HYPERVISOR&nbsp;</span></span> <strong>ACE COMBAT 8: WINGS OF THEVE <span style="color: #808080;">+ ACZ:TBW DLC</span></strong></h3>
+<h3>Repack Features</h3>
+<ul>
+<li>Hypervisor Bypass ACE.COMBAT.8.WINGS.OF.THEVE.Crack.Only + Goldberg emu applied over
+</ul>"##;
+        let p = parse_post(hv, "ACE COMBAT 8: WINGS OF THEVE + ACZ:TBW DLC");
+        assert!(p.hypervisor);
+        assert_eq!(p.number, Some(7194));
+        assert_eq!(p.name, "ACE COMBAT 8: WINGS OF THEVE");
+
+        // Versión normal arriba y la HV antigua en un desplegable: no cuenta.
+        let old = r##"<h3><span style="color: #339966;">#6613 Updated</span> <strong>Black Myth: Wukong <span style="color: #808080;">v1.0.21</span></strong></h3>
+<div class="su-spoiler"><div class="su-spoiler-title">Hypervisor Bypass Repack</div><div class="su-spoiler-content">
+<h3>Repack Features</h3>
+<ul>
+<li>Hypervisor Bypass (INTEL &#038; AMD) by DenuvOwO + Goldberg emu added
+</ul>
+</div></div>"##;
+        assert!(!parse_post(old, "Black Myth: Wukong, v1.0.21").hypervisor);
+
+        // «Hypervisor» en el nombre del juego tampoco.
+        let name = r##"<h3><span>#1</span> <strong>Hypervisor Tycoon</strong></h3>"##;
+        assert!(!parse_post(name, "Hypervisor Tycoon").hypervisor);
     }
 
     #[test]

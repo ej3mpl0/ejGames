@@ -341,3 +341,57 @@ svg .f { fill: currentColor; }
 .wl-big { color: var(--es); }
 :root[data-mode="tv"] .wl-main b { font-size: 21px; }
 :root[data-mode="tv"] .wl-info, :root[data-mode="tv"] .wl-meta { font-size: 17px; }
+
+/* ─── crack de hipervisor (HV) ─── */
+/* Etiqueta: píldora roja apagada, como las de estado de los mosaicos. En la ficha,
+   un aviso como los de la eShop (tarjeta clara con su icono redondo) con las
+   opciones en filas de la configuración; en el diálogo, un recuadro con el «!». */
+:root { --hv: #c8412f; --hv-fg: #b8392a; }
+:root[data-dark="on"] { --hv-fg: #ff8b7a; }
+.hv-name { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.hv-name-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hv-tag { flex: none; align-self: center; padding: 0 7px; border-radius: 99px; background: var(--hv); color: #fff; font-size: 11px; font-weight: 800; line-height: 18px; letter-spacing: 0.04em; }
+/* mosaicos: el nombre sigue en dos líneas (con «…») y la etiqueta va en la primera */
+.es-name.hv-name { display: flex; }
+.es-name .hv-name-t { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.es-name .hv-tag { align-self: baseline; margin-left: auto; }
+.es-feat .hv-tag, .wl-main .hv-tag { padding: 0 8px; font-size: 12px; line-height: 20px; }
+/* títulos de varias líneas (ficha y diálogo): la etiqueta detrás de la última palabra */
+.fi-side h1.hv-name { display: block; }
+.fi-side h1 .hv-tag { display: inline-block; margin-left: 10px; padding: 0 11px; font-size: 15px; line-height: 26px; vertical-align: 4px; }
+.dd-head .hv-name-t { color: inherit; font-size: inherit; font-weight: inherit; }
+.dd-head .hv-tag { display: inline-block; margin-left: 8px; padding: 0 8px; color: #fff; font-size: 12px; font-weight: 800; line-height: 20px; vertical-align: 3px; }
+/* aviso de la ficha */
+.hv { overflow: hidden; padding: 18px 20px 0; border-radius: 10px; background: var(--card); }
+.hv-head { display: flex; align-items: flex-start; gap: 14px; }
+.hv-badge { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: var(--hv); color: #fff; font-size: 14px; font-weight: 800; letter-spacing: 0.02em; }
+.hv-title { margin: 1px 0 4px; font-size: 17px; font-weight: 800; }
+.hv-sum { margin: 0; color: var(--muted); font-size: 14px; font-weight: 700; line-height: 1.5; }
+.hv-body { margin-top: 14px; }
+.hv-body[hidden] { display: none; }
+.hv-sec { padding: 12px 0; border-top: 1px solid var(--line); }
+.hv-sec-title { margin: 0 0 6px; font-size: 15px; font-weight: 800; }
+.hv-sec-risks .hv-sec-title { color: var(--hv-fg); }
+.hv-note { margin: 0 0 6px; color: var(--muted); font-size: 13px; font-weight: 700; }
+.hv-list { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.5; }
+.hv-list li { margin-bottom: 4px; }
+.hv-list li::marker { color: var(--muted); font-weight: 800; }
+/* desplegado es largo: la captura acompaña mientras se lee */
+.fi-top:has(.hv.is-open) .fi-media { position: sticky; top: 24px; }
+/* «Cómo se juega» y la guía: filas como las de la configuración */
+.hv-foot { display: flex; flex-direction: column; margin: 14px -20px 0; border-top: 1px solid var(--line); }
+.hv.is-open .hv-foot { margin-top: 0; }
+.hv-more, .hv-guide { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 54px; padding: 0 22px 0 20px; border-radius: 6px; text-align: left; font-size: 16px; font-weight: 700; }
+.hv-more { border-bottom: 1px solid var(--line); }
+.hv-more::after { content: ""; flex: none; width: 9px; height: 9px; border: solid var(--muted); border-width: 0 2.5px 2.5px 0; transform: translateY(-3px) rotate(45deg); }
+.hv.is-open .hv-more::after { transform: translateY(3px) rotate(-135deg); }
+.hv-more.is-focused, .hv-more:hover, .hv-guide.is-focused, .hv-guide:hover { box-shadow: inset 0 0 0 4px var(--accent); }
+/* línea de «Información» */
+.fi-row.hv-row b { color: var(--hv-fg); }
+/* aviso del diálogo de descarga */
+.hv-warn { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; padding: 14px 18px; border-radius: 10px; background: var(--box); }
+.hv-warn-ico { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--hv); color: #fff; }
+.hv-warn-ico svg { width: 20px; height: 20px; stroke-width: 3; }
+.hv-warn p { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.45; }
+:root[data-mode="tv"] .hv-title { font-size: 19px; }
+:root[data-mode="tv"] .hv-sum, :root[data-mode="tv"] .hv-list, :root[data-mode="tv"] .hv-warn p { font-size: 16px; }

@@ -71,6 +71,21 @@ function pintar(s) {
 En una ficha, `tienda.similar(repack)` da juegos parecidos para una fila «Más como
 este».
 
+## Juegos con crack de hipervisor (HV)
+
+Los repacks con `hypervisor: true` piden desactivar un rato la seguridad de Windows
+para jugar. Márcalos junto al nombre y explícalo en la ficha; el kit trae el texto y
+las piezas:
+
+```js
+import { repackName, hypervisorInfo } from "/_sdk/kit/store.js";
+
+tarjeta.append(repackName(repack));          // «Nombre» o «Nombre HV»
+ficha.append(hypervisorInfo(ejg, repack) ?? "");  // el aviso plegable (nada si no es HV)
+```
+
+Las clases y el resto están en [la referencia](/referencia/explorar#cracks-de-hipervisor-hv).
+
 ## Tu propia tienda
 
 Si quieres que la tienda y la cola tengan el aspecto de tu tema, declara en

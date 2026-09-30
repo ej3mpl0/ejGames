@@ -2,7 +2,7 @@
 //! local y solo en este PC. Se guarda la ficha tal cual la da la fuente y al
 //! leerla se publica como las demás (estado al día e imágenes por ejg-media).
 
-use super::{details_raw, publish, status_index, steamart, Repack};
+use super::{cache_read, details_raw, publish, status_index, steamart, Repack, RepackDetails, TTL_STALE};
 use crate::state::AppState;
 use rusqlite::params;
 use serde::Serialize;
@@ -38,6 +38,12 @@ pub fn list(st: &Arc<AppState>) -> anyhow::Result<Vec<WishItem>> {
         let Ok(mut repack) = serde_json::from_str::<Repack>(&json) else { continue };
         if hide_adult && repack.adult {
             continue;
+        }
+        // Las guardadas antes de 0.8.1 no sabían del crack de hipervisor: lo
+        // dice la ficha si ya se ha vuelto a leer.
+        if !repack.hypervisor {
+            let key = format!("fg:post:{}", repack.slug);
+            repack.hypervisor = cache_read::<RepackDetails>(st, &key, TTL_STALE).is_some_and(|d| d.repack.hypervisor);
         }
         if !publish(st, &mut repack, &idx) {
             missing.push(repack.title.clone());

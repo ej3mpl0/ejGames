@@ -5,6 +5,26 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.8.1
+
+**Tienda: juegos con crack de hipervisor (HV)**
+- Los repacks con crack de hipervisor (los que la web marca como tales) llevan la etiqueta **HV** junto al nombre en
+  toda la tienda: portada, filas, búsqueda, catálogo, lista de deseados y la ficha. En la ventana Explorar del
+  launcher y en las seis tiendas de los temas, cada una con el estilo de su plataforma.
+- Su ficha lo explica antes del botón de descargar: qué es (el crack no quita la protección, la engaña con un driver
+  sin firmar que va por debajo de Windows), qué necesitas (virtualización activada en la BIOS; no hace falta tocar el
+  arranque seguro), qué se desactiva mientras juegas (integridad de memoria, Credential Guard, Windows Hello, el
+  hipervisor de Windows y la firma obligatoria de drivers), los pasos para jugar y para deshacerlo, y los riesgos.
+  Con un botón a la guía completa de la web.
+- El diálogo de descarga avisa antes de empezar, también de que el antivirus borra los archivos del crack si no se
+  excluyen sus carpetas.
+- Las fichas guardadas se vuelven a pedir una vez para saber cuáles son HV.
+
+**Para temas**
+- Cada `Repack` trae `hypervisor` (y la descarga preparada, `prepare().hypervisor`). El kit de la tienda trae el
+  texto (`HYPERVISOR`), `repackName` (el nombre con la etiqueta, que se corta con «…» sin perderla),
+  `hypervisorTag`, `hypervisorInfo` (el aviso plegable de la ficha) y `openHypervisorGuide`.
+
 ## 0.8.0
 
 **Sin cuentas ni amigos: tu perfil, en tu PC**

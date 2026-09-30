@@ -27,6 +27,10 @@ import {
   WISH_SORTS,
   sortWishlist,
   toggleWish,
+  HYPERVISOR,
+  hypervisorInfo,
+  hypervisorTag,
+  repackName,
 } from "/_sdk/kit/store.js";
 
 const I = {
@@ -49,6 +53,8 @@ const I = {
   check: '<svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
   heart: '<svg viewBox="0 0 24 24"><path d="M12 20.5 3.9 12.4A4.9 4.9 0 0 1 12 6.6a4.9 4.9 0 0 1 8.1 5.8Z"/></svg>',
   heartOn: '<svg viewBox="0 0 24 24"><path d="M12 20.5 3.9 12.4A4.9 4.9 0 0 1 12 6.6a4.9 4.9 0 0 1 8.1 5.8Z" fill="currentColor"/></svg>',
+  // Icono de aviso de las InfoBar de Windows: círculo lleno con el signo en oscuro.
+  warn: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M12 6.8v6.6m0 3.8h.01" stroke="#1c1c1c" stroke-width="2.4"/></svg>',
 };
 
 /** Géneros de la portada (id y color de la losa). */
@@ -141,6 +147,12 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
   }
   const tileSig = (r) => `${r.status?.state}:${Math.floor((r.status?.progress || 0) * 100)}`;
 
+  /** El nombre, con la etiqueta HV si la lleva, dentro de un título que ya existe (el del «spotlight»). */
+  function setName(el, r) {
+    el.classList.toggle("hv-name", !!r.hypervisor);
+    el.replaceChildren(...(r.hypervisor ? [h("span", { class: "hv-name-t" }, r.title), hypervisorTag(r)] : [r.title]));
+  }
+
   // Lista de deseos: los slugs, para marcar los mosaicos sin recorrerla cada vez.
   let wishes = new Set(ejg.explore.wishlist.items.map((w) => w.slug));
   const heart = () => h("span", { class: "st-heart", html: I.heartOn });
@@ -152,7 +164,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
       "button",
       { class: "st-wide", "data-focus": "", "data-slug": r.slug, title: r.title, onclick: () => openRepack(r.slug) },
       img(r.hero || r.cover, { loading: "lazy" }),
-      h("span", { class: "st-cap" }, h("b", null, r.title), h("small", null, [genres(r, 2).join(" · "), sizeText(r.repackSize)].filter(Boolean).join("  •  "))),
+      h("span", { class: "st-cap" }, repackName(r), h("small", null, [genres(r, 2).join(" · "), sizeText(r.repackSize)].filter(Boolean).join("  •  "))),
       badge(lr),
       progress(lr),
       wishMark(r),
@@ -168,7 +180,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
       "button",
       { class: "st-box", "data-focus": "", "data-slug": r.slug, title: r.title, onclick: () => openRepack(r.slug) },
       h("span", { class: "st-art" }, r.cover ? img(r.cover, { loading: "lazy" }) : h("span", { class: "st-ph" }, r.title), badge(lr), progress(lr), wishMark(r)),
-      h("b", null, r.title),
+      repackName(r),
       h("small", null, sizeText(r.repackSize) || genres(r, 1)[0] || "—"),
     );
     el.__r = r;
@@ -314,7 +326,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
         layers[1 - front].classList.remove("on");
       };
       layer.decode().then(on, on);
-      title.textContent = r.title;
+      setName(title, r);
       meta.textContent = [genres(r, 3).join(" · "), sizeText(r.repackSize)].filter(Boolean).join("   •   ");
       spot.label();
       thumbs.forEach((t, j) => t.classList.toggle("on", j === spot.i));
@@ -609,7 +621,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
       h(
         "span",
         { class: "wl-txt" },
-        h("b", null, r.title),
+        repackName(r),
         h("small", null, genres(r, 3).join(" · ") || "—"),
         h(
           "span",
@@ -828,6 +840,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
       ["Publicado", date(d.date)],
       ["Versión", d.version],
       ["Repack", d.number ? `#${d.number}` : null],
+      ["Crack", d.hypervisor ? "Hipervisor (HV)" : null],
       ["Tamaño original", sizeText(d.originalSize)],
       ["Descarga", sizeText(d.repackSize)],
       ["En disco", sizeText(d.installSize)],
@@ -845,10 +858,18 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
             "div",
             { class: "rp-id" },
             d.coverFull || d.cover ? coverImg(d) : null,
-            h("div", null, h("h1", { class: "rp-title" }, d.title), d.companies ? h("div", { class: "rp-by" }, d.companies) : null),
+            h("div", null, repackName(d, "h1", { class: "rp-title" }), d.companies ? h("div", { class: "rp-by" }, d.companies) : null),
           ),
-          h("div", { class: "rp-chips", "data-focus-group": "rp-chips" }, ...chips(d), d.selective ? h("span", { class: "sel" }, "Descarga selectiva") : null),
+          h(
+            "div",
+            { class: "rp-chips", "data-focus-group": "rp-chips" },
+            ...chips(d),
+            d.selective ? h("span", { class: "sel" }, "Descarga selectiva") : null,
+            d.hypervisor ? h("span", { class: "hv-chip", title: HYPERVISOR.tip }, HYPERVISOR.title) : null,
+          ),
           h("div", { class: "rp-facts" }, fact("Descarga", sizeText(d.repackSize)), fact("Instalado", sizeText(d.installSize)), fact("Versión", d.version)),
+          // Como las InfoBar de la Microsoft Store («Requiere…»): a la vista antes de descargar.
+          hvInfo(d),
           h(
             "div",
             { class: "rp-actions", "data-focus-group": "rp-actions" },
@@ -890,6 +911,24 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
       ),
     );
     setMain(main, r);
+  }
+
+  /** La explicación del HV (kit) vestida de InfoBar de Windows: icono de aviso y sus botones en un grupo del mando. */
+  function hvInfo(d) {
+    const el = hypervisorInfo(ejg, d);
+    if (!el) return null;
+    el.querySelector(".hv-badge")?.replaceChildren(icon("warn"));
+    el.querySelector(".hv-foot")?.setAttribute("data-focus-group", "rp-hv");
+    el.querySelector(".hv-guide")?.replaceChildren(HYPERVISOR.guideLabel, icon("ext"));
+    return el;
+  }
+
+  /** Aviso del panel de descarga, también como InfoBar: el título en negrita y el texto detrás. */
+  function hvWarn() {
+    const t = HYPERVISOR.download;
+    const i = t.indexOf(": ");
+    const text = i > 0 && i < 48 ? [h("b", null, t.slice(0, i)), " ", t.charAt(i + 2).toUpperCase() + t.slice(i + 3)] : t;
+    return h("div", { class: "hv-warn", role: "note" }, icon("warn"), h("p", null, text));
   }
 
   /** Géneros de la ficha: los conocidos llevan a Explorar filtrado por ellos. */
@@ -942,7 +981,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
       h(
         "aside",
         { class: "xd" },
-        h("div", { class: "xd-head" }, h("small", null, "Descargar"), h("h2", null, r.title), r.version ? h("span", null, r.version) : null),
+        h("div", { class: "xd-head" }, h("small", null, "Descargar"), repackName(r, "h2"), r.version ? h("span", null, r.version) : null),
         box,
         foot,
       ),
@@ -1007,6 +1046,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
       h(
         "div",
         null,
+        prep.hypervisor ? hvWarn() : null,
         h("section", { class: "xd-sec" }, h("h3", null, "Juego"), h("div", { class: "xd-chk on locked" }, h("i"), h("span", null, "Juego base (obligatorio)"), h("small", null, bytes(base)))),
         ...groups.map(([t, list]) => h("section", { class: "xd-sec" }, h("h3", null, t), h("div", { class: "xd-list", "data-focus-group": "xd-" + t }, ...list.map(check)))),
         groups.length ? h("p", { class: "xd-note" }, icon("info"), "En el instalador, desmarca lo que no hayas descargado.") : null,

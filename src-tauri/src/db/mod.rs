@@ -30,6 +30,8 @@ const MIGRATIONS: &[Migration] = &[
     Migration::Sql(include_str!("../../migrations/012_wishlist.sql")),
     // 0.8.0: sin cuentas; el perfil y el historial, en el PC.
     Migration::Sql(include_str!("../../migrations/013_local_profile.sql")),
+    // 0.8.1: la caché de la tienda no sabía de los cracks de hipervisor.
+    Migration::Sql(include_str!("../../migrations/014_store_cache.sql")),
 ];
 
 pub struct Db {
@@ -100,7 +102,11 @@ mod tests {
     #[test]
     fn accounts_become_local_profile_pages() {
         let mut conn = Connection::open_in_memory().unwrap();
-        let before = MIGRATIONS.len() - 1;
+        // Hasta justo antes de la 013 (la de 0.8.0); las siguientes se aplican con ella.
+        let before = MIGRATIONS
+            .iter()
+            .position(|m| matches!(m, Migration::Sql(sql) if sql.starts_with("-- 0.8.0")))
+            .unwrap();
         {
             let tx = conn.transaction().unwrap();
             for m in &MIGRATIONS[..before] {
@@ -140,6 +146,27 @@ mod tests {
             assert_eq!(gone, 0);
             let kinds: Vec<String> = c.prepare("SELECT kind FROM activity ORDER BY at")?.query_map([], |r| r.get(0))?.collect::<rusqlite::Result<_>>()?;
             assert_eq!(kinds, ["achievement", "played"]);
+            Ok(())
+        })
+        .unwrap();
+    }
+
+    /// 0.8.1: fuera la caché de la tienda (no sabía de los HV), no el arte de Steam.
+    #[test]
+    fn store_cache_is_cleared_but_not_steam_art() {
+        let db = Db::memory().unwrap();
+        db.with(|c| {
+            c.execute_batch(
+                "INSERT INTO metadata_cache (provider, key, json, fetched_at) VALUES
+                   ('explore', 'fg:post:hades', '{}', 0), ('explore', 'fg:home', '{}', 0),
+                   ('explore', 'steamart:hades', '{}', 0), ('steam', 'fg:x', '{}', 0);",
+            )?;
+            c.execute_batch(include_str!("../../migrations/014_store_cache.sql"))?;
+            let left: Vec<String> = c
+                .prepare("SELECT provider || '/' || key FROM metadata_cache ORDER BY 1")?
+                .query_map([], |r| r.get(0))?
+                .collect::<rusqlite::Result<_>>()?;
+            assert_eq!(left, ["explore/steamart:hades", "steam/fg:x"]);
             Ok(())
         })
         .unwrap();

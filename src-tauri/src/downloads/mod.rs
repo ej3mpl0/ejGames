@@ -138,6 +138,8 @@ pub struct PreparedDownload {
     pub install_size: Option<String>,
     pub install_dir: String,
     pub install_free_bytes: Option<u64>,
+    /// Crack de hipervisor: el diálogo avisa antes de bajarlo.
+    pub hypervisor: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -314,6 +316,7 @@ pub async fn prepare_magnet(st: &Arc<AppState>, magnet: &str, title: &str) -> an
             repack_bytes: None,
             selective: false,
             adult: false,
+            hypervisor: false,
             capsule: None,
             capsule_big: None,
             library: None,
@@ -394,6 +397,7 @@ async fn prepare_details(st: &Arc<AppState>, slug: &str, details: explore::Repac
         install_size: details.install_size.clone(),
         install_free_bytes: (!d.install_dir.is_empty()).then(|| win::disk_free(Path::new(&d.install_dir))).flatten(),
         install_dir: d.install_dir,
+        hypervisor: details.repack.hypervisor,
     };
     let mut p = st.downloads.prepared.lock();
     p.retain(|_, v| v.created.elapsed() < Duration::from_secs(1800));

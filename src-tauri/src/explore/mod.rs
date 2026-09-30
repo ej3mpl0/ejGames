@@ -71,6 +71,10 @@ pub struct Repack {
     pub repack_bytes: Option<u64>,
     pub selective: bool,
     pub adult: bool,
+    /// Crack de hipervisor (HV): para jugar hay que apagar un rato la
+    /// seguridad de Windows basada en virtualización (ver `parse::Post`).
+    #[serde(default)]
+    pub hypervisor: bool,
     /// Arte de la tienda de Steam, si el juego está allí (ver `steamart`):
     /// cápsula horizontal 460×215, la grande 616×353 y la vertical 600×900.
     #[serde(default)]
@@ -184,6 +188,7 @@ fn to_details(raw: &fitgirl::RawPost) -> RepackDetails {
             repack_bytes: p.repack_bytes,
             selective: p.selective,
             adult,
+            hypervisor: p.hypervisor,
             capsule: None,
             capsule_big: None,
             library: None,

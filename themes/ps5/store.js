@@ -28,6 +28,10 @@ import {
   WISH_SORTS,
   sortWishlist,
   toggleWish,
+  HYPERVISOR,
+  hypervisorInfo,
+  hypervisorTag,
+  repackName,
 } from "/_sdk/kit/store.js";
 
 const I = {
@@ -149,11 +153,13 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
   function tile(r, sec, caption = true) {
     const sub = h("span", { class: "st-sub" });
     const mark = h("span", { class: "st-mark" });
+    // Sin pie (fila destacada) el nombre no se ve: la etiqueta HV va sobre la carátula.
+    const hv = caption ? null : hypervisorTag(r);
     const el = h(
       "button",
       { class: "st-tile", "data-focus": "", "data-slug": r.slug, "data-sec": sec, title: r.title, onclick: () => openRepack(r.slug) },
-      h("div", { class: "st-art" }, r.cover ? img(r.cover) : h("span", { class: "st-ph" }, r.title), mark, h("span", { class: "st-heart", html: I.heartOn })),
-      caption ? h("div", { class: "st-cap" }, h("b", null, r.title), sub) : null,
+      h("div", { class: "st-art" }, r.cover ? img(r.cover) : h("span", { class: "st-ph" }, r.title), mark, h("span", { class: "st-heart", html: I.heartOn }), hv),
+      caption ? h("div", { class: "st-cap" }, repackName(r), sub) : null,
     );
     el.__r = r;
     el.__sub = sub;
@@ -274,7 +280,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
           h("span", null, secTitle[sec] || (sec === "search" ? "Resultado de la búsqueda" : "PlayStation Store")),
           t ? h("span", { class: "st-state " + st.state }, icon(st.state === "installed" || st.state === "library" ? "check" : st.state === "error" ? "alert" : "download"), t) : null,
         ),
-        h("h1", { class: "st-title" }, r.title),
+        repackName(r, "h1", { class: "st-title" }),
         h("div", { class: "st-ver" }, [r.version, r.companies].filter(Boolean).join("  ·  ")),
         r.genres.length ? h("div", { class: "st-tags" }, ...r.genres.slice(0, 5).map((g) => h("span", null, genreLabel(g)))) : null,
         h("div", { class: "st-facts" }, fact("Descarga", sizeText(r.repackSize)), fact("Tamaño original", sizeText(r.originalSize)), fact("Idiomas", r.languages), fact("Publicado", date(r.date))),
@@ -817,7 +823,16 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
       ["Descarga", sizeText(d.repackSize)],
       ["Instalado", sizeText(d.installSize)],
       ["Descarga selectiva", d.selective ? "Sí: idiomas y extras opcionales" : null],
+      ["Crack de hipervisor", d.hypervisor ? "Sí (HV): para jugar hay que desactivar un rato la seguridad de Windows" : null],
     ].filter((r) => r[1]);
+    // Aviso HV bajo los botones, donde la PS Store pone la clasificación por edad
+    // y los avisos de contenido. Sus botones, en su grupo de foco y con clave.
+    const hv = hypervisorInfo(ejg, d);
+    if (hv) {
+      hv.querySelector(".hv-foot").dataset.focusGroup = "pd-hv";
+      hv.querySelector(".hv-more").dataset.key = "pd-hv-more";
+      hv.querySelector(".hv-guide").dataset.key = "pd-hv-guide";
+    }
     const desc = d.description ? h("div", { class: "pd-desc" }, d.description) : null;
     const descCard = desc
       ? h(
@@ -838,7 +853,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
           "div",
           { class: "pd-col" },
           h("div", { class: "st-kicker" }, d.companies || "PlayStation Store"),
-          h("h1", { class: "st-title pd-title" }, d.title),
+          repackName(d, "h1", { class: "st-title pd-title" }),
           d.version ? h("div", { class: "st-ver" }, d.version) : null,
           detailTags(d),
           h("div", { class: "st-facts" }, fact("Descarga", sizeText(d.repackSize)), fact("Instalado", sizeText(d.installSize) || (full ? "" : "…")), fact("Tamaño original", sizeText(d.originalSize))),
@@ -852,6 +867,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
             d.url ? round("ext", "Ver en FitGirl", "pd-web", () => run(ejg.explore.openPage(d.slug))) : null,
           ),
           prog,
+          hv,
         ),
         h(
           "div",
@@ -989,7 +1005,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     closeDialog();
     const body = h("div", { class: "dg-body" }, h("div", { class: "dg-wait" }, spinner(), h("p", null, "Buscando el torrent y su lista de archivos…")));
     const foot = h("div", { class: "dg-foot" });
-    const box = h("div", { class: "dg" }, h("div", { class: "dg-head" }, h("small", null, "Descargar"), h("h2", null, d.title), d.version ? h("span", null, d.version) : null), body, foot);
+    const box = h("div", { class: "dg" }, h("div", { class: "dg-head" }, h("small", null, "Descargar"), repackName(d, "h2"), d.version ? h("span", null, d.version) : null), body, foot);
     dialog = { layer: dlgLayer(box), slug: d.slug, prep: null, prev: focus.current };
     ejg.sound.play("open");
     const cancel = h("button", { class: "ps-btn", "data-focus": "", onclick: () => closeDialog() }, "Cancelar");
@@ -1044,6 +1060,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     ].filter(([, l]) => l.length);
     body.replaceChildren(
       ...[
+        prep.hypervisor ? h("div", { class: "hv-warn", role: "note" }, icon("alert"), h("p", null, HYPERVISOR.download)) : null,
         h("div", { class: "dg-space" }, h("div", null, h("span", null, "Espacio necesario"), need), h("div", null, h("span", null, "Espacio disponible"), avail)),
         h(
           "div",
@@ -1537,7 +1554,9 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     } else if (list) {
       if (el.closest(".st-menu, .st-sbar, .br-top, .wl-head")) root.scrollTo({ top: 0, behavior: "smooth" });
       else el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    } else if (el.closest(".pd-more")) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    } else if (el.closest(".pd-more, .hv")) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    // Con el aviso HV desplegado la cabecera de la ficha no cabe: las capturas quedan abajo.
+    else if (el.closest(".pd-media") && el.closest(".pd-top").offsetHeight > root.clientHeight) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
     else root.scrollTo({ top: 0, behavior: "smooth" });
   }
 

@@ -12,7 +12,7 @@ import { installDownload, openExplore, openKeyboard } from "../../host/downloads
 import { useOverlayNav } from "../../input/nav";
 import { useApp } from "../../store/app";
 import { DownloadDialog } from "./DownloadDialog";
-import { Cover, StatusBadge, sizeText } from "./shared";
+import { Cover, HvTag, HypervisorPanel, StatusBadge, sizeText } from "./shared";
 // @ts-ignore módulo JS del kit
 import { repackAction, sortWishlist, SORTS as KIT_SORTS, SIZES as KIT_SIZES, GENRE_GROUPS as KIT_GROUPS, MAX_GENRES, WISH_SORTS } from "../../../sdk/kit/store.js";
 
@@ -50,7 +50,10 @@ function Card({ r, onOpen }: { r: Repack; onOpen: (r: Repack) => void }) {
           <Heart size={14} fill="currentColor" />
         </span>
       )}
-      <span className="line-clamp-2 text-[13px] leading-tight">{r.title}</span>
+      <span className="line-clamp-2 text-[13px] leading-tight">
+        {r.hypervisor && <HvTag className="mr-1 -mt-px" />}
+        {r.title}
+      </span>
       <span className="flex items-center gap-1.5 text-[11px] text-muted">
         {r.repackSize && <span className="truncate">{sizeText(r.repackSize)}</span>}
         <StatusBadge r={r} />
@@ -455,6 +458,7 @@ function DetailView({
     ["Tamaño original", sizeText(d.originalSize)],
     ["Descarga", sizeText(d.repackSize)],
     ["Instalado", sizeText(d.installSize)],
+    ["Crack", d.hypervisor ? "Hipervisor (HV)" : null],
   ];
   return (
     <div>
@@ -467,7 +471,10 @@ function DetailView({
         <div className="absolute bottom-4 left-5 right-5 flex items-end gap-5">
           <Cover src={d.coverFull || d.cover} title={d.title} className="aspect-[3/4] w-36 shrink-0 shadow-2xl" />
           <div className="min-w-0 flex-1 pb-1">
-            <h2 className="text-2xl font-semibold leading-tight">{d.title}</h2>
+            <h2 className="text-2xl font-semibold leading-tight">
+              {d.title}
+              {d.hypervisor && <HvTag className="ml-2 -mt-1 px-2 text-[12px] leading-5" />}
+            </h2>
             {d.version && <p className="mt-1 text-sm text-muted">{d.version}</p>}
             <div className="mt-3 flex items-center gap-3">
               <Button variant="primary" size="lg" data-autofocus icon={a.id === "play" ? <Play size={18} /> : <Download size={18} />} onClick={onAction}>
@@ -488,6 +495,7 @@ function DetailView({
       </div>
       <div className="grid grid-cols-[1fr_300px] gap-6 p-5">
         <div className="min-w-0">
+          {d.hypervisor && <HypervisorPanel />}
           {d.screenshots.length > 0 && (
             <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
               {d.screenshots.map((s) => (

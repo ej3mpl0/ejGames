@@ -1,14 +1,82 @@
 // Piezas comunes de Explorar y Descargas (ventanas del host).
 
+import { useState } from "react";
+import { ChevronDown, ExternalLink, ShieldAlert } from "lucide-react";
+import { api } from "../../api/tauri";
 import type { DownloadItem, Repack } from "../../api/types";
-import { cx } from "../../components/ui";
+import { Button, cx } from "../../components/ui";
 // @ts-ignore módulo JS del kit
-import { downloadLabel as kitDownloadLabel, percent, sizeText as kitSizeText } from "../../../sdk/kit/store.js";
+import { downloadLabel as kitDownloadLabel, percent, sizeText as kitSizeText, HYPERVISOR } from "../../../sdk/kit/store.js";
 
 export const downloadLabel = kitDownloadLabel as (d: DownloadItem) => string;
 export const pct = percent as (p: number) => string;
 /** "from 18 GB" → "desde 18 GB". */
 export const sizeText = kitSizeText as (s?: string | null) => string;
+
+/** Textos del crack de hipervisor (HV), los mismos que usan los temas. */
+export const HV = HYPERVISOR as {
+  badge: string;
+  tip: string;
+  title: string;
+  summary: string;
+  download: string;
+  sections: { id: string; title: string; items: string[]; ordered?: boolean; note?: string }[];
+  guide: string;
+  guideLabel: string;
+  moreLabel: string;
+  lessLabel: string;
+};
+
+/** Etiqueta «HV» junto al nombre de un repack con crack de hipervisor. */
+export function HvTag({ className }: { className?: string }) {
+  return (
+    <span title={HV.tip} className={cx("inline-block rounded-[4px] bg-red-600 px-1.5 align-middle text-[10px] font-bold leading-4 tracking-wide text-white", className)}>
+      {HV.badge}
+    </span>
+  );
+}
+
+/** Explicación del HV en la ficha: el resumen y, al desplegar, requisitos, cambios, pasos y riesgos. */
+export function HypervisorPanel() {
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="mb-5 rounded-[var(--h-radius)] bg-red-500/[0.08] p-4 ring-1 ring-red-400/30">
+      <div className="flex gap-3">
+        <ShieldAlert size={22} className="mt-0.5 shrink-0 text-red-300" />
+        <div className="min-w-0 flex-1">
+          <h3 className="text-base font-semibold">{HV.title}</h3>
+          <p className="mt-1 text-sm leading-relaxed text-fg/85">{HV.summary}</p>
+        </div>
+      </div>
+      {open && (
+        <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-red-400/20 pt-4">
+          {HV.sections.map((s) => {
+            const List = s.ordered ? "ol" : "ul";
+            return (
+              <div key={s.id}>
+                <h4 className={cx("mb-1.5 text-xs font-semibold uppercase tracking-wide", s.id === "risks" ? "text-red-300" : "text-muted")}>{s.title}</h4>
+                {s.note && <p className="mb-1.5 text-xs italic text-muted">{s.note}</p>}
+                <List className={cx("flex flex-col gap-1 pl-4 text-[13px] leading-snug text-fg/85", s.ordered ? "list-decimal" : "list-disc")}>
+                  {s.items.map((t) => (
+                    <li key={t}>{t}</li>
+                  ))}
+                </List>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button size="sm" variant="soft" icon={<ChevronDown size={14} className={cx("transition-transform", open && "rotate-180")} />} onClick={() => setOpen(!open)}>
+          {open ? HV.lessLabel : HV.moreLabel}
+        </Button>
+        <Button size="sm" variant="ghost" icon={<ExternalLink size={14} />} onClick={() => void api.openExternal(`https://fitgirl-repacks.site/${HV.guide}/`)}>
+          {HV.guideLabel}
+        </Button>
+      </div>
+    </section>
+  );
+}
 
 export function Cover({ src, title, className }: { src?: string | null; title: string; className?: string }) {
   return (

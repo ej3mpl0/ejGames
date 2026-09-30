@@ -537,6 +537,8 @@ export interface Repack {
   repackBytes?: number | null;
   selective: boolean;
   adult: boolean;
+  /** Crack de hipervisor (HV): para jugar hay que desactivar un rato la seguridad de Windows. */
+  hypervisor?: boolean;
   /** Etiquetas de la web (ids de `Genre`). */
   tags?: number[];
   status: RepackStatus;
@@ -607,6 +609,8 @@ export interface PreparedDownload {
   installSize?: string | null;
   installDir: string;
   installFreeBytes?: number | null;
+  /** Crack de hipervisor: avisar antes de bajarlo. */
+  hypervisor?: boolean;
 }
 
 export type DownloadState = "queued" | "downloading" | "paused" | "seeding" | "completed" | "installing" | "installed" | "error";

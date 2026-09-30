@@ -53,6 +53,39 @@ nombre, publicación, tamaño) y `toggleWish(ejg, ficha)`, que la añade o la qu
 su manera: «Lista de deseados» en Steam, «Lista de deseos» en PS5, Xbox y Switch, «Deseados» en Cine y DESEADOS en
 Retro. `toggleWish(ejg, ficha, "tu lista de deseos")` usa ese nombre en el aviso.
 
+## Cracks de hipervisor (HV)
+
+Algunos repacks llevan un crack de **hipervisor**: no quitan la protección del juego, la engañan con un driver sin
+firmar que funciona por debajo de Windows. Para jugarlos hay que desactivar un rato la seguridad de Windows basada en
+virtualización (integridad de memoria, Credential Guard, el hipervisor de Windows, la firma obligatoria de drivers…)
+y volver a activarla al terminar. Esas fichas traen `hypervisor: true` (y la descarga preparada, `p.hypervisor`).
+
+Márcalo junto al nombre allí donde salga el juego y explícalo en su ficha antes del botón de descargar. El kit trae
+el texto y las piezas, para que cada tema solo les ponga su piel:
+
+```js
+import { HYPERVISOR, repackName, hypervisorTag, hypervisorInfo, openHypervisorGuide } from "/_sdk/kit/store.js";
+
+repackName(r)                 // <b>Nombre</b>, o con HV: <b class="hv-name"><span class="hv-name-t">Nombre</span><span class="hv-tag">HV</span></b>
+repackName(r, "h1", { class: "titulo" })
+hypervisorTag(r)              // solo la etiqueta (null si no es HV)
+hypervisorInfo(ejg, r)        // <section class="hv">: resumen, y al desplegar requisitos, qué se desactiva,
+                              // pasos y riesgos, con un botón a la guía completa de la web (null si no es HV)
+HYPERVISOR.download           // aviso corto para el diálogo de descarga
+```
+
+`repackName` deja el nombre en un `<span>` para que se corte con «…» sin llevarse la etiqueta:
+
+```css
+.hv-name { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.hv-name-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+```
+
+`hypervisorInfo(ejg, r, { cls, open, labels })` empieza plegado (`open: true` lo abre); `cls` pone un prefijo a
+todas sus clases (`hv`, `hv-head`, `hv-badge`, `hv-title`, `hv-sum`, `hv-body`, `hv-sec`, `hv-sec-<id>`,
+`hv-sec-title`, `hv-note`, `hv-list`, `hv-foot`, `hv-more`, `hv-guide`; `is-open` al desplegar) y `labels` cambia
+los textos de `HYPERVISOR` (p. ej. en mayúsculas). Sus botones llevan `data-focus`.
+
 ## El catálogo con filtros
 
 `browse(filtros, página)` recorre todo el catálogo:
@@ -78,7 +111,7 @@ llevar al catálogo filtrado por sus géneros.
 
 Cada elemento (`Repack`) trae `title`, `version`, `cover` (portada vertical,
 miniatura), `coverFull`, `hero` (captura grande; puede faltar), `genres`,
-`companies`, `languages`, `originalSize`, `repackSize`, `selective` y `status`
+`companies`, `languages`, `originalSize`, `repackSize`, `selective`, `hypervisor` y `status`
 (`{ state, downloadId, gameId, progress }`, con `state` = `none`, `library`,
 `queued`, `downloading`, `paused`, `seeding`, `completed`, `installing`,
 `installed` o `error`). Las imágenes ya vienen como URLs de `ejg-media`.
@@ -100,7 +133,7 @@ ejg.downloads.all                // lista en memoria, al día (como mucho 1 vez/
 ejg.downloads.onChange((list) => …)
 const p = await ejg.downloads.prepare(slug)   // lista de archivos del torrent (puede tardar)
 // p = { token, files: [{ index, path, size, kind, label, required, selected }], dir, freeBytes,
-//       installSize, installDir, installFreeBytes }
+//       installSize, installDir, installFreeBytes, hypervisor }
 await ejg.downloads.start(p.token, indices, dir)   // dir: "" o una carpeta de pickFolder()
 ejg.downloads.cancelPrepare(slug)
 ejg.downloads.pause(id) / resume(id)      // sin id: todas

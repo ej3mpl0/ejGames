@@ -29,6 +29,10 @@ import {
   WISH_SORTS,
   sortWishlist,
   toggleWish,
+  HYPERVISOR,
+  hypervisorInfo,
+  hypervisorTag,
+  repackName,
 } from "/_sdk/kit/store.js";
 
 const I = {
@@ -166,7 +170,7 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
       h(
         "div",
         { class: "sc-info" },
-        h("b", null, r.title),
+        repackName(r),
         h("span", null, [sizeText(r.repackSize), r.genres.slice(0, 3).map(genreLabel).join(" • ")].filter(Boolean).join("  ·  ")),
       ),
       h("div", { class: "sc-bar", hidden: true }, h("i")),
@@ -207,6 +211,8 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
           "div",
           { class: "t10-art" },
           r.cover ? img(r.cover) : h("span", { class: "t10-ph" }, r.title),
+          // Aquí no se ve el nombre: la etiqueta HV va sobre la carátula.
+          hypervisorTag(r),
           wishMark(r.slug),
           h("span", { class: "sc-tag", hidden: true }),
           h("div", { class: "sc-bar", hidden: true }, h("i")),
@@ -575,7 +581,7 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
     const a = actionOf(r);
     bb.el.querySelector(".bb-info").replaceChildren(
       h("div", { class: "bb-rank" }, h("span", { class: "t10-badge", html: "TOP<b>10</b>" }), h("span", null, `N.º ${i + 1} en juegos ${bb.label}`)),
-      h("h1", { class: "bb-title" + (r.title.length > 34 ? " xl" : r.title.length > 18 ? " l" : "") }, r.title),
+      repackName(r, "h1", { class: "bb-title" + (r.title.length > 34 ? " xl" : r.title.length > 18 ? " l" : "") }),
       h(
         "p",
         { class: "bb-desc" },
@@ -753,6 +759,7 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
     const { d, error, box } = sheet;
     const r = d || sheet.r;
     const had = keep && box.contains(focus.current) ? focus.current.dataset.k : null;
+    const hvOpen = keep && !!box.querySelector(".hv.is-open");
     const close = h("button", { class: "close", "data-focus": "", "data-k": "close", onclick: () => closeSheet(), title: "Cerrar" }, "✕");
     if (!r) {
       box.replaceChildren(h("div", { class: "sheet-hero" }, close), error ? h("p", { class: "s-err s-pad" }, error) : h("div", { class: "spinner" }));
@@ -768,7 +775,7 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
       h(
         "div",
         { class: "over" },
-        h("h1", { class: "hero-title s-title" }, r.title),
+        repackName(r, "h1", { class: "hero-title s-title" }),
         h(
           "div",
           { class: "hero-actions", "data-focus-group": "s-sheet-act" },
@@ -788,6 +795,14 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
       r.selective ? h("span", { class: "pill" }, "Descarga selectiva") : null,
       r.version ? h("span", { class: "s-ver" }, r.version) : null,
     );
+    // Crack de hipervisor: bajo los datos, donde las plataformas de series ponen
+    // la clasificación por edades y sus advertencias (antes de darle a Descargar).
+    const hv = hypervisorInfo(ejg, r, { open: hvOpen });
+    if (hv) {
+      hv.querySelector(".hv-foot").dataset.focusGroup = "s-hv";
+      hv.querySelector(".hv-more").dataset.k = "hv-more";
+      hv.querySelector(".hv-guide").dataset.k = "hv-guide";
+    }
     // Sin descripción, las características ocupan su sitio.
     const feats = d?.features || [];
     const featsLeft = d && !d.description && feats.length;
@@ -804,6 +819,7 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
       ["Tamaño original", sizeText(r.originalSize)],
       ["Descarga", sizeText(r.repackSize)],
       ["Instalado", sizeText(d?.installSize)],
+      ["Advertencias", r.hypervisor && HYPERVISOR.title, { class: "hv-fact", title: HYPERVISOR.tip }],
     ].filter((f) => f[1]);
     const shots = d?.screenshots || [];
     // Sin los huecos vacíos: replaceChildren pintaría «null».
@@ -813,12 +829,12 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
       h(
         "div",
         { class: "sheet-body" },
-        h("div", null, meta, desc),
+        h("div", null, meta, hv, desc),
         h(
           "div",
           { class: "side" },
           genreLinks ? h("div", { class: "s-glinks", "data-focus-group": "s-glinks" }, "Géneros: ", ...genreLinks) : null,
-          ...facts.map(([k, v]) => h("div", null, `${k}: `, h("b", null, v))),
+          ...facts.map(([k, v, p]) => h("div", p || null, `${k}: `, h("b", null, v))),
         ),
       ),
       shots.length ? h("h3", { class: "sec" }, "Capturas") : null,
@@ -877,7 +893,7 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
             "button",
             { class: "sim-card", "data-focus": "", "data-k": `sim-${x.slug}`, onclick: () => openRepack(x.slug), title: x.title },
             h("div", { class: "sim-art" }, x.hero ? img(x.hero) : x.cover ? img(x.cover, { class: "fit" }) : placeholder(x.title)),
-            h("div", { class: "sim-info" }, h("b", null, x.title), h("span", null, [sizeText(x.repackSize), year(x.date)].filter(Boolean).join("  ·  "))),
+            h("div", { class: "sim-info" }, repackName(x), h("span", null, [sizeText(x.repackSize), year(x.date)].filter(Boolean).join("  ·  "))),
           ),
         ),
       );
@@ -935,7 +951,7 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
     const box = h(
       "div",
       { class: "dlg" },
-      h("div", { class: "dlg-hero", style: r.hero ? { backgroundImage: `url("${r.hero}")` } : {} }, h("div", { class: "dlg-t" }, h("small", null, "Descargar"), h("b", null, r.title))),
+      h("div", { class: "dlg-hero", style: r.hero ? { backgroundImage: `url("${r.hero}")` } : {} }, h("div", { class: "dlg-t" }, h("small", null, "Descargar"), repackName(r))),
       body,
       foot,
     );
@@ -991,6 +1007,8 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
       ["Contenido opcional", sel.optional],
     ].filter(([, l]) => l.length);
     body.replaceChildren(
+      // Crack de hipervisor: el aviso, lo primero.
+      ...(prep.hypervisor ? [h("div", { class: "hv-warn", role: "note" }, h("span", { class: "hv-tag", "aria-hidden": "true" }, HYPERVISOR.badge), h("p", null, HYPERVISOR.download))] : []),
       h("div", { class: "dlg-space" }, h("div", null, h("span", null, "Espacio necesario"), need), h("div", null, h("span", null, "Espacio disponible"), avail)),
       h(
         "div",

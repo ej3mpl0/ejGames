@@ -351,3 +351,59 @@ body.has-dlg .hints { z-index: 31; }
 .om-item.on { display: flex; align-items: center; justify-content: space-between; gap: 24px; font-weight: 600; }
 .om-item.on::after { content: "✓"; }
 :root[data-mode="tv"] .wl-meta { font-size: 14.5px; }
+
+/* ─── crack de hipervisor (HV) ─── */
+/* Etiqueta junto al nombre, como las de plataforma («PS5», «PS4») de la PS Store;
+   en la ficha, un bloque discreto bajo los botones, donde la tienda pone la
+   clasificación por edad y los avisos de contenido. Rojo apagado, como FitGirl. */
+:root { --hv: #b8432e; --hv-t: #ff9f8a; }
+.hv-name { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.hv-name-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hv-tag { flex: none; align-self: center; display: inline-block; padding: 0 6px; border-radius: 4px; background: var(--hv); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; letter-spacing: 0.06em; text-shadow: none; white-space: nowrap; }
+/* Pie de las losas: el nombre sigue partiéndose en dos líneas y la etiqueta, a la altura de la primera. */
+.st-cap .hv-name { display: flex; align-items: flex-start; gap: 7px; }
+.st-cap .hv-name-t { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.st-cap .hv-tag { align-self: flex-start; }
+/* Fila destacada (sin pie): sobre la carátula, abajo a la izquierda. */
+.st-art > .hv-tag { position: absolute; z-index: 2; left: 8px; bottom: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
+.st-mark.downloading ~ .hv-tag, .st-mark.paused ~ .hv-tag, .st-mark.queued ~ .hv-tag { bottom: 22px; }
+/* Títulos grandes (portada y ficha) y del diálogo: la etiqueta sigue a la última
+   palabra, como texto; en la portada caben tres líneas para que no se quede fuera. */
+.st-title.hv-name { display: -webkit-box; }
+.dg-head .hv-name { display: block; }
+.st-info .st-title.hv-name { -webkit-line-clamp: 3; }
+.st-title .hv-name-t, .dg-head .hv-name-t { display: inline; overflow: visible; }
+.st-title .hv-tag { display: inline-block; vertical-align: middle; position: relative; top: -4px; margin-left: 16px; padding: 0 9px; border-radius: 6px; font-size: 16px; line-height: 26px; letter-spacing: 0.05em; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35); }
+.dg-head .hv-name-t { margin: 0; font-size: inherit; color: inherit; } /* `.dg-head span` es para la versión */
+.dg-head .hv-tag { display: inline-block; vertical-align: middle; position: relative; top: -2px; margin: 0 0 0 10px; color: #fff; font-size: 12px; line-height: 20px; padding: 0 7px; }
+
+/* Ficha: bloque tipo «clasificación + descriptores» bajo los botones. */
+.hv { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; max-width: 780px; margin-top: 38px; }
+.hv-head { display: contents; }
+.hv-badge { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 8px; background: var(--hv); color: #fff; font-size: 17px; font-weight: 700; letter-spacing: 0.04em; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.16), 0 6px 18px rgba(0, 0, 0, 0.35); }
+.hv-title { margin: 1px 0 4px; font-size: 16px; font-weight: 600; color: #fff; }
+.hv-sum { margin: 0; font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, 0.72); text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5); }
+/* Los botones quedan bajo el resumen; los detalles se despliegan debajo de ellos. */
+.hv-foot { order: 1; grid-column: 2; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.hv-more, .hv-guide { height: 40px; padding: 0 20px; border-radius: 99px; background: rgba(255, 255, 255, 0.14); backdrop-filter: blur(8px); color: #fff; font-size: 14.5px; font-weight: 500; white-space: nowrap; transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease; }
+.hv-more:hover, .hv-more.is-focused, .hv-guide:hover, .hv-guide.is-focused { background: #fff; color: #0b0d12; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3), 0 8px 26px rgba(255, 255, 255, 0.16); transform: scale(1.03); }
+.hv-body { order: 2; grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 20px 30px; margin-top: 20px; padding: 24px 28px; border-radius: 20px; background: rgba(24, 27, 34, 0.8); backdrop-filter: blur(22px); animation: in 0.3s ease both; }
+.hv-body[hidden] { display: none; }
+.hv-sec-title { margin: 0 0 9px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.hv-sec-risks .hv-sec-title { color: var(--hv-t); }
+.hv-note { margin: 0 0 6px; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
+.hv-list { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, 0.8); }
+.hv-list li { margin-bottom: 5px; }
+.hv-list li::marker { color: rgba(255, 255, 255, 0.4); }
+.hv-sec-risks .hv-list li::marker { color: var(--hv-t); }
+
+/* Diálogo de descarga: aviso arriba del cuerpo. */
+.hv-warn { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; padding: 14px 18px; border-radius: 16px; background: rgba(184, 67, 46, 0.18); box-shadow: inset 0 0 0 1px rgba(255, 159, 138, 0.16); }
+.hv-warn .si svg { width: 22px; height: 22px; color: var(--hv-t); }
+.hv-warn p { margin: 0; font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, 0.86); }
+
+:root[data-mode="tv"] .hv-tag { font-size: 12px; line-height: 20px; }
+:root[data-mode="tv"] .st-title .hv-tag { font-size: 18px; line-height: 30px; }
+:root[data-mode="tv"] .hv-title { font-size: 18px; }
+:root[data-mode="tv"] .hv-sum, :root[data-mode="tv"] .hv-list, :root[data-mode="tv"] .hv-warn p { font-size: 16px; }
+:root[data-mode="tv"] .hv-more, :root[data-mode="tv"] .hv-guide { height: 44px; font-size: 16px; }

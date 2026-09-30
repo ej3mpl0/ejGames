@@ -374,3 +374,55 @@ img.img-error { visibility: hidden; }
 :root[data-mode="tv"] .wl-txt small, :root[data-mode="tv"] .wl-meta, :root[data-mode="tv"] .wl-note { font-size: 15.5px; }
 :root[data-mode="tv"] .st-heart { width: 30px; height: 30px; }
 :root[data-mode="tv"] .st-heart svg { width: 16px; height: 16px; }
+
+/* ─── crack de hipervisor (HV) ─── */
+/* Etiqueta junto al nombre, como las de la Tienda («Game Pass», «Gratis»): sólida y pequeña, en el rojo apagado de los avisos de Windows. */
+.hv-name { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.hv-name-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hv-tag { flex: none; align-self: center; padding: 0 5px; border-radius: 3px; background: #a8392b; color: #fff; font-size: 10.5px; font-weight: 700; line-height: 17px; letter-spacing: 0.05em; text-shadow: none; }
+.wl-txt .hv-tag { font-size: 11.5px; line-height: 19px; padding: 0 6px; }
+/* títulos grandes (spotlight y ficha): se siguen cortando a 2 y 3 líneas, con la etiqueta a la derecha */
+.spot-title.hv-name, .rp-title.hv-name { display: flex; gap: 0.3em; }
+.spot-title .hv-name-t, .rp-title .hv-name-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.rp-title .hv-name-t { -webkit-line-clamp: 3; }
+/* en proporción al título y centrada en su última línea (alto de línea 1.06: sobra 0.25 del tamaño del título por abajo) */
+.spot-title .hv-tag, .rp-title .hv-tag { align-self: flex-end; margin-bottom: 0.78em; padding: 0 0.6em; border-radius: 4px; font-size: 0.32em; line-height: 1.75; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35); }
+.xd-head .hv-name { gap: 12px; }
+.xd-head .hv-name-t { color: inherit; font-size: inherit; } /* no es el `span` de la versión */
+.xd-head .hv-tag { font-size: 12px; line-height: 20px; padding: 0 7px; }
+/* chip de la ficha, junto a «Descarga selectiva» */
+.rp-chips .hv-chip { background: color-mix(in srgb, #c42b1c 48%, transparent); }
+/* ficha: InfoBar de Windows (gravedad crítica), como los «Requiere…» de la Microsoft Store */
+.hv { padding: 14px 16px 16px 14px; border-radius: var(--r); background: rgba(68, 39, 38, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 153, 164, 0.14), 0 10px 30px rgba(0, 0, 0, 0.3); }
+:root[data-acrylic="on"] .hv { background: rgba(68, 39, 38, 0.74); backdrop-filter: blur(20px); }
+/* desplegada se ensancha (como un «expander») para que los pasos no empujen «Descargar» tan abajo */
+.hv.is-open { width: min(1180px, calc(100vw - var(--pad) * 2)); }
+.hv-head { display: flex; align-items: flex-start; gap: 12px; }
+.hv-badge { flex: none; display: grid; margin-top: 1px; color: #ff99a4; }
+.hv-badge svg, .hv-warn .ico svg { width: 20px; height: 20px; }
+.hv-title { margin: 0 0 3px; font-size: 15px; font-weight: 600; }
+.hv-sum { margin: 0; font-size: 14px; line-height: 1.45; color: rgba(243, 243, 243, 0.86); }
+.hv-body { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 26px; margin: 14px 0 0 32px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+.hv-body[hidden] { display: none; }
+.hv-sec-title { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
+.hv-sec-risks .hv-sec-title { color: #ff99a4; }
+.hv-note { margin: 0 0 6px; font-size: 13px; line-height: 1.4; color: var(--muted); }
+.hv-list { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: rgba(243, 243, 243, 0.84); }
+.hv-list li + li { margin-top: 4px; }
+.hv-foot { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0 32px; }
+.hv-more, .hv-guide { position: relative; height: 36px; padding: 0 14px; border-radius: var(--r); background: rgba(255, 255, 255, 0.12); font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; transition: box-shadow 0.12s ease, background 0.12s ease; }
+.hv-more::after { content: ""; width: 7px; height: 7px; margin: -4px 0 0 2px; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg); transition: transform 0.15s ease, margin 0.15s ease; }
+.hv.is-open .hv-more::after { margin-top: 4px; transform: rotate(-135deg); }
+.hv-guide .ico svg { width: 16px; height: 16px; }
+.hv-more.is-focused, .hv-more:hover, .hv-guide.is-focused, .hv-guide:hover { box-shadow: 0 0 0 3px #fff; background: rgba(255, 255, 255, 0.22); }
+/* panel de descarga: la misma InfoBar, arriba del todo */
+.hv-warn { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; padding: 12px 14px; border-radius: var(--r); background: #442726; box-shadow: inset 0 0 0 1px rgba(255, 153, 164, 0.14); }
+.hv-warn .ico { margin-top: 1px; color: #ff99a4; }
+.hv-warn p { margin: 0; font-size: 13.5px; line-height: 1.45; color: rgba(243, 243, 243, 0.86); }
+.hv-warn b { font-weight: 600; color: #fff; }
+:root[data-mode="tv"] .st-box .hv-tag, :root[data-mode="tv"] .st-cap .hv-tag { font-size: 12px; line-height: 20px; padding: 0 6px; }
+:root[data-mode="tv"] .wl-txt .hv-tag, :root[data-mode="tv"] .xd-head .hv-tag { font-size: 13.5px; line-height: 23px; padding: 0 8px; }
+:root[data-mode="tv"] .hv-title { font-size: 18px; }
+:root[data-mode="tv"] .hv-sum, :root[data-mode="tv"] .hv-list, :root[data-mode="tv"] .hv-warn p { font-size: 16px; }
+:root[data-mode="tv"] .hv-sec-title { font-size: 16px; }
+:root[data-mode="tv"] .hv-more, :root[data-mode="tv"] .hv-guide { height: 44px; font-size: 16px; }

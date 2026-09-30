@@ -357,3 +357,28 @@ img.img-error { visibility: hidden; }
 .wrow-rm:hover, .wrow-rm.is-focused { color: #fff; }
 .wish-empty-ico svg { width: 46px; height: 46px; fill: none; stroke: #67c1f5; stroke-width: 1.6; }
 .store-empty.small { padding: 40px 20px; }
+
+/* ─── crack de hipervisor (HV): etiqueta junto al nombre y aviso como el de «Acceso anticipado» ─── */
+.hv-name { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.hv-name-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hv-tag { flex: none; align-self: center; padding: 0 5px; border-radius: 2px; background: #b2401f; color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; letter-spacing: 0.06em; text-transform: none; }
+.app-title .hv-tag, .car-side .hv-tag { padding: 0 7px; font-size: 12px; line-height: 20px; }
+.hv { margin-bottom: 30px; padding: 16px 18px; background: linear-gradient(135deg, rgba(178, 64, 31, 0.3) 0%, rgba(0, 0, 0, 0.25) 60%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+.hv-head { display: flex; align-items: flex-start; gap: 14px; }
+.hv-badge { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 2px; background: #b2401f; color: #fff; font-size: 15px; font-weight: 700; letter-spacing: 0.04em; }
+.hv-title { margin: 2px 0 4px; font-size: 17px; font-weight: 400; color: #fff; }
+.hv-sum { margin: 0; font-size: 13px; line-height: 1.5; color: #acb2b8; }
+.hv-body { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.hv-body[hidden] { display: none; }
+.hv-sec-title { margin: 0 0 6px; font-size: 12px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.04em; color: #67c1f5; }
+.hv-sec-risks .hv-sec-title { color: #e0765b; }
+.hv-note { margin: 0 0 6px; font-size: 12px; font-style: italic; color: #8f98a0; }
+.hv-list { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.5; color: #acb2b8; }
+.hv-list li { margin-bottom: 3px; }
+.hv-foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.hv-more, .hv-guide { height: 30px; padding: 0 14px; border-radius: 2px; background: rgba(103, 193, 245, 0.2); color: #67c1f5; font-size: 13px; white-space: nowrap; }
+.hv-more:hover, .hv-more.is-focused, .hv-guide:hover, .hv-guide.is-focused { background: linear-gradient(-60deg, #417a9b 5%, #67c1f5 95%); color: #fff; }
+.cat.hv-cat { background: rgba(178, 64, 31, 0.2); color: #e0765b; }
+.hv-warn { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; padding: 10px 12px; background: rgba(178, 64, 31, 0.22); color: #e3c1b6; }
+.hv-warn p { margin: 0; font-size: 12.5px; line-height: 1.45; }
+.hv-warn .ico svg { width: 18px; height: 18px; color: #e0765b; }

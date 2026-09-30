@@ -90,10 +90,10 @@ img.img-error { visibility: hidden; }
 .sc-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.88)); }
 .sc-info { position: absolute; left: 11px; right: 11px; bottom: 9px; z-index: 2; display: flex; flex-direction: column; gap: 2px; }
 .sc-info b { font-size: 15px; font-weight: 800; line-height: 1.2; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.sc-info span { font-size: 12px; color: #d9d9d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: 0; opacity: 0; transition: opacity 0.25s ease, max-height 0.25s ease; }
+.sc-info > span { font-size: 12px; color: #d9d9d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: 0; opacity: 0; transition: opacity 0.25s ease, max-height 0.25s ease; }
 .sc.is-focused, .sc:hover { transform: scale(1.12); z-index: 3; }
 .sc.is-focused .sc-art, .sc:hover .sc-art { box-shadow: 0 0 0 2px #fff, 0 14px 34px rgba(0, 0, 0, 0.8); }
-.sc.is-focused .sc-info span, .sc:hover .sc-info span { max-height: 18px; opacity: 1; }
+.sc.is-focused .sc-info > span, .sc:hover .sc-info > span { max-height: 18px; opacity: 1; }
 .sc-more { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: #222; border-radius: 4px; color: #d2d2d2; }
 .sc-more span { width: 54px; height: 54px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.5); display: grid; place-items: center; }
 .sc-more span svg { width: 26px; height: 26px; }
@@ -245,8 +245,8 @@ img.img-error { visibility: hidden; }
 :root[data-mode="tv"] .nbadge { min-width: 22px; height: 22px; font-size: 13px; }
 :root[data-mode="tv"] .links button { font-size: 17px; }
 :root[data-mode="tv"] .sc-info b { font-size: 18px; }
-:root[data-mode="tv"] .sc-info span { font-size: 14px; }
-:root[data-mode="tv"] .sc.is-focused .sc-info span { max-height: 22px; }
+:root[data-mode="tv"] .sc-info > span { font-size: 14px; }
+:root[data-mode="tv"] .sc.is-focused .sc-info > span { max-height: 22px; }
 :root[data-mode="tv"] .sc-tag, :root[data-mode="tv"] .sc-new { font-size: 12.5px; }
 :root[data-mode="tv"] .t10-art .sc-tag { font-size: 10px; }
 :root[data-mode="tv"] .s-row-h h2 { font-size: clamp(20px, 1.6vw, 28px); }
@@ -316,7 +316,7 @@ img.img-error { visibility: hidden; }
 .sim-art img.fit { object-fit: contain; }
 .sim-info { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 12px; }
 .sim-info b { font-size: 14px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.sim-info span { font-size: 12.5px; color: #a3a3a3; }
+.sim-info > span { font-size: 12.5px; color: #a3a3a3; }
 .sim-card:hover, .sim-card.is-focused { box-shadow: 0 0 0 2px #fff; }
 
 /* ─────────── lista de deseados ─────────── */
@@ -369,3 +369,61 @@ img.img-error { visibility: hidden; }
 :root[data-mode="tv"] .wl-meta span { font-size: 16px; }
 :root[data-mode="tv"] .wl-meta small { font-size: 14.5px; }
 :root[data-mode="tv"] .wl-x { width: 44px; height: 44px; }
+
+/* ─── crack de hipervisor (HV) ─── */
+/* Como la clasificación por edades de las plataformas de series: la cajita
+   con borde junto al título y la línea de advertencias bajo los datos, en el
+   naranja de sus avisos. */
+.hv-name { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.hv-name-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hv-tag { flex: none; align-self: center; padding: 0 5px; border: 1px solid rgba(232, 124, 3, 0.8); border-radius: 3px; background: rgba(0, 0, 0, 0.45); color: #f0a24f; font-size: 11px; font-weight: 700; line-height: 15px; letter-spacing: 0.05em; text-shadow: none; white-space: nowrap; }
+/* tarjetas (dos líneas): el recorte pasa al nombre y la etiqueta sigue a la última línea */
+.sc-info b.hv-name, .sim-info b.hv-name { display: flex; overflow: visible; }
+.sc-info .hv-name-t, .sim-info .hv-name-t { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.sc-info .hv-tag, .sim-info .hv-tag { align-self: last baseline; }
+/* títulos grandes (cartelera y ficha): la cajita pegada a la última palabra, como la clasificación tras el título */
+.bb-title.hv-name, .s-sheet .s-title.hv-name { display: -webkit-box; }
+.bb-title .hv-name-t, .s-title .hv-name-t { display: inline; overflow: visible; }
+.bb-title .hv-tag, .s-title .hv-tag { display: inline-block; margin-left: 0.45em; padding: 1px 8px; border-width: 1.5px; vertical-align: 0.55em; font-size: clamp(13px, 1.1vw, 17px); line-height: 1.3; letter-spacing: 0.04em; }
+.dlg-t .hv-tag { padding: 0 6px; font-size: 12px; line-height: 18px; }
+/* top 10: el nombre no se ve, así que la etiqueta va sobre la carátula */
+.t10-art > .hv-tag { position: absolute; left: 5px; bottom: 6px; z-index: 3; padding: 0 4px; background: rgba(0, 0, 0, 0.72); font-size: 9.5px; line-height: 14px; }
+.t10-art:has(.sc-bar:not([hidden])) > .hv-tag { bottom: 14px; }
+
+/* ficha: la línea de advertencias bajo los datos, con «Cómo se juega y riesgos» */
+.hv { margin: 0 0 20px; padding: 13px 18px 14px 15px; border-left: 3px solid #e87c03; border-radius: 0 4px 4px 0; background: rgba(232, 124, 3, 0.08); }
+.hv-head { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 6px 10px; }
+.hv-head > div { display: contents; }
+.hv-badge { padding: 0 6px; border: 1px solid rgba(232, 124, 3, 0.85); border-radius: 3px; color: #f0a24f; font-size: 13px; font-weight: 700; line-height: 19px; letter-spacing: 0.05em; }
+.hv-title { margin: 0; font-size: 15px; font-weight: 700; color: #fff; }
+.hv-sum { grid-column: 1 / -1; margin: 0; font-size: 14px; line-height: 1.55; color: #bcbcbc; }
+.hv-body { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+.hv-body[hidden] { display: none; }
+.hv-sec + .hv-sec { margin-top: 14px; }
+.hv-sec-title { margin: 0 0 6px; font-size: 14px; font-weight: 700; color: #fff; }
+.hv-sec-risks .hv-sec-title { color: #f0a24f; }
+.hv-note { margin: 0 0 6px; font-size: 13px; color: #8c8c8c; }
+.hv-list { margin: 0; padding-left: 20px; font-size: 13.5px; line-height: 1.5; color: #bcbcbc; }
+.hv-list li { margin-bottom: 4px; padding-left: 2px; }
+.hv-list li::marker { color: #808080; }
+.hv-sec-risks .hv-list li::marker { color: #e87c03; }
+.hv-foot { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.hv-more, .hv-guide { height: 32px; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; border-radius: 4px; background: rgba(109, 109, 110, 0.7); font-size: 13.5px; font-weight: 700; white-space: nowrap; transition: all 0.12s ease; }
+.hv-more::after { content: ""; width: 6px; height: 6px; margin: -3px 1px 0; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg); transition: transform 0.2s ease, margin 0.2s ease; }
+.hv.is-open .hv-more::after { margin-top: 3px; transform: rotate(-135deg); }
+.hv-more:hover, .hv-more.is-focused, .hv-guide:hover, .hv-guide.is-focused { box-shadow: 0 0 0 3px #181818, 0 0 0 5px #fff; filter: brightness(1.1); }
+.side .hv-fact b { color: #f0a24f; }
+
+/* diálogo de descarga: el aviso, arriba */
+.hv-warn { display: flex; align-items: flex-start; gap: 12px; margin: 4px 0 12px; padding: 10px 14px; border-left: 3px solid #e87c03; border-radius: 0 4px 4px 0; background: rgba(232, 124, 3, 0.1); }
+.hv-warn .hv-tag { align-self: flex-start; margin-top: 1px; padding: 0 6px; font-size: 12px; line-height: 18px; background: none; }
+.hv-warn p { margin: 0; font-size: 13.5px; line-height: 1.5; color: #e5e5e5; }
+
+:root[data-mode="tv"] .sc-info .hv-tag, :root[data-mode="tv"] .sim-info .hv-tag { font-size: 12.5px; line-height: 17px; }
+:root[data-mode="tv"] .hv-badge { font-size: 15px; line-height: 22px; }
+:root[data-mode="tv"] .hv-title { font-size: 18px; }
+:root[data-mode="tv"] .hv-sum, :root[data-mode="tv"] .hv-list, :root[data-mode="tv"] .hv-warn p { font-size: 16.5px; }
+:root[data-mode="tv"] .hv-sec-title { font-size: 17px; }
+:root[data-mode="tv"] .hv-note { font-size: 15px; }
+:root[data-mode="tv"] .hv-more, :root[data-mode="tv"] .hv-guide { height: 38px; padding: 0 18px; font-size: 15.5px; }
+:root[data-mode="tv"] .hv-warn .hv-tag { font-size: 14px; line-height: 21px; }

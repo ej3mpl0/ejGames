@@ -149,6 +149,10 @@ export interface Repack {
   /** Se pueden dejar sin bajar idiomas y extras. */
   selective: boolean;
   adult: boolean;
+  /** Crack de hipervisor (HV, «HYPERVISOR» en la ficha de la web): para jugar hay que desactivar un rato
+   *  la seguridad de Windows basada en virtualización. Márcalo junto al nombre y explícalo en la ficha
+   *  (el kit trae `HYPERVISOR`, `repackName`, `hypervisorTag` y `hypervisorInfo`). */
+  hypervisor?: boolean;
   /** Etiquetas de la web (ids de `ejg.explore.genres()`). */
   tags?: number[];
   /** Relación contigo: en tu biblioteca, descargando, instalado… */
@@ -220,6 +224,8 @@ export interface PreparedDownload {
   installSize?: string | null;
   installDir: string;
   installFreeBytes?: number | null;
+  /** Crack de hipervisor: avisa antes de bajarlo (`HYPERVISOR.download` en el kit). */
+  hypervisor?: boolean;
 }
 
 export type DownloadState = "queued" | "downloading" | "paused" | "seeding" | "completed" | "installing" | "installed" | "error";

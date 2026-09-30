@@ -227,3 +227,61 @@ canvas { image-rendering: pixelated; }
 .pbtn.f-wish { white-space: normal; line-height: 1.8; }
 .f-wish.on { border-color: var(--hi); color: var(--hi); }
 .f-wish.on.is-focused, .f-wish.on:hover { background: var(--hi); color: var(--bg); }
+
+/* ─── crack de hipervisor (HV) ─── */
+/* rojo apagado de recreativa (FitGirl lo marca en rojo); en las paletas de un solo color, el tono más claro */
+:root { --hv: #c9412c; --hv-ink: #fff1e6; --hv-hi: #ff7a5c; --hv-font: Consolas, "Cascadia Mono", monospace; }
+:root[data-palette="amber"] { --hv: #c8381a; --hv-ink: #ffe9c8; --hv-hi: #ff6b3d; }
+:root[data-palette="c64"] { --hv: #883932; --hv-ink: #ffffff; --hv-hi: #d88a82; }
+:root[data-palette="phosphor"], :root[data-palette="gameboy"] { --hv: var(--hi); --hv-ink: var(--bg); --hv-hi: var(--hi); }
+/* nombre + sello: el nombre se corta con «…» y el sello se queda */
+.hv-name { display: flex; align-items: baseline; min-width: 0; }
+.hv-name-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* sello: bloque de píxeles con las esquinas mordidas y bisel duro (sin parpadeo) */
+.hv-tag, .hv-badge, .hv-warn-k {
+  --n: 2px;
+  background: var(--hv); color: var(--hv-ink); font-family: "Press Start 2P", monospace; font-weight: 400; text-shadow: none; text-transform: none;
+  clip-path: polygon(var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n), 100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n)), 0 var(--n), var(--n) var(--n));
+  box-shadow: inset calc(var(--n) * -1) calc(var(--n) * -1) 0 rgba(0, 0, 0, 0.35), inset var(--n) var(--n) 0 rgba(255, 255, 255, 0.16);
+}
+.hv-tag { flex: none; align-self: center; display: inline-block; margin-left: 0.9em; padding: 4px 5px 3px 6px; font-size: calc(var(--fs) * 0.58); line-height: 1; letter-spacing: 1px; }
+.s-title.hv-name { display: flex; align-items: flex-start; }
+/* (en la tarjeta, que no la pille «.info span:first-child», que es la de las etiquetas) */
+.s-info .s-title .hv-name-t { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; min-width: 0; color: inherit; }
+.s-title .hv-tag { align-self: flex-start; margin-top: 0.35em; }
+.f-head h2 .hv-tag { --n: 3px; align-self: baseline; margin-left: 0.7em; padding: 7px 8px 6px 10px; font-size: calc(var(--fs) * 0.72); letter-spacing: 2px; }
+.rpg-name .hv-tag { align-self: baseline; }
+/* línea de DATOS */
+.f-table .hv-row th, .f-table .hv-row td { color: var(--hv-hi); }
+.f-table .hv-row .hv-tag { margin: 0 0.5em 0 0; vertical-align: 1px; }
+
+/* bloque de la ficha: pantalla de «WARNING» de recreativa con franja de peligro */
+.hv { position: relative; margin: 0 6px 38px 0; padding: 26px 22px 20px; border: 4px solid var(--hv); background: color-mix(in srgb, var(--hv) 10%, var(--bg)); box-shadow: 6px 6px 0 color-mix(in srgb, var(--hv) 40%, transparent); }
+.hv::before { content: ""; position: absolute; inset: 0 0 auto; height: 8px; background: repeating-linear-gradient(-45deg, var(--hv) 0 6px, transparent 6px 12px); }
+.hv-head { display: flex; align-items: flex-start; gap: 20px; }
+.hv-badge { --n: 4px; flex: none; display: grid; place-items: center; width: 56px; height: 56px; padding-left: 2px; font-size: calc(var(--fs) * 1.15); letter-spacing: 2px; text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35); }
+.hv-title { margin: 2px 0 12px; font-size: calc(var(--fs) * 0.85); font-weight: 400; line-height: 1.6; color: var(--hv-hi); text-transform: uppercase; text-shadow: 0 0 10px color-mix(in srgb, var(--hv) 70%, transparent); }
+/* el texto largo, con la letra de las guías: la pixel no se lee en párrafos */
+.hv-sum, .hv-note, .hv-list { font-family: var(--hv-font); text-shadow: none; }
+.hv-sum { margin: 0; font-size: var(--fs); line-height: 1.6; color: var(--fg); }
+.hv-body { display: grid; gap: 20px; margin-top: 20px; padding-top: 18px; border-top: 2px dashed color-mix(in srgb, var(--hv) 55%, transparent); }
+.hv-body[hidden] { display: none; }
+.hv-sec-title { margin: 0 0 10px; font-size: calc(var(--fs) * 0.72); font-weight: 400; line-height: 1.6; color: var(--hi2); text-transform: uppercase; }
+.hv-sec-title::before { content: "▶ "; }
+.hv-sec-risks .hv-sec-title { color: var(--hv-hi); }
+.hv-note { margin: 0 0 8px; font-size: calc(var(--fs) * 0.95); line-height: 1.5; font-style: italic; color: var(--dim); }
+.hv-list { list-style: none; margin: 0; padding: 0; font-size: calc(var(--fs) * 0.95); line-height: 1.55; color: var(--fg); }
+.hv-list li { position: relative; padding-left: 28px; margin-bottom: 6px; }
+/* viñeta: la flecha de 3×5 píxeles de CARACTERÍSTICAS; los pasos, numerados como fases */
+ul.hv-list li::before { content: ""; position: absolute; left: 6px; top: calc(0.775em - 5px); width: 2px; height: 2px; color: var(--hi2); background: currentColor; box-shadow: 0 2px, 0 4px, 0 6px, 0 8px, 2px 2px, 2px 4px, 2px 6px, 4px 4px; }
+.hv-sec-risks ul.hv-list li::before { color: var(--hv-hi); }
+ol.hv-list { counter-reset: hv; }
+ol.hv-list li { counter-increment: hv; }
+ol.hv-list li::before { content: counter(hv, decimal-leading-zero); position: absolute; left: 0; top: 0.4em; font-family: "Press Start 2P", monospace; font-size: calc(var(--fs) * 0.58); line-height: 1; color: var(--hi2); }
+.hv-foot { display: flex; flex-wrap: wrap; gap: 12px 14px; margin-top: 20px; }
+.hv-foot .pbtn { padding: 8px 12px; font-size: calc(var(--fs) * 0.66); }
+
+/* aviso del diálogo de descarga */
+.hv-warn { display: flex; align-items: flex-start; gap: 16px; margin: 4px 0 16px; padding: 12px 14px; border: 2px solid var(--hv); background: color-mix(in srgb, var(--hv) 14%, transparent); box-shadow: 4px 4px 0 color-mix(in srgb, var(--hv) 35%, transparent); }
+.hv-warn-k { --n: 3px; flex: none; display: grid; place-items: center; width: 40px; height: 40px; padding-left: 2px; font-size: calc(var(--fs) * 0.85); letter-spacing: 1px; }
+.hv-warn p { margin: 0; font-family: var(--hv-font); font-size: var(--fs); line-height: 1.5; color: var(--fg); text-shadow: none; }

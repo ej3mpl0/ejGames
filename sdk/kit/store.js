@@ -3,6 +3,8 @@
 //
 //   import { createExplore, createDownloads, fileSelection, bytes, speed } from "/_sdk/kit/store.js";
 
+import { h } from "./dom.js";
+
 // ───────────────────────────── formatos ─────────────────────────────
 
 const nf1 = new Intl.NumberFormat("es", { maximumFractionDigits: 1 });
@@ -143,6 +145,152 @@ export function repackAction(r) {
     default:
       return { id: "download", label: "Descargar" };
   }
+}
+
+// ───────────────────────────── hipervisor (HV) ─────────────────────────────
+// Repacks con `hypervisor`: el crack no quita Denuvo, lo engaña desde un driver
+// sin firmar que funciona por debajo de Windows. Para cargarlo hay que apagar
+// un rato la seguridad de Windows basada en virtualización. El texto es común
+// (resume la guía de la web); cada tema le pone su piel.
+
+/** Textos de la etiqueta HV y de su explicación. */
+export const HYPERVISOR = {
+  /** Etiqueta junto al nombre. */
+  badge: "HV",
+  /** Para el `title` de la etiqueta. */
+  tip: "Crack de hipervisor (HV): para jugar hay que desactivar un rato la seguridad de Windows",
+  title: "Crack de hipervisor (HV)",
+  summary:
+    "Este repack no quita Denuvo: lo engaña con un hipervisor, un driver sin firmar que funciona por debajo de Windows. " +
+    "Para cargarlo hay que desactivar la seguridad de Windows basada en virtualización (VBS) mientras juegas y volver a activarla al terminar. " +
+    "Tú decides si el juego merece el riesgo.",
+  /** Aviso corto para el diálogo de descarga. */
+  download:
+    "Crack de hipervisor (HV): para jugar tendrás que desactivar un rato la seguridad de Windows. Además, Windows Defender y otros antivirus " +
+    "borran sus archivos como si fueran un rootkit: añade las carpetas de descarga e instalación a sus exclusiones.",
+  sections: [
+    {
+      id: "needs",
+      title: "Qué necesitas",
+      items: [
+        "Un procesador con virtualización (VT-x en Intel, AMD-V o SVM en AMD) y tenerla activada en la BIOS.",
+        "Windows 10 u 11 de 64 bits y al día.",
+        "No hace falta quitar el arranque seguro (Secure Boot) ni usar EfiGuard.",
+        "Cuidado con los anticheats de kernel: Vanguard (Valorant, League of Legends) puede provocar un pantallazo azul y FACEIT impide cargar el driver.",
+      ],
+    },
+    {
+      id: "changes",
+      title: "Qué se desactiva mientras juegas",
+      items: [
+        "La integridad de memoria (Seguridad de Windows → Seguridad del dispositivo → Aislamiento del núcleo) y Credential Guard.",
+        "Windows Hello: el PIN, la cara o la huella pueden fallar y habrá que configurarlos otra vez. Ten a mano la contraseña de tu cuenta.",
+        "El hipervisor de Windows: Hyper-V, WSL 2, el Espacio aislado de Windows y las máquinas virtuales no funcionan mientras tanto.",
+        "La firma obligatoria de drivers (Windows arranca en modo de prueba). Si usas BitLocker, se suspende un reinicio: ten a mano la clave de recuperación.",
+      ],
+    },
+    {
+      id: "steps",
+      title: "Cómo se juega",
+      ordered: true,
+      note: "El repack trae un lanzador que hace estos pasos por ti. Si falla, a mano:",
+      items: [
+        "Activa la virtualización en la BIOS.",
+        "En la carpeta del juego, abre VBS.cmd, acepta el aviso de administrador y pulsa 1.",
+        "Reinicia. Si al arrancar sale «Configuración de inicio», pulsa 7 o F7 (deshabilitar el uso obligatorio de controladores firmados).",
+        "Abre el juego y juega.",
+        "Al terminar, abre VBS.cmd otra vez y pulsa 3 para deshacer los cambios.",
+        "Reinicia para volver al modo normal y seguro.",
+      ],
+    },
+    {
+      id: "risks",
+      title: "Riesgos",
+      items: [
+        "Sin esas protecciones, un malware con permisos de administrador lo tiene mucho más fácil (rootkits, robo de contraseñas). Por eso es solo para la sesión de juego: deshaz siempre los cambios.",
+        "El driver del crack tiene acceso total al sistema: un fallo en él, o una versión manipulada, dejaría el PC abierto sin que se note. Baja solo el repack original.",
+        "Windows Defender y otros antivirus borran sus archivos por «rootkit»: excluye las carpetas de descarga e instalación o el juego no arrancará.",
+        "El crack solo vale para esta versión del juego: no lo actualices por tu cuenta.",
+      ],
+    },
+  ],
+  /** Página de la guía completa en la web (para `ejg.explore.openPage`). */
+  guide: "hypervisor-guide",
+  guideLabel: "Guía completa (en inglés)",
+  moreLabel: "Cómo se juega y riesgos",
+  lessLabel: "Ocultar detalles",
+};
+
+/** Abre la guía completa del hipervisor en la web (navegador del sistema). */
+export function openHypervisorGuide(ejg) {
+  return ejg.explore.openPage(HYPERVISOR.guide);
+}
+
+/** Etiqueta «HV» para poner junto al nombre (null si el repack no es HV). Clase: `${cls}hv-tag`. */
+export function hypervisorTag(r, cls = "") {
+  if (!r?.hypervisor) return null;
+  return h("span", { class: `${cls}hv-tag`, title: HYPERVISOR.tip, "aria-label": HYPERVISOR.title }, HYPERVISOR.badge);
+}
+
+/**
+ * El nombre de un repack con la etiqueta HV detrás. Sin HV, `<tag>Nombre</tag>`
+ * tal cual; con HV, `<tag class="… hv-name"><span class="hv-name-t">Nombre</span>
+ * <span class="hv-tag">HV</span></tag>` (con `cls` delante de las clases hv-),
+ * para que el nombre se corte con «…» y la etiqueta se siga viendo:
+ *   .hv-name { display: flex; align-items: center; gap: 6px; }
+ *   .hv-name-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+ */
+export function repackName(r, tag = "b", props = {}, cls = "") {
+  if (!r?.hypervisor) return h(tag, props, r?.title ?? "");
+  return h(tag, { ...props, class: `${props.class ? props.class + " " : ""}${cls}hv-name` }, h("span", { class: `${cls}hv-name-t` }, r.title), hypervisorTag(r, cls));
+}
+
+/**
+ * Explicación del HV para la ficha (null si el repack no es HV): resumen, lo
+ * que necesitas, lo que se desactiva, los pasos y los riesgos, con un botón a
+ * la guía completa. Empieza plegada (solo el resumen) salvo con `open`.
+ * Clases, todas con `cls` delante: hv, hv-head, hv-badge, hv-title, hv-sum,
+ * hv-body, hv-sec (+ hv-sec-<id>), hv-sec-title, hv-note, hv-list, hv-foot,
+ * hv-more, hv-guide; y `is-open` en hv cuando está desplegada.
+ */
+export function hypervisorInfo(ejg, r, { cls = "", open = false, labels = {} } = {}) {
+  if (!r?.hypervisor) return null;
+  const L = { ...HYPERVISOR, ...labels };
+  const c = cls;
+  const body = h(
+    "div",
+    { class: `${c}hv-body`, hidden: !open },
+    ...L.sections.map((s) =>
+      h(
+        "div",
+        { class: `${c}hv-sec ${c}hv-sec-${s.id}` },
+        h("h4", { class: `${c}hv-sec-title` }, s.title),
+        s.note ? h("p", { class: `${c}hv-note` }, s.note) : null,
+        h(s.ordered ? "ol" : "ul", { class: `${c}hv-list` }, ...s.items.map((t) => h("li", null, t))),
+      ),
+    ),
+  );
+  const root = h("section", { class: `${c}hv` + (open ? " is-open" : ""), "aria-label": L.title });
+  const more = h("button", { class: `${c}hv-more`, "data-focus": "", "aria-expanded": String(open) }, open ? L.lessLabel : L.moreLabel);
+  more.addEventListener("click", () => {
+    const on = body.hidden;
+    body.hidden = !on;
+    root.classList.toggle("is-open", on);
+    more.setAttribute("aria-expanded", String(on));
+    more.textContent = on ? L.lessLabel : L.moreLabel;
+    if (on) body.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  });
+  root.append(
+    h(
+      "div",
+      { class: `${c}hv-head` },
+      h("span", { class: `${c}hv-badge`, "aria-hidden": "true" }, L.badge),
+      h("div", null, h("h3", { class: `${c}hv-title` }, L.title), h("p", { class: `${c}hv-sum` }, L.summary)),
+    ),
+    body,
+    h("div", { class: `${c}hv-foot` }, more, h("button", { class: `${c}hv-guide`, "data-focus": "", onclick: () => openHypervisorGuide(ejg) }, `${L.guideLabel} ↗`)),
+  );
+  return root;
 }
 
 // ───────────────────────────── catálogo ─────────────────────────────

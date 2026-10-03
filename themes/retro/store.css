@@ -285,3 +285,18 @@ ol.hv-list li::before { content: counter(hv, decimal-leading-zero); position: ab
 .hv-warn { display: flex; align-items: flex-start; gap: 16px; margin: 4px 0 16px; padding: 12px 14px; border: 2px solid var(--hv); background: color-mix(in srgb, var(--hv) 14%, transparent); box-shadow: 4px 4px 0 color-mix(in srgb, var(--hv) 35%, transparent); }
 .hv-warn-k { --n: 3px; flex: none; display: grid; place-items: center; width: 40px; height: 40px; padding-left: 2px; font-size: calc(var(--fs) * 0.85); letter-spacing: 1px; }
 .hv-warn p { margin: 0; font-family: var(--hv-font); font-size: var(--fs); line-height: 1.5; color: var(--fg); text-shadow: none; }
+
+/* ─────────── evento de temporada (Halloween): banner y sección «MIEDO» ─────────── */
+.s-ev { flex: none; margin: 0 0 16px; }
+.s-ev-banner { border: 4px solid var(--hi2); box-shadow: 6px 6px 0 #3b145e, 0 0 24px rgba(255, 122, 26, 0.3); }
+/* rejilla de fósforo encima del vídeo: que parezca salir del mismo tubo */
+.s-ev-banner::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.32) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 60%, rgba(13, 7, 22, 0.55)); }
+.s-ev-sub { margin: 12px 0 0; font-size: calc(var(--fs) * 0.62); line-height: 1.9; color: var(--dim); }
+.s-ev-sub::before { content: ""; display: inline-block; width: 1.3em; height: 1.1em; margin-right: 0.8em; vertical-align: -0.2em; background: var(--ev-pumpkin) center / contain no-repeat; }
+.shop.ev .s-sec[data-sec="ev"] { color: var(--hi2); }
+.shop.ev .s-sec[data-sec="ev"].on { color: #1a0a02; background: var(--hi2); }
+.shop.ev .s-sec[data-sec="ev"].on.is-focused, .shop.ev .s-sec[data-sec="ev"].on:hover { background: var(--hi); }
+:root[data-season="halloween"] .s-hero, :root[data-season="halloween"] .f-screen { box-shadow: 6px 6px 0 #3b145e, 0 0 22px rgba(255, 122, 26, 0.25); }
+:root[data-season="halloween"] .s-badge { color: #0d0716; }
+:root[data-season="halloween"] .s-item.is-focused .s-tag, :root[data-season="halloween"] .s-item.is-focused .s-size, :root[data-season="halloween"] .s-item:hover .s-tag, :root[data-season="halloween"] .s-item:hover .s-size { color: #1a0a02; }
+:root[data-mode="tv"] .s-ev-sub { display: none; }

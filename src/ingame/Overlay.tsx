@@ -17,6 +17,7 @@ import type { NavAction, OverlayLive, OverlayNotice, OverlayPanel, OverlayPin } 
 import { MapHost, useMapHost } from "../components/map";
 import { padTypeOf } from "../input/gamepad";
 import { configureSounds } from "../host/sounds";
+import { useHostSeason } from "../host/season";
 import { dispatchNav } from "../input/nav";
 import { KeyboardOverlay } from "../overlays/Keyboard";
 import { useApp } from "../store/app";
@@ -51,6 +52,11 @@ export function Overlay() {
   const [pinned, setPinned] = useState(false);
   const panelRef = useRef<OverlayPanel | null>(null);
   panelRef.current = panel;
+  // Evento de temporada (Halloween…): <html data-season> también aquí (ingame.css).
+  useHostSeason();
+  useEffect(() => {
+    api.getSettings().then((settings) => useApp.getState().set({ settings }), () => {});
+  }, []);
 
   useEffect(() => {
     const subs = [

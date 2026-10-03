@@ -19,3 +19,30 @@ html.ingame #root {
   inset: 0;
   z-index: 50;
 }
+
+/* ─────────── evento de temporada: ejGames Scream (Halloween) ───────────
+   Los avisos y el panel conservan el aspecto de su plataforma; solo llevan un
+   brillo calabaza y una calabacita en la esquina. */
+:root[data-season="halloween"] .nt {
+  filter: drop-shadow(0 0 10px rgba(255, 122, 26, 0.35));
+}
+:root[data-season="halloween"] .nt:not(.nt-retro)::after {
+  content: "";
+  position: absolute;
+  top: -9px;
+  right: -7px;
+  width: 24px;
+  height: 22px;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 4c-1-2 0-4 2-4' stroke='%2333691e' stroke-width='2' fill='none'/%3E%3Cellipse cx='7' cy='13' rx='6' ry='8' fill='%23e8650f'/%3E%3Cellipse cx='17' cy='13' rx='6' ry='8' fill='%23e8650f'/%3E%3Cellipse cx='12' cy='13' rx='6' ry='8.5' fill='%23ff8a1f'/%3E%3Cpath d='M7 11l2.5-2 1 2.5zM17 11l-2.5-2-1 2.5zM7.5 15.5q4.5 4 9 0l-1.5.4-1 1.2-1.5-1.2-1.5 1.2-1-1.2z' fill='%23401500'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+:root[data-season="halloween"] .pn-root::after {
+  content: "";
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 35vh;
+  pointer-events: none;
+  background:
+    radial-gradient(40% 70% at 0% 100%, rgba(255, 110, 20, 0.14), transparent 70%),
+    radial-gradient(40% 70% at 100% 100%, rgba(124, 246, 74, 0.08), transparent 70%);
+}

@@ -33,6 +33,7 @@ import {
   hypervisorInfo,
   repackName,
 } from "/_sdk/kit/store.js";
+import { seasonOf, seasonBanner, seasonPicks } from "/_sdk/kit/events.js";
 
 const I = {
   search: '<svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>',
@@ -87,6 +88,10 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
   let wishQuery = "";
   const wished = (slug) => ejg.explore.wishlist.has(slug);
   const active = () => tabRef();
+  // Evento de temporada (Halloween…): portada propia y colores en toda la tienda.
+  const season = () => seasonOf(ejg);
+  let evCar = 0;
+  ejg.season?.onChange(() => active() === "store" && paint(true));
 
   // ─────────────── piezas ───────────────
   const cover = (r, cls = "") => h("div", { class: "st-art " + cls }, r.cover ? img(r.cover, { loading: "lazy" }) : h("div", { class: "st-ph" }, r.title));
@@ -181,6 +186,8 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
       shell = h("div", { class: "store" }, h("div", { class: "store-top" }, h("div", { class: "store-over" }, links.wish), nav), content);
     }
     wishCount();
+    const ev = season();
+    shell.className = "store" + (ev ? ` ev ev-${ev.id}` : "");
     if (main.firstChild !== shell || main.childNodes.length !== 1) main.replaceChildren(shell);
     const on = view.name === "detail" ? view.prev : view.name === "list" ? view.list : view.name;
     for (const [id, el] of Object.entries(links)) el.classList.toggle("on", id === on);
@@ -431,6 +438,67 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     );
   }
 
+  // ─────────────── evento de temporada ───────────────
+  /** Cápsula vertical del evento (como las de la rebaja de Steam): carátula y su etiqueta. */
+  function evCap(r) {
+    return h(
+      "button",
+      { class: "ev-cap", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), title: r.title },
+      cover(r, "ev-cap-art"),
+      h("div", { class: "ev-cap-foot" }, h("span", { class: "ev-tag" }, "TERROR"), badge(r) || h("span", { class: "ev-size" }, sizeText(r.repackSize) || "—")),
+    );
+  }
+
+  function eventFront(ev, sections) {
+    const picks = seasonPicks(ejg, ev, sections, () => active() === "store" && view.name === "front" && paint(true));
+    const items = picks.items;
+    const out = [seasonBanner(ev, "ev-banner")];
+    const caps = items.filter((r) => r.cover).slice(0, 15);
+    if (caps.length >= 3) {
+      const total = Math.ceil(caps.length / 3);
+      evCar = ((evCar % total) + total) % total;
+      const box = h("div", { class: "ev-caps", "data-focus-group": "ev-caps" });
+      const dots = h("div", { class: "car-dots ev-dots" });
+      const show = () => {
+        box.replaceChildren(...caps.slice(evCar * 3, evCar * 3 + 3).map(evCap));
+        dots.replaceChildren(...Array.from({ length: total }, (_, k) => h("i", { class: k === evCar ? "on" : "", onclick: () => go(k - evCar) })));
+      };
+      const go = (d) => {
+        const inside = box.contains(focus.current);
+        evCar = (evCar + d + total) % total;
+        show();
+        if (inside) focus.focus(box.querySelector("[data-focus]"), { silent: true, noScroll: true });
+        ejg.sound.play("move");
+      };
+      show();
+      out.push(
+        h(
+          "section",
+          { class: "ev-hero" },
+          h(
+            "div",
+            { class: "car-wrap ev-wrap" },
+            h("button", { class: "car-arrow ev-arrow", "data-focus": "", onclick: () => go(-1), "aria-label": "Anterior" }, icon("left")),
+            box,
+            h("button", { class: "car-arrow ev-arrow", "data-focus": "", onclick: () => go(1), "aria-label": "Siguiente" }, icon("right")),
+          ),
+          dots,
+        ),
+      );
+    }
+    // Sin repetir los de las cápsulas de arriba si hay de sobra.
+    const rest = (items.length > 9 ? items.slice(3) : items).slice(0, 24);
+    if (rest.length >= 3) {
+      // Como «Ofertas destacadas» en la rebaja de Steam: panel con su color y «Ver todo».
+      const row = pagedRow("ev-" + ev.id, ev.title, rest, 3, bigCap, () => openCatalog({ genres: [ev.genre] }), "Ver todo");
+      row.querySelector(".store-h")?.after(h("p", { class: "ev-sub" }, ev.subtitle));
+      out.push(h("div", { class: "ev-panel" }, row));
+    } else if (picks.loading) {
+      out.push(h("div", { class: "ev-panel ev-loading" }, h("div", { class: "spinner" })));
+    }
+    return out;
+  }
+
   function front() {
     const s = store.state;
     if (s.homeError) {
@@ -445,6 +513,8 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     if (!s.home) return h("div", { class: "store-empty" }, h("div", { class: "spinner" }), h("p", null, "Cargando la tienda…"));
     const byId = Object.fromEntries(s.home.sections.map((x) => [x.id, x]));
     const out = [];
+    const ev = season();
+    if (ev) out.push(...eventFront(ev, s.home.sections));
     const today = byId.today || byId.week;
     if (today) out.push(heroCarousel(today.items));
     if (byId.week) out.push(pagedRow("week", "Populares de la semana", byId.week.items));

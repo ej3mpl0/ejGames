@@ -13,7 +13,7 @@
   var seq = 0;
   var pending = new Map();
   var listeners = new Map();
-  var state = { init: null, settings: {}, library: [], collections: [], profile: null, running: [], input: { source: "mouse", pad: "xbox" }, downloads: [], wishlist: [], explore: true, page: null };
+  var state = { init: null, settings: {}, library: [], collections: [], profile: null, running: [], input: { source: "mouse", pad: "xbox" }, downloads: [], wishlist: [], explore: true, page: null, eventMode: "auto", season: null, rawSettings: {} };
   var readyResolve;
   var readyPromise = new Promise(function (r) { readyResolve = r; });
   var initialized = false;
@@ -65,13 +65,33 @@
     }
   }
   function kebab(k) { return k.replace(/[A-Z]/g, function (m) { return "-" + m.toLowerCase(); }); }
+  /**
+   * Evento de temporada (Halloween…): mientras dura, las opciones de color y el
+   * fondo del tema toman los del evento (los del usuario vuelven al acabar).
+   * Un tema puede afinarlo con `[data-season="<id>"]` en su CSS.
+   */
+  function seasonOverrides(schema, ev) {
+    var o = {};
+    if (!ev) return o;
+    var pal = ev.palette || {};
+    schema.forEach(function (d) {
+      if (d.type === "color" && (d.key === "accent" || d.key === "bg" || d.key === "panel") && pal[d.key]) o[d.key] = pal[d.key];
+      else if (d.type === "color" && d.key === "play" && pal.green) o.play = "#4fae2c";
+      else if (d.type === "image" && d.key === "wallpaper" && ev.wallpaper) o.wallpaper = ev.wallpaper;
+      else if (d.type === "toggle" && d.key === "dark") o.dark = true;
+    });
+    return o;
+  }
   function applySettings(values) {
+    state.rawSettings = values || {};
     var schema = (state.init && state.init.theme && state.init.theme.settings) || [];
     var byKey = {};
     schema.forEach(function (d) { byKey[d.key] = d; });
     var merged = {};
     schema.forEach(function (d) { merged[d.key] = d["default"]; });
     Object.keys(values || {}).forEach(function (k) { merged[k] = values[k]; });
+    var so = seasonOverrides(schema, state.season);
+    Object.keys(so).forEach(function (k) { merged[k] = so[k]; });
     state.settings = merged;
     Object.keys(merged).forEach(function (k) {
       var def = byKey[k];
@@ -82,6 +102,37 @@
         root.setAttribute("data-" + kebab(k), def.type === "toggle" ? (merged[k] ? "on" : "off") : String(merged[k]));
       }
     });
+  }
+  /** Atributo, variables y la capa de ambiente del evento (/_sdk/events/<id>/season.css|js). */
+  function applySeason() {
+    var ev = state.season;
+    var id = ev ? ev.id : null;
+    if (root.getAttribute("data-season") === (id || null)) return;
+    ["ejg-season-css", "ejg-season-js"].forEach(function (x) {
+      var el = document.getElementById(x);
+      if (el) el.parentNode.removeChild(el);
+    });
+    var layer = document.getElementById("ejg-season");
+    if (layer) layer.parentNode.removeChild(layer);
+    if (!ev) {
+      root.removeAttribute("data-season");
+      ["accent", "green", "violet", "bg", "panel", "text"].forEach(function (k) { root.style.removeProperty("--ejg-season-" + k); });
+      return;
+    }
+    root.setAttribute("data-season", id);
+    var pal = ev.palette || {};
+    Object.keys(pal).forEach(function (k) { root.style.setProperty("--ejg-season-" + k, pal[k]); });
+    var link = document.createElement("link");
+    link.id = "ejg-season-css";
+    link.rel = "stylesheet";
+    link.href = "/_sdk/events/" + id + "/season.css";
+    (document.head || root).appendChild(link);
+    var sc = document.createElement("script");
+    sc.id = "ejg-season-js";
+    sc.type = "module";
+    // Con ?t: un módulo ya cargado no se volvería a ejecutar al volver el evento.
+    sc.src = "/_sdk/events/" + id + "/season.js?t=" + Date.now();
+    (document.head || root).appendChild(sc);
   }
   function applyCss(css) {
     var el = document.getElementById("ejg-custom-css");
@@ -118,8 +169,11 @@
       state.wishlist = m.data.wishlist || [];
       state.explore = m.data.explore !== false;
       state.page = m.data.page || null;
+      state.eventMode = m.data.eventMode || "auto";
+      state.season = m.data.season || null;
       root.setAttribute("data-mode", m.data.mode || "desktop");
       applyInput();
+      applySeason();
       applySettings(m.data.settings);
       applyCss(m.data.customCss);
       if (!initialized) {
@@ -159,6 +213,13 @@
         case "downloads": state.downloads = d || []; break;
         case "wishlist": state.wishlist = d || []; break;
         case "explore": state.explore = !!(d && d.enabled); break;
+        case "season":
+          state.eventMode = (d && d.mode) || "auto";
+          state.season = (d && d.season) || null;
+          applySeason();
+          applySettings(state.rawSettings);
+          emit("settings", state.rawSettings);
+          break;
         case "page": state.page = d || null; break;
       }
       emit(m.name, d);
@@ -313,6 +374,16 @@
       onView: function (fn) { return on("ui:view", fn); },
       /** Teclado en pantalla del host (para escribir con el mando). Resuelve con el texto o null. */
       keyboard: function (opts) { return call("ui.keyboard", opts || {}); },
+    },
+    season: {
+      /** Ajuste del usuario: "auto" (en sus fechas) | "on" | "off". */
+      get mode() { return state.eventMode; },
+      /** Evento activo ("halloween") o null. Datos y piezas: /_sdk/kit/events.js. */
+      get id() { return state.season ? state.season.id : null; },
+      /** El evento activo con su paleta y su arte, o null. */
+      get event() { return state.season; },
+      /** Empieza o acaba un evento (o cambia el ajuste): fn({mode, season}). */
+      onChange: function (fn) { return on("season", fn); },
     },
     explore: {
       /** Explorar activado en los ajustes. */

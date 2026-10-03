@@ -426,3 +426,32 @@ img.img-error { visibility: hidden; }
 :root[data-mode="tv"] .hv-sum, :root[data-mode="tv"] .hv-list, :root[data-mode="tv"] .hv-warn p { font-size: 16px; }
 :root[data-mode="tv"] .hv-sec-title { font-size: 16px; }
 :root[data-mode="tv"] .hv-more, :root[data-mode="tv"] .hv-guide { height: 44px; font-size: 16px; }
+
+/* ─── evento de temporada (eventFront): banner y fila de la campaña ─── */
+.st-ev-banner { margin: 0 var(--pad) 22px; border-radius: var(--r); box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 122, 26, 0.22); }
+.st-ev { position: relative; margin: 0 var(--pad) 30px; padding-top: 18px; border-radius: calc(var(--r) * 2); background: linear-gradient(115deg, rgba(123, 75, 214, 0.3), rgba(40, 22, 60, 0.55) 45%, rgba(255, 122, 26, 0.16)); box-shadow: inset 0 0 0 1px rgba(255, 122, 26, 0.2); }
+:root[data-acrylic="on"] .st-ev { backdrop-filter: blur(14px); }
+/* telaraña en la esquina del panel */
+.st-ev::before { content: ""; position: absolute; top: 0; right: 0; width: 120px; height: 120px; border-top-right-radius: inherit; pointer-events: none; background: var(--hw-web) no-repeat right top / contain; opacity: 0.16; }
+.st-ev .track { padding-left: 22px; padding-right: 22px; scroll-padding: 0 22px; }
+.st-ev-head { display: flex; align-items: flex-end; gap: 20px; padding: 0 22px 6px; }
+.st-ev-head h2 { margin: 0; font-size: 22px; font-weight: 700; color: color-mix(in srgb, var(--accent) 55%, #fff); }
+.st-ev-head p { margin: 3px 0 0; color: var(--muted); }
+.st-ev-more { position: relative; z-index: 1; margin-left: auto; height: 38px; padding: 0 16px; }
+.st-ev .st-all .st-art { background: rgba(255, 122, 26, 0.16); }
+.st-ev .st-all .st-art svg { color: var(--accent); }
+:root[data-mode="tv"] .st-ev-head h2 { font-size: 26px; }
+
+/* el resto de la tienda, de noche */
+:root[data-season="halloween"][data-view="store"] .shade, :root[data-season="halloween"][data-view="queue"] .shade { background: linear-gradient(180deg, rgba(14, 10, 24, 0.8), rgba(14, 10, 24, 0.95) 38%); }
+:root[data-season="halloween"] .spot, :root[data-season="halloween"] .rp-bg { background-color: var(--hw-bg); }
+:root[data-season="halloween"] .spot-shade { background: linear-gradient(90deg, rgba(14, 10, 24, 0.94) 0%, rgba(14, 10, 24, 0.72) 30%, rgba(14, 10, 24, 0.1) 62%, transparent 80%), linear-gradient(0deg, rgba(14, 10, 24, 0.8) 0%, transparent 42%); }
+:root[data-season="halloween"] .rp-bg::after { background: linear-gradient(90deg, rgba(14, 10, 24, 0.95) 0%, rgba(14, 10, 24, 0.78) 34%, rgba(14, 10, 24, 0.18) 72%, rgba(14, 10, 24, 0.05)), linear-gradient(180deg, transparent 42%, rgba(14, 10, 24, 0.97) 92%); }
+:root[data-season="halloween"] .st-wide, :root[data-season="halloween"] .st-art { background: rgba(38, 28, 58, 0.9); }
+:root[data-season="halloween"][data-glow="on"] .st-wide.is-focused, :root[data-season="halloween"][data-glow="on"] .st-box.is-focused .st-art { box-shadow: 0 0 0 3px #fff, 0 0 30px rgba(255, 122, 26, 0.6), 0 16px 34px rgba(0, 0, 0, 0.7); }
+:root[data-season="halloween"] .st-pill.on { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+:root[data-season="halloween"] .st-badge.installed { background: var(--hw-green); color: #0d1a06; }
+:root[data-season="halloween"] .xd, :root[data-season="halloween"] .xa { background: #1c1527; }
+:root[data-season="halloween"] .xf-menu { background: #261d35; }
+:root[data-season="halloween"] .q-row { background: rgba(123, 75, 214, 0.1); }
+:root[data-season="halloween"] .q-row:has(.is-focused) { background: rgba(123, 75, 214, 0.2); }

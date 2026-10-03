@@ -152,3 +152,33 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 #guides .s-avatar, #guides .s-avatar img, #guides .s-avatar-ph { border-radius: 0; image-rendering: pixelated; }
 .foot .profile { margin-left: 8px; }
+
+/* ─── evento de temporada: Halloween (paleta CRT de calabaza, sea cual sea la elegida) ─── */
+:root[data-season="halloween"] {
+  --bg: #0d0716; --bg2: #26113f; --fg: #f4e6cf; --hi: #7cf64a; --hi2: #ff7a1a; --dim: #9277d6;
+  /* pixel art 13×11 y 10×11 */
+  --ev-pumpkin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 13 11' shape-rendering='crispEdges'%3E%3Cpath fill='%237cf64a' d='M6 0h2v1h-1v1h-1z'/%3E%3Cpath fill='%23ff7a1a' d='M3 2h7v1h2v1h1v5h-1v1h-2v1h-7v-1h-2v-1h-1v-5h1v-1h2z'/%3E%3Cpath fill='%23c2490a' d='M4 3h1v1h-1zM8 3h1v1h-1zM1 5h1v3h-1zM11 5h1v3h-1zM4 9h1v1h-1zM8 9h1v1h-1z'/%3E%3Cpath fill='%23240b04' d='M3 4h1v1h1v1h-2zM9 4h1v2h-2v-1h1zM6 6h1v1h-1zM2 7h9v1h-1v1h-7v-1h-1z'/%3E%3Cpath fill='%23ffd23a' d='M4 7h1v1h-1zM8 7h1v1h-1z'/%3E%3C/svg%3E");
+  --ev-ghost: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 11' shape-rendering='crispEdges'%3E%3Cpath fill='%23ece6f5' d='M3 0h4v1h2v2h1v8h-2v-1h-2v1h-2v-1h-2v1h-2v-8h1v-2h2z'/%3E%3Cpath fill='%2307040d' d='M3 4h1v2h-1zM6 4h1v2h-1z'/%3E%3Cpath fill='%23b9aee0' d='M8 3h1v7h-1z'/%3E%3C/svg%3E");
+}
+/* la noche del cementerio, pixelada a la paleta (main.js: #ev-bg) detrás de todo */
+:root[data-season="halloween"] .screen { isolation: isolate; background: radial-gradient(ellipse at 50% 35%, #2a1244 0%, var(--bg) 78%); text-shadow: 0 0 6px color-mix(in srgb, var(--fg) 35%, transparent); }
+#ev-bg { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; opacity: 0.55; pointer-events: none; }
+:root[data-curve="on"] #ev-bg { border-radius: inherit; }
+#ev-bg + .ev-shade { position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit; background: linear-gradient(90deg, rgba(13, 7, 22, 0.9) 0%, rgba(13, 7, 22, 0.72) 55%, rgba(13, 7, 22, 0.35) 100%), linear-gradient(0deg, rgba(13, 7, 22, 0.85), transparent 30%); }
+:root[data-season="halloween"] .title { text-shadow: 3px 3px 0 #3b145e, 0 0 14px color-mix(in srgb, var(--hi) 70%, transparent); }
+/* ▶ ◀ del título: calabazas que se encienden y se apagan (sin desaparecer) */
+:root[data-season="halloween"] .title .blink { animation: ev-lamp 1s steps(1) infinite; display: inline-block; width: 1.5em; height: 1.27em; vertical-align: -0.15em; color: transparent; text-shadow: none; background: var(--ev-pumpkin) center / contain no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 6px rgba(255, 122, 26, 0.55)); }
+/* 1UP: el jugador es un fantasma */
+:root[data-season="halloween"] .p1::before { content: ""; display: inline-block; width: 1.4em; height: 1.55em; margin-right: 0.7em; vertical-align: -0.4em; background: var(--ev-ghost) center / contain no-repeat; animation: ev-bob 2.4s steps(4) infinite alternate; }
+@keyframes ev-bob { to { transform: translateY(-4px); } }
+:root[data-season="halloween"] .item.is-focused, :root[data-season="halloween"] .item:hover { color: #1a0a02; }
+:root[data-season="halloween"] .art { box-shadow: 6px 6px 0 #3b145e, 0 0 22px rgba(255, 122, 26, 0.25); }
+:root[data-season="halloween"] .list { border-right-color: color-mix(in srgb, var(--dim) 45%, transparent); }
+:root[data-season="halloween"] .ticker { border-top-color: color-mix(in srgb, var(--dim) 60%, transparent); }
+:root[data-season="halloween"] #detail, :root[data-season="halloween"] #guides { background: linear-gradient(180deg, #160a26, var(--bg) 60%); }
+:root[data-season="halloween"] .press .ejg-glyph { color: var(--hi2) !important; border-color: var(--hi2) !important; }
+@keyframes ev-lamp { 50% { filter: brightness(0.55); } }
+/* con el parpadeo de fósforo, además titilan como una vela */
+:root[data-season="halloween"][data-flicker="on"] .title .blink { animation: ev-lamp 1s steps(1) infinite, ev-candle 0.18s infinite alternate; }
+@keyframes ev-candle { to { filter: drop-shadow(0 0 2px rgba(255, 122, 26, 0.3)); } }
+@media (prefers-reduced-motion: reduce) { :root[data-season="halloween"] .p1::before, :root[data-season="halloween"] .title .blink { animation: none !important; } }

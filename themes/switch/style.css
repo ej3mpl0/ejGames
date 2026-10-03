@@ -159,3 +159,61 @@ img { display: block; }
   overflow-y: auto;
   scrollbar-width: none;
 }
+
+/* ─── ejGames Scream (Halloween): noche violeta, calabaza y verde neón ─── */
+/* El SDK ya pone el acento, el modo oscuro y el fondo; aquí, los colores fijos del tema. */
+:root[data-season="halloween"] {
+  --bg: var(--ejg-season-bg);
+  --fg: var(--ejg-season-text);
+  --card: var(--ejg-season-panel);
+  --line: rgba(123, 75, 214, 0.42);
+  --muted: #a99bc4;
+  --title: var(--ejg-season-accent);
+  --glass: rgba(26, 20, 40, 0.82);
+  --web: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%23d9cff0' stroke-width='1.1' stroke-linecap='round'%3E%3Cpath d='M0 0 120 120M0 0l60 118M0 0l118 60M0 0v120M0 0h120'/%3E%3Cpath d='M0 26q13 -2 18 -18 5 13 15 15 0 -12 0 -23M0 52q26 -4 37 -37 10 26 30 30 0 -24 -6 -45M0 80q40 -6 56 -56 15 40 46 46 0 -36 -10 -70M0 106q52 -8 74 -74 21 52 46 46'/%3E%3C/svg%3E");
+  --spider: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 30' fill='none' stroke='%23120c1e' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M12 0v12' stroke='%23d9cff0' stroke-width='.7'/%3E%3Cpath d='M9 16 4 12 2 15M9 18H3l-2 3M9 20l-5 3-1 4M15 16l5-4 2 3M15 18h6l2 3M15 20l5 3 1 4'/%3E%3Cellipse cx='12' cy='19' rx='4' ry='5' fill='%23120c1e'/%3E%3Ccircle cx='12' cy='13.5' r='2.6' fill='%23120c1e'/%3E%3Ccircle cx='11' cy='13.2' r='.7' fill='%23ff7a1a' stroke='none'/%3E%3Ccircle cx='13' cy='13.2' r='.7' fill='%23ff7a1a' stroke='none'/%3E%3C/svg%3E");
+}
+/* telaraña en la esquina */
+:root[data-season="halloween"] body::before { content: ""; position: fixed; z-index: 0; top: 0; left: 0; width: 150px; height: 150px; background: var(--web) no-repeat 0 0 / contain; opacity: 0.32; pointer-events: none; }
+:root[data-season="halloween"] .top { position: relative; z-index: 1; }
+:root[data-season="halloween"]:is([data-view="shop"], [data-view="dls"]) body::before { display: none; }
+:root[data-season="halloween"] body.wall { background: var(--ejg-wallpaper) center / cover var(--bg); }
+:root[data-season="halloween"] :is(.title-bar, .status, .all-head, .gs-head) { text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85); }
+:root[data-season="halloween"] .user { box-shadow: 0 0 0 3px var(--ejg-season-violet), 0 2px 10px rgba(0, 0, 0, 0.5); }
+:root[data-season="halloween"] .user.is-focused, :root[data-season="halloween"] .user:hover { box-shadow: 0 0 0 3px var(--ejg-season-violet), 0 0 0 7px var(--accent), var(--ejg-season-glow); }
+
+/* iconos: sombra de noche y anillo naranja con su resplandor */
+:root[data-season="halloween"] .stile .art { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(123, 75, 214, 0.35); }
+:root[data-season="halloween"] .stile.is-focused::after { box-shadow: 0 0 18px rgba(255, 122, 26, 0.6), 0 0 34px rgba(255, 122, 26, 0.25); }
+:root[data-season="halloween"][data-pulse="on"] .stile.is-focused::after { animation: ev-pulse 1.6s ease-in-out infinite; }
+@keyframes ev-pulse { 50% { border-color: #ffb066; box-shadow: 0 0 26px rgba(255, 122, 26, 0.85), 0 0 46px rgba(124, 246, 74, 0.18); } }
+/* una araña baja de su hilo sobre el icono elegido (dentro: la fila recorta lo de arriba) */
+:root[data-season="halloween"] #rail .stile.is-focused::before { content: ""; position: absolute; z-index: 3; top: 0; right: 22px; width: 30px; height: 42px; background: var(--spider) no-repeat center / contain; transform-origin: 50% 0; animation: ev-drop 0.5s cubic-bezier(0.3, 1.5, 0.5, 1) both, ev-sway 2.6s ease-in-out 0.5s infinite; pointer-events: none; filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 6px rgba(255, 122, 26, 0.5)); }
+@keyframes ev-drop { from { transform: translateY(-26px) scaleY(0.4); opacity: 0; } }
+@keyframes ev-sway { 50% { transform: rotate(7deg) translateY(3px); } }
+:root[data-season="halloween"] .stile .run { background: var(--ejg-season-green); color: #10200a; }
+:root[data-season="halloween"] .stile.allsw .art { background: var(--glass); color: var(--muted); backdrop-filter: blur(6px); }
+
+/* botones redondos: cristal violeta y colores de la temporada */
+:root[data-season="halloween"] .circle i { background: var(--glass); box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5), inset 0 0 0 2px rgba(123, 75, 214, 0.45); backdrop-filter: blur(6px); }
+:root[data-season="halloween"] .circle.is-focused i, :root[data-season="halloween"] .circle:hover i { box-shadow: 0 0 0 4px var(--bg), 0 0 0 8px var(--accent), 0 0 24px rgba(255, 122, 26, 0.55); }
+:root[data-season="halloween"] .circle i { color: #b98cff; }
+:root[data-season="halloween"] .circle:is(.eshop, [data-action="stats"], [data-action="search"]) i { color: var(--ejg-season-accent); }
+:root[data-season="halloween"] .circle:is([data-action="downloads"], [data-action="add-folder"]) i { color: var(--ejg-season-green); }
+:root[data-season="halloween"] .circle:is([data-action="settings"], [data-action="menu"]) i { color: #c9bfdc; }
+:root[data-season="halloween"] .circle span { padding: 1px 10px; border-radius: 99px; background: rgba(17, 13, 26, 0.75); }
+
+/* barra de pistas legible sobre el fondo */
+:root[data-season="halloween"] .bar { border-top-color: rgba(255, 122, 26, 0.35); background: linear-gradient(transparent, rgba(17, 13, 26, 0.75)); }
+:root[data-season="halloween"] #home, :root[data-season="halloween"] #all { position: relative; z-index: 1; }
+
+/* panel de opciones */
+:root[data-season="halloween"] #options { background: rgba(8, 5, 16, 0.55); }
+:root[data-season="halloween"] .panel { background: linear-gradient(180deg, #1d1530, var(--bg) 40%); box-shadow: -8px 0 30px rgba(0, 0, 0, 0.6), inset 3px 0 0 rgba(255, 122, 26, 0.5); }
+:root[data-season="halloween"] .mi.is-focused, :root[data-season="halloween"] .mi:hover { box-shadow: inset 0 0 0 3px var(--accent), 0 0 14px rgba(255, 122, 26, 0.3); }
+:root[data-season="halloween"] .panel .stat { box-shadow: inset 0 0 0 1px rgba(123, 75, 214, 0.35); }
+:root[data-season="halloween"] .gs-page .g-stars { color: var(--ejg-season-accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-season="halloween"] .stile.is-focused::after, :root[data-season="halloween"] #rail .stile.is-focused::before { animation: none; }
+}

@@ -138,3 +138,55 @@ body[data-input="mouse"] [data-nav]:focus-visible:not(input):not(textarea) {
   border: 0;
   background: transparent;
 }
+
+/* ─────────── evento de temporada: ejGames Scream (Halloween) ───────────
+   Lo activa src/host/season.ts (<html data-season>). Noche violeta, acento
+   calabaza, telarañas en los diálogos y el cementerio de fondo en las
+   pantallas del host. */
+:root[data-season="halloween"] {
+  --h-accent-contrast: #1d0c02;
+  --h-surface: #151022;
+  --h-surface-2: #1c1530;
+  --h-surface-3: #2a2040;
+  --h-text: #ece6f5;
+  --h-muted: #a397b8;
+  --h-border: rgba(255, 150, 70, 0.14);
+  --season-green: #7cf64a;
+  scrollbar-color: rgba(255, 122, 26, 0.45) transparent;
+}
+:root[data-season="halloween"],
+:root[data-season="halloween"] body,
+:root[data-season="halloween"] #root {
+  background: #0d0a15;
+}
+:root[data-season="halloween"] ::selection {
+  background: rgba(255, 122, 26, 0.45);
+}
+:root[data-season="halloween"] .glass {
+  background: linear-gradient(180deg, color-mix(in srgb, #241a38 90%, transparent), color-mix(in srgb, var(--h-surface) 92%, transparent));
+  box-shadow: inset 0 1px 0 rgba(255, 160, 80, 0.12);
+}
+
+/* Telaraña en la esquina de los diálogos y paneles (no en avisos ni píldoras). */
+:root[data-season="halloween"] .panel-enter.glass[data-focus-trap] {
+  position: relative;
+}
+:root[data-season="halloween"] .panel-enter.glass[data-focus-trap]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 110px;
+  height: 110px;
+  pointer-events: none;
+  opacity: 0.16;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23ffffff' stroke-width='.9'%3E%3Cpath d='M0 0L100 100M0 0L55 100M0 0L100 55M0 0L20 100M0 0L100 20'/%3E%3Cpath d='M0 18Q9 13 13 13Q14 7 18 0M0 36Q17 26 26 26Q27 15 36 0M0 56Q27 41 40 40Q42 25 56 0M0 78Q37 57 55 55Q58 36 78 0'/%3E%3C/svg%3E") no-repeat;
+}
+
+/* Selector de perfil y bienvenida: el cementerio a la luz de la luna. */
+:root[data-season="halloween"] .season-scene {
+  background:
+    linear-gradient(180deg, rgba(8, 6, 16, 0.25), rgba(8, 6, 16, 0.75) 70%, #08060f),
+    var(--season-wallpaper, none) center / cover no-repeat,
+    #0d0a15;
+}

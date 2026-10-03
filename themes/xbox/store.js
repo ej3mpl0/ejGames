@@ -32,6 +32,7 @@ import {
   hypervisorTag,
   repackName,
 } from "/_sdk/kit/store.js";
+import { seasonOf, seasonBanner, seasonPicks } from "/_sdk/kit/events.js";
 
 const I = {
   search: '<svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>',
@@ -382,15 +383,45 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
       h("b", null, "Novedades"),
       h("small", null, "Lo último publicado"),
     );
+    const ev = seasonOf(ejg);
     return h(
       "div",
       { class: "st-front" },
+      ...(ev ? eventFront(ev, s.home.sections) : []),
       today ? spotlight(today.title, today.items) : null,
       by.week ? row(by.week.title, by.week.items, wideTile, "week") : null,
       s.genres.length ? genreRow() : null,
       by.month ? row(by.month.title, by.month.items, boxTile, "month") : null,
       by.latest ? row("Novedades", by.latest.items.slice(0, 15), boxTile, "latest", seeAll) : null,
     );
+  }
+
+  // ─────────────── evento de temporada ───────────────
+  /** Banner y selección del evento (su género), como una campaña de la Tienda: encima del «spotlight». */
+  function eventFront(ev, sections) {
+    const picks = seasonPicks(ejg, ev, sections, () => view === "store" && st.name === "front" && paintBody());
+    const items = picks.items.slice(0, 20);
+    const all = () => openCatalog({ genres: [ev.genre] });
+    const head = h(
+      "div",
+      { class: "st-ev-head" },
+      h("div", null, h("h2", null, ev.title), h("p", null, ev.subtitle)),
+      h("button", { class: "xb-btn st-ev-more", "data-focus": "", "data-k": "ev-more", onclick: all }, "Ver todo", icon("right")),
+    );
+    let sec = null;
+    if (items.length >= 3) {
+      const seeAll = h(
+        "button",
+        { class: "st-box st-all", "data-focus": "", "data-k": "ev-all", onclick: all },
+        h("span", { class: "st-art" }, icon("right"), h("b", null, "Ver todo")),
+        h("b", null, genreName(ev.genre) || "Terror"),
+        h("small", null, "Todo el catálogo"),
+      );
+      sec = row(ev.title, items, boxTile, "ev", seeAll);
+      sec.firstElementChild.replaceWith(head);
+    } else if (picks.loading) sec = h("section", { class: "row st-row" }, head, dots());
+    sec?.classList.add("st-ev", "st-ev-" + ev.id);
+    return [seasonBanner(ev, "st-ev-banner"), sec];
   }
 
   /** Losas de colores de los géneros, como las categorías de la Tienda. */
@@ -1318,6 +1349,9 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     refreshWish();
     if (view === "store" && st.name === "wish" && !rp.open && wishSigOf() !== wishSig) paintBody();
   });
+
+  // Empieza o acaba el evento: la portada pone o quita su banner y su fila.
+  ejg.season?.onChange(() => view === "store" && st.name === "front" && paintBody());
 
   // ─────────────── vistas ───────────────
   function closeOverlays() {

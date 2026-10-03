@@ -186,3 +186,73 @@ main { position: relative; z-index: 2; height: calc(100% - 76px); }
   scrollbar-width: none;
 }
 .gh-inner .s-view.s-profile { max-width: none; }
+
+/* ─────────── evento de temporada: ejGames Scream (Halloween) ───────────
+   El SDK pone el acento, el fondo y la niebla; aquí, el resto del tema:
+   noche violeta, foco con brillo de calabaza y el seleccionado en verde. */
+:root[data-season="halloween"] {
+  --text: var(--ejg-season-text, #ece6f5);
+  --muted: rgba(236, 230, 245, 0.64);
+  --hw-glow: 0 0 34px rgba(255, 122, 26, 0.38);
+}
+:root[data-season="halloween"] body { background: var(--ejg-season-bg, #110d1a); }
+/* Sin arte del juego (o mientras carga) se ve la calle encantada, no el azul. */
+:root[data-season="halloween"] #bg { background: linear-gradient(rgba(17, 13, 26, 0.25), rgba(17, 13, 26, 0.25)), var(--ejg-wallpaper, none) center / cover, radial-gradient(ellipse at 70% 20%, #2a1d44 0%, #0c0913 60%); }
+/* La biblioteca, siempre con el fondo del evento. */
+:root[data-season="halloween"][data-view="library"] #bg .ejg-backdrop { opacity: 0; transition: opacity 0.5s ease; }
+:root[data-season="halloween"] .scrim {
+  background:
+    linear-gradient(90deg, rgba(14, 8, 22, calc(var(--dim) + 35%)) 0%, rgba(14, 8, 22, var(--dim)) 45%, rgba(14, 8, 22, 0.05) 75%),
+    linear-gradient(180deg, rgba(14, 8, 22, 0.6) 0%, transparent 28%, transparent 60%, rgba(10, 6, 16, 0.8) 100%);
+}
+:root[data-season="halloween"] body.trailer-on .scrim { background: linear-gradient(90deg, rgba(14, 8, 22, 0.75), rgba(14, 8, 22, 0.1) 55%), linear-gradient(180deg, rgba(14, 8, 22, 0.5), transparent 30%, transparent 70%, rgba(10, 6, 16, 0.7)); }
+:root[data-season="halloween"][data-view="library"] .scrim { background: linear-gradient(180deg, rgba(14, 8, 22, 0.78) 0%, rgba(14, 8, 22, 0.45) 40%, rgba(14, 8, 22, 0.7) 100%); }
+
+/* Pestañas y barra de estado */
+:root[data-season="halloween"] .tab[aria-selected="true"]::after { background: var(--ejg-season-accent, #ff7a1a); box-shadow: 0 0 10px rgba(255, 122, 26, 0.7); opacity: 1; }
+:root[data-season="halloween"] .ico:hover, :root[data-season="halloween"] .ico.is-focused { box-shadow: 0 0 0 2px #fff, 0 0 16px rgba(255, 122, 26, 0.5); }
+
+/* Fila de iconos: el seleccionado con el verde del logo, el foco con brillo naranja. */
+:root[data-season="halloween"] .tile .art { background: #1f1630; }
+:root[data-season="halloween"] .tile.sel .art { box-shadow: 0 0 0 2px rgba(124, 246, 74, 0.7), 0 0 26px rgba(124, 246, 74, 0.22), 0 18px 40px rgba(0, 0, 0, 0.6); }
+:root[data-season="halloween"] .tile.is-focused .art { box-shadow: 0 0 0 3px #fff, var(--hw-glow), 0 18px 40px rgba(0, 0, 0, 0.6); }
+:root[data-season="halloween"] .tile .run { background: var(--ejg-season-green, #7cf64a); box-shadow: 0 0 0 2px #110d1a, 0 0 8px rgba(124, 246, 74, 0.8); }
+:root[data-season="halloween"] .tile.all .art { background: rgba(123, 75, 214, 0.22); }
+/* Telaraña en la esquina del seleccionado. */
+:root[data-season="halloween"] .tile.sel .art::after {
+  content: ""; position: absolute; z-index: 2; top: 0; right: 0; width: 34%; aspect-ratio: 1; pointer-events: none; opacity: 0.55;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40' fill='none' stroke='%23fff' stroke-width='.7'%3E%3Cpath d='M40 0 14 26M40 0 24 32M40 0 8 16M40 0 34 36M40 0 4 6'/%3E%3Cpath d='M30 2q2 5 7 8M22 3q3 9 14 14M14 4q4 13 22 22M7 5q5 17 29 28'/%3E%3C/svg%3E") top right / contain no-repeat;
+}
+
+/* Botones */
+:root[data-season="halloween"] .play:hover, :root[data-season="halloween"] .play.is-focused { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35), 0 10px 32px rgba(255, 122, 26, 0.45); }
+:root[data-season="halloween"] .play.running { background: rgba(124, 246, 74, 0.16); color: #d6ffc4; box-shadow: inset 0 0 0 2px rgba(124, 246, 74, 0.7); }
+:root[data-season="halloween"] .more { background: rgba(40, 26, 60, 0.55); backdrop-filter: blur(8px); }
+:root[data-season="halloween"] .more:hover, :root[data-season="halloween"] .more.is-focused { background: rgba(255, 122, 26, 0.3); box-shadow: 0 0 0 3px #fff, 0 0 18px rgba(255, 122, 26, 0.4); }
+:root[data-season="halloween"] .fav.on { color: var(--ejg-season-accent, #ff7a1a); text-shadow: 0 0 10px rgba(255, 122, 26, 0.7); }
+
+/* Tarjetas del hub y ayuda: del azul PlayStation al violeta de la noche. */
+:root[data-season="halloween"] .mcard { background: rgba(40, 26, 60, 0.5); }
+:root[data-season="halloween"] .mcard.is-focused, :root[data-season="halloween"] .mcard:hover { box-shadow: 0 0 0 3px #fff, var(--hw-glow), 0 14px 36px rgba(0, 0, 0, 0.6); }
+:root[data-season="halloween"] .mcard.help-card { background: radial-gradient(120% 90% at 100% 100%, rgba(255, 122, 26, 0.35), transparent 60%), linear-gradient(135deg, rgba(123, 75, 214, 0.55), rgba(26, 20, 40, 0.88)); }
+
+/* Biblioteca */
+:root[data-season="halloween"] .lib-head h1 { text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7); }
+:root[data-season="halloween"] .chip { background: rgba(40, 26, 60, 0.6); backdrop-filter: blur(8px); }
+:root[data-season="halloween"] .chip[aria-pressed="true"] { background: var(--ejg-season-accent, #ff7a1a); color: #1a0d04; }
+:root[data-season="halloween"] .chip.is-focused { box-shadow: 0 0 0 3px #fff, 0 0 16px rgba(255, 122, 26, 0.5); }
+:root[data-season="halloween"] .lcard .art { background: #1f1630; }
+:root[data-season="halloween"] .lcard .t { text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8); }
+:root[data-season="halloween"] .lcard.is-focused .art, :root[data-season="halloween"] .lcard:hover .art { box-shadow: 0 0 0 3px #fff, var(--hw-glow), 0 16px 40px rgba(0, 0, 0, 0.6); }
+
+/* Ayuda del juego y perfil */
+:root[data-season="halloween"] .gh-layer { background: #110d1a; }
+:root[data-season="halloween"] .gh-inner .g-view { --g-accent: #ff9a4a; --g-bg: rgba(22, 16, 34, 0.98); --g-focus: 0 0 0 3px #fff, 0 0 22px rgba(255, 122, 26, 0.4); }
+:root[data-season="halloween"] .gh-inner .s-view { --s-accent: #ff9a4a; --s-bg: rgba(22, 16, 34, 0.98); --s-focus: 0 0 0 3px #fff, 0 0 22px rgba(255, 122, 26, 0.4); }
+:root[data-season="halloween"] .gh-inner .g-readerview { background: rgba(32, 24, 46, 0.96); }
+:root[data-season="halloween"] .gh-inner .g-section-title { background: rgba(32, 24, 46, 0.98); }
+:root[data-season="halloween"] .hints .ejg-glyph { color: #ffd2ad; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-season="halloween"][data-view="library"] #bg .ejg-backdrop { transition: none; }
+}

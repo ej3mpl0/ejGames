@@ -2,13 +2,49 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { Code2, Copy, Download, FolderOpen, ImagePlus, RotateCcw, Trash2, Upload, X, RefreshCw } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
-import type { ThemeInfo, ThemeSetting } from "../../api/types";
+import type { Settings, ThemeInfo, ThemeSetting } from "../../api/types";
 import { Button, ColorInput, Cycle, Section, Slider, TextInput, Toggle } from "../../components/ui";
 import { ThemeCard } from "../../components/ThemeCard";
 import { mergedSettings } from "../../host/ThemeFrame";
 import { SOUND_PRESETS } from "../../host/sounds";
 import { refreshThemes, reloadTheme } from "../../host/window";
 import { activeTheme, useApp } from "../../store/app";
+import { SEASON_ORIGIN, useSeason } from "../../host/season";
+
+const EVENT_OPTIONS: { value: Settings["eventMode"]; label: string }[] = [
+  { value: "auto", label: "En sus fechas" },
+  { value: "on", label: "Siempre" },
+  { value: "off", label: "Nunca" },
+];
+
+/** Eventos de temporada (ejGames Scream: Halloween, del 26 oct al 2 nov): toda la app. */
+function SeasonSection() {
+  const mode = useApp((s) => s.settings?.eventMode ?? "auto");
+  const set = useApp((s) => s.set);
+  const ev = useSeason();
+  return (
+    <Section title="Eventos de temporada">
+      {ev && (
+        <img
+          src={`${SEASON_ORIGIN}${ev.banner}`}
+          alt={ev.name}
+          className="mx-3 mb-2 block w-[calc(100%-1.5rem)] rounded-[calc(var(--h-radius)*0.6)] ring-1 ring-line"
+          style={{ aspectRatio: "2000 / 297" }}
+        />
+      )}
+      <Cycle
+        label="Modo Halloween"
+        value={mode}
+        options={EVENT_OPTIONS}
+        onChange={async (v) => set({ settings: await api.updateSettings({ eventMode: v }) })}
+      />
+      <p className="px-3 pb-2 text-xs text-muted">
+        ejGames Scream, del 26 de octubre al 2 de noviembre: toda la app de noche (colores, fondos animados, niebla y
+        murciélagos en cualquier tema), el banner y la selección de terror en la tienda, y los avisos del overlay.
+      </p>
+    </Section>
+  );
+}
 
 const FONTS = [
   "Segoe UI Variable Display",
@@ -178,6 +214,7 @@ export function ThemeEditor({ theme }: { theme: ThemeInfo }) {
           <p className="px-3 py-2 text-sm text-muted">Este tema no tiene opciones visuales. Puedes personalizarlo con CSS o duplicarlo y editar su código.</p>
         </Section>
       )}
+      <SeasonSection />
       <Section title={<span className="flex items-center gap-2"><Code2 size={15} /> CSS extra para este tema</span>}>
         <p className="px-3 pb-2 text-xs text-muted">
           Se aplica encima del tema solo para tu perfil. Variables disponibles: <code className="text-fg">--ejg-*</code> (una por

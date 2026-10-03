@@ -5,6 +5,34 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.9.0
+
+**Al cerrar: ¿bandeja o salir?**
+- La X de la ventana (y Alt+F4 o «Cerrar ventana» en la barra de tareas) pregunta si minimizar a la bandeja o
+  salir de ejGames del todo, con «No volver a preguntar». Avisa si hay juegos abiertos o descargas en curso.
+- En Ajustes → Sistema, «Al cerrar la ventana»: Preguntar, Minimizar a la bandeja o Salir del todo. Quien tenía
+  quitado «seguir en la bandeja» pasa a «Salir del todo».
+
+**Modo Halloween: ejGames Scream V (26 oct – 2 nov)**
+- Toda la app se viste de noche mientras dura: colores calabaza y violeta en los seis temas, en los ajustes, los
+  diálogos y el overlay del juego; fondos ilustrados (una calle encantada, animada en bucle en el tema Steam, y un
+  cementerio a la luz de la luna en el selector de perfil y la bienvenida); niebla a ras de suelo, ascuas y algún
+  murciélago que cruza de vez en cuando; telarañas en las esquinas de los diálogos y una calabacita en los avisos
+  de logros. Con «reducir movimiento» de Windows, todo quieto.
+- La tienda de cada tema estrena portada: el banner animado del evento y la selección «Ofertas de miedo» (lo más
+  popular de Terror, con «Ver todo»). En la del tema Steam, como en sus rebajas: fondo con su patrón, tres
+  cápsulas con flechas y puntos y el panel naranja.
+- Ajustes → Apariencia → «Modo Halloween»: en sus fechas, siempre o nunca. Lo que el usuario tenía (colores,
+  fondo) vuelve solo al acabar.
+- Tema Steam: el fondo personalizado (imagen) no se veía, lo tapaba el fondo de la página.
+
+**Para temas**
+- Con un evento activo, el SDK pone `data-season` en `<html>`, las variables `--ejg-season-*`, su paleta y su
+  fondo en las opciones del tema (`accent`, `bg`, `panel`, `play`, `dark`, `wallpaper`) y una capa de ambiente.
+  `ejg.season` (`id`, `event`, `mode`, `onChange`). En `/_sdk/kit/events.js`: `seasonOf`, `seasonBanner`,
+  `seasonPicks`, `EVENTS`, `activeEvent`. El arte, en `/_sdk/events/<id>/`. Ver «Eventos de temporada» en la
+  referencia.
+
 ## 0.8.1
 
 **Tienda: juegos con crack de hipervisor (HV)**

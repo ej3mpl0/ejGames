@@ -22,7 +22,9 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font: 14px/1.45 var(--font); -webkit-font-smoothing: antialiased; user-select: none; }
+/* El fondo, solo en html: en body taparía #wallpaper (z-index -1). */
+html { background: var(--bg); }
+html, body { margin: 0; height: 100%; overflow: hidden; color: var(--text); font: 14px/1.45 var(--font); -webkit-font-smoothing: antialiased; user-select: none; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
 button:disabled { cursor: default; }
 input { font: inherit; }
@@ -435,3 +437,40 @@ main::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.24
 :root[data-view="profile"] .sidebar { display: none; }
 .profile-page { padding: 0; }
 .guides-body.profile-body { max-width: none; height: calc(100vh - var(--top-h) - var(--bottom-h)); }
+
+/* ─────────── evento de temporada: ejGames Scream (Halloween) ───────────
+   La paleta y el fondo los pone el SDK (opciones del tema); aquí, lo que no
+   sale de ellas: barra superior, botones y un sombrero de bruja en el logo. */
+:root[data-season="halloween"] {
+  --top: #150f22;
+  --muted: #a397b8;
+  --dim: #8c80a3;
+  --line: rgba(255, 150, 70, 0.1);
+  --btn: #3a2b55;
+  --btn-hover: #4c3970;
+}
+:root[data-season="halloween"] .topbar {
+  background: linear-gradient(90deg, #1d1330 0%, #150f22 45%, #120c1c 100%);
+  box-shadow: inset 0 -1px 0 rgba(255, 122, 26, 0.35), 0 6px 24px rgba(255, 90, 10, 0.08);
+}
+:root[data-season="halloween"] .brand { position: relative; }
+:root[data-season="halloween"] .brand::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: -12px;
+  width: 32px;
+  height: 19px;
+  pointer-events: none;
+  transform: rotate(-14deg);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 18'%3E%3Cpath d='M1 16.5h28c-3-1.6-7-2.3-10.5-2.4L15.5 1.2c-.3-.9-1.4-.8-1.6.1l-3.2 12.8C7.6 14.3 4 15 1 16.5z' fill='%23140b22' stroke='%237b4bd6' stroke-width='1'/%3E%3Cpath d='M10.4 13.2h8.6l-.5-2h-7.6z' fill='%23ff7a1a'/%3E%3C/svg%3E") no-repeat center / contain;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+}
+:root[data-season="halloween"] .sidebar {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 94%, transparent), color-mix(in srgb, var(--panel) 86%, #2a0f05));
+}
+:root[data-season="halloween"] .bottombar {
+  background: linear-gradient(180deg, #1c1430, var(--top));
+  box-shadow: 0 -1px 0 rgba(255, 122, 26, 0.25);
+}
+:root[data-season="halloween"] .hints { background: rgba(21, 15, 34, 0.94); }

@@ -8,10 +8,11 @@ import { playtime, relative, year, description } from "/_sdk/kit/format.js";
 import { visible, sort } from "/_sdk/kit/library.js";
 import { clock } from "/_sdk/kit/clock.js";
 import { hints } from "/_sdk/kit/hints.js";
-import { SIZES, drawCover, quantize } from "./pixel.js";
+import { SIZES, drawCover, quantize, tones } from "./pixel.js";
 import { createStore } from "./store.js";
 import { createGuideView } from "/_sdk/kit/guides.js";
 import { createProfilePages } from "/_sdk/kit/profile.js";
+import { seasonOf } from "/_sdk/kit/events.js";
 
 const ejg = await window.ejg.ready();
 const $ = (s) => document.querySelector(s);
@@ -417,6 +418,33 @@ ejg.on("settings", () => {
   shop.redraw();
 });
 ejg.on("profile", renderTabs);
+
+// ─────────────── evento de temporada: su fondo, pixelado a los tonos de la noche ───────────────
+const EV_TONES = [[9, 5, 16], [26, 12, 44], [52, 26, 92], [104, 64, 168], [255, 122, 26]];
+let evBg = null;
+function seasonBg() {
+  const ev = seasonOf(ejg);
+  if (!ev?.wallpaperAlt) {
+    evBg?.forEach((el) => el.remove());
+    evBg = null;
+    return;
+  }
+  if (evBg?.[0].dataset.ev === ev.id) return;
+  evBg?.forEach((el) => el.remove());
+  const c = h("canvas", { id: "ev-bg", width: 320, height: 180, "data-ev": ev.id });
+  evBg = [c, h("div", { class: "ev-shade" })];
+  $(".screen").prepend(...evBg);
+  const im = new Image();
+  im.onload = () => {
+    if (!c.isConnected) return;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    drawCover(ctx, im, 320, 180);
+    tones(ctx, 320, 180, EV_TONES);
+  };
+  im.src = ev.wallpaperAlt;
+}
+seasonBg();
+ejg.season.onChange(seasonBg);
 
 function updateHints(g) {
   if (guideView) return hintBar.set(guideView.hints().map(([a, l]) => [a, GUIDE_HINTS[l] || l.toUpperCase()]));

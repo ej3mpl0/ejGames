@@ -74,7 +74,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
   const steps = ["Tu perfil", "Tu estilo", "Tus juegos", "Descargas"];
   const last = step === steps.length - 1;
   return (
-    <div ref={ref} className="relative flex h-full flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,#1d2a4a,#090c12_60%)]">
+    <div ref={ref} className="season-scene relative flex h-full flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,#1d2a4a,#090c12_60%)]">
       <div
         className="h-10 shrink-0"
         onMouseDown={(e) => e.button === 0 && void api.windowAction(e.detail === 2 ? "toggle-maximize" : "drag")}

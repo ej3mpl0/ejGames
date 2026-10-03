@@ -1,0 +1,140 @@
+/* ejGames Scream (Halloween): lo que el SDK añade a cualquier tema mientras dura
+   el evento. Solo decoración: no recibe clics y no tapa el contenido.
+   Cada tema afina lo suyo con :root[data-season="halloween"] en su CSS. */
+
+:root[data-season="halloween"] {
+  --ejg-season-glow: 0 0 18px rgba(255, 122, 26, 0.45);
+  accent-color: var(--ejg-season-accent);
+  scrollbar-color: rgba(255, 122, 26, 0.45) transparent;
+}
+:root[data-season="halloween"] ::selection {
+  background: rgba(255, 122, 26, 0.45);
+  color: #fff;
+}
+
+/* ── capa de ambiente ── */
+#ejg-season {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  overflow: hidden;
+  contain: strict;
+}
+
+/* niebla a ras de suelo, dos capas que se cruzan despacio */
+#ejg-season .fog {
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: -6vh;
+  height: 30vh;
+  opacity: 0.16;
+  background:
+    radial-gradient(40% 60% at 20% 70%, rgba(170, 190, 255, 0.9), transparent 70%),
+    radial-gradient(35% 50% at 55% 80%, rgba(150, 170, 240, 0.8), transparent 70%),
+    radial-gradient(45% 55% at 85% 75%, rgba(180, 200, 255, 0.85), transparent 70%);
+  filter: blur(18px);
+  animation: ejg-fog 70s linear infinite alternate;
+  will-change: transform;
+}
+#ejg-season .fog.b {
+  opacity: 0.1;
+  bottom: -10vh;
+  animation-duration: 95s;
+  animation-direction: alternate-reverse;
+}
+@keyframes ejg-fog {
+  from { transform: translateX(-12%); }
+  to { transform: translateX(12%); }
+}
+
+/* resplandor de calabaza en las esquinas de abajo */
+#ejg-season .glow {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 40vh;
+  background:
+    radial-gradient(35% 60% at 0% 100%, rgba(255, 110, 20, 0.12), transparent 70%),
+    radial-gradient(35% 60% at 100% 100%, rgba(124, 246, 74, 0.07), transparent 70%);
+}
+
+/* ascuas y motas que suben */
+#ejg-season .ember {
+  position: absolute;
+  bottom: -10px;
+  width: var(--s, 3px);
+  height: var(--s, 3px);
+  border-radius: 50%;
+  background: var(--c, #ff9a3c);
+  box-shadow: 0 0 6px 1px var(--c, #ff9a3c);
+  opacity: 0;
+  animation: ejg-ember var(--d, 16s) linear var(--w, 0s) infinite;
+}
+@keyframes ejg-ember {
+  0% { transform: translate(0, 0); opacity: 0; }
+  10% { opacity: 0.8; }
+  50% { transform: translate(var(--x, 30px), -50vh); }
+  85% { opacity: 0.5; }
+  100% { transform: translate(calc(var(--x, 30px) * -0.5), -100vh); opacity: 0; }
+}
+
+/* bandada de murciélagos que cruza de vez en cuando por arriba */
+#ejg-season .bat {
+  position: absolute;
+  left: 0;
+  width: var(--s, 26px);
+  height: calc(var(--s, 26px) * 0.5);
+  color: #07050c;
+  filter: drop-shadow(0 0 3px rgba(123, 75, 214, 0.55));
+  animation: ejg-fly var(--d, 9s) cubic-bezier(0.45, 0.05, 0.55, 0.95) var(--w, 0s) forwards;
+  opacity: 0;
+}
+#ejg-season .bat svg {
+  width: 100%;
+  height: 100%;
+  animation: ejg-flap 0.22s ease-in-out infinite alternate;
+  transform-origin: 50% 40%;
+}
+@keyframes ejg-flap {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(0.35); }
+}
+@keyframes ejg-fly {
+  0% { transform: translate(-60px, var(--y0, 12vh)); opacity: 0; }
+  6% { opacity: 0.9; }
+  50% { transform: translate(50vw, var(--y1, 6vh)); }
+  94% { opacity: 0.9; }
+  100% { transform: translate(calc(100vw + 60px), var(--y2, 14vh)); opacity: 0; }
+}
+#ejg-season.rtl .bat { animation-name: ejg-fly-rtl; }
+@keyframes ejg-fly-rtl {
+  0% { transform: translate(calc(100vw + 60px), var(--y0, 12vh)) scaleX(-1); opacity: 0; }
+  6% { opacity: 0.9; }
+  50% { transform: translate(50vw, var(--y1, 6vh)) scaleX(-1); }
+  94% { opacity: 0.9; }
+  100% { transform: translate(-60px, var(--y2, 14vh)) scaleX(-1); opacity: 0; }
+}
+
+/* El banner del evento en cualquier tienda (kit: seasonBanner). */
+.ejg-ev-banner {
+  position: relative;
+  aspect-ratio: 2000 / 297;
+  overflow: hidden;
+  background: #0b1630;
+}
+.ejg-ev-banner video,
+.ejg-ev-banner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* En el modo TV hay menos ascuas; con «reducir movimiento», todo quieto. */
+:root[data-mode="tv"] #ejg-season .ember:nth-child(2n) { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  #ejg-season .fog { animation: none; }
+  #ejg-season .ember,
+  #ejg-season .bat { display: none; }
+}

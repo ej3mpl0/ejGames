@@ -33,6 +33,7 @@ import {
   hypervisorInfo,
   repackName,
 } from "/_sdk/kit/store.js";
+import { seasonOf, seasonBanner, seasonPicks } from "/_sdk/kit/events.js";
 
 export const I = {
   bag: '<svg viewBox="0 0 24 24"><path class="f" d="M4.6 8.4h14.8l-1.2 11.1a2 2 0 0 1-2 1.8H7.8a2 2 0 0 1-2-1.8Z"/><path d="M8.6 10.6V7.4a3.4 3.4 0 0 1 6.8 0v3.2"/></svg>',
@@ -52,6 +53,7 @@ export const I = {
   grid: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>',
   chev: '<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>',
   heart: '<svg viewBox="0 0 24 24"><path d="M12 19.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 6.7a4.3 4.3 0 0 1 7.5 2.6c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>',
+  pumpkin: '<svg viewBox="0 0 24 24"><path class="f" d="M12 7.2c-1.3-.9-3.6-1-5.3.3C4.4 9.3 4 13.6 5.6 16.6c1.4 2.6 4.2 3.4 6.4 2.4 2.2 1 5 .2 6.4-2.4 1.6-3 1.2-7.3-1.1-9.1-1.7-1.3-4-1.2-5.3-.3Z"/><path d="M12 7.2c.2-1.6.9-2.9 2.3-3.4"/></svg>',
   heartOn: '<svg viewBox="0 0 24 24"><path class="f" d="M12 19.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 6.7a4.3 4.3 0 0 1 7.5 2.6c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>',
 };
 
@@ -210,6 +212,28 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     menu(order[(Math.max(0, i) + d + order.length) % order.length]);
   }
 
+  // ─────────────── evento de temporada ───────────────
+  // Banner animado y su selección (género del evento) en una fila de mosaicos
+  // como las demás, con «Ver todo» al catálogo filtrado.
+  const inFront = () => where() === "shop" && view.name === "front";
+  ejg.season?.onChange(() => inFront() && paint(true));
+
+  function eventFront(ev, sections) {
+    const picks = seasonPicks(ejg, ev, sections, () => inFront() && paint(true));
+    const all = () => openCatalog({ genres: [ev.genre] });
+    const out = [seasonBanner(ev, "es-ev-banner")];
+    const head = h("span", { class: "es-ev-sub" }, ev.subtitle);
+    if (picks.items.length) {
+      const row = h("div", { class: "es-row", "data-focus-group": "row-ev" });
+      tiles(row, picks.items.slice(0, 14));
+      row.append(h("button", { class: "es-tile es-moretile", "data-focus": "", "data-key": "ev-more", onclick: all }, h("div", { class: "es-art" }, icon("pumpkin"), h("span", null, "Ver todo")), h("b", { class: "es-name" }, ev.title)));
+      out.push(evSection(ev, head, row));
+    } else if (picks.loading) out.push(evSection(ev, head, spinner()));
+    return out;
+  }
+  const evSection = (ev, sub, body) =>
+    h("section", { class: "es-sec es-ev" }, h("div", { class: "es-sec-h" }, h("h2", null, icon("pumpkin", "ico es-ev-ico"), ev.title), sub), body);
+
   // ─────────────── portada ───────────────
   function front() {
     const s = store.state;
@@ -217,6 +241,8 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     if (!s.home) return loading("Conectando con Nintendo eShop…");
     const byId = Object.fromEntries(s.home.sections.map((x) => [x.id, x]));
     const out = [];
+    const ev = seasonOf(ejg);
+    if (ev) out.push(...eventFront(ev, s.home.sections));
     const top = ((byId.today || byId.week)?.items || []).filter((r) => r.hero).slice(0, 8);
     if (top.length) out.push(section("Destacados", h("div", { class: "es-feats", "data-focus-group": "feat" }, ...top.map(feature))));
     if (s.genres.length) out.push(section("Buscar por género", genreCards(), pill("Ver todo", "", () => openCatalog({}), "all-genres")));

@@ -30,24 +30,28 @@ import { SearchOverlay } from "./overlays/Search";
 import { SettingsOverlay } from "./overlays/settings/Settings";
 import { StatsOverlay } from "./overlays/Stats";
 import { activeTheme, useApp } from "./store/app";
+import { useHostSeason } from "./host/season";
 
 /** Aplica al host los colores del tema activo (theme.json → "host"). */
 function useHostStyle() {
   const theme = useApp(activeTheme);
   const profile = useApp((s) => s.profile);
+  // Evento de temporada: su acento manda sobre el del tema (ver index.css).
+  const season = useHostSeason();
   useEffect(() => {
     const h = theme?.host ?? {};
     const root = document.documentElement.style;
-    root.setProperty("--h-accent", h.accent || profile?.color || "#4f8cff");
-    if (h.surface) root.setProperty("--h-surface", h.surface);
+    root.setProperty("--h-accent", season?.palette.accent || h.accent || profile?.color || "#4f8cff");
+    // Con evento, sus superficies (index.css → :root[data-season]) en vez de las del tema.
+    if (h.surface && !season) root.setProperty("--h-surface", h.surface);
     else root.removeProperty("--h-surface");
-    if (h.text) root.setProperty("--h-text", h.text);
+    if (h.text && !season) root.setProperty("--h-text", h.text);
     else root.removeProperty("--h-text");
     root.setProperty("--h-radius", h.radius || "14px");
     if (h.font) root.setProperty("--h-font", h.font);
     else root.removeProperty("--h-font");
-    document.documentElement.dataset.hostLight = h.dark === false ? "true" : "false";
-  }, [theme, profile?.color]);
+    document.documentElement.dataset.hostLight = h.dark === false && !season ? "true" : "false";
+  }, [theme, profile?.color, season]);
 }
 
 async function loadLibrary() {

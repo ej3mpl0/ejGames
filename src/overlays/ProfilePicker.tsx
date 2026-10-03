@@ -83,7 +83,7 @@ export function ProfilePicker({ onLogin, onClose }: { onLogin: (p: Profile) => v
   }
 
   return (
-    <div ref={ref} className="overlay-enter absolute inset-0 z-40 flex flex-col bg-[radial-gradient(ellipse_at_center,#172036_0%,#07090e_70%)]">
+    <div ref={ref} className="season-scene overlay-enter absolute inset-0 z-40 flex flex-col bg-[radial-gradient(ellipse_at_center,#172036_0%,#07090e_70%)]">
       <div className="h-10 shrink-0" onMouseDown={(e) => e.button === 0 && void api.windowAction(e.detail === 2 ? "toggle-maximize" : "drag")} />
       {onClose && (
         <button data-nav onClick={onClose} className="absolute right-6 top-12 grid h-10 w-10 place-items-center rounded-full text-muted hover:bg-white/10 cursor-pointer">

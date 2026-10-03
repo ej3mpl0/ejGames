@@ -14,3 +14,4 @@ export * from "./art.js";
 export * from "./store.js";
 export * from "./guides.js";
 export * from "./profile.js";
+export * from "./events.js";

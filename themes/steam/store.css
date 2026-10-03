@@ -382,3 +382,69 @@ img.img-error { visibility: hidden; }
 .hv-warn { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; padding: 10px 12px; background: rgba(178, 64, 31, 0.22); color: #e3c1b6; }
 .hv-warn p { margin: 0; font-size: 12.5px; line-height: 1.45; }
 .hv-warn .ico svg { width: 18px; height: 18px; color: #e0765b; }
+
+/* ─────────── evento de temporada: ejGames Scream (Halloween) ───────────
+   Como las rebajas de Steam: fondo con su patrón, banner arriba, tres cápsulas
+   verticales y un panel con su color. Los colores salen del banner. */
+.store.ev-halloween {
+  --ev-bg: #0d0b16;
+  --ev-green: #7cf64a;
+  --ev-orange: #ff8a1f;
+  --ev-violet: #6a3cc9;
+  background:
+    radial-gradient(ellipse 80% 420px at 50% 0, rgba(39, 120, 170, 0.35), transparent 75%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='%23ffffff' fill-opacity='.035'%3E%3Cpath d='M30 40c6-8 14-10 20-4 2-6 8-8 10-2 2-6 8-4 10 2 6-6 14-4 20 4-8-2-14 2-16 8-4-4-10-4-12 2-2-6-8-6-12-2-2-6-8-10-20-8z'/%3E%3Cpath d='M150 150c4-5 9-6 13-3 1-4 5-5 6-1 2-4 5-3 6 1 4-3 9-2 13 3-5-1-9 1-10 5-3-3-6-3-8 1-1-4-5-4-7-1-2-4-6-6-13-5z'/%3E%3Ccircle cx='160' cy='60' r='16'/%3E%3Cpath d='M160 42c0-6 4-8 6-8' stroke='%23ffffff' stroke-opacity='.05' stroke-width='3' fill='none'/%3E%3Cpath d='M50 150c0-14 10-24 22-24s22 10 22 24v26l-7-6-7 6-8-6-7 6-8-6-7 6z'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(180deg, #13101f 0%, var(--ev-bg) 60%, #08070d 100%);
+}
+.store.ev-halloween .store-top { background: linear-gradient(180deg, #13101f 60%, rgba(19, 16, 31, 0)); }
+.store.ev-halloween .store-nav { background: linear-gradient(90deg, rgba(88, 50, 150, 0.92) 10%, rgba(52, 36, 110, 0.85) 40%, rgb(20, 12, 44) 100%); }
+.store.ev-halloween .sn-link.on, .store.ev-halloween .sn-link:hover, .store.ev-halloween .sn-link.is-focused {
+  background: linear-gradient(90deg, rgba(124, 246, 74, 0.45) 0%, rgba(124, 246, 74, 0.18) 50%, rgba(124, 246, 74, 0) 100%);
+}
+.store.ev-halloween .car-dots i { background: rgba(124, 246, 74, 0.18); }
+.store.ev-halloween .car-dots i.on { background: var(--ev-green); }
+
+.ev-banner {
+  margin: 4px -26px 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}
+
+.ev-hero { margin-top: -6px; position: relative; z-index: 1; }
+.ev-wrap { margin: 0 -46px; }
+.ev-caps { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 0 10px; }
+.ev-cap { display: flex; flex-direction: column; text-align: left; background: #000; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.6); transition: transform 0.18s ease, box-shadow 0.18s ease; }
+.ev-cap .ev-cap-art { aspect-ratio: 3 / 4; max-height: 330px; }
+.ev-cap:hover, .ev-cap.is-focused { transform: translateY(-3px); box-shadow: 0 0 0 2px var(--ev-green), 0 10px 28px rgba(124, 246, 74, 0.25); }
+.ev-cap-foot { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 6px; background: linear-gradient(180deg, #1a1430, #0f0b1d); }
+.ev-tag { margin-right: auto; padding: 2px 7px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: #0d0b16; background: var(--ev-green); border-radius: 2px; }
+.ev-size { padding: 2px 6px; font-size: 12.5px; color: #fff; background: rgba(0, 0, 0, 0.4); }
+
+.ev-panel {
+  margin-top: 34px; padding: 4px 18px 18px; border-radius: 3px;
+  background: linear-gradient(180deg, rgba(150, 60, 10, 0.55), rgba(70, 24, 40, 0.55));
+  box-shadow: inset 0 1px 0 rgba(255, 170, 90, 0.25), 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+.ev-panel .st-sec { margin-top: 14px; }
+.ev-panel .store-h-row { flex-wrap: wrap; row-gap: 2px; }
+.ev-panel .store-h { font-size: 17px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.ev-sub { flex-basis: 100%; order: 3; margin: 0; font-size: 13px; color: rgba(255, 230, 210, 0.75); }
+.ev-panel .btn-more { background: rgba(255, 255, 255, 0.85); color: #23110a; border-color: transparent; font-weight: 600; }
+.ev-panel .btn-more:hover, .ev-panel .btn-more.is-focused { background: #fff; }
+.ev-panel .car-wrap { margin: 0 -18px; }
+.ev-panel .pg-items { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ev-panel .bigcap { background: rgba(0, 0, 0, 0.35); }
+.ev-panel .bigcap:hover, .ev-panel .bigcap.is-focused { background: linear-gradient(135deg, rgba(255, 138, 31, 0.45), rgba(120, 40, 20, 0.5)); }
+.ev-loading { min-height: 120px; display: grid; place-items: center; }
+
+:root[data-mode="tv"] .ev-banner { margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  .ev-cap { transition: none; }
+}
+.store.ev-halloween .sn-wish { background: linear-gradient(90deg, #ff8a1f, #d9580b); color: #1d0c02; }
+.store.ev-halloween .sn-wish:hover, .store.ev-halloween .sn-wish.is-focused, .store.ev-halloween .sn-wish.on { background: #ffa04a; color: #1d0c02; }
+.store.ev-halloween .sn-search { background: #2a1d44; }
+.store.ev-halloween .sn-search input::placeholder { color: #8c80a3; }
+.store.ev-halloween .sn-search:focus-within, .store.ev-halloween .sn-search:has(.is-focused) { box-shadow: 0 0 0 1px #ff7a1a, inset 1px 1px 0 rgba(0, 0, 0, 0.3); }
+.store.ev-halloween .sn-go { background: rgba(255, 122, 26, 0.25); color: #ffb070; }
+.store.ev-halloween .sn-go:hover { background: #ff7a1a; color: #1d0c02; }

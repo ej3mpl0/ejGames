@@ -33,6 +33,7 @@ import {
   hypervisorTag,
   repackName,
 } from "/_sdk/kit/store.js";
+import { seasonOf, seasonBanner, seasonPicks } from "/_sdk/kit/events.js";
 
 const I = {
   search: '<svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>',
@@ -84,6 +85,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
   let frontEl = null;
   let frontFor = null;
   let frontGenres = 0;
+  let frontSeason = null;
   let frontFocus = null;
   let info = null;
   let infoSlug = null;
@@ -97,6 +99,14 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
   const remember = (list) => list.forEach((r) => bySlug.set(r.slug, r));
   const run = (p) => Promise.resolve(p).catch((e) => ejg.ui.toast(e.message || String(e), "error"));
   const pendingCount = () => ejg.downloads.all.filter((d) => DL.has(d.state)).length;
+  // Evento de temporada (Halloween…): banner y selección propia en la portada.
+  const season = () => seasonOf(ejg);
+  const frontOk = () => frontEl && frontFor === store.state.home && store.state.home && frontGenres === store.state.genres.length && frontSeason === season();
+  const repaintFront = () => {
+    frontEl = null;
+    if (shown && view.name === "front") paint();
+  };
+  ejg.season?.onChange(repaintFront);
 
   // Slugs de la lista de deseos (se rehace solo cuando cambia la lista).
   let wsFor = null;
@@ -249,10 +259,21 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
       remember(x.items);
     }
     const top = byId.today || byId.week;
+    const ev = season();
     if (top) {
       info = h("div", { class: "st-info" });
-      wrap.append(h("section", { class: "st-hero" }, info, h("div", { class: "st-feat" }, h("h2", { class: "st-h" }, top.title), row(top.items, top.id, false))));
+      wrap.append(
+        h(
+          "section",
+          { class: "st-hero" + (ev ? " ev" : "") },
+          ev ? seasonBanner(ev, "ev-banner") : null,
+          info,
+          h("div", { class: "st-feat" }, h("h2", { class: "st-h" }, top.title), row(top.items, top.id, false)),
+        ),
+      );
     }
+    const evSec = ev && eventSec(ev, s.home.sections);
+    if (evSec) wrap.append(evSec);
     for (const id of ["week", "month", "latest"]) {
       const sec = byId[id];
       if (!sec || sec === top || !sec.items.length) continue;
@@ -263,6 +284,27 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     }
     if (top?.items[0]) showInfo(top.items[0], top.id);
     return wrap;
+  }
+
+  /** «Ofertas de miedo»: fila de su género (populares primero) y «Ver todo» al catálogo filtrado. */
+  function eventSec(ev, sections) {
+    const id = "ev-" + ev.id;
+    secTitle[id] = ev.title;
+    const picks = seasonPicks(ejg, ev, sections, repaintFront);
+    const items = picks.items.slice(0, 24);
+    remember(items);
+    const head = h("div", { class: "st-ev-head" }, h("h2", { class: "st-h" }, ev.title), h("p", { class: "st-ev-sub" }, ev.subtitle));
+    if (!items.length) return picks.loading ? h("section", { class: "st-sec st-ev" }, head, spinner()) : null;
+    const r = row(items, id);
+    r.append(
+      h(
+        "button",
+        { class: "st-tile all", "data-focus": "", "data-key": id + "-all", onclick: () => openBrowse({ genres: [ev.genre] }) },
+        h("div", { class: "st-art" }, h("span", { html: I.grid }), h("b", null, "Ver todo")),
+        h("div", { class: "st-cap" }, h("b", null, genreName(ev.genre) || ev.title), h("span", { class: "st-sub" }, "Todo el género")),
+      ),
+    );
+    return h("section", { class: "st-sec st-ev" }, head, r);
   }
 
   function showInfo(r, sec) {
@@ -1464,7 +1506,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     if (view.name === "browse") return renderBrowse();
     if (view.name !== "front") return;
     const s = store.state;
-    if (frontEl && frontFor === s.home && s.home && frontGenres === s.genres.length) return;
+    if (frontOk()) return;
     paint();
   }
 
@@ -1480,10 +1522,11 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     else if (view.name === "wishlist") el = wishEl || wishPage();
     else {
       const s = store.state;
-      if (!(frontEl && frontFor === s.home && s.home && frontGenres === s.genres.length)) {
+      if (!frontOk()) {
         frontEl = frontPage();
         frontFor = s.home;
         frontGenres = s.genres.length;
+        frontSeason = season();
       }
       el = frontEl;
     }

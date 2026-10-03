@@ -1247,7 +1247,8 @@ acctBtn.addEventListener("click", openProfileMenu);
 
 function renderWallpaper() {
   const w = $("#wallpaper");
-  const url = ejg.settings.wallpaper;
+  // Con evento (Halloween…), su fondo animado.
+  const url = ejg.season.event?.wallpaperVideo || ejg.settings.wallpaper;
   w.replaceChildren();
   w.classList.toggle("custom", !!url);
   if (url && /\.(mp4|webm)$/i.test(url)) {

@@ -32,6 +32,7 @@ import {
   hypervisorTag,
   repackName,
 } from "/_sdk/kit/store.js";
+import { seasonOf, seasonBanner, seasonPicks } from "/_sdk/kit/events.js";
 import { pixelate } from "./pixel.js";
 
 const SECTIONS = [
@@ -78,7 +79,14 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     fillOptions();
     fillList();
   });
-  const view = { sec: "today", ficha: null, detail: null, error: "", back: null, wishSort: "added" };
+  // Evento de temporada (Halloween…): su sección va delante y es la portada.
+  const season = () => seasonOf(ejg);
+  const sections = () => {
+    const ev = season();
+    return ev ? [["ev", "MIEDO", up(ev.title), "★ DE MIEDO"], ...SECTIONS] : SECTIONS;
+  };
+  const home = () => (season() ? "ev" : "today");
+  const view = { sec: home(), ficha: null, detail: null, error: "", back: null, wishSort: "added" };
   const latest = { items: null, page: 1, pages: Infinity, loading: false, error: "" };
   let ui = null; // piezas de la pantalla SHOP
   let dialog = null;
@@ -162,6 +170,11 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
         empty: s.query ? "NO HAY NADA CON ESE NOMBRE" : "ESCRIBE EL NOMBRE DE UN JUEGO",
       };
     }
+    if (view.sec === "ev") {
+      const ev = season();
+      const p = seasonPicks(ejg, ev, s.home?.sections, () => tab() === "shop" && view.sec === "ev" && fillList());
+      return { items: p.items, loading: p.loading, title: up(ev.title), all: ev.genre, empty: "NO HAY JUEGOS DE MIEDO" };
+    }
     const meta = SECTIONS.find((x) => x[0] === view.sec);
     if (!s.home) return { items: [], loading: !s.homeError, error: s.homeError, title: meta[2], retry: true };
     const sec = s.home.sections.find((x) => x.id === view.sec);
@@ -244,6 +257,8 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     } else if (d.more) {
       extra.push(h("li", null, h("button", { class: "item s-more", "data-focus": "", onclick: () => more(d.items.length) }, "VER MÁS ▼")));
     }
+    // Selección del evento: «VER TODO» abre TODO con su género.
+    if (d.all && d.items.length) extra.push(h("li", null, h("button", { class: "item s-more", "data-focus": "", onclick: () => openAll({ genres: [d.all] }) }, "VER TODO ▶")));
     ui.list.append(...extra);
     const cur = focus.current;
     const items = ui.list.querySelectorAll(".s-item");
@@ -296,7 +311,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
       return;
     }
     ui.card.classList.remove("empty");
-    const meta = SECTIONS.find((x) => x[0] === view.sec);
+    const meta = sections().find((x) => x[0] === view.sec);
     ui.badge.textContent = meta[3];
     pixelate(ui.hero, [r.hero, r.coverFull, r.cover], ui.heroBox.clientWidth / Math.max(1, ui.heroBox.clientHeight) || 2.4);
     pixelate(ui.cover, [r.cover, r.coverFull], 2 / 3);
@@ -407,6 +422,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     if (!ui) return;
     ui.secs.querySelectorAll(".s-sec").forEach((b) => b.classList.toggle("on", b.dataset.sec === id));
     ui.search.hidden = id !== "search";
+    if (ui.ev) ui.ev.hidden = id !== "ev";
     fillOptions();
     ui.list.replaceChildren();
     ui.list.scrollTop = 0;
@@ -418,8 +434,9 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     shopHints();
   }
   function stepSection(d) {
-    const i = SECTIONS.findIndex((x) => x[0] === view.sec);
-    setSection(SECTIONS[(i + d + SECTIONS.length) % SECTIONS.length][0], { toList: true });
+    const all = sections();
+    const i = all.findIndex((x) => x[0] === view.sec);
+    setSection(all[(i + d + all.length) % all.length][0], { toList: true });
   }
 
   async function openKeyboard() {
@@ -447,7 +464,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
       "div",
       { class: "s-secs", "data-focus-group": "secs" },
       h("span", { class: "s-arrow" }, "◀"),
-      ...SECTIONS.map(([id, label]) =>
+      ...sections().map(([id, label]) =>
         h(
           "button",
           { class: "s-sec" + (view.sec === id ? " on" : ""), "data-focus": "", "data-sec": id, onclick: () => setSection(id, { toList: true }) },
@@ -488,8 +505,11 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
       h("div", { class: "s-mid" }, h("div", { class: "art s-art" }, cover), info),
       h("div", { class: "s-none" }, h("span", { class: "blink-slow" }, "INSERT CARTRIDGE")),
     );
-    ui = { secs, search, opts, input, head, list, hero, heroBox, badge, cover, info, card };
-    root.replaceChildren(h("div", { class: "shop" }, h("div", { class: "s-left" }, secs, search, opts, head, list), card));
+    // Evento: su banner y su lema encima de la lista, solo en su sección.
+    const sev = season();
+    const ev = sev && h("div", { class: "s-ev", hidden: view.sec !== "ev" }, seasonBanner(sev, "s-ev-banner"), h("p", { class: "s-ev-sub" }, up(sev.subtitle)));
+    ui = { secs, search, opts, input, head, list, hero, heroBox, badge, cover, info, card, ev };
+    root.replaceChildren(h("div", { class: "shop" + (sev ? " ev ev-" + sev.id : "") }, h("div", { class: "s-left" }, ev, secs, search, opts, head, list), card));
     fillOptions();
     fillList();
     const first = list.querySelector("[data-focus]") || secs.querySelector(".on");
@@ -566,6 +586,12 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
     shopHints();
   }
   wish.onChange(onWish);
+
+  // Empieza o acaba el evento: su sección entra o sale (y pasa a ser la portada).
+  ejg.season.onChange(() => {
+    if (view.sec === "ev" || view.sec === "today") view.sec = home();
+    if (tab() === "shop" && ui && !view.ficha && !dialog && !askOpen) paintShop(), shopHints();
+  });
 
   // ─────────────── ficha ───────────────
   async function openRepack(slug) {
@@ -1248,7 +1274,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
       if (askOpen) return askOpen(), true;
       if (closeDialog()) return true;
       if (closeFicha()) return true;
-      if (tab() === "shop" && view.sec !== "today") return setSection("today", { toList: true }), true;
+      if (tab() === "shop" && view.sec !== home()) return setSection(home(), { toList: true }), true;
       return false;
     },
     hasDialog: () => !!dialog || !!askOpen,

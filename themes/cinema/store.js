@@ -34,6 +34,7 @@ import {
   hypervisorTag,
   repackName,
 } from "/_sdk/kit/store.js";
+import { seasonOf, seasonBanner, seasonPicks } from "/_sdk/kit/events.js";
 
 const I = {
   play: '<svg viewBox="0 0 24 24"><path d="M6 4v16l14-8z"/></svg>',
@@ -112,6 +113,9 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
   const dedupe = (list) => list.filter((r, k) => list.findIndex((x) => x.slug === r.slug) === k);
   const wished = (slug) => !!slug && wishSet.has(slug);
   remember(wl.items);
+  // Evento de temporada (Halloween…): su banner y su selección en la portada.
+  const onFront = () => view === "explore" && sv.page === "front";
+  ejg.season?.onChange(() => onFront() && paint(true));
 
   // ─────────────── estado de cada juego (en vivo con la cola) ───────────────
   function live(r) {
@@ -616,6 +620,30 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
   }
   ejg.on("visibility", (v) => (v.visible && view === "explore" && sv.page === "front" ? startBillboard() : stopBillboard()));
 
+  // ─────────────── evento de temporada ───────────────
+  /** Como un especial de las plataformas de series: el banner (abre el género) y su fila. */
+  function eventFront(ev, sections) {
+    const picks = seasonPicks(ejg, ev, sections, () => onFront() && paint(true));
+    remember(picks.items);
+    const more = () => openCatalog({ genres: [ev.genre] });
+    const sec = row(`ev-${ev.id}`, ev.title, picks.items.slice(0, 20), { more });
+    sec?.querySelector(".s-row-h h2").after(h("p", { class: "ev-sub" }, ev.subtitle));
+    return h(
+      "section",
+      { class: "ev-block" },
+      h("button", { class: "ev-bn", "data-focus": "", "data-k": "ev-banner", onclick: more, title: ev.name }, seasonBanner(ev, "ev-art")),
+      sec ||
+        (picks.loading
+          ? h(
+              "section",
+              { class: "s-row" },
+              h("div", { class: "s-row-h" }, h("h2", null, ev.title)),
+              h("div", { class: "track" }, ...Array.from({ length: 6 }, () => h("div", { class: "sc sc-skel" }))),
+            )
+          : null),
+    );
+  }
+
   // ─────────────── portada de Explorar ───────────────
   function front() {
     const s = store.state;
@@ -637,6 +665,7 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
     const latest = by.latest?.items || [];
     bb.label = today.length ? "hoy" : "esta semana";
     const top = dedupe([...today, ...week]).slice(0, 10);
+    const ev = seasonOf(ejg);
     return h(
       "div",
       { class: "s-front" },
@@ -646,13 +675,15 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
       h(
         "div",
         { class: "s-rows" },
-        // La lista de deseados, la primera bajo la cartelera (como en las plataformas de series).
+        // El especial del evento, lo primero; luego la lista de deseados (como en las plataformas de series).
+        ev ? eventFront(ev, s.home.sections) : null,
         wishRow(),
         top10(top),
         row("week", by.week?.title || "Populares de la semana", week),
         row("latest", "Novedades", latest, { fresh: true, more: () => openCatalog({ sort: "date" }) }),
         row("month", by.month?.title || "Populares del mes", month),
-        ...GENRE_ROWS.map(([id]) => genreRow(id)),
+        // Con evento, su género ya va arriba.
+        ...GENRE_ROWS.filter(([id]) => id !== ev?.genre).map(([id]) => genreRow(id)),
       ),
     );
   }

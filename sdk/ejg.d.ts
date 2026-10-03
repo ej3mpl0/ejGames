@@ -447,6 +447,25 @@ export interface InitData {
   downloads: Download[];
   /** Explorar activado en los ajustes. */
   explore: boolean;
+  /** Eventos de temporada: en sus fechas, siempre o nunca. */
+  eventMode: "auto" | "on" | "off";
+  /** Evento activo (con su paleta y su arte) o null. */
+  season: SeasonEvent | null;
+}
+
+export interface SeasonEvent {
+  id: string;
+  name: string;
+  dates: string;
+  banner: string;
+  video?: string;
+  wallpaper?: string;
+  wallpaperVideo?: string;
+  wallpaperAlt?: string;
+  palette: { accent: string; green: string; violet: string; bg: string; panel: string; text: string };
+  genre: number;
+  title: string;
+  subtitle: string;
 }
 
 export interface Ejg {
@@ -584,6 +603,17 @@ export interface Ejg {
   sound: { play(name: "move" | "select" | "back" | "launch" | "error" | "open"): void };
   window: { minimize(): Promise<void>; maximize(): Promise<void>; close(): Promise<void>; fullscreen(v?: boolean): Promise<void> };
   app: { info(): Promise<{ version: string; running: any[]; meta: [number, number] }> };
+  /**
+   * Evento de temporada (Halloween…). Mientras dura, el SDK pone `data-season` en
+   * <html>, las variables `--ejg-season-*`, la paleta y el fondo del evento en las
+   * opciones del tema y su capa de ambiente. Piezas para la tienda: /_sdk/kit/events.js.
+   */
+  season: {
+    readonly mode: "auto" | "on" | "off";
+    readonly id: string | null;
+    readonly event: SeasonEvent | null;
+    onChange(fn: (d: { mode: "auto" | "on" | "off"; season: SeasonEvent | null }) => void): () => void;
+  };
   art(game: Game, kind: keyof MediaUrls | "cover" | "hero", thumb?: boolean): string | undefined;
 }
 

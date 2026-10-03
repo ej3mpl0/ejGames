@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api, errMsg, on } from "../api/tauri";
 import type { LibGame, ThemeInfo } from "../api/types";
 import { setThemeSink } from "../input/nav";
+import { currentSeason, useSeason } from "./season";
 import { activeTheme, useApp } from "../store/app";
 import { handleThemeCall } from "./bridge";
 import { configureSounds, playSound, type SoundName } from "./sounds";
@@ -145,6 +146,8 @@ export function ThemeFrame() {
         downloads: st.downloads,
         wishlist: st.wishlist,
         explore: st.settings?.exploreEnabled !== false,
+        eventMode: st.settings?.eventMode ?? "auto",
+        season: currentSeason(),
         page: st.page,
       },
     });
@@ -248,6 +251,10 @@ export function ThemeFrame() {
   useEffect(() => void (beats.current.ready && event("page", page)), [page]);
   const exploreOn = useApp((s) => s.settings?.exploreEnabled !== false);
   useEffect(() => void (beats.current.ready && event("explore", { enabled: exploreOn })), [exploreOn]);
+  // Evento de temporada (Halloween…) → tema: paleta, fondo y ambiente del SDK.
+  const eventMode = useApp((s) => s.settings?.eventMode ?? "auto");
+  const season = useSeason();
+  useEffect(() => void (beats.current.ready && event("season", { mode: eventMode, season })), [eventMode, season]);
 
   // Llegó arte de Steam para la tienda: el tema vuelve a pedir la portada.
   useEffect(() => {

@@ -12,6 +12,7 @@ import { installDownload, openExplore, openKeyboard } from "../../host/downloads
 import { useOverlayNav } from "../../input/nav";
 import { useApp } from "../../store/app";
 import { DownloadDialog } from "./DownloadDialog";
+import { SEASON_ORIGIN, useSeason } from "../../host/season";
 import { Cover, HvTag, HypervisorPanel, StatusBadge, sizeText } from "./shared";
 // @ts-ignore módulo JS del kit
 import { repackAction, sortWishlist, SORTS as KIT_SORTS, SIZES as KIT_SIZES, GENRE_GROUPS as KIT_GROUPS, MAX_GENRES, WISH_SORTS } from "../../../sdk/kit/store.js";
@@ -108,6 +109,10 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
   const toast = useApp((s) => s.toast);
   const source = useApp((s) => s.inputSource);
   const [home, setHome] = useState<ExploreHome | null>(null);
+  // Evento de temporada (Halloween…): su banner y lo popular de su género arriba.
+  const season = useSeason();
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const seasonItems = season && home ? [...new Map(home.sections.flatMap((s) => s.items).filter((r) => r.tags?.includes(season.genre)).map((r) => [r.slug, r])).values()] : [];
   const [homeError, setHomeError] = useState("");
   const [genres, setGenres] = useState<Genre[]>([]);
   // Catálogo: null = portada.
@@ -379,6 +384,34 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
                   ))}
                   <Chip onClick={() => browse({ ...EMPTY })}>Todo el catálogo</Chip>
                 </div>
+              </section>
+            )}
+            {season && (
+              <section>
+                <video
+                  className="mx-5 mb-3 block w-[calc(100%-2.5rem)] rounded-[calc(var(--h-radius)*0.7)] object-cover ring-1 ring-line"
+                  style={{ aspectRatio: "2000 / 297" }}
+                  src={season.video ? SEASON_ORIGIN + season.video : undefined}
+                  poster={SEASON_ORIGIN + season.banner}
+                  autoPlay={!reduceMotion}
+                  muted
+                  loop
+                  playsInline
+                />
+                {seasonItems.length > 0 && (
+                  <>
+                    <h3 className="flex items-center justify-between px-5 text-base font-semibold">
+                      {season.title}
+                      <Chip onClick={() => browse({ ...EMPTY, genres: [season.genre] })}>Ver todo</Chip>
+                    </h3>
+                    <p className="mb-2 px-5 text-xs text-muted">{season.subtitle}</p>
+                    <div className="flex gap-2 overflow-x-auto px-4 pb-2">
+                      {seasonItems.map((r) => (
+                        <Card key={`ev-${r.slug}`} r={r} onOpen={(x) => open(x.slug)} />
+                      ))}
+                    </div>
+                  </>
+                )}
               </section>
             )}
             {wishlist.length > 0 && (

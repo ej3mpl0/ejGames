@@ -21,32 +21,43 @@ export function drawCover(ctx, im, w, hh) {
   ctx.drawImage(im, (im.naturalWidth - sw) / 2, (im.naturalHeight - sh) / 4, sw, sh, 0, 0, w, hh);
 }
 
-/** Paletas monocromas: 4 tonos por luminancia. Resto: posterizado a 4 niveles por canal. */
+/** `shades` (de oscuro a claro, [r,g,b]) por luminancia: tantos tonos como haya. */
+export function tones(ctx, w, hh, shades) {
+  let data;
+  try {
+    data = ctx.getImageData(0, 0, w, hh);
+  } catch {
+    return;
+  }
+  const d = data.data;
+  const n = shades.length;
+  for (let i = 0; i < d.length; i += 4) {
+    const l = (0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]) / 255;
+    const s = shades[Math.min(n - 1, Math.floor(l * n))];
+    d[i] = s[0];
+    d[i + 1] = s[1];
+    d[i + 2] = s[2];
+  }
+  ctx.putImageData(data, 0, 0);
+}
+
+/** Paletas monocromas: 4 tonos por luminancia. Resto (y en un evento): posterizado a 4 niveles por canal. */
 export function quantize(ctx, w, hh) {
+  const p = window.ejg.settings.palette || "arcade";
+  if (!window.ejg.season.id && (p === "gameboy" || p === "phosphor" || p === "amber"))
+    return tones(ctx, w, hh, [cssColor("--bg"), cssColor("--dim"), cssColor("--fg"), cssColor("--hi")]);
   let data;
   try {
     data = ctx.getImageData(0, 0, w, hh);
   } catch {
     return; // lienzo "manchado": se queda solo pixelado
   }
-  const p = window.ejg.settings.palette || "arcade";
   const d = data.data;
-  if (p === "gameboy" || p === "phosphor" || p === "amber") {
-    const shades = [cssColor("--bg"), cssColor("--dim"), cssColor("--fg"), cssColor("--hi")];
-    for (let i = 0; i < d.length; i += 4) {
-      const l = (0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]) / 255;
-      const s = shades[Math.min(3, Math.floor(l * 4))];
-      d[i] = s[0];
-      d[i + 1] = s[1];
-      d[i + 2] = s[2];
-    }
-  } else {
-    const q = (v) => Math.round(v / 85) * 85;
-    for (let i = 0; i < d.length; i += 4) {
-      d[i] = q(d[i]);
-      d[i + 1] = q(d[i + 1]);
-      d[i + 2] = q(d[i + 2]);
-    }
+  const q = (v) => Math.round(v / 85) * 85;
+  for (let i = 0; i < d.length; i += 4) {
+    d[i] = q(d[i]);
+    d[i + 1] = q(d[i + 1]);
+    d[i + 2] = q(d[i + 2]);
   }
   ctx.putImageData(data, 0, 0);
 }

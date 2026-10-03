@@ -326,7 +326,8 @@ document.querySelectorAll(".navbtn").forEach((b) => b.addEventListener("click", 
 document.querySelectorAll("[data-action]").forEach((b) => b.addEventListener("click", () => ejg.ui.open(b.dataset.action)));
 
 const updateBg = debounce((g) => {
-  if (ejg.settings.dynamicBg === false) return;
+  // Con evento de temporada manda su fondo: el juego enfocado no lo tapa.
+  if (ejg.settings.dynamicBg === false || ejg.season?.id) return;
   const url = g && (g.media.hero || g.media.heroThumb);
   if (url) bg.set(url);
 }, 180);
@@ -428,7 +429,7 @@ function renderProfile() {
 function applyWallpaper() {
   const w = ejg.settings.wallpaper;
   $("#bg").classList.toggle("wall", !!w);
-  if (w && ejg.settings.dynamicBg === false) bg.set(null);
+  if (w && (ejg.settings.dynamicBg === false || ejg.season?.id)) bg.set(null);
 }
 
 // ─────────────── guías de la comunidad ───────────────

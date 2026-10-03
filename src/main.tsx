@@ -20,5 +20,12 @@ if (location.hash === "#overlay") {
   document.documentElement.classList.add("ingame");
   void import("./ingame/Overlay").then(({ Overlay }) => render(<Overlay />));
 } else {
-  void import("./App").then(({ default: App }) => render(<App />));
+  void Promise.all([import("./App"), import("./overlays/CloseAsk")]).then(([{ default: App }, { CloseAsk }]) =>
+    render(
+      <>
+        <App />
+        <CloseAsk />
+      </>,
+    ),
+  );
 }

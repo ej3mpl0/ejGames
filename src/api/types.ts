@@ -398,7 +398,10 @@ export interface Settings {
   gamepadHomeButton: boolean;
   lastProfile?: number | null;
   autoLogin: boolean;
-  closeToTray: boolean;
+  /** La X de la ventana: preguntar, seguir en la bandeja o salir del todo. */
+  closeAction: "ask" | "tray" | "quit";
+  /** Eventos de temporada en la tienda: en sus fechas, siempre o nunca. */
+  eventMode: "auto" | "on" | "off";
   devMode: boolean;
   overlayEnabled: boolean;
   overlayHotkey: string;

@@ -31,7 +31,12 @@ pub struct Settings {
     pub gamepad_home_button: bool,
     pub last_profile: Option<i64>,
     pub auto_login: bool,
-    pub close_to_tray: bool,
+    /// Qué hace la X de la ventana: ask (preguntar) | tray (seguir en la
+    /// bandeja) | quit (salir del todo).
+    pub close_action: String,
+    /// Eventos de temporada en la tienda (Halloween…): auto (en sus fechas) |
+    /// on (siempre) | off (nunca).
+    pub event_mode: String,
     pub dev_mode: bool,
     /// Overlay dentro del juego (avisos de logros + panel).
     pub overlay_enabled: bool,
@@ -109,7 +114,8 @@ impl Default for Settings {
             gamepad_home_button: true,
             last_profile: None,
             auto_login: true,
-            close_to_tray: true,
+            close_action: "ask".into(),
+            event_mode: "auto".into(),
             dev_mode: false,
             overlay_enabled: true,
             overlay_hotkey: "Shift+Tab".into(),
@@ -149,6 +155,9 @@ impl Default for Settings {
 pub const OVERLAY_CORNERS: [&str; 7] = ["auto", "top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right"];
 pub const SEED_POLICIES: [&str; 3] = ["never", "until-install", "ratio"];
 
+pub const CLOSE_ACTIONS: [&str; 3] = ["ask", "tray", "quit"];
+pub const EVENT_MODES: [&str; 3] = ["auto", "on", "off"];
+
 pub const OVERLAY_STYLES: [&str; 8] = ["auto", "steam", "playstation", "xbox", "switch", "cinema", "retro", "ejgames"];
 
 /// Ajustes de versiones anteriores: hasta 0.2.1 la esquina "bottom-right" era la
@@ -157,6 +166,13 @@ fn migrate(v: &mut serde_json::Value) {
     let Some(o) = v.as_object_mut() else { return };
     if !o.contains_key("overlayStyle") && o.get("overlayCorner").and_then(|c| c.as_str()) == Some("bottom-right") {
         o.insert("overlayCorner".into(), "auto".into());
+    }
+    // Hasta 0.8.1: «Al cerrar, seguir en la bandeja» (sí/no). Quien lo quitó
+    // quería salir; quien lo dejó puesto, ahora elige al cerrar.
+    if let Some(tray) = o.remove("closeToTray") {
+        if !o.contains_key("closeAction") && tray.as_bool() == Some(false) {
+            o.insert("closeAction".into(), "quit".into());
+        }
     }
 }
 
@@ -217,5 +233,15 @@ mod tests {
         let mut new = serde_json::json!({ "overlayCorner": "bottom-right", "overlayStyle": "auto" });
         migrate(&mut new);
         assert_eq!(serde_json::from_value::<Settings>(new).unwrap().overlay_corner, "bottom-right");
+    }
+
+    #[test]
+    fn old_close_to_tray_becomes_close_action() {
+        let mut off = serde_json::json!({ "closeToTray": false });
+        migrate(&mut off);
+        assert_eq!(serde_json::from_value::<Settings>(off).unwrap().close_action, "quit");
+        let mut on = serde_json::json!({ "closeToTray": true });
+        migrate(&mut on);
+        assert_eq!(serde_json::from_value::<Settings>(on).unwrap().close_action, "ask");
     }
 }

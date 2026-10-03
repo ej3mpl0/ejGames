@@ -209,6 +209,7 @@ export type Events = {
   "scan:progress": { phase: string; done: number; total: number; current: string };
   "game:state": { gameId: number; state: "launching" | "running" | "stopped"; value?: number | null };
   "app:toast": { kind: string; message: string };
+  "app:close-ask": null;
   "theme:changed": { id: string };
   "update:progress": { received: number; total: number };
   "downloads:changed": DownloadItem[];

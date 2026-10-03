@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FolderOpen, Gamepad2, MonitorPlay, Power, RefreshCw } from "lucide-react";
 import { api } from "../../api/tauri";
 import type { NavAction, Settings } from "../../api/types";
-import { Button, Section, Toggle } from "../../components/ui";
+import { Button, Cycle, Section, Toggle } from "../../components/ui";
 import { GLYPHS } from "../../../sdk/kit/hints.js";
 import { Glyph } from "../../components/Hints";
 import { setBigPicture } from "../../host/window";
@@ -129,6 +129,12 @@ function PadGlyph({ txt, color, ps }: { txt: string; color?: string; ps: boolean
   );
 }
 
+const CLOSE_OPTIONS: { value: Settings["closeAction"]; label: string }[] = [
+  { value: "ask", label: "Preguntar" },
+  { value: "tray", label: "Minimizar a la bandeja" },
+  { value: "quit", label: "Salir del todo" },
+];
+
 export function SystemTab() {
   const settings = useApp((s) => s.settings)!;
   const boot = useApp((s) => s.boot);
@@ -139,7 +145,12 @@ export function SystemTab() {
       <Section title="Inicio y bandeja">
         <Toggle label="Iniciar con Windows" hint="Arranca en la bandeja, sin ventana (apenas consume)." checked={settings.startWithWindows} onChange={(v) => save({ startWithWindows: v })} />
         <Toggle label="Arrancar minimizado en la bandeja" checked={settings.startMinimized} onChange={(v) => save({ startMinimized: v })} />
-        <Toggle label="Al cerrar la ventana, seguir en la bandeja" checked={settings.closeToTray} onChange={(v) => save({ closeToTray: v })} />
+        <Cycle
+          label="Al cerrar la ventana"
+          value={settings.closeAction}
+          options={CLOSE_OPTIONS}
+          onChange={(v) => save({ closeAction: v })}
+        />
         <Toggle label="Entrar automáticamente con el último perfil" hint="Los perfiles con PIN siempre lo piden." checked={settings.autoLogin} onChange={(v) => save({ autoLogin: v })} />
       </Section>
 

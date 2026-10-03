@@ -84,6 +84,8 @@ pub async fn window_action(window: tauri::WebviewWindow, action: String, value: 
             }
         }
         "close" => window.close()?,
+        // A la bandeja sin preguntar (lo eligió en el diálogo de cerrar).
+        "to-tray" => window.destroy()?,
         "hide" => window.hide()?,
         "fullscreen" => {
             let v = value.unwrap_or(!window.is_fullscreen()?);
@@ -804,6 +806,12 @@ pub async fn update_settings(app: tauri::AppHandle, st: St<'_>, patch: Value) ->
     }
     if !crate::settings::OVERLAY_STYLES.contains(&next.overlay_style.as_str()) {
         return Err(CmdError::Msg("Estilo de los avisos no válido".into()));
+    }
+    if !crate::settings::CLOSE_ACTIONS.contains(&next.close_action.as_str()) {
+        return Err(CmdError::Msg("Opción al cerrar no válida".into()));
+    }
+    if !crate::settings::EVENT_MODES.contains(&next.event_mode.as_str()) {
+        return Err(CmdError::Msg("Opción de eventos no válida".into()));
     }
     if !crate::settings::SEED_POLICIES.contains(&next.seed_policy.as_str()) {
         return Err(CmdError::Msg("Opción de compartir no válida".into()));

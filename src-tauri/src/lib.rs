@@ -30,7 +30,7 @@ use state::AppState;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 #[cfg(windows)]
 fn shift_held() -> bool {
@@ -96,6 +96,27 @@ pub fn run() {
                 .build(),
         )
         .on_window_event(|window, event| {
+            // La X, Alt+F4 o la barra de tareas: según el ajuste, preguntar
+            // (el host enseña el diálogo), salir del todo o seguir en la bandeja.
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() != lifecycle::MAIN {
+                    return;
+                }
+                if let Some(st) = window.app_handle().try_state::<Arc<AppState>>() {
+                    match st.settings.get().close_action.as_str() {
+                        "ask" => {
+                            api.prevent_close();
+                            let _ = window.emit_to(lifecycle::MAIN, "app:close-ask", ());
+                        }
+                        "quit" => {
+                            api.prevent_close();
+                            window.app_handle().exit(0);
+                        }
+                        _ => {}
+                    }
+                }
+                return;
+            }
             if let tauri::WindowEvent::Focused(f) = event {
                 if window.label() != lifecycle::MAIN {
                     return;
@@ -348,7 +369,7 @@ pub fn run() {
             if code.is_none() {
                 if let Some(st) = app.try_state::<Arc<AppState>>() {
                     // Con descargas en marcha se queda en la bandeja.
-                    let keep = st.settings.get().close_to_tray
+                    let keep = st.settings.get().close_action != "quit"
                         || st.sessions.any()
                         || st.saver_active.load(Ordering::Relaxed)
                         || st.downloads.keep_alive(st.inner());

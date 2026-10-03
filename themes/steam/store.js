@@ -452,7 +452,8 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
   function eventFront(ev, sections) {
     const picks = seasonPicks(ejg, ev, sections, () => active() === "store" && view.name === "front" && paint(true));
     const items = picks.items;
-    const out = [seasonBanner(ev, "ev-banner")];
+    // Como la rebaja de Steam: la cabecera a lo ancho y las cápsulas montadas encima.
+    const out = [seasonBanner(ev, "ev-art", { hero: true })];
     const caps = items.filter((r) => r.cover).slice(0, 15);
     if (caps.length >= 3) {
       const total = Math.ceil(caps.length / 3);

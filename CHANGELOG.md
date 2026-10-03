@@ -5,6 +5,18 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.9.1
+
+**Modo Halloween desde hoy, con una cabecera a lo grande**
+- ejGames Scream V empieza el 3 de octubre (hasta el 2 de noviembre); el banner ya lo dice: «OCT 3 - NOV 2».
+- En la tienda del tema Steam, la cabecera del evento ocupa casi todo el ancho, como en las rebajas de Steam: el
+  banner animado sobre la calle encantada (también animada), fundido por los bordes, con las tres cápsulas de
+  terror montadas encima de su parte baja.
+
+**Para temas**
+- El evento trae `hero` y `heroVideo` (1600×560) y `seasonBanner(ev, cls, { hero: true })` los usa (clase
+  `ejg-ev-hero`).
+
 ## 0.9.0
 
 **Al cerrar: ¿bandeja o salir?**

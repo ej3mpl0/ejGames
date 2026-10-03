@@ -4,8 +4,8 @@ description: "Halloween y demás: qué hace el SDK solo y cómo darle a tu tema 
 icon: "ghost"
 ---
 
-En sus fechas, ejGames se viste para la ocasión. El primero es **ejGames Scream** (Halloween, del 26 de octubre
-al 2 de noviembre). El usuario lo elige en **Ajustes → Apariencia → Modo Halloween en la tienda**: *En sus
+En sus fechas, ejGames se viste para la ocasión. El primero es **ejGames Scream** (Halloween, del 3 de octubre
+al 2 de noviembre). El usuario lo elige en **Ajustes → Apariencia → Modo Halloween**: *En sus
 fechas*, *Siempre* o *Nunca*. El host decide si hay un evento activo y se lo manda a tu tema.
 
 ## Lo que hace el SDK sin que hagas nada
@@ -56,6 +56,6 @@ if (ev) {
 ejg.season.onChange(repaint);
 ```
 
-El arte está en `/_sdk/events/<id>/`: `banner.webp` y `banner.mp4`, `wallpaper-street.jpg` (y su versión
+El arte está en `/_sdk/events/<id>/`: `banner.webp` y `banner.mp4`, `hero.webp` y `hero.mp4` (la cabecera grande, con `seasonBanner(ev, cls, { hero: true })`), `wallpaper-street.jpg` (y su versión
 animada `.mp4`) y `wallpaper-graveyard.jpg`. Los seis temas de serie lo usan; mira el de Steam
 (`themes/steam/store.js`, `eventFront`) como ejemplo.

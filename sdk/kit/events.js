@@ -12,12 +12,15 @@ export const EVENTS = [
     id: "halloween",
     name: "ejGames Scream V",
     /** Mes y día (incluidos), todos los años. */
-    from: [10, 26],
+    from: [10, 3],
     to: [11, 2],
-    dates: "26 oct – 2 nov",
+    dates: "3 oct – 2 nov",
     /** Banner 2000×297: imagen fija (cartel y respaldo) y su versión animada en bucle. */
     banner: "/_sdk/events/halloween/banner.webp",
     video: "/_sdk/events/halloween/banner.mp4",
+    /** Cabecera grande 1600×560 (el banner sobre la calle encantada), para portadas a lo ancho. */
+    hero: "/_sdk/events/halloween/hero.webp",
+    heroVideo: "/_sdk/events/halloween/hero.mp4",
     /** Fondos 16:9 (biblioteca y pantallas del host). */
     wallpaper: "/_sdk/events/halloween/wallpaper-street.jpg",
     /** El mismo fondo animado en bucle (para los temas que admiten vídeo de fondo). */
@@ -60,18 +63,21 @@ export function seasonOf(ejg) {
 
 /**
  * Banner del evento: el vídeo en bucle (quieto con «reducir movimiento» o si
- * no carga: la imagen). Se pausa con la ventana oculta. Clase: ejg-ev-banner.
+ * no carga: la imagen). Se pausa con la ventana oculta. Clase: ejg-ev-banner
+ * (franja 2000×297) o, con `{ hero: true }`, ejg-ev-hero (cabecera 1600×560).
  */
-export function seasonBanner(ev, cls = "") {
-  const still = img(ev.banner, { loading: "eager", alt: ev.name });
-  const box = h("div", { class: "ejg-ev-banner " + cls });
-  if (!ev.video || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+export function seasonBanner(ev, cls = "", { hero = false } = {}) {
+  const poster = hero && ev.hero ? ev.hero : ev.banner;
+  const src = hero && ev.heroVideo ? ev.heroVideo : ev.video;
+  const still = img(poster, { loading: "eager", alt: ev.name });
+  const box = h("div", { class: (hero && ev.hero ? "ejg-ev-hero " : "ejg-ev-banner ") + cls });
+  if (!src || matchMedia("(prefers-reduced-motion: reduce)").matches) {
     box.append(still);
     return box;
   }
-  const video = h("video", { muted: "", loop: "", autoplay: "", playsinline: "", preload: "auto", poster: ev.banner, "aria-label": ev.name });
+  const video = h("video", { muted: "", loop: "", autoplay: "", playsinline: "", preload: "auto", poster, "aria-label": ev.name });
   video.muted = true;
-  video.src = ev.video;
+  video.src = src;
   video.addEventListener("error", () => video.replaceWith(still), { once: true });
   const sync = () => {
     if (!video.isConnected) return document.removeEventListener("visibilitychange", sync);

@@ -459,6 +459,9 @@ export interface SeasonEvent {
   dates: string;
   banner: string;
   video?: string;
+  /** Cabecera grande (1600×560) y su vídeo. */
+  hero?: string;
+  heroVideo?: string;
   wallpaper?: string;
   wallpaperVideo?: string;
   wallpaperAlt?: string;

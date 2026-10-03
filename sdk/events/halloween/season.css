@@ -123,6 +123,14 @@
   overflow: hidden;
   background: #0b1630;
 }
+.ejg-ev-hero {
+  position: relative;
+  aspect-ratio: 1600 / 560;
+  overflow: hidden;
+  background: #0b1630;
+}
+.ejg-ev-hero video,
+.ejg-ev-hero img,
 .ejg-ev-banner video,
 .ejg-ev-banner img {
   display: block;

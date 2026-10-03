@@ -17,7 +17,7 @@ const EVENT_OPTIONS: { value: Settings["eventMode"]; label: string }[] = [
   { value: "off", label: "Nunca" },
 ];
 
-/** Eventos de temporada (ejGames Scream: Halloween, del 26 oct al 2 nov): toda la app. */
+/** Eventos de temporada (ejGames Scream: Halloween, del 3 oct al 2 nov): toda la app. */
 function SeasonSection() {
   const mode = useApp((s) => s.settings?.eventMode ?? "auto");
   const set = useApp((s) => s.set);
@@ -39,7 +39,7 @@ function SeasonSection() {
         onChange={async (v) => set({ settings: await api.updateSettings({ eventMode: v }) })}
       />
       <p className="px-3 pb-2 text-xs text-muted">
-        ejGames Scream, del 26 de octubre al 2 de noviembre: toda la app de noche (colores, fondos animados, niebla y
+        ejGames Scream, del 3 de octubre al 2 de noviembre: toda la app de noche (colores, fondos animados, niebla y
         murciélagos en cualquier tema), el banner y la selección de terror en la tienda, y los avisos del overlay.
       </p>
     </Section>

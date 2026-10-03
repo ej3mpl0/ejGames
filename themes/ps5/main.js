@@ -24,7 +24,7 @@ const player = $("#player");
 const viewer = $("#viewer");
 const saved = (await ejg.storage.getAll().catch(() => null)) || {};
 
-const state = { tab: "home", selected: saved.last ?? null, chip: "all", detailsFor: null };
+const state = { tab: "home", selected: saved.last ?? null, chip: "all", detailsFor: null, peek: null };
 const bg = createBackdrop($("#bg"), { fade: 700 });
 clock($("#clock"));
 
@@ -32,6 +32,9 @@ const PLAY_ICON = '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>'
 const GRID_ICON = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
 
 const games = () => visible(ejg.library.all);
+// Ocultos: solo salen en su filtro de la Biblioteca; el que se abre desde ahí
+// (state.peek) se ve en la fila mientras siga seleccionado.
+const hiddenGames = () => visible(ejg.library.all, { hidden: true }).filter((g) => g.hidden);
 
 function rowGames() {
   const all = games();
@@ -53,7 +56,8 @@ function rowGames() {
     }
   }
   list = list.slice(0, 20);
-  const sel = state.selected && all.find((g) => g.id === state.selected);
+  const peek = state.peek === state.selected && ejg.library.byId(state.peek);
+  const sel = state.selected && (all.find((g) => g.id === state.selected) || (peek?.hidden ? peek : null));
   if (sel && !list.includes(sel)) list = [sel, ...list.slice(0, 19)];
   return list;
 }
@@ -116,6 +120,7 @@ let shownId = null;
 function select(id, userInitiated) {
   const g = ejg.library.byId(id);
   if (!g) return;
+  if (state.peek && state.peek !== id) state.peek = null;
   if (state.selected !== id) ejg.storage.set("last", id);
   state.selected = id;
   markSelected();
@@ -146,6 +151,7 @@ function renderHub(g) {
   }
   $("#meta").textContent = [year(g.releaseDate), g.developer, ...(g.genres || []).slice(0, 2)].filter(Boolean).join("  ·  ");
   updatePlay(g);
+  $("#hidden-note").hidden = !g.hidden;
   $("#fav").classList.toggle("on", g.favorite);
   $("#stats").replaceChildren(
     ...[
@@ -287,6 +293,17 @@ $("#play").addEventListener("click", async () => {
 $("#edit").addEventListener("click", () => state.selected && ejg.game.edit(state.selected));
 $("#fav").addEventListener("click", () => state.selected && ejg.game.favorite(state.selected));
 $("#help").addEventListener("click", () => state.selected && openGuides(state.selected));
+$("#unhide").addEventListener("click", async () => {
+  const g = ejg.library.byId(state.selected);
+  if (!g?.hidden) return;
+  try {
+    await ejg.game.hide(g.id, false);
+    ejg.ui.toast(`«${g.title}» vuelve a tu biblioteca`, "ok");
+    focus.focus($("#play"), { silent: true });
+  } catch (e) {
+    ejg.ui.toast(String(e.message || e), "error");
+  }
+});
 
 // ─────────────── ayuda del juego (guías de la comunidad de Steam) ───────────────
 let guideView = null;
@@ -387,12 +404,16 @@ const CHIPS = [
   ["fav", "Favoritos"],
 ];
 function renderLibrary() {
+  const nHidden = hiddenGames().length;
+  // Si ya no queda ninguno oculto, se vuelve a Todos.
+  if (state.chip === "hidden" && !nHidden) state.chip = "all";
+  const chips = nHidden ? [...CHIPS, ["hidden", `Ocultos (${nHidden})`]] : CHIPS;
   $("#chips").replaceChildren(
-    ...CHIPS.map(([k, l]) =>
+    ...chips.map(([k, l]) =>
       h("button", { class: "chip", "data-focus": "", "aria-pressed": String(state.chip === k), onclick: () => ((state.chip = k), renderLibrary()) }, l),
     ),
   );
-  let list = sort(games(), "title");
+  let list = sort(state.chip === "hidden" ? hiddenGames() : games(), "title");
   if (state.chip === "fav") list = list.filter((g) => g.favorite);
   if (state.chip === "played") list = list.filter((g) => g.playtime > 0 || g.lastPlayed);
   if (state.chip === "unplayed") list = list.filter((g) => !g.playtime && !g.lastPlayed);
@@ -406,6 +427,7 @@ function renderLibrary() {
         "data-focus": "",
         "data-game-id": g.id,
         onclick: () => {
+          state.peek = g.hidden ? g.id : null;
           state.selected = g.id;
           setTab("home");
           select(g.id, true);
@@ -537,7 +559,13 @@ bindNav(focus, {
   },
   left: () => (!viewer.hidden ? (stepViewer(-1), true) : !player.hidden),
   right: () => (!viewer.hidden ? (stepViewer(1), true) : !player.hidden),
-  up: () => gv("up") || (!player.hidden || !viewer.hidden ? true : false),
+  up: () => {
+    if (gv("up")) return true;
+    if (!player.hidden || !viewer.hidden) return true;
+    // Desde el aviso de oculto, subir al icono seleccionado (no a las pestañas).
+    const t = focus.current?.id === "unhide" && row.querySelector(".tile.sel");
+    return t ? (focus.focus(t), true) : false;
+  },
   lt: () => gv("lt"),
   rt: () => gv("rt"),
   down: () => {

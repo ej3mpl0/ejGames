@@ -182,3 +182,9 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 :root[data-season="halloween"][data-flicker="on"] .title .blink { animation: ev-lamp 1s steps(1) infinite, ev-candle 0.18s infinite alternate; }
 @keyframes ev-candle { to { filter: drop-shadow(0 0 2px rgba(255, 122, 26, 0.3)); } }
 @media (prefers-reduced-motion: reduce) { :root[data-season="halloween"] .p1::before, :root[data-season="halloween"] .title .blink { animation: none !important; } }
+
+/* ─── ficha de un juego oculto: aviso + MOSTRAR EN LA BIBLIOTECA ─── */
+#detail .hidden-note { grid-column: 1 / -1; justify-self: start; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; padding: 14px 18px; border: 2px dashed var(--hi); color: var(--hi); font-size: calc(var(--fs) * 0.8); }
+#detail .hidden-note span::before { content: "! "; animation: blink 0.8s steps(1) infinite; }
+#detail .unhide { padding: 10px 16px; border: 2px solid var(--hi); color: var(--hi); }
+#detail .unhide.is-focused, #detail .unhide:hover { background: var(--hi); color: var(--bg); text-shadow: none; }

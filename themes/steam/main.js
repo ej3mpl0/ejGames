@@ -165,7 +165,9 @@ window.addEventListener("resize", () => closeMenu(true));
 
 // ─────────────── datos ───────────────
 const games = () => visible(ejg.library.all);
-const CHIPS = { all: "Juegos", played: "Jugados", unplayed: "Sin jugar", fav: "Favoritos" };
+const CHIPS = { all: "Juegos", played: "Jugados", unplayed: "Sin jugar", fav: "Favoritos", hidden: "Ocultos" };
+/** Los ocultos: no salen en ningún otro filtro, solo en «Ocultos». */
+const hiddenGames = () => ejg.library.all.filter((g) => g.hidden && !g.missing);
 function chipped(list) {
   if (state.chip === "fav") return list.filter((g) => g.favorite);
   if (state.chip === "played") return list.filter((g) => g.playtime > 0 || g.lastPlayed);
@@ -173,7 +175,9 @@ function chipped(list) {
   return list;
 }
 function filtered(sortKey = state.sort) {
-  const list = chipped(games());
+  // Mostrado el último oculto, el filtro vuelve a «Juegos».
+  if (state.chip === "hidden" && !hiddenGames().length) state.chip = "all";
+  const list = state.chip === "hidden" ? hiddenGames() : chipped(games());
   if (state.filter) return search(list, state.filter, 500);
   return sort(list, sortKey);
 }
@@ -312,8 +316,10 @@ $("#side-cols").addEventListener("click", () => goLibrary("collections"));
 sideDrop.addEventListener("click", () =>
   openMenu(
     sideDrop,
-    Object.entries(CHIPS).map(([k, label]) => ({
-      label,
+    Object.entries(CHIPS)
+      .filter(([k]) => k !== "hidden" || hiddenGames().length)
+      .map(([k, label]) => ({
+      label: k === "hidden" ? `${label} (${hiddenGames().length})` : label,
       on: state.chip === k,
       run: () => {
         state.chip = k;
@@ -366,7 +372,7 @@ function renderSidebar() {
   const favs = !state.filter && state.chip === "all" ? list.filter((g) => g.favorite) : [];
   const groups = [];
   if (favs.length) groups.push(sideGroup("fav", "Favoritos", favs));
-  groups.push(sideGroup("all", state.filter ? "Resultados" : favs.length ? "Sin categoría" : "Todos", favs.length ? list.filter((g) => !g.favorite) : list));
+  groups.push(sideGroup("all", state.filter ? "Resultados" : state.chip === "hidden" ? "Ocultos" : favs.length ? "Sin categoría" : "Todos", favs.length ? list.filter((g) => !g.favorite) : list));
   if (sideList.children.length !== groups.length || [...sideList.children].some((c, i) => c !== groups[i])) sideList.replaceChildren(...groups);
 }
 
@@ -645,6 +651,30 @@ async function refreshGameStats(g) {
 }
 
 let renderedArt = "";
+/** En la página de un juego oculto: el aviso y el botón para devolverlo a la biblioteca. */
+function hiddenNote(g) {
+  const note = h(
+    "div",
+    { class: "hidden-note", "data-focus-group": "hidden-note" },
+    h("span", null, h("b", null, "Este juego está oculto."), " No sale en tu biblioteca; solo en el filtro «Ocultos»."),
+    h(
+      "button",
+      {
+        class: "btn-show",
+        "data-focus": "",
+        onclick: async () => {
+          await ejg.game.hide(g.id, false);
+          note.remove();
+          focus.focus($("#play"), { silent: true });
+          ejg.ui.toast(`«${g.title}» vuelve a tu biblioteca`, "ok");
+        },
+      },
+      "Mostrar en la biblioteca",
+    ),
+  );
+  return note;
+}
+
 async function renderGame(id) {
   const g = ejg.library.byId(id);
   if (!g) return back();
@@ -691,7 +721,7 @@ async function renderGame(id) {
   const right = h("div", { class: "g-right" }, achSlot, guideSlot);
   const body = h("div", { class: "game-body" }, left, right);
   const bg = h("div", { class: "game-bg", style: heroUrl ? { backgroundImage: `url("${g.media.heroThumb || heroUrl}")` } : {} });
-  main.replaceChildren(h("div", { class: "game" }, bg, hero, playbar, gnav, body));
+  main.replaceChildren(h("div", { class: "game" }, bg, hero, playbar, g.hidden ? hiddenNote(g) : null, gnav, body));
   main.scrollTop = 0;
   focus.focus($("#play"), { instant: true, silent: true });
 
@@ -1108,7 +1138,10 @@ document.querySelectorAll(".tab[data-tab]").forEach((t) =>
   t.addEventListener("click", () => {
     // Otra vez en Biblioteca: vuelve a su inicio, como en Steam.
     if (t.dataset.tab === "library" && state.tab === "library") return goLibrary("home");
+    // Tienda: siempre a su portada, vengas de donde vengas.
+    if (t.dataset.tab === "store") shop.home();
     goTab(t.dataset.tab);
+    if (t.dataset.tab === "store") main.scrollTop = 0;
   }),
 );
 

@@ -174,6 +174,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
           "div",
           { class: "sn-links" },
           link("front", "Tu tienda", () => goFront()),
+          link("latest", "Novedades", () => openList("latest")),
           link("catalog", "Explorar", () => openCatalog()),
           link("week", "Populares", () => openList("week")),
           link("month", "Top del mes", () => openList("month")),
@@ -189,7 +190,8 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     const ev = season();
     shell.className = "store" + (ev ? ` ev ev-${ev.id}` : "");
     if (main.firstChild !== shell || main.childNodes.length !== 1) main.replaceChildren(shell);
-    const on = view.name === "detail" ? view.prev : view.name === "list" ? view.list : view.name;
+    const base = view.name === "detail" ? view.prev : view.name;
+    const on = base === "list" ? view.list : base === "catalog" ? view.link || "catalog" : base;
     for (const [id, el] of Object.entries(links)) el.classList.toggle("on", id === on);
     if (document.activeElement !== navInput) navInput.value = view.name === "catalog" || view.prev === "catalog" ? store.state.catalog.filters.query || "" : "";
   }
@@ -217,16 +219,17 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
 
   /** Listas completas de populares; las novedades son el catálogo. */
   function openList(list) {
-    if (list === "latest") return openCatalog({ sort: "date" });
+    if (list === "latest") return openCatalog({ sort: "date" }, "latest");
     view.name = "list";
     view.list = list;
     paint();
     main.scrollTop = 0;
   }
 
-  /** El catálogo con filtros. `filters`: empezar con estos (los demás, vacíos). */
-  function openCatalog(filters = null) {
+  /** El catálogo con filtros. `filters`: empezar con estos (los demás, vacíos). `link`: el de la barra que se resalta. */
+  function openCatalog(filters = null, link = "catalog") {
     view.name = "catalog";
+    view.link = link;
     sortOpen = false;
     const c = store.state.catalog;
     store.loadGenres();
@@ -1485,6 +1488,14 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
   return {
     bindTab(fn) {
       tabRef = fn;
+    },
+    /** «Tienda» en la barra de arriba: siempre a la portada («Tu tienda»). */
+    home() {
+      if (askOpen) askOpen();
+      closeDialog();
+      view.name = "front";
+      sortOpen = false;
+      if (navInput) navInput.value = "";
     },
     render() {
       if (active() === "store") {

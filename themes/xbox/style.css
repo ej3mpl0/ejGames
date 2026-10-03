@@ -244,3 +244,18 @@ img { display: block; }
 }
 :root[data-season="halloween"] .gx-inner .g-readerview { background: rgba(23, 17, 31, 0.97); }
 :root[data-season="halloween"] .gx-inner .g-section-title { background: rgba(23, 17, 31, 0.99); }
+
+/* Juegos ocultos: filtro de «Mi colección», marca en el mosaico y aviso en la ficha */
+.filter.hidden-f span:first-child { display: inline-flex; align-items: center; gap: 8px; }
+.filter.hidden-f i { display: inline-flex; }
+.filter.hidden-f svg { width: 17px; height: 17px; }
+.tile .hid { position: absolute; top: 8px; right: 8px; z-index: 2; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(8, 9, 12, 0.72); backdrop-filter: blur(8px); }
+.tile .hid svg { width: 16px; height: 16px; }
+.hub-hidden { display: flex; align-items: center; gap: 16px; max-width: 760px; margin: 0 0 22px; padding: 12px 12px 12px 18px; border-radius: var(--r); background: var(--panel); box-shadow: inset 3px 0 0 #fbbf24; backdrop-filter: blur(16px); }
+.hub-hidden .hh-ico svg { width: 26px; height: 26px; color: #fbbf24; }
+.hub-hidden .hh-txt { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.hub-hidden .hh-txt small { color: var(--muted); }
+.hub-hidden .btn { height: 44px; flex: none; }
+:root[data-season="halloween"] .hub-hidden { background: rgba(123, 75, 214, 0.18); box-shadow: inset 3px 0 0 var(--accent); }
+:root[data-season="halloween"] .hub-hidden .hh-ico svg { color: var(--accent); }
+:root[data-season="halloween"] .tile .hid { background: rgba(14, 10, 24, 0.78); }

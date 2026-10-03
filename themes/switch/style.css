@@ -71,8 +71,8 @@ img { display: block; }
 .all-head h1 { margin: 0; font-size: 26px; font-weight: 800; }
 .all-head span { color: var(--muted); }
 .all-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--tile) * 0.62), 1fr)); gap: 22px 18px; }
-.all-grid .stile { width: auto; height: auto; aspect-ratio: 1; content-visibility: auto; contain-intrinsic-size: auto 160px; }
-.all-grid .name { position: absolute; left: 0; right: 0; top: calc(100% + 6px); font-size: 13px; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.all-grid .stile { width: 100%; height: auto; aspect-ratio: 1; content-visibility: auto; contain-intrinsic-size: auto 160px; }
+.all-grid .name { position: absolute; left: 0; right: 0; bottom: 0; font-size: 13px; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .all-grid .item { position: relative; padding-bottom: 24px; }
 
 #options { position: fixed; inset: 0; z-index: 5; background: rgba(0, 0, 0, 0.35); display: flex; justify-content: flex-end; animation: fade 0.18s ease; }
@@ -217,3 +217,23 @@ img { display: block; }
 @media (prefers-reduced-motion: reduce) {
   :root[data-season="halloween"] .stile.is-focused::after, :root[data-season="halloween"] #rail .stile.is-focused::before { animation: none; }
 }
+
+/* ─── «Todos los programas»: pestañas Todos / Ocultos (solo si hay ocultos) ─── */
+.all-tabs { margin-left: auto; display: flex; gap: 8px; padding: 6px; border-radius: 99px; background: var(--card); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); align-self: center; }
+.all-tabs[hidden] { display: none; }
+.all-tabs .tab { height: 38px; padding: 0 20px; border-radius: 99px; font-weight: 800; font-size: 15px; color: var(--muted); }
+.all-tabs .tab.is-on { background: var(--accent); color: #fff; }
+.all-tabs .tab.is-focused, .all-tabs .tab:hover { box-shadow: 0 0 0 3px var(--bg), 0 0 0 6px var(--accent); }
+#all .all-head { padding-top: 6px; }
+
+/* aviso de juego oculto en el panel de opciones */
+.hidden-note { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 14px; margin-bottom: 18px; padding: 14px 16px; border-radius: 10px; background: var(--card); box-shadow: inset 4px 0 0 var(--accent); }
+.hidden-note i { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--title); }
+.hidden-note b { display: block; font-weight: 800; font-size: 17px; }
+.hidden-note small { color: var(--muted); font-weight: 700; font-size: 13px; }
+.hidden-note .show { grid-column: 1 / -1; margin-top: 10px; height: 44px; border-radius: 99px; background: var(--accent); color: #fff; font-weight: 800; font-size: 16px; }
+.hidden-note .show.is-focused, .hidden-note .show:hover { box-shadow: 0 0 0 3px var(--card), 0 0 0 6px var(--accent); }
+:root[data-season="halloween"] .all-tabs { background: var(--glass); box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(123, 75, 214, 0.45); backdrop-filter: blur(6px); text-shadow: none; }
+:root[data-season="halloween"] .all-tabs .tab.is-on, :root[data-season="halloween"] .hidden-note .show { color: #1a0d05; }
+:root[data-season="halloween"] .all-tabs .tab.is-focused, :root[data-season="halloween"] .hidden-note .show.is-focused { box-shadow: 0 0 0 3px var(--bg), 0 0 0 6px var(--accent), 0 0 18px rgba(255, 122, 26, 0.55); }
+:root[data-season="halloween"] .hidden-note { box-shadow: inset 4px 0 0 var(--accent), inset 0 0 0 1px rgba(123, 75, 214, 0.35); }

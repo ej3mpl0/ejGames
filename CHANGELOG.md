@@ -5,6 +5,30 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.9.3
+
+**Juegos ocultos: ahora se encuentran**
+- Los seis temas tienen un filtro «Ocultos (N)», que solo sale si hay alguno, para ver qué juegos están ocultos:
+  - Steam: en el desplegable «Juegos» de la barra lateral.
+  - PS5: un chip más en Biblioteca, junto a Favoritos.
+  - Xbox: al final de la columna de filtros de Mi colección.
+  - Switch: en «Todos los programas», las pestañas Todos / Ocultos (también con LB/RB).
+  - Cinema: en la barra de arriba y en una fila al final de Inicio.
+  - Retro: la pestaña HIDDEN, junto a FAV.
+- En la página de un juego oculto, un aviso con el botón «Mostrar en la biblioteca». Al mostrar el último, el filtro
+  vuelve a «Todos».
+
+**Tienda Steam**
+- «Novedades» en la barra de la tienda (lo último publicado).
+- «Tienda» en la barra de arriba lleva siempre a «Tu tienda», vengas de donde vengas.
+
+**Retro**
+- «OPTIONS» al final de la fila de pestañas abre los ajustes del launcher.
+
+**Arreglos**
+- Switch: «Todos los programas» pintaba las fichas sin arte (a 0×0).
+- Xbox: con el mando, subir desde «Jugar» en la página de un juego saltaba a la colección de detrás.
+
 ## 0.9.2
 
 **Tienda Steam: la portada de Halloween, como la de las rebajas de Steam**

@@ -474,3 +474,9 @@ main::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.24
   box-shadow: 0 -1px 0 rgba(255, 122, 26, 0.25);
 }
 :root[data-season="halloween"] .hints { background: rgba(21, 15, 34, 0.94); }
+
+/* Página de un juego oculto: aviso con el botón para devolverlo a la biblioteca. */
+.hidden-note { display: flex; align-items: center; gap: 16px; padding: 10px 32px; background: rgba(214, 160, 40, 0.16); border-bottom: 1px solid rgba(214, 160, 40, 0.35); color: #e8d9b0; font-size: 13.5px; }
+.hidden-note b { color: #fff; }
+.btn-show { margin-left: auto; height: 30px; padding: 0 16px; border-radius: 2px; background: #d6a028; color: #1c1405; font-weight: 600; white-space: nowrap; }
+.btn-show:hover, .btn-show.is-focused { background: #f0bb45; box-shadow: 0 0 0 2px #fff; }

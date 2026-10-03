@@ -24,6 +24,8 @@ const randomSeed = Math.random();
 const PLAY = '<svg viewBox="0 0 24 24"><path d="M6 4v16l14-8z"/></svg>';
 const INFO = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>';
 const games = () => visible(ejg.library.all);
+const hiddenGames = () => visible(ejg.library.all, { hidden: true }).filter((g) => g.hidden);
+const EYE_OFF = '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c5 0 9 4.5 10 7a13 13 0 0 1-3 4.2M6.6 6.6A13 13 0 0 0 2 12c1 2.5 5 7 10 7a9.6 9.6 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
 
 function pickFeatured() {
   const all = games();
@@ -167,7 +169,14 @@ function row(id, title, list, opts) {
 
 function renderRows() {
   const all = games();
-  if (!all.length) return;
+  const hid = sort(hiddenGames(), "title");
+  renderHiddenNav(hid.length);
+  if (!all.length) {
+    // Todo oculto: bajo el aviso de biblioteca vacía, al menos la fila de ocultos.
+    rowsEl.querySelector("#row-hidden")?.remove();
+    if (hid.length) rowsEl.append(hiddenRow(hid));
+    return;
+  }
   const rec = recent(all, 20);
   const rows = [
     row("row-rec", "Seguir jugando", rec, { progress: true }),
@@ -178,7 +187,47 @@ function renderRows() {
   ];
   if (ejg.settings.genreRows !== false) byGenre(all, 3).slice(0, 6).forEach((grp) => rows.push(row(`row-g-${grp.name}`, grp.name, grp.games)));
   rows.push(row("row-all", "Toda tu biblioteca", sort(all, "title")));
+  // Los ocultos, al final y solo si hay: así se pueden volver a encontrar.
+  if (hid.length) rows.push(hiddenRow(hid));
   rowsEl.replaceChildren(...rows.filter(Boolean));
+}
+
+function hiddenRow(hid) {
+  const r = row("row-hidden", `Ocultos (${hid.length})`, hid);
+  r.classList.add("row-hidden");
+  r.querySelector("h2").append(h("small", null, "No salen en el resto de filas · ábrelos para mostrarlos de nuevo"));
+  return r;
+}
+
+/** «Ocultos (N)» en la barra superior, solo si hay alguno. */
+function renderHiddenNav(n) {
+  const nav = $("#nav-hidden");
+  nav.hidden = !n;
+  nav.textContent = `Ocultos (${n})`;
+  if (!n && focus.current === nav) focus.focus($("#nav-home"), { silent: true, noScroll: true });
+}
+
+/** Aviso en la ficha de un juego oculto, con el botón para devolverlo. */
+function hiddenNote(g) {
+  if (!g.hidden) return null;
+  return h(
+    "div",
+    { class: "hid-note", "data-focus-group": "hid-note" },
+    h("span", { class: "hid-ic", html: EYE_OFF }),
+    h("div", null, h("b", null, "Oculto en tu biblioteca"), h("small", null, "No aparece en las filas; solo en «Ocultos».")),
+    h("button", { class: "hbtn info", "data-focus": "", id: "m-unhide", onclick: () => unhide(g.id) }, "Mostrar en la biblioteca"),
+  );
+}
+
+async function unhide(id) {
+  const g = ejg.library.byId(id);
+  if (!g) return;
+  try {
+    await ejg.game.hide(id, false);
+    ejg.ui.toast(`«${g.title}» vuelve a tu biblioteca`, "ok");
+  } catch (e) {
+    ejg.ui.toast(String(e.message || e), "error");
+  }
 }
 
 // ─────────────── ficha modal ───────────────
@@ -218,6 +267,7 @@ async function openModal(id) {
     h(
       "div",
       null,
+      hiddenNote(g),
       sheetMeta(g),
       desc,
     ),
@@ -272,7 +322,9 @@ function closeModal(quiet) {
   modal.replaceChildren();
   state.modalId = null;
   if (quiet) return;
-  if (state.returnTo?.isConnected) focus.focus(state.returnTo, { silent: true });
+  // Si su tarjeta ya no existe (p. ej. se mostró un oculto), la del mismo juego en otra fila.
+  const back = state.returnTo?.isConnected ? state.returnTo : rowsEl.querySelector(`[data-game-id="${state.returnTo?.dataset?.gameId}"]`);
+  if (back) focus.focus(back, { silent: true });
   const g = ejg.library.byId(state.featured);
   if (g && main.scrollTop < 200 && ejg.settings.heroTrailer !== false) heroTimer = setTimeout(() => startHeroTrailer(g), 1500);
 }
@@ -566,6 +618,14 @@ const refresh = debounce(() => {
     }
     if (g) {
       modal.querySelector(".sheet-body .hero-meta")?.replaceWith(sheetMeta(g));
+      // Oculto o no: el aviso aparece o se va (y el foco vuelve a «Jugar»).
+      const note = modal.querySelector(".hid-note");
+      if (!!note !== !!g.hidden) {
+        const had = note?.contains(focus.current);
+        if (note) note.remove();
+        else modal.querySelector(".sheet-body .hero-meta")?.before(hiddenNote(g));
+        if (had) focus.focus($("#m-play"), { silent: true, noScroll: true });
+      }
       const label = $("#m-play span");
       if (label) label.textContent = playLabel(g);
     }

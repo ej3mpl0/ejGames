@@ -18,7 +18,7 @@ const ejg = await window.ejg.ready();
 const $ = (s) => document.querySelector(s);
 const rail = $("#rail");
 const options = $("#options");
-const state = { view: "home", optionsFor: null };
+const state = { view: "home", optionsFor: null, allFilter: "all" };
 clock($("#clock"));
 
 const games = () => visible(ejg.library.all);
@@ -57,16 +57,51 @@ function renderRail() {
   keyed(rail, [...dls.map((dl) => ({ dl })), ...list], (x) => (x.dl ? "dl" + x.dl.id : x.id), (x, prev) => (x.dl ? shop.railTile(x.dl, prev) : stile(x, prev)));
   allTile ||= h(
     "button",
-    { class: "stile allsw", "data-focus": "", onclick: () => setView("all") },
+    { class: "stile allsw", "data-focus": "", onclick: () => ((state.allFilter = "all"), setView("all")) },
     h("div", { class: "art", html: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Todos los programas</span>' }),
   );
   rail.append(allTile);
   if (!list.length && !dls.length) $("#sel-title").textContent = "Pulsa + para añadir tus juegos";
 }
 
+// Filtro de «Todos los programas»: all | hidden (pestaña «Ocultos», solo si hay alguno).
+const hiddenGames = () => ejg.library.all.filter((g) => g.hidden && !g.missing);
+function setAllFilter(f) {
+  if (state.allFilter === f) return;
+  state.allFilter = f;
+  ejg.sound.play("select");
+  renderAll();
+  focus.focus($(`#all-tabs [data-filter="${f}"]`), { silent: true });
+}
+// LB/RB cambian de pestaña en «Todos los programas» (solo hay dos).
+function tabCycle() {
+  if (state.view !== "all" || !options.hidden || $("#all-tabs").hidden) return false;
+  setAllFilter(state.allFilter === "all" ? "hidden" : "all");
+  return true;
+}
+function renderTabs(nHidden) {
+  const tabs = $("#all-tabs");
+  if (tabs.hidden !== !nHidden) queueMicrotask(updateHints);
+  tabs.hidden = !nHidden;
+  if (!nHidden) return tabs.replaceChildren();
+  const tab = (f, label) => {
+    const on = state.allFilter === f;
+    const b = tabs.querySelector(`[data-filter="${f}"]`) || h("button", { class: "tab", "data-focus": "", "data-filter": f, onclick: () => setAllFilter(f) });
+    b.textContent = label;
+    b.classList.toggle("is-on", on);
+    return b;
+  };
+  tabs.replaceChildren(tab("all", "Todos"), tab("hidden", `Ocultos (${nHidden})`));
+}
+
 function renderAll() {
-  const list = sort(games(), "title");
-  $("#all-count").textContent = `${list.length} programas`;
+  const nHidden = hiddenGames().length;
+  // Si ya no queda ninguno oculto, se vuelve al filtro por defecto.
+  if (!nHidden) state.allFilter = "all";
+  renderTabs(nHidden);
+  const onlyHidden = state.allFilter === "hidden";
+  const list = sort(onlyHidden ? hiddenGames() : games(), "title");
+  $("#all-count").textContent = onlyHidden ? (list.length === 1 ? "1 oculto" : `${list.length} ocultos`) : `${list.length} programas`;
   keyed($("#all-grid"), list, (g) => g.id, (g, prev) => {
     const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.favorite}`;
     if (prev && prev.__sig === sig) return prev;
@@ -114,6 +149,7 @@ async function openOptions(id) {
     h("h2", null, g.title),
     h("div", { class: "sub" }, [g.developer, year(g.releaseDate)].filter(Boolean).join(" · ")),
     h("div", { class: "stats" }, ...optionStats(g)),
+    g.hidden ? hiddenNotice(g) : null,
     h(
       "div",
       { class: "menu" },
@@ -136,6 +172,34 @@ async function openOptions(id) {
   if (d?.description && state.optionsFor === id) $("#opt-desc").replaceChildren(description(d.description.split("\n\n").slice(0, 5).join("\n\n")));
 }
 
+// Aviso de juego oculto, con el botón para devolverlo a la biblioteca.
+function hiddenNotice(g) {
+  const show = async () => {
+    try {
+      await ejg.game.hide(g.id, false);
+    } catch (e) {
+      return ejg.ui.toast(String(e.message || e), "error");
+    }
+    ejg.ui.toast(`«${g.title}» vuelve a tu biblioteca`, "ok");
+    dropNotice();
+  };
+  return h(
+    "div",
+    { class: "hidden-note" },
+    h("i", { html: '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-3 3.8M6.6 6.6A17 17 0 0 0 2.5 12S6 19 12 19a9.6 9.6 0 0 0 4.4-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>' }),
+    h("div", null, h("b", null, "Oculto en tu biblioteca"), h("small", null, "No sale en el HOME ni en la pestaña «Todos».")),
+    h("button", { class: "show", "data-focus": "", onclick: show }, "Mostrar en la biblioteca"),
+  );
+}
+// Quita el aviso del panel abierto (el foco pasa a la primera opción si estaba en él).
+function dropNotice() {
+  const note = options.querySelector(".hidden-note");
+  if (!note) return;
+  const had = note.contains(focus.current);
+  note.remove();
+  if (had) focus.first(options.querySelector(".menu"));
+}
+
 async function playTrailer(id, box) {
   const d = await ejg.game.details(id).catch(() => null);
   const t = d?.trailers?.[0];
@@ -152,6 +216,8 @@ function closeOptions() {
   options.replaceChildren();
   state.optionsFor = null;
   if (state.returnTo?.isConnected) focus.focus(state.returnTo, { silent: true });
+  // El icono ya no está (p. ej. se mostró un oculto con el filtro «Ocultos» activo).
+  else if (state.view === "all") focus.first($("#all-grid"));
 }
 options.addEventListener("click", (e) => e.target === options && closeOptions());
 
@@ -278,8 +344,8 @@ const actions = {
     if (id) ejg.game.favorite(id);
     return true;
   },
-  lb: () => gv("lb") || shop.cycle(-1),
-  rb: () => gv("rb") || shop.cycle(1),
+  lb: () => gv("lb") || shop.cycle(-1) || tabCycle(),
+  rb: () => gv("rb") || shop.cycle(1) || tabCycle(),
   menu: () => (ejg.ui.open("menu"), true),
   view: () => gv("view") || (ejg.ui.open("search"), true),
 };
@@ -376,13 +442,14 @@ const refresh = debounce(() => {
   const og = !options.hidden && state.optionsFor && ejg.library.byId(state.optionsFor);
   if (og) {
     options.querySelector(".stats")?.replaceChildren(...optionStats(og));
+    if (!og.hidden) dropNotice();
     const start = options.querySelector(".menu .mi");
     if (start) start.textContent = startLabel(og);
   }
   if ((state.view === "home" || state.view === "all") && focus.current && !focus.current.isConnected) {
     const again = document.querySelector(`[data-game-id="${focus.current.dataset.gameId}"]`);
     if (again) focus.focus(again, { noScroll: true, silent: true });
-    else focus.first(rail);
+    else focus.first(state.view === "all" ? $("#all-grid") : rail);
   }
 }, 60);
 ejg.library.onChange(refresh);
@@ -399,11 +466,14 @@ function updateHints() {
   const d = el?.dataset?.dlId && ejg.downloads.byId(Number(el.dataset.dlId));
   if (d) return hintBar.set([["accept", "Ver descarga"], ...(isActive(d) || d.state === "paused" ? [["x", isActive(d) ? "Pausar" : "Reanudar"]] : []), ["back", "Atrás"]]);
   if (el?.closest?.(".circles")) return hintBar.set([["accept", "Aceptar"], ["back", "Atrás"]]);
+  const tabs = state.view === "all" && !$("#all-tabs").hidden ? [["lb", state.allFilter === "all" ? "Ocultos" : "Todos"]] : [];
+  if (el?.closest?.("#all-tabs")) return hintBar.set([["accept", "Ver"], ...tabs, ["back", "Atrás"]]);
   const g = Number(el?.dataset?.gameId) && ejg.library.byId(Number(el.dataset.gameId));
   hintBar.set([
     ["accept", "Iniciar"],
     ["x", "Opciones"],
     ["y", "Favorito"],
+    ...tabs,
     ["back", "Atrás"],
   ]);
 }

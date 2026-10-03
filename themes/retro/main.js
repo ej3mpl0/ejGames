@@ -23,23 +23,28 @@ const FILTERS = [
   ["played", "PLAYED"],
   ["new", "NEW"],
   ["fav", "FAV ★"],
+  ["hidden", "HIDDEN"], // solo aparece si hay juegos ocultos
 ];
+const HID = FILTERS.length - 1;
 const TITLES = { library: "SELECT GAME", shop: "GAME SHOP", downloads: "DOWNLOADS" };
 // view: library (pestañas de filtro) | shop | downloads
 const state = { filter: 0, selected: null, view: "library" };
 clock($("#clock"));
 
+const hiddenGames = () => ejg.library.all.filter((g) => g.hidden);
 const games = () => {
-  let l = sort(visible(ejg.library.all), "title");
   const f = FILTERS[state.filter][0];
+  // HIDDEN: solo los ocultos (para encontrarlos y volver a mostrarlos)
+  let l = sort(f === "hidden" ? hiddenGames() : visible(ejg.library.all), "title");
   if (f === "fav") l = l.filter((g) => g.favorite);
   if (f === "played") l = l.filter((g) => g.playtime > 0 || g.lastPlayed);
   if (f === "new") l = l.filter((g) => !g.playtime && !g.lastPlayed);
   return l;
 };
 
-// ─────────────── pestañas: filtros + SHOP + DOWNLOADS ───────────────
-const tabList = () => [...FILTERS.map((_, i) => i), ...(ejg.explore.enabled ? ["shop"] : []), "downloads"];
+// ─────────────── pestañas: filtros (+ HIDDEN) + SHOP + DOWNLOADS + OPTIONS ───────────────
+const filterTabs = () => FILTERS.map((_, i) => i).filter((i) => i !== HID || hiddenGames().length);
+const tabList = () => [...filterTabs(), ...(ejg.explore.enabled ? ["shop"] : []), "downloads", "options"];
 const curTab = () => (state.view === "library" ? state.filter : state.view);
 const pending = () => ejg.downloads.all.filter((d) => ["queued", "downloading", "paused", "seeding", "completed", "installing", "error"].includes(d.state)).length;
 
@@ -47,12 +52,14 @@ function renderTabs() {
   const cur = curTab();
   const tab = (id, label, extra) => h("button", { class: "tab" + (id === cur ? " on" : ""), "data-focus": "", onclick: () => goTab(id) }, label, extra);
   const n = pending();
+  const nh = hiddenGames().length;
   $("#tabs").replaceChildren(
     ...[
-      ...FILTERS.map(([, l], i) => tab(i, l)),
+      ...filterTabs().map((i) => tab(i, i === HID ? `HIDDEN (${nh})` : FILTERS[i][1])),
       h("span", { class: "tab-sep" }),
       ejg.explore.enabled ? tab("shop", "SHOP") : null,
       tab("downloads", "DOWNLOADS", h("span", { class: "tab-n", id: "tab-n", hidden: !n }, String(n))),
+      tab("options", "OPTIONS"),
     ].filter(Boolean),
   );
   const total = visible(ejg.library.all).length;
@@ -61,10 +68,13 @@ function renderTabs() {
 }
 
 function goTab(t) {
+  // OPTIONS no es una vista: abre los ajustes del launcher
+  if (t === "options") return void ejg.ui.open("settings");
   if (!detail.hidden) closeDetail(true);
   shop.leave();
   if (typeof t === "number") {
     state.filter = (t + FILTERS.length) % FILTERS.length;
+    if (state.filter === HID && !hiddenGames().length) state.filter = 0;
     state.view = "library";
   } else state.view = t;
   document.documentElement.dataset.view = state.view;
@@ -83,7 +93,7 @@ function goTab(t) {
   } else shop.render();
 }
 function switchTab(d) {
-  const tabs = tabList();
+  const tabs = tabList().filter((t) => t !== "options"); // LB/RB no abren los ajustes
   goTab(tabs[(tabs.indexOf(curTab()) + d + tabs.length) % tabs.length]);
 }
 
@@ -187,6 +197,11 @@ async function openDetail(id) {
   if (!g) return;
   const shots = h("div", { class: "shots" });
   const desc = h("div", { class: "desc" }, g.shortDescription || "");
+  // oculto: aviso + botón para devolverlo a la biblioteca (el primero del foco)
+  const unhide = g.hidden
+    ? h("button", { class: "unhide", "data-focus": "", onclick: () => unhideGame(g) }, "MOSTRAR EN LA BIBLIOTECA")
+    : null;
+  const notice = g.hidden ? h("div", { class: "hidden-note" }, h("span", null, "OCULTO EN TU BIBLIOTECA"), unhide) : null;
   const actions = h(
     "div",
     { class: "actions", "data-focus-group": "detail" },
@@ -198,9 +213,10 @@ async function openDetail(id) {
     h("button", { "data-focus": "", onclick: () => (closeDetail(), ejg.game.edit(g.id)) }, "EDIT"),
     h("button", { "data-focus": "", onclick: closeDetail }, "BACK"),
   );
-  detail.replaceChildren(h("h2", null, g.title.toUpperCase()), desc, shots, actions);
+  detail.replaceChildren(...[h("h2", null, g.title.toUpperCase()), notice, desc, shots, actions].filter(Boolean));
   detail.hidden = false;
-  focus.first(actions);
+  if (unhide) focus.focus(unhide, { instant: true });
+  else focus.first(actions);
   ejg.sound.play("open");
   const d = await ejg.game.details(id).catch(() => null);
   if (!d || detail.hidden) return;
@@ -218,12 +234,25 @@ async function openDetail(id) {
     shots.append(c);
   }
 }
+async function unhideGame(g) {
+  try {
+    await ejg.game.hide(g.id, false);
+    ejg.ui.toast(`«${g.title}» vuelve a tu biblioteca`, "ok");
+    // la ficha sigue abierta, ya sin aviso; el foco pasa a START
+    detail.querySelector(".hidden-note")?.remove();
+    const first = detail.querySelector(".actions [data-focus]");
+    if (first) focus.focus(first, { silent: true });
+  } catch (e) {
+    ejg.ui.toast(String(e.message || e), "error");
+  }
+}
 function closeDetail(quiet) {
   detail.hidden = true;
   detail.replaceChildren();
   if (quiet === true) return;
-  const el = list.querySelector(`[data-game-id="${state.selected}"]`);
-  if (el) focus.focus(el, { silent: true });
+  // si ya no está en la lista (p. ej. se mostró desde HIDDEN), al primero
+  const el = list.querySelector(`[data-game-id="${state.selected}"]`) || list.querySelector(".item");
+  if (el) focus.focus(el, { silent: !!el.dataset.gameId && +el.dataset.gameId === state.selected });
 }
 
 // ─────────────── guías (GUÍAS: las de la comunidad de Steam) ───────────────
@@ -402,6 +431,11 @@ ejg.explore.onEnabled(() => {
 });
 
 const refresh = debounce(() => {
+  // sin ocultos ya, HIDDEN desaparece: de vuelta a ALL (con la ficha abierta, sin cerrarla)
+  if (inLib() && state.filter === HID && !hiddenGames().length) {
+    if (detail.hidden) return goTab(0);
+    state.filter = 0;
+  }
   renderTabs();
   renderList();
   if (!inLib()) return;
@@ -451,7 +485,8 @@ function updateHints(g) {
   if (!inLib()) return;
   hintBar.set([
     ["accept", "START"],
-    ["x", "INFO"],
+    // oculto: en INFO está MOSTRAR EN LA BIBLIOTECA
+    ["x", g?.hidden ? "INFO · MOSTRAR" : "INFO"],
     ["y", "FAV"],
     ["lb", "PESTAÑA"],
   ]);

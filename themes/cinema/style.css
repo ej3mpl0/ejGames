@@ -90,6 +90,15 @@ body.playing-hero .hero-desc { opacity: 0; }
 .round { width: 44px; height: 44px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.5); display: grid; place-items: center; background: rgba(42, 42, 42, 0.6); font-size: 18px; }
 .round.on { border-color: #fff; color: #ffcf33; }
 .round.is-focused, .round:hover { border-color: #fff; box-shadow: 0 0 0 2px #fff; }
+/* Juegos ocultos: la fila del final (atenuada) y el aviso en la ficha. */
+.row-hidden h2 small { margin-left: 14px; font-size: 13px; font-weight: 400; color: #8c8c8c; }
+.row-hidden .card .art { opacity: 0.55; filter: grayscale(0.6); transition: opacity 0.2s ease, filter 0.2s ease; }
+.row-hidden .card.is-focused .art, .row-hidden .card:hover .art { opacity: 1; filter: none; }
+.hid-note { display: flex; align-items: center; gap: 14px; margin: 4px 0 16px; padding: 12px 14px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); border-left: 3px solid var(--accent); }
+.hid-note .hid-ic svg { width: 26px; height: 26px; color: #bbb; }
+.hid-note div { flex: 1; display: grid; gap: 2px; }
+.hid-note small { font-size: 13px; color: #999; }
+.hid-note .hbtn { height: 40px; padding: 0 18px; font-size: 15px; flex: none; }
 
 .hints { position: fixed; z-index: 6; right: var(--pad); bottom: 16px; display: flex; gap: 20px; font-size: 13px; color: #bbb; padding: 8px 16px; border-radius: 6px; background: rgba(0, 0, 0, 0.7); }
 .hints:empty, :root[data-input="mouse"] .hints { display: none; }
@@ -223,6 +232,8 @@ body.playing-hero .hero-desc { opacity: 0; }
 :root[data-season="halloween"] .ep, :root[data-season="halloween"] .round { background-color: #2a2040; }
 :root[data-season="halloween"] .sheet-body .side { color: #8f84a8; }
 :root[data-season="halloween"] .cg-all { background: #241b38; }
+:root[data-season="halloween"] .hid-note { background: rgba(123, 75, 214, 0.14); border-left-color: var(--hw-accent); }
+:root[data-season="halloween"] .hid-note small, :root[data-season="halloween"] .row-hidden h2 small { color: #8f84a8; }
 
 /* guías y perfil: sus colores fijos, a juego */
 :root[data-season="halloween"] .cg-bg { background-image: url("/_sdk/events/halloween/wallpaper-street.jpg"); }

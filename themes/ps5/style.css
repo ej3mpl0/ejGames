@@ -73,6 +73,12 @@ main { position: relative; z-index: 2; height: calc(100% - 76px); }
 .more { width: 54px; height: 54px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); font-size: 20px; letter-spacing: 1px; transition: all 0.15s ease; }
 .more:hover, .more.is-focused { background: rgba(255, 255, 255, 0.3); box-shadow: 0 0 0 3px #fff; }
 .fav.on { color: #fbbf24; }
+/* Juego oculto (abierto desde Biblioteca › Ocultos). */
+.hidden-note { display: flex; align-items: center; gap: 12px; width: fit-content; margin: -4px 0 18px; padding: 6px 6px 6px 16px; border-radius: 99px; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); font-size: 15px; color: var(--text); }
+.hidden-note[hidden] { display: none; }
+.hidden-note svg { width: 20px; height: 20px; color: var(--muted); }
+.unhide { height: 36px; padding: 0 18px; border-radius: 99px; background: rgba(255, 255, 255, 0.16); font-size: 14.5px; font-weight: 500; transition: all 0.15s ease; }
+.unhide:hover, .unhide.is-focused { background: #fff; color: #0b0d12; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35); }
 .stats { display: flex; gap: 28px; margin-top: 22px; font-size: 14px; color: var(--muted); }
 .stats b { display: block; color: var(--text); font-size: 17px; font-weight: 500; }
 .blurb { margin: 18px 0 0; max-width: 62ch; color: rgba(242, 244, 248, 0.78); line-height: 1.55; font-size: 15px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -229,6 +235,9 @@ main { position: relative; z-index: 2; height: calc(100% - 76px); }
 :root[data-season="halloween"] .play.running { background: rgba(124, 246, 74, 0.16); color: #d6ffc4; box-shadow: inset 0 0 0 2px rgba(124, 246, 74, 0.7); }
 :root[data-season="halloween"] .more { background: rgba(40, 26, 60, 0.55); backdrop-filter: blur(8px); }
 :root[data-season="halloween"] .more:hover, :root[data-season="halloween"] .more.is-focused { background: rgba(255, 122, 26, 0.3); box-shadow: 0 0 0 3px #fff, 0 0 18px rgba(255, 122, 26, 0.4); }
+:root[data-season="halloween"] .hidden-note { background: rgba(40, 26, 60, 0.6); }
+:root[data-season="halloween"] .unhide { background: rgba(123, 75, 214, 0.35); }
+:root[data-season="halloween"] .unhide:hover, :root[data-season="halloween"] .unhide.is-focused { background: var(--ejg-season-accent, #ff7a1a); color: #1a0d04; box-shadow: 0 0 0 3px #fff, 0 0 16px rgba(255, 122, 26, 0.5); }
 :root[data-season="halloween"] .fav.on { color: var(--ejg-season-accent, #ff7a1a); text-shadow: 0 0 10px rgba(255, 122, 26, 0.7); }
 
 /* Tarjetas del hub y ayuda: del azul PlayStation al violeta de la noche. */

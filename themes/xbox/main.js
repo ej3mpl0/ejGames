@@ -36,20 +36,25 @@ const ICON = {
   plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
   download: '<svg viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>',
   store: '<svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 12H6.2Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>',
+  eye: '<svg viewBox="0 0 24 24"><path d="M3 12c0-1.5 3.5-7 9-7s9 5.5 9 7-3.5 7-9 7-9-5.5-9-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeOff: '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c5.5 0 9 5.5 9 7a11 11 0 0 1-2.6 3.4M6.6 6.6C4.4 8 3 10.6 3 12c0 1.5 3.5 7 9 7a9.6 9.6 0 0 0 4.3-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
   queue: '<svg viewBox="0 0 24 24"><path d="M4 6h10M4 11h10M4 16h6m8-8v10m0 0-3-3m3 3 3-3"/></svg>',
 };
 
 const games = () => visible(ejg.library.all);
+// Ocultos: no salen en ningún sitio salvo en su filtro de «Mi colección».
+const hiddenGames = () => visible(ejg.library.all, { hidden: true }).filter((g) => g.hidden);
 const running = (id) => ejg.game.isRunning(id);
 
 function tile(g, wide, prev) {
-  const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.media.logo}:${wide}:${running(g.id)}`;
+  const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.media.logo}:${wide}:${running(g.id)}:${!!g.hidden}`;
   if (prev && prev.__sig === sig) return prev;
   const el = h(
     "button",
     { class: "tile" + (wide ? " wide" : ""), "data-focus": "", "data-game-id": g.id, onclick: () => openHub(g.id), title: g.title },
     artFor(g, wide ? "landscape" : "square"),
     running(g.id) ? h("span", { class: "run" }, "EN JUEGO") : null,
+    g.hidden ? h("span", { class: "hid", html: ICON.eyeOff, title: "Oculto" }) : null,
     h("span", { class: "label" }, g.title),
   );
   el.__sig = sig;
@@ -153,6 +158,9 @@ $("#q-btn").addEventListener("click", () => setView("queue"));
 // ─────────────── colección ───────────────
 function renderCollection() {
   const all = games();
+  const hid = hiddenGames();
+  // Si ya no queda ninguno oculto, vuelta a «Todos».
+  if (state.filter === "hidden" && !hid.length) state.filter = "all";
   const opts = [
     ["all", "Todos", all.length],
     ["fav", "Favoritos", all.filter((g) => g.favorite).length],
@@ -160,24 +168,34 @@ function renderCollection() {
     ["new", "Sin jugar", all.filter((g) => !g.playtime).length],
     ...ejg.library.collections.map((c) => [`c${c.id}`, c.name, inCollection(all, c).length]),
   ];
+  const pick = (k) => () => ((state.filter = k), renderCollection());
   $("#filters").replaceChildren(
     ...opts.map(([k, l, n], i) =>
       h(
         "button",
-        { class: "filter" + (i === 4 ? " sep" : ""), "data-focus": "", "aria-pressed": String(state.filter === k), onclick: () => ((state.filter = k), renderCollection()) },
+        { class: "filter" + (i === 4 ? " sep" : ""), "data-focus": "", "aria-pressed": String(state.filter === k), onclick: pick(k) },
         h("span", null, l),
         h("span", null, n),
       ),
     ),
     h("button", { class: "filter sep", "data-focus": "", onclick: () => ejg.ui.open("collections") }, h("span", null, "+ Colecciones"), h("span")),
+    hid.length
+      ? h(
+          "button",
+          { class: "filter sep hidden-f", "data-focus": "", "aria-pressed": String(state.filter === "hidden"), onclick: pick("hidden") },
+          h("span", null, h("i", { html: ICON.eyeOff }), "Ocultos"),
+          h("span", null, hid.length),
+        )
+      : null,
   );
   let list = all;
   if (state.filter === "fav") list = all.filter((g) => g.favorite);
   else if (state.filter === "played") list = all.filter((g) => g.playtime);
   else if (state.filter === "new") list = all.filter((g) => !g.playtime);
+  else if (state.filter === "hidden") list = hid;
   else if (state.filter.startsWith("c")) list = inCollection(all, ejg.library.collections.find((c) => `c${c.id}` === state.filter));
   list = sort(list, state.sort);
-  $("#col-title").textContent = opts.find((o) => o[0] === state.filter)?.[1] || "Mi colección";
+  $("#col-title").textContent = state.filter === "hidden" ? "Ocultos" : opts.find((o) => o[0] === state.filter)?.[1] || "Mi colección";
   $("#sort").textContent = `Ordenar: ${SORTS[state.sort].label}`;
   keyed($("#grid"), list, (g) => g.id, (g, prev) => tile(g, false, prev));
 }
@@ -209,6 +227,7 @@ async function openHub(id) {
     { class: "hub-content" },
     g.media.logo ? img(g.media.logo, { class: "hub-logo", loading: "eager" }) : h("h1", { class: "hub-title" }, g.title),
     h("div", { class: "hub-meta" }, [year(g.releaseDate), g.developer, ...(g.genres || []).slice(0, 3)].filter(Boolean).join("  •  ")),
+    g.hidden ? hiddenNote(g) : null,
     h(
       "div",
       { class: "hub-actions", "data-focus-group": "actions" },
@@ -242,6 +261,33 @@ async function openHub(id) {
   );
   d.screenshots.slice(0, 12).forEach((s) => cards.push(h("button", { class: "shot", "data-focus": "", onclick: () => openImage(s.url) }, img(s.thumb || s.url))));
   mediaRow.replaceChildren(...cards);
+}
+
+// Aviso de juego oculto en la ficha, con el botón para devolverlo a la biblioteca.
+function hiddenNote(g) {
+  return h(
+    "div",
+    { class: "hub-hidden", "data-focus-group": "hidden-note" },
+    h("span", { class: "hh-ico", html: ICON.eyeOff }),
+    h("span", { class: "hh-txt" }, h("b", null, "Oculto en tu biblioteca"), h("small", null, "No aparece en Inicio ni en Mi colección.")),
+    h(
+      "button",
+      {
+        class: "btn",
+        "data-focus": "",
+        onclick: async () => {
+          try {
+            await ejg.game.hide(g.id, false);
+            ejg.ui.toast(`«${g.title}» vuelve a tu biblioteca`, "ok");
+          } catch (e) {
+            ejg.ui.toast(String(e.message || e), "error");
+          }
+        },
+      },
+      h("span", { html: ICON.eye }),
+      "Mostrar en la biblioteca",
+    ),
+  );
 }
 
 function closeHub() {
@@ -536,6 +582,13 @@ const refresh = debounce(() => {
       f.classList.toggle("on", g.favorite);
       f.lastChild.textContent = g.favorite ? "Anclado" : "Anclar";
     }
+    // Aviso de oculto: aparece o se va según cambie el juego (el foco pasa a «Jugar»).
+    const note = $(".hub-hidden");
+    if (g && !g.hidden && note) {
+      const had = note.contains(focus.current);
+      note.remove();
+      if (had && p) focus.focus(p, { silent: true });
+    } else if (g && g.hidden && !note) $(".hub-meta")?.after(hiddenNote(g));
   }
   if (state.view === "home") renderHome();
   else if (state.view === "collection") renderCollection();

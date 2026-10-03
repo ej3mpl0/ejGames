@@ -92,24 +92,24 @@ export function seasonBanner(ev, cls = "", { hero = false } = {}) {
 const picks = new Map();
 /**
  * Juegos del evento: primero los populares de la portada de su género y, para
- * completar, los del catálogo (se piden una vez; `onLoad` avisa al llegar).
- * Devuelve { items, loading }.
+ * completar, los del catálogo (`pages` páginas, se piden una vez; `onLoad`
+ * avisa al llegar). Devuelve { items, loading }.
  */
-export function seasonPicks(ejg, ev, sections = [], onLoad = () => {}) {
+export function seasonPicks(ejg, ev, sections = [], onLoad = () => {}, { pages = 1 } = {}) {
   const seen = new Set();
   const popular = sections.flatMap((x) => x.items || []).filter((r) => r.tags?.includes(ev.genre) && !seen.has(r.slug) && seen.add(r.slug));
-  let p = picks.get(ev.id);
+  const key = `${ev.id}:${pages}`;
+  let p = picks.get(key);
   if (!p) {
     p = { items: null, loading: true };
-    picks.set(ev.id, p);
-    ejg.explore
-      .browse({ query: "", genres: [ev.genre], sort: "modified", maxGb: null, hideOwned: false }, 1)
-      .then((r) => (p.items = r.items || []))
-      .catch(() => (p.items = []))
+    picks.set(key, p);
+    const filters = { query: "", genres: [ev.genre], sort: "modified", maxGb: null, hideOwned: false };
+    Promise.all(Array.from({ length: pages }, (_, i) => ejg.explore.browse(filters, i + 1).then((r) => r.items || [], () => [])))
+      .then((all) => (p.items = all.flat()))
       .finally(() => {
         p.loading = false;
         onLoad();
       });
   }
-  return { items: popular.concat((p.items || []).filter((r) => !seen.has(r.slug))), loading: p.loading };
+  return { items: popular.concat((p.items || []).filter((r) => !seen.has(r.slug) && seen.add(r.slug))), loading: p.loading };
 }

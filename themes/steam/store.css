@@ -417,14 +417,57 @@ img.img-error { visibility: hidden; }
 }
 
 .ev-hero { margin-top: calc(min(100vw - 12px, 1760px) * -0.095); position: relative; z-index: 1; }
-.ev-wrap { margin: 0 -46px; }
-.ev-caps { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 0 10px; }
-.ev-cap { display: flex; flex-direction: column; text-align: left; background: #000; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.6); transition: transform 0.18s ease, box-shadow 0.18s ease; }
-.ev-cap .ev-cap-art { aspect-ratio: 3 / 4; max-height: 330px; }
+.ev-wrap { margin: 0 -46px; justify-content: center; }
+.ev-caps { flex: 1; min-width: 0; max-width: 840px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 0 10px; }
+/* Cápsula vertical entera (arte de biblioteca 600×900), con las etiquetas encima como en Steam. */
+.ev-cap { position: relative; display: block; background: #000; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.6); transition: transform 0.18s ease, box-shadow 0.18s ease; }
+.ev-cap .ev-cap-art { aspect-ratio: 2 / 3; }
+.ev-cap-art.ev-fit { background-position: center; background-size: cover; }
+.ev-cap-art.ev-fit::before { content: ""; position: absolute; inset: -20px; background: inherit; filter: blur(16px) brightness(0.45); }
+.ev-cap-art.ev-fit img { position: relative; object-fit: contain; }
 .ev-cap:hover, .ev-cap.is-focused { transform: translateY(-3px); box-shadow: 0 0 0 2px var(--ev-green), 0 10px 28px rgba(124, 246, 74, 0.25); }
-.ev-cap-foot { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 6px; background: linear-gradient(180deg, #1a1430, #0f0b1d); }
-.ev-tag { margin-right: auto; padding: 2px 7px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: #0d0b16; background: var(--ev-green); border-radius: 2px; }
-.ev-size { padding: 2px 6px; font-size: 12.5px; color: #fff; background: rgba(0, 0, 0, 0.4); }
+
+/* Etiquetas sobre el arte: donde Steam pone el descuento y el precio. */
+.ev-cap, .ev-wide, .ev-tagcap { position: relative; }
+.ev-chips { position: absolute; right: 6px; bottom: 6px; display: flex; align-items: stretch; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
+.ev-new { display: grid; place-items: center; padding: 0 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; color: #1b3b05; background: #8ef04f; }
+.ev-price { padding: 3px 7px; font-size: 12.5px; color: #fff; background: rgba(12, 8, 20, 0.88); white-space: nowrap; }
+.ev-owned { position: absolute; left: 6px; top: 6px; }
+.ev-owned .owned { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); }
+
+/* Cápsula horizontal (cabecera de Steam). */
+.ev-wide { display: block; background: #000; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); transition: box-shadow 0.15s ease, filter 0.15s ease; }
+.ev-wide:hover, .ev-wide.is-focused { box-shadow: 0 0 0 2px var(--ev-green), 0 8px 22px rgba(0, 0, 0, 0.6); filter: brightness(1.08); }
+.ev-wide .ev-chips { right: 0; bottom: 0; }
+
+/* Rejilla de 4 (como la de debajo de «Ofertas destacadas»). */
+.ev-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 10px; }
+[data-focus-group="pg-ev-rec"] { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+
+/* «Porque te gusta el terror»: cápsula y sus etiquetas en un pie de color. */
+.ev-tagcap { display: flex; flex-direction: column; text-align: left; background: #2a1d44; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); padding-bottom: 30px; }
+.ev-tags { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 8px 4px; }
+.ev-tags span { padding: 2px 7px; font-size: 11px; color: #e6dcf7; background: rgba(255, 255, 255, 0.1); border-radius: 2px; }
+.ev-tagcap:hover, .ev-tagcap.is-focused { box-shadow: 0 0 0 2px var(--ev-green), 0 8px 22px rgba(0, 0, 0, 0.6); background: #36265a; }
+
+/* El catálogo del género (como la cola de descubrimientos). */
+.ev-note { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; color: #cfc4e6; }
+.ev-note b { color: #fff; font-weight: 600; }
+.ev-pumpkin { width: 22px; height: 20px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 4c-1-2 0-4 2-4' stroke='%2333691e' stroke-width='2' fill='none'/%3E%3Cellipse cx='7' cy='13' rx='6' ry='8' fill='%23e8650f'/%3E%3Cellipse cx='17' cy='13' rx='6' ry='8' fill='%23e8650f'/%3E%3Cellipse cx='12' cy='13' rx='6' ry='8.5' fill='%23ff8a1f'/%3E%3Cpath d='M7 11l2.5-2 1 2.5zM17 11l-2.5-2-1 2.5zM7.5 15.5q4.5 4 9 0l-1.5.4-1 1.2-1.5-1.2-1.5 1.2-1-1.2z' fill='%23401500'/%3E%3C/svg%3E") no-repeat center / contain; }
+.ev-discover { position: relative; width: 100%; height: 118px; display: flex; align-items: center; overflow: hidden; text-align: left; background: linear-gradient(90deg, #4b2a7c 0%, #5c3394 35%, #2f6a8a 75%, #1f3a5a 100%); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45); }
+.ev-discover:hover, .ev-discover.is-focused { box-shadow: 0 0 0 2px var(--ev-green), 0 8px 24px rgba(0, 0, 0, 0.6); }
+.ev-disc-text { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 4px; padding-left: 60px; }
+.ev-disc-text b { font-size: 19px; font-weight: 600; color: #fff; }
+.ev-disc-text span { font-size: 14px; color: rgba(255, 255, 255, 0.85); }
+.ev-disc-art { position: absolute; right: 18px; top: 50%; display: flex; gap: 10px; transform: translateY(-50%) rotate(-8deg); }
+.ev-disc-art img { width: 150px; height: 70px; object-fit: cover; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6); opacity: 0.9; }
+
+/* Dos paneles dorados (como «Tu lista de deseados» y «DLC para tus juegos»). */
+.ev-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.ev-gold .store-h-row { margin-bottom: 8px; }
+.ev-gold .store-h { font-size: 16px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.ev-gold .btn-more { background: rgba(255, 255, 255, 0.85); color: #2a1a05; border-color: transparent; text-transform: none; letter-spacing: 0; }
+.ev-gold-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; background: linear-gradient(180deg, #8a5a12, #6a3f0c); box-shadow: inset 0 1px 0 rgba(255, 210, 120, 0.3); }
 
 .ev-panel {
   margin-top: 34px; padding: 4px 18px 18px; border-radius: 3px;
@@ -439,13 +482,11 @@ img.img-error { visibility: hidden; }
 .ev-panel .btn-more:hover, .ev-panel .btn-more.is-focused { background: #fff; }
 .ev-panel .car-wrap { margin: 0 -18px; }
 .ev-panel .pg-items { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.ev-panel .bigcap { background: rgba(0, 0, 0, 0.35); }
-.ev-panel .bigcap:hover, .ev-panel .bigcap.is-focused { background: linear-gradient(135deg, rgba(255, 138, 31, 0.45), rgba(120, 40, 20, 0.5)); }
 .ev-loading { min-height: 120px; display: grid; place-items: center; }
 
 :root[data-mode="tv"] .ev-art { margin-top: 8px; }
 @media (prefers-reduced-motion: reduce) {
-  .ev-cap { transition: none; }
+  .ev-cap, .ev-wide { transition: none; }
 }
 .store.ev-halloween .sn-wish { background: linear-gradient(90deg, #ff8a1f, #d9580b); color: #1d0c02; }
 .store.ev-halloween .sn-wish:hover, .store.ev-halloween .sn-wish.is-focused, .store.ev-halloween .sn-wish.on { background: #ffa04a; color: #1d0c02; }
@@ -454,3 +495,17 @@ img.img-error { visibility: hidden; }
 .store.ev-halloween .sn-search:focus-within, .store.ev-halloween .sn-search:has(.is-focused) { box-shadow: 0 0 0 1px #ff7a1a, inset 1px 1px 0 rgba(0, 0, 0, 0.3); }
 .store.ev-halloween .sn-go { background: rgba(255, 122, 26, 0.25); color: #ffb070; }
 .store.ev-halloween .sn-go:hover { background: #ff7a1a; color: #1d0c02; }
+
+/* Con evento, la tienda de siempre (desde las pestañas) en tonos de noche, como Steam tiñe la suya en sus rebajas. */
+.store.ev-halloween .tab-head { color: #c9a0ff; }
+.store.ev-halloween .tab-head.on { background: #3a2458; color: #fff; }
+.store.ev-halloween .tab-head.is-focused:not(.on) { background: rgba(58, 36, 88, 0.5); }
+.store.ev-halloween .tab-body { background: #3a2458; }
+.store.ev-halloween .trow { background: rgba(0, 0, 0, 0.25); }
+.store.ev-halloween .trow:hover, .store.ev-halloween .trow.is-focused { background: linear-gradient(90deg, #ffb26b 5%, #e58a3a 95%); }
+.store.ev-halloween .trow:hover b, .store.ev-halloween .trow.is-focused b { color: #1d0c02; }
+.store.ev-halloween .trow:hover .trow-tags, .store.ev-halloween .trow.is-focused .trow-tags, .store.ev-halloween .trow:hover .trow-plat, .store.ev-halloween .trow.is-focused .trow-plat { color: #4a2508; }
+.store.ev-halloween .tab-preview { background: linear-gradient(180deg, #b48ae8 0%, #8e66c8 100%); color: #1c0f30; }
+.store.ev-halloween .tab-preview h4, .store.ev-halloween .tp-meta { color: #1c0f30; }
+.store.ev-halloween .tp-tags span { background: rgba(28, 15, 48, 0.4); }
+.store.ev-halloween .bigcap:hover, .store.ev-halloween .bigcap.is-focused { background: linear-gradient(135deg, rgba(123, 75, 214, 0.75), rgba(58, 36, 88, 0.6)); }

@@ -5,6 +5,21 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.9.2
+
+**Tienda Steam: la portada de Halloween, como la de las rebajas de Steam**
+- Todo lo de arriba es de terror y la tienda de siempre empieza en las pestañas de populares: la cabecera con tres
+  cápsulas, «Ofertas de miedo», una rejilla de 16, «Recomendados para pasar miedo», «Porque te gusta el terror» (con
+  sus etiquetas), el catálogo del género, otra rejilla y dos paneles («Tu lista de deseados» y «De miedo y
+  ligeros», de menos de 10 GB). Sin repetir juegos entre secciones.
+- Las cápsulas grandes usan el arte vertical de la biblioteca de Steam, entero y sin recortar; sin él, la carátula
+  completa sobre un fondo hecho con ella. Las etiquetas van encima del arte, donde Steam pone el precio: el
+  tamaño de la descarga y «NUEVO» si salió hace menos de diez días.
+- Las pestañas de populares y su vista previa, en tonos de noche mientras dura el evento.
+
+**Para temas**
+- `seasonPicks(…, { pages })`: varias páginas del catálogo del género, sin duplicados.
+
 ## 0.9.1
 
 **Modo Halloween desde hoy, con una cabecera a lo grande**

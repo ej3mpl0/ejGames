@@ -439,22 +439,74 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
   }
 
   // ─────────────── evento de temporada ───────────────
-  /** Cápsula vertical del evento (como las de la rebaja de Steam): carátula y su etiqueta. */
-  function evCap(r) {
-    return h(
+  // La portada de la rebaja de Steam, toda de terror: cabecera a lo ancho con
+  // tres cápsulas encima, «Ofertas de miedo», rejilla, recomendados, «Porque te
+  // gusta el terror», el catálogo del género, más rejilla y dos paneles. Debajo,
+  // la tienda de siempre (desde las pestañas de populares).
+  const isNew = (r) => !!r.date && Date.now() - Date.parse(r.date) < 10 * 864e5;
+  /** Donde Steam pone el descuento y el precio: «NUEVO» y el tamaño de la descarga. */
+  const evChips = (r) => h("div", { class: "ev-chips" }, isNew(r) ? h("span", { class: "ev-new" }, "NUEVO") : null, h("span", { class: "ev-price" }, sizeText(r.repackSize) || "—"));
+  const evOwned = (r) => {
+    const b = badge(r);
+    return b ? h("div", { class: "ev-owned" }, b) : null;
+  };
+  /** Arte vertical sin recortar: el de la biblioteca de Steam (600×900) o la carátula sobre un fondo hecho con ella. */
+  function tallArt(r) {
+    if (r.library) return h("div", { class: "st-art ev-cap-art" }, img(r.library, { loading: "lazy" }));
+    if (r.cover) return h("div", { class: "st-art ev-cap-art ev-fit", style: `background-image: url("${r.cover}")` }, img(r.cover, { loading: "lazy" }));
+    return h("div", { class: "st-art ev-cap-art" }, h("div", { class: "st-ph" }, r.title));
+  }
+  const evCap = (r) => h("button", { class: "ev-cap", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), title: r.title }, tallArt(r), evOwned(r), evChips(r));
+  const evWide = (r) => h("button", { class: "ev-wide", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), title: r.title }, wide(r), evOwned(r), evChips(r));
+  /** Como «Porque has jugado a…»: la cápsula con sus etiquetas debajo. */
+  const evTagCap = (r) =>
+    h(
       "button",
-      { class: "ev-cap", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), title: r.title },
-      cover(r, "ev-cap-art"),
-      h("div", { class: "ev-cap-foot" }, h("span", { class: "ev-tag" }, "TERROR"), badge(r) || h("span", { class: "ev-size" }, sizeText(r.repackSize) || "—")),
+      { class: "ev-tagcap", "data-focus": "", "data-slug": r.slug, onclick: () => openRepack(r.slug), title: r.title },
+      wide(r),
+      evOwned(r),
+      h("div", { class: "ev-tags" }, ...r.genres.slice(0, 6).map((g) => h("span", null, genreLabel(g)))),
+      evChips(r),
+    );
+  const evGrid = (id, list) => (list.length ? h("section", { class: "st-sec ev-grid", "data-focus-group": id }, ...list.map(evWide)) : null);
+  /** Panel dorado (como «Tu lista de deseados» y «DLC para tus juegos» de Steam). */
+  const evGold = (id, title, more, moreLabel, list) =>
+    list.length
+      ? h(
+          "section",
+          { class: "ev-gold" },
+          h("div", { class: "store-h-row" }, h("h2", { class: "store-h" }, title), h("button", { class: "btn-more", "data-focus": "", onclick: more }, moreLabel)),
+          h("div", { class: "ev-gold-box", "data-focus-group": id }, ...list.slice(0, 4).map(evWide)),
+        )
+      : null;
+  /** El catálogo del género, como la cola de descubrimientos de Steam. */
+  function evDiscover(ev, art) {
+    return h(
+      "section",
+      { class: "st-sec" },
+      h("div", { class: "ev-note" }, h("span", { class: "ev-pumpkin" }), h("b", null, `${ev.name}: hasta el 2 de noviembre`), h("span", null, " · lo más terrorífico, ordenado por popularidad")),
+      h(
+        "button",
+        { class: "ev-discover", "data-focus": "", onclick: () => openCatalog({ genres: [ev.genre] }) },
+        h("div", { class: "ev-disc-text" }, h("b", null, "Explora todo el terror del catálogo"), h("span", null, "Haz clic para ver cada juego de miedo, del último en llegar al primero")),
+        h("div", { class: "ev-disc-art" }, ...art.filter((r) => r.capsule).slice(0, 3).map((r) => img(r.capsule, { loading: "lazy" }))),
+      ),
     );
   }
 
   function eventFront(ev, sections) {
-    const picks = seasonPicks(ejg, ev, sections, () => active() === "store" && view.name === "front" && paint(true));
-    const items = picks.items;
+    const picks = seasonPicks(ejg, ev, sections, () => active() === "store" && view.name === "front" && paint(true), { pages: 4 });
+    // Cada sección con los suyos, sin repetir: primero los más populares.
+    let pool = picks.items.slice();
+    const take = (n, ok = () => true) => {
+      const got = [];
+      pool = pool.filter((r) => (got.length < n && ok(r) ? (got.push(r), false) : true));
+      return got;
+    };
+    const all = () => openCatalog({ genres: [ev.genre] });
     // Como la rebaja de Steam: la cabecera a lo ancho y las cápsulas montadas encima.
     const out = [seasonBanner(ev, "ev-art", { hero: true })];
-    const caps = items.filter((r) => r.cover).slice(0, 15);
+    const caps = take(15, (r) => r.library || r.cover);
     if (caps.length >= 3) {
       const total = Math.ceil(caps.length / 3);
       evCar = ((evCar % total) + total) % total;
@@ -487,16 +539,29 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
         ),
       );
     }
-    // Sin repetir los de las cápsulas de arriba si hay de sobra.
-    const rest = (items.length > 9 ? items.slice(3) : items).slice(0, 24);
-    if (rest.length >= 3) {
-      // Como «Ofertas destacadas» en la rebaja de Steam: panel con su color y «Ver todo».
-      const row = pagedRow("ev-" + ev.id, ev.title, rest, 3, bigCap, () => openCatalog({ genres: [ev.genre] }), "Ver todo");
+    const deals = take(18);
+    if (deals.length >= 3) {
+      // Como «Ofertas destacadas»: panel con su color, por páginas, y «Ver todo».
+      const row = pagedRow("ev-deals", ev.title, deals, 3, evWide, all, "Ver todo");
       row.querySelector(".store-h")?.after(h("p", { class: "ev-sub" }, ev.subtitle));
       out.push(h("div", { class: "ev-panel" }, row));
     } else if (picks.loading) {
       out.push(h("div", { class: "ev-panel ev-loading" }, h("div", { class: "spinner" })));
     }
+    out.push(evGrid("ev-grid-1", take(16)));
+    const rec = take(10);
+    if (rec.length >= 5) out.push(pagedRow("ev-rec", "Recomendados para pasar miedo", rec, 5, evWide, all, "Explorar por etiquetas"));
+    const tagged = take(8);
+    if (tagged.length >= 4) out.push(pagedRow("ev-tags", "Porque te gusta el terror", tagged, 4, evTagCap, all, "Ver todo"));
+    out.push(evDiscover(ev, pool));
+    out.push(evGrid("ev-grid-2", take(12)));
+    const wish = ejg.explore.wishlist.items;
+    const light = take(4, (r) => r.repackBytes && r.repackBytes < 10 * 2 ** 30);
+    const duo = [
+      wish.length ? evGold("ev-wish", "Tu lista de deseados", openWish, "Ver toda tu lista", wish) : evGold("ev-new", "Novedades de terror", all, "Ver todo", take(4)),
+      evGold("ev-light", "De miedo y ligeros", () => openCatalog({ genres: [ev.genre], maxGb: 10 }), "Menos de 10 GB", light),
+    ].filter(Boolean);
+    if (duo.length) out.push(h("div", { class: "st-sec ev-duo" }, ...duo));
     return out;
   }
 
@@ -515,12 +580,18 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     const byId = Object.fromEntries(s.home.sections.map((x) => [x.id, x]));
     const out = [];
     const ev = season();
-    if (ev) out.push(...eventFront(ev, s.home.sections));
+    catArt = categoryArt();
+    const cats = () => (s.genres.length ? pagedRow("cats", "Explora por categoría", CATEGORIES, 4, categoryTile, () => openCatalog({}), "Todo el catálogo") : null);
+    if (ev) {
+      // Con evento, todo lo de arriba es de terror; la tienda de siempre empieza en las pestañas.
+      out.push(...eventFront(ev, s.home.sections), tabbed(byId), cats());
+      if (byId.week) out.push(pagedRow("week", "Populares de la semana", byId.week.items));
+      return h("div", { class: "store-front ev-front" }, ...out.filter(Boolean));
+    }
     const today = byId.today || byId.week;
     if (today) out.push(heroCarousel(today.items));
     if (byId.week) out.push(pagedRow("week", "Populares de la semana", byId.week.items));
-    catArt = categoryArt();
-    if (s.genres.length) out.push(pagedRow("cats", "Explora por categoría", CATEGORIES, 4, categoryTile, () => openCatalog({}), "Todo el catálogo"));
+    out.push(cats());
     out.push(tabbed(byId));
     return h("div", { class: "store-front" }, ...out.filter(Boolean));
   }

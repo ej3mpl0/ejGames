@@ -137,9 +137,18 @@ async fn play_inner(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow
     let target = tracker::Target::from_game(&game, launched.pid);
     let discovery = if launched.via_uri { Duration::from_secs(300) } else { Duration::from_secs(120) };
     let discord = if st.settings.get().discord_enabled && profile.discord_enabled && game.discord_enabled {
-        let id = crate::settings::DISCORD_CLIENT_ID.to_string();
+        let own = crate::settings::DISCORD_CLIENT_ID;
+        // Con la aplicación del propio juego, Discord pone su icono en el canal de
+        // voz; si el nombre va oculto, la de ejGames (la otra lo delataría).
+        let cache = st.paths.root.join("discord-games.json");
+        let game_app = if profile.discord_hide_names {
+            None
+        } else {
+            crate::discord::game_app_id(&st.http, &cache, &game).await
+        };
+        let id = game_app.unwrap_or_else(|| own.to_string());
         Some(DiscordCtx {
-            small_icon: crate::discord::app_icon(&st.http, &id).await,
+            small_icon: crate::discord::app_icon(&st.http, own).await,
             cover_url: st.db.with(|c| repo::selected_remote_url(c, game_id, "cover")).ok().flatten(),
             hide: profile.discord_hide_names,
             id,

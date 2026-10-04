@@ -5,6 +5,15 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.9.4
+
+**Discord: el icono del juego en el canal de voz**
+- Si Discord conoce el juego (por AppID de Steam, nombre o ruta del .exe), la presencia usa la aplicación del propio
+  juego: en el canal de voz y en la lista de miembros sale su icono en vez del de ejGames. La tarjeta sigue diciendo
+  «Jugando desde ejGames».
+- La lista de juegos de Discord se descarga como mucho una vez por semana y se guarda en la carpeta de datos.
+- Con «Ocultar el nombre del juego» se sigue usando la aplicación de ejGames.
+
 ## 0.9.3
 
 **Juegos ocultos: ahora se encuentran**

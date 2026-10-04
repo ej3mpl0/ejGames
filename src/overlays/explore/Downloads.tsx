@@ -9,6 +9,7 @@ import { installDownload, locateInstall, openExplore } from "../../host/download
 import { useOverlayNav } from "../../input/nav";
 import { bytes, eta, relative, speed } from "../../lib/format";
 import { useApp } from "../../store/app";
+import { t } from "../../lib/i18n";
 import { Cover, Progress, downloadLabel, pct } from "./shared";
 // @ts-ignore módulo JS del kit
 import { canInstall, isActive } from "../../../sdk/kit/store.js";
@@ -17,6 +18,9 @@ export function DownloadsOverlay({ onClose }: { onClose: () => void }) {
   const downloads = useApp((s) => s.downloads);
   const toast = useApp((s) => s.toast);
   const exploreOn = useApp((s) => s.settings?.exploreEnabled !== false);
+  const games = useApp((s) => s.games);
+  // Juegos instalados desde aquí con un repack más nuevo en la tienda.
+  const updates = games.filter((g) => g.repackUpdate);
   const ref = useOverlayNav<HTMLDivElement>({ onBack: onClose });
 
   const run = (p: Promise<unknown>) => p.catch((e) => toast("error", errMsg(e)));
@@ -141,11 +145,34 @@ export function DownloadsOverlay({ onClose }: { onClose: () => void }) {
       ]}
     >
       <div className="h-full overflow-y-auto p-5">
-        {downloads.length === 0 ? (
+        {updates.length > 0 && (
+          <div className="mb-5">
+            <h3 className="mb-2 text-sm font-semibold text-muted">{t("Actualizaciones")}</h3>
+            <div className="flex flex-col gap-2">
+              {updates.map((g) => (
+                <div key={g.id} className="flex items-center gap-3 rounded-xl bg-accent/10 px-4 py-3 ring-1 ring-accent/30">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">{g.title}</div>
+                    <div className="truncate text-xs text-muted">
+                      {g.repackUpdate!.installed} → {g.repackUpdate!.latest}
+                    </div>
+                  </div>
+                  <Button size="sm" variant="primary" onClick={() => (onClose(), openExplore("repack", { slug: g.repackUpdate!.slug }))}>
+                    {t("Ver en la tienda")}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => run(api.repackUpdateDismiss(g.id))}>
+                    {t("Ocultar")}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {downloads.length === 0 && updates.length === 0 ? (
           <Empty icon={<Download size={40} />} title="No hay descargas">
             {exploreOn ? "Busca un juego en Explorar y pulsa Descargar." : "Activa Explorar en Ajustes → Descargas."}
           </Empty>
-        ) : (
+        ) : downloads.length === 0 ? null : (
           <div className="flex flex-col gap-2">
             {active.map(row)}
             {done.length > 0 && <h3 className="mt-4 mb-1 text-sm font-semibold text-muted">Instalados</h3>}

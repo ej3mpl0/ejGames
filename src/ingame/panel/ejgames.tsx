@@ -25,12 +25,13 @@ import {
   unlockText,
   VolumeControls,
   type AchFilter,
+  SavesBlock,
 } from "./blocks";
 import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dayLabel, dur, hoursLabel } from "./parts";
 import "./ejgames.css";
 
-type Sec = "ach" | "guides" | "cheats" | "map" | "shots" | "notes" | "music" | "perf" | "dl";
+type Sec = "ach" | "guides" | "cheats" | "map" | "shots" | "notes" | "saves" | "music" | "perf" | "dl";
 
 export function EjGamesPanel({ p }: { p: Panel }) {
   const d = p.data;
@@ -57,6 +58,7 @@ export function EjGamesPanel({ p }: { p: Panel }) {
     { id: "cheats", label: "Trucos", info: "" },
     { id: "map", label: "Mapa", info: "" },
     { id: "shots", label: "Capturas", info: d.captures.length ? String(d.captures.length) : "" },
+    { id: "saves", label: "Partidas", info: "" },
     { id: "notes", label: "Notas", info: p.note.trim() ? `${p.note.trim().split("\n").length} líneas` : "" },
     { id: "music", label: "Música y sonido", info: p.media ? (p.media.playing ? "Sonando" : "En pausa") : "" },
     { id: "perf", label: "Rendimiento", info: p.perf ? `${Math.round(p.perf.cpu)} % CPU` : "" },
@@ -127,6 +129,9 @@ export function EjGamesPanel({ p }: { p: Panel }) {
           <MapPane gameId={d.gameId} gameTitle={d.title} inGame />
         </div>
       );
+      break;
+    case "saves":
+      body = <SavesBlock k="ej" p={p} />;
       break;
     case "notes":
       body = <NotesEditor k="ej" p={p} />;

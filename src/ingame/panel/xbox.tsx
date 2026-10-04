@@ -2,7 +2,7 @@
 // iconos arriba, listas de rectángulos y el foco blanco y grueso de la consola.
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Activity, BookOpen, Download, Gamepad2, House, Image as ImageIcon, MapIcon, Music2, NotebookPen, Trophy, WandSparkles } from "lucide-react";
+import { Activity, BookOpen, Download, Gamepad2, House, Image as ImageIcon, MapIcon, Music2, NotebookPen, Trophy, WandSparkles, Save } from "lucide-react";
 import { GuidesPane } from "../../components/guide";
 import { MapPane } from "../../components/map";
 import { TrainerPane } from "../../components/trainer";
@@ -23,12 +23,13 @@ import {
   QuitConfirm,
   VolumeControls,
   type AchFilter,
+  SavesBlock,
 } from "./blocks";
 import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hoursLabel, Img, PadIcon, pctNum, shortDate } from "./parts";
 import "./xbox.css";
 
-type Tab = "home" | "ach" | "guides" | "trainer" | "map" | "shots" | "media" | "notes" | "perf" | "dl";
+type Tab = "home" | "ach" | "guides" | "trainer" | "map" | "shots" | "media" | "notes" | "saves" | "perf" | "dl";
 
 const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: "home", label: "Inicio", icon: <House /> },
@@ -38,6 +39,7 @@ const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: "map", label: "Mapa", icon: <MapIcon /> },
   { id: "shots", label: "Capturas", icon: <ImageIcon /> },
   { id: "media", label: "Música y audio", icon: <Music2 /> },
+  { id: "saves", label: "Partidas", icon: <Save /> },
   { id: "notes", label: "Notas", icon: <NotebookPen /> },
   { id: "perf", label: "Rendimiento", icon: <Activity /> },
   { id: "dl", label: "Descargas", icon: <Download /> },
@@ -221,6 +223,9 @@ export function XboxPanel({ p }: { p: Panel }) {
           <VolumeControls k="xb" p={p} gameLabel={d.title} masterLabel="Volumen del sistema" />
         </>
       );
+      break;
+    case "saves":
+      body = <SavesBlock k="xb" p={p} />;
       break;
     case "notes":
       body = <NotesEditor k="xb" p={p} />;

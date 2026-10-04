@@ -3,7 +3,7 @@
 // panel a la derecha (como la de trofeos).
 
 import { useRef, useState, type ReactNode } from "react";
-import { Activity, BookOpen, Download, Gamepad2, Image as ImageIcon, MapIcon, Music2, NotebookPen, Power, Volume2, WandSparkles } from "lucide-react";
+import { Activity, BookOpen, Download, Gamepad2, Image as ImageIcon, MapIcon, Music2, NotebookPen, Power, Volume2, WandSparkles, Save } from "lucide-react";
 import { GuidesPane } from "../../components/guide";
 import { MapPane } from "../../components/map";
 import { TrainerPane } from "../../components/trainer";
@@ -25,12 +25,13 @@ import {
   QuitConfirm,
   VolumeControls,
   type AchFilter,
+  SavesBlock,
 } from "./blocks";
 import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, CupIcon, downloadLine, dur, hoursLabel, Img, pctNum, shortDate } from "./parts";
 import "./playstation.css";
 
-type Sheet = "game" | "trophies" | "help" | "cheats" | "map" | "shots" | "music" | "notes" | "perf" | "dl";
+type Sheet = "game" | "trophies" | "help" | "cheats" | "map" | "shots" | "music" | "notes" | "saves" | "perf" | "dl";
 
 type Grade = "platinum" | "gold" | "silver" | "bronze";
 const GRADES: Grade[] = ["platinum", "gold", "silver", "bronze"];
@@ -223,6 +224,7 @@ export function PlayStationPanel({ p }: { p: Panel }) {
       ),
     },
     notes: { title: "Notas del juego", body: <NotesEditor k="ps5" p={p} /> },
+    saves: { title: "Partidas guardadas", body: <SavesBlock k="ps5" p={p} /> },
     perf: { title: "Rendimiento", body: <PerfTiles k="ps5" p={p} /> },
     dl: { title: "Descargas", body: <DownloadList k="ps5" p={p} /> },
   };
@@ -345,6 +347,7 @@ export function PlayStationPanel({ p }: { p: Panel }) {
             {icon("Mapa", <MapIcon />, () => setSheet("map"))}
             {icon("Música", <Music2 />, () => setSheet("music"))}
             {icon("Sonido", <Volume2 />, () => setSheet("music"))}
+            {icon("Partidas guardadas", <Save />, () => setSheet("saves"))}
             {icon("Notas", <NotebookPen />, () => setSheet("notes"))}
             {icon("Rendimiento", <Activity />, () => setSheet("perf"))}
             {icon("Descargas", <Download />, () => setSheet("dl"))}

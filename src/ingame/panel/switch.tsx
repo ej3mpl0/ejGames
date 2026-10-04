@@ -2,7 +2,7 @@
 // fila de iconos redondos de colores del menú HOME y el borde cian que late.
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Activity, BookOpen, Download, Image as ImageIcon, MapIcon, Music2, NotebookPen, Power, Trophy, WandSparkles } from "lucide-react";
+import { Activity, BookOpen, Download, Image as ImageIcon, MapIcon, Music2, NotebookPen, Power, Trophy, WandSparkles, Save } from "lucide-react";
 import { GuidesPane } from "../../components/guide";
 import { MapPane } from "../../components/map";
 import { TrainerPane } from "../../components/trainer";
@@ -24,12 +24,13 @@ import {
   unlockText,
   VolumeControls,
   type AchFilter,
+  SavesBlock,
 } from "./blocks";
 import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hoursLabel, Img } from "./parts";
 import "./switch.css";
 
-type Sec = "album" | "ach" | "guides" | "cheats" | "map" | "notes" | "music" | "system" | "dl";
+type Sec = "album" | "ach" | "guides" | "cheats" | "map" | "notes" | "saves" | "music" | "system" | "dl";
 
 const SECTIONS: { id: Sec; label: string; icon: ReactNode; color: string }[] = [
   { id: "album", label: "Álbum", icon: <ImageIcon />, color: "#2e9bf0" },
@@ -37,6 +38,7 @@ const SECTIONS: { id: Sec; label: string; icon: ReactNode; color: string }[] = [
   { id: "guides", label: "Guías", icon: <BookOpen />, color: "#8c5ae8" },
   { id: "cheats", label: "Trucos", icon: <WandSparkles />, color: "#e6463c" },
   { id: "map", label: "Mapa", icon: <MapIcon />, color: "#12b3a8" },
+  { id: "saves", label: "Partidas", icon: <Save />, color: "#2fb5a0" },
   { id: "notes", label: "Notas", icon: <NotebookPen />, color: "#3cbf6a" },
   { id: "music", label: "Música", icon: <Music2 />, color: "#ef5c8e" },
   { id: "system", label: "Sistema", icon: <Activity />, color: "#8f8f95" },
@@ -129,6 +131,9 @@ export function SwitchPanel({ p }: { p: Panel }) {
           <MapPane gameId={d.gameId} gameTitle={d.title} inGame />
         </div>
       );
+      break;
+    case "saves":
+      body = <SavesBlock k="sw" p={p} />;
       break;
     case "notes":
       body = <NotesEditor k="sw" p={p} />;

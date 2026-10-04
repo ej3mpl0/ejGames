@@ -3,8 +3,10 @@
 // pueden elegir con mando o teclado llevan `data-nav`.
 
 import { useEffect, useState, type ReactNode } from "react";
-import { t } from "../../lib/i18n";
-import type { Achievement, Capture } from "../../api/types";
+import { locale, t, tn } from "../../lib/i18n";
+import { bytes } from "../../lib/format";
+import { api, errMsg, on } from "../../api/tauri";
+import type { Achievement, Capture, SavesInfo } from "../../api/types";
 import { autoNav } from "../../input/nav";
 import { useApp } from "../../store/app";
 import type { Panel } from "./model";
@@ -164,6 +166,65 @@ export function NotesEditor({ k, p, placeholder = "Apunta lo que quieras: códig
         <span>Se guardan solas, solo para este juego.</span>
         <button data-nav className={cls(`${k}-btn`, pad && "is-primary")} onClick={() => void p.actions.addNoteLine()}>
           Escribir con el mando
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────── partidas guardadas ───────────
+
+/** Copia de las partidas del juego: ahora mismo, y las últimas copias. Restaurar se hace fuera del juego. */
+export function SavesBlock({ k, p }: K & { p: Panel }) {
+  const gameId = p.data.gameId;
+  const [info, setInfo] = useState<SavesInfo | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const load = () => void api.savesInfo(gameId).then(setInfo).catch(() => setInfo({ paths: [], snapshots: [], known: false }));
+  useEffect(() => {
+    load();
+    const un = on("saves:changed", (e) => e.gameId === gameId && load());
+    return () => void un.then((f) => f());
+  }, [gameId]);
+  const found = info ? info.paths.length > 0 : false;
+  const bytesAll = info ? info.paths.reduce((n, x) => n + x.bytes, 0) : 0;
+  const backup = async () => {
+    setBusy(true);
+    try {
+      const s = await api.savesBackup(gameId);
+      setMsg(s ? t("Copia guardada ({size})", { size: bytes(s.size) }) : t("Sin cambios desde la última copia"));
+    } catch (e) {
+      setMsg(errMsg(e));
+    } finally {
+      setBusy(false);
+      load();
+    }
+  };
+  return (
+    <div className={`${k}-notes`}>
+      <div style={{ flex: 1, minHeight: 0, overflow: "auto", lineHeight: 1.6 }} data-no-t>
+        {!info ? (
+          t("Buscando…")
+        ) : !found ? (
+          t("No se han encontrado partidas guardadas de este juego")
+        ) : (
+          <>
+            <div>
+              {tn(info.paths.length, "{n} ubicación de partidas", "{n} ubicaciones de partidas")} · {bytes(bytesAll)}
+            </div>
+            {info.snapshots.slice(0, 6).map((s) => (
+              <div key={s.id} style={{ opacity: 0.75 }}>
+                {new Date(s.at * 1000).toLocaleString(locale(), { dateStyle: "medium", timeStyle: "short" })} · {bytes(s.size)}
+              </div>
+            ))}
+            {info.snapshots.length === 0 && <div style={{ opacity: 0.75 }}>{t("Todavía no hay copias.")}</div>}
+          </>
+        )}
+      </div>
+      <div className={`${k}-notes-bar`}>
+        <span>{msg || t("Se copian solas al cerrar el juego. Para restaurar: Editar juego → Partidas guardadas.")}</span>
+        <button data-nav className={cls(`${k}-btn`)} disabled={busy || !found} onClick={() => void backup()}>
+          {t("Copia ahora")}
         </button>
       </div>
     </div>

@@ -3,7 +3,7 @@
 // de herramientas. A la derecha, lo que suena y cómo va el PC.
 
 import { useState, type ReactNode } from "react";
-import { Activity, BookOpen, Download, Gamepad2, Image as ImageIcon, MapIcon, Music2, NotebookPen, Power, Trophy, WandSparkles } from "lucide-react";
+import { Activity, BookOpen, Download, Gamepad2, Image as ImageIcon, MapIcon, Music2, NotebookPen, Power, Trophy, WandSparkles, Save } from "lucide-react";
 import { GuidesPane } from "../../components/guide";
 import { MapPane } from "../../components/map";
 import { TrainerPane } from "../../components/trainer";
@@ -26,12 +26,13 @@ import {
   rarityText,
   VolumeControls,
   type AchFilter,
+  SavesBlock,
 } from "./blocks";
 import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hoursLabel, Img, PadIcon, pctNum, shortDate } from "./parts";
 import "./steam.css";
 
-type Tab = "ach" | "guides" | "trainer" | "map" | "shots" | "notes" | "music" | "perf" | "dl";
+type Tab = "ach" | "guides" | "trainer" | "map" | "shots" | "notes" | "saves" | "music" | "perf" | "dl";
 
 const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: "ach", label: "Logros", icon: <Trophy /> },
@@ -39,6 +40,7 @@ const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: "trainer", label: "Trucos", icon: <WandSparkles /> },
   { id: "map", label: "Mapa", icon: <MapIcon /> },
   { id: "shots", label: "Capturas", icon: <ImageIcon /> },
+  { id: "saves", label: "Partidas", icon: <Save /> },
   { id: "notes", label: "Notas", icon: <NotebookPen /> },
   { id: "music", label: "Música", icon: <Music2 /> },
   { id: "perf", label: "Rendimiento", icon: <Activity /> },
@@ -185,6 +187,13 @@ export function SteamPanel({ p }: { p: Panel }) {
             <CaptureGrid k="sx" p={p} onOpen={setViewer} />
           </div>
           {viewer != null && <CaptureViewer k="sx" list={d.captures} index={viewer} onIndex={setViewer} onClose={() => setViewer(null)} />}
+        </Window>
+      );
+      break;
+    case "saves":
+      body = (
+        <Window title={`Partidas · ${d.title}`}>
+          <SavesBlock k="sx" p={p} />
         </Window>
       );
       break;

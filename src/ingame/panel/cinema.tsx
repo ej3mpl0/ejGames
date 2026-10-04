@@ -26,12 +26,13 @@ import {
   unlockText,
   VolumeControls,
   type AchFilter,
+  SavesBlock,
 } from "./blocks";
 import type { Panel } from "./model";
 import { BatteryIcon, clock, cls, dur, hms, hoursLabel, Img } from "./parts";
 import "./cinema.css";
 
-type Row = "ach" | "guides" | "cheats" | "map" | "shots" | "notes" | "music" | "perf" | "dl";
+type Row = "ach" | "guides" | "cheats" | "map" | "shots" | "notes" | "saves" | "music" | "perf" | "dl";
 
 export function CinemaPanel({ p }: { p: Panel }) {
   const d = p.data;
@@ -41,6 +42,7 @@ export function CinemaPanel({ p }: { p: Panel }) {
     { id: "cheats", label: "Trucos" },
     { id: "map", label: "Mapa" },
     { id: "shots", label: "Capturas" },
+    { id: "saves", label: "Partidas" },
     { id: "notes", label: "Notas" },
     { id: "music", label: "Música" },
     { id: "perf", label: "Rendimiento" },
@@ -118,6 +120,9 @@ export function CinemaPanel({ p }: { p: Panel }) {
           )}
         </div>
       );
+      break;
+    case "saves":
+      rail = <SavesBlock k="cn" p={p} />;
       break;
     case "notes":
       rail = <NotesEditor k="cn" p={p} />;

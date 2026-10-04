@@ -22,13 +22,14 @@ import {
   QuitConfirm,
   VolumeControls,
   type AchFilter,
+  SavesBlock,
 } from "./blocks";
 import type { Panel } from "./model";
 import { clock, cls, CupIcon, hms, pctNum, shortDate } from "./parts";
 import type { Achievement } from "../../api/types";
 import "./retro.css";
 
-type View = "menu" | "ach" | "guides" | "cheats" | "map" | "shots" | "notes" | "music" | "system" | "dl";
+type View = "menu" | "ach" | "guides" | "cheats" | "map" | "shots" | "notes" | "saves" | "music" | "system" | "dl";
 
 /** El icono a 16 × 16 y ampliado sin suavizar, como un sprite. */
 function Sprite({ a }: { a: Achievement }) {
@@ -68,6 +69,7 @@ const TITLES: Record<Exclude<View, "menu">, string> = {
   cheats: "Trucos",
   map: "Mapa",
   shots: "Álbum",
+  saves: "Partidas",
   notes: "Notas",
   music: "Música",
   system: "Sistema",
@@ -177,6 +179,9 @@ export function RetroPanel({ p }: { p: Panel }) {
         </div>
       );
       break;
+    case "saves":
+      screen = <SavesBlock k="rt" p={p} />;
+      break;
     case "notes":
       screen = <NotesEditor k="rt" p={p} placeholder="ESCRIBE AQUÍ TUS PISTAS…" />;
       break;
@@ -228,6 +233,7 @@ export function RetroPanel({ p }: { p: Panel }) {
               {item("cheats", "Trucos", "", () => setView("cheats"))}
               {item("map", "Mapa", "", () => setView("map"))}
               {item("shots", "Álbum", d.captures.length || "", () => setView("shots"))}
+              {item("saves", "Partidas", "", () => setView("saves"))}
               {item("notes", "Notas", p.note.trim() ? "●" : "", () => setView("notes"))}
               {item("music", "Música", p.media ? (p.media.playing ? "♪" : "II") : "", () => setView("music"))}
               {item("system", "Sistema", p.perf ? `CPU ${Math.round(p.perf.cpu)}%` : "", () => setView("system"))}

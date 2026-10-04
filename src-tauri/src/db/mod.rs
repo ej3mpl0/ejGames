@@ -34,6 +34,8 @@ const MIGRATIONS: &[Migration] = &[
     Migration::Sql(include_str!("../../migrations/014_store_cache.sql")),
     // 0.10.0: aviso de repack con versión nueva.
     Migration::Sql(include_str!("../../migrations/015_repack_updates.sql")),
+    // 0.11.0: copias de las partidas guardadas.
+    Migration::Sql(include_str!("../../migrations/016_saves.sql")),
 ];
 
 pub struct Db {

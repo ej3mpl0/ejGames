@@ -9,11 +9,12 @@ import { playtime, SOURCE_LABEL } from "../lib/format";
 import { useApp } from "../store/app";
 import { t } from "../lib/i18n";
 import { openExplore } from "../host/downloads";
+import { SavesTab } from "./SavesTab";
 
 /** Juegos que ejGames sabe desinstalar (todos los que siguen en su sitio). */
 const canUninstall = (g: { missing?: boolean }) => !g.missing;
 
-type Tab = "general" | "match" | "art" | "info";
+type Tab = "general" | "match" | "art" | "saves" | "info";
 const ART_KINDS = [
   { kind: "cover", label: "Portada", aspect: "aspect-[2/3]" },
   { kind: "hero", label: "Fondo (hero)", aspect: "aspect-[96/31]" },
@@ -68,6 +69,7 @@ export function GameEditor({ id, onClose }: { id: number; onClose: () => void })
               { value: "general", label: "General" },
               { value: "match", label: "Identificar juego" },
               { value: "art", label: "Arte" },
+              { value: "saves", label: t("Partidas guardadas") },
               { value: "info", label: "Información" },
             ]}
           />
@@ -93,6 +95,7 @@ export function GameEditor({ id, onClose }: { id: number; onClose: () => void })
           {tab === "general" && <GeneralTab data={data} reload={load} onClose={onClose} />}
           {tab === "match" && <MatchTab data={data} />}
           {tab === "art" && <ArtTab data={data} reload={load} />}
+          {tab === "saves" && <SavesTab id={id} />}
           {tab === "info" && <InfoTab data={data} reload={load} />}
         </div>
       </div>

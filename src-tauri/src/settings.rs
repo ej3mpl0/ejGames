@@ -93,6 +93,12 @@ pub struct Settings {
     /// Proxy SOCKS5 para el torrent ("socks5://usuario:clave@host:puerto").
     pub torrent_proxy: String,
 
+    // ── Partidas guardadas ──
+    /// Copia automática de las partidas al cerrar cada juego.
+    pub saves_auto: bool,
+    /// Copias que se guardan por juego.
+    pub saves_keep: u32,
+
     // ── Modo juego ──
     /// Plan de energía de alto rendimiento mientras se juega.
     pub game_mode_power: bool,
@@ -172,6 +178,8 @@ impl Default for Settings {
             extra_trackers: true,
             peer_limit: 0,
             torrent_proxy: String::new(),
+            saves_auto: true,
+            saves_keep: 10,
             game_mode_power: false,
             game_mode_dnd: false,
             game_mode_saved_scheme: String::new(),

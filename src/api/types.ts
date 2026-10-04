@@ -391,6 +391,26 @@ export interface ThemeInfo {
   compatible: boolean;
 }
 
+export interface SavePath {
+  path: string;
+  /** manifest | emulator | steam | manual */
+  source: string;
+  bytes: number;
+  files: number;
+}
+export interface SaveSnapshot {
+  id: number;
+  gameId: number;
+  at: number;
+  size: number;
+  note: string;
+}
+export interface SavesInfo {
+  paths: SavePath[];
+  snapshots: SaveSnapshot[];
+  known: boolean;
+}
+
 export interface BackupInfo {
   app: string;
   version: string;
@@ -406,6 +426,8 @@ export interface BackupInfo {
 export interface Settings {
   /** "" (el de Windows) | "es" | "en". */
   uiLanguage: string;
+  savesAuto: boolean;
+  savesKeep: number;
   gameModePower: boolean;
   gameModeDnd: boolean;
   backupDir: string;

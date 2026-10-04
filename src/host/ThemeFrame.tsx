@@ -276,6 +276,12 @@ export function ThemeFrame() {
     return () => void un.then((f) => f());
   }, []);
 
+  // Partidas guardadas: copia nueva, restaurada o rutas cambiadas.
+  useEffect(() => {
+    const un = on("saves:changed", (e) => beats.current.ready && event("saves", e));
+    return () => void un.then((f) => f());
+  }, []);
+
   // Eventos de partida reenviados al tema.
   useEffect(() => {
     const fn = (e: Event) => event("game-state", (e as CustomEvent).detail);

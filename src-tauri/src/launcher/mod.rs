@@ -313,6 +313,10 @@ impl Track {
         }
         st.sessions.running.lock().remove(&game_id);
         gamemode::exit(st, false);
+        if played.is_some() {
+            let (s, g) = (st.clone(), self.game.clone());
+            tauri::async_runtime::spawn(async move { crate::saves::auto(&s, &g).await });
+        }
         crate::events::game_state(st, game_id, "stopped", played.map(|p| p.1 - p.0));
         crate::events::library_changed(st, vec![game_id]);
         outcome

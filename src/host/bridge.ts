@@ -93,6 +93,12 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
       const value = typeof params?.value === "boolean" ? params.value : !g?.favorite;
       return api.setFavorite(id, value);
     }
+    case "saves.info":
+      return api.savesInfo(num(params?.id));
+    case "saves.backup":
+      return api.savesBackup(num(params?.id));
+    case "saves.restore":
+      return api.savesRestore(num(params?.id), num(params?.snapshot));
     case "game.shortcut":
       return api.gameShortcut(num(params?.id));
     case "game.addToSteam":

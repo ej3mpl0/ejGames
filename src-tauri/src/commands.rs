@@ -1516,3 +1516,70 @@ pub async fn game_add_to_steam(st: St<'_>, id: i64) -> CmdResult<String> {
     })
     .await
 }
+
+// ───────────────────────────── partidas guardadas ─────────────────────────────
+
+fn saves_game(st: &St<'_>, id: i64) -> CmdResult<crate::db::models::Game> {
+    Ok(st.db.with(|c| repo::get_game(c, id))?)
+}
+
+#[tauri::command]
+pub async fn saves_info(st: St<'_>, id: i64) -> CmdResult<crate::saves::SavesInfo> {
+    let g = saves_game(&st, id)?;
+    Ok(crate::saves::info(st.inner(), &g).await)
+}
+
+/// Copia ahora. Devuelve la copia, o None si no hay cambios desde la última.
+#[tauri::command]
+pub async fn saves_backup(st: St<'_>, id: i64) -> CmdResult<Option<crate::saves::Snapshot>> {
+    let g = saves_game(&st, id)?;
+    let s = crate::saves::backup(st.inner(), &g, &crate::i18n::t("A mano"), false).await?;
+    crate::events::saves_changed(st.inner(), id);
+    Ok(s)
+}
+
+#[tauri::command]
+pub async fn saves_restore(st: St<'_>, id: i64, snapshot: i64) -> CmdResult<usize> {
+    if st.sessions.any() {
+        return Err(CmdError::Msg(crate::i18n::t("Cierra el juego antes de restaurar sus partidas").into()));
+    }
+    let g = saves_game(&st, id)?;
+    let n = crate::saves::restore(st.inner(), &g, snapshot).await?;
+    crate::events::saves_changed(st.inner(), id);
+    Ok(n)
+}
+
+#[tauri::command]
+pub async fn saves_delete(st: St<'_>, id: i64, snapshot: i64) -> CmdResult<()> {
+    crate::saves::delete_snapshot(st.inner(), id, snapshot)?;
+    crate::events::saves_changed(st.inner(), id);
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn saves_add_path(st: St<'_>, id: i64, path: String) -> CmdResult<()> {
+    crate::saves::add_path(st.inner(), id, &path)?;
+    crate::events::saves_changed(st.inner(), id);
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn saves_remove_path(st: St<'_>, id: i64, path: String) -> CmdResult<()> {
+    crate::saves::remove_path(st.inner(), id, &path)?;
+    crate::events::saves_changed(st.inner(), id);
+    Ok(())
+}
+
+/// Abre en el Explorador una de las rutas de partidas del juego.
+#[tauri::command]
+pub async fn saves_open(st: St<'_>, id: i64, path: String) -> CmdResult<()> {
+    let g = saves_game(&st, id)?;
+    let (found, _) = crate::saves::locate(st.inner(), &g).await;
+    let p = std::path::PathBuf::from(&path);
+    if !found.iter().any(|(f, _)| *f == p) {
+        return Err(CmdError::Msg(crate::i18n::t("Esa ruta no es de este juego").into()));
+    }
+    let target = if p.is_file() { p.parent().map(|x| x.to_path_buf()).unwrap_or(p) } else { p };
+    std::process::Command::new("explorer").arg(target).spawn().map_err(|e| CmdError::Msg(e.to_string()))?;
+    Ok(())
+}

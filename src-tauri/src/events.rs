@@ -43,3 +43,7 @@ pub fn toast(st: &AppState, kind: &str, message: impl Into<String>) {
 pub fn theme_changed(st: &AppState, id: &str) {
     let _ = st.app.emit("theme:changed", json!({ "id": id }));
 }
+
+pub fn saves_changed(st: &AppState, game_id: i64) {
+    let _ = st.app.emit("saves:changed", json!({ "gameId": game_id }));
+}

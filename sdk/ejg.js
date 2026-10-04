@@ -491,6 +491,15 @@
       /** Un enlace de una guía ya leída (span.href o el url de un vídeo). */
       openLink: function (href) { return call("guides.openLink", { href: href }); },
     },
+    saves: {
+      /** Partidas guardadas del juego: {paths: [{path, source, bytes, files}], snapshots: [{id, at, size, note}], known}. */
+      info: function (gameId) { return call("saves.info", { id: gameId }); },
+      /** Copia ahora; resuelve con la copia, o null si no hay cambios desde la última. */
+      backup: function (gameId) { return call("saves.backup", { id: gameId }); },
+      /** Restaura una copia (con el juego cerrado); resuelve con los archivos restaurados. */
+      restore: function (gameId, snapshotId) { return call("saves.restore", { id: gameId, snapshot: snapshotId }); },
+      onChange: function (fn) { return on("saves", fn); },
+    },
     trainer: {
       /** Trainer de FLiNG instalado para el juego, o null:
        *  {name, title, options (cuántas), gameVersion, autoStart, present, anticheat}. */

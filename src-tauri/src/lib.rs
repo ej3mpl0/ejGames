@@ -19,6 +19,7 @@ mod overlay;
 mod paths;
 mod profile_page;
 mod protocols;
+mod saves;
 mod services;
 mod settings;
 mod state;
@@ -214,6 +215,13 @@ pub fn run() {
             commands::backup_dismiss,
             commands::repack_update_dismiss,
             commands::game_shortcut,
+            commands::saves_info,
+            commands::saves_backup,
+            commands::saves_restore,
+            commands::saves_delete,
+            commands::saves_add_path,
+            commands::saves_remove_path,
+            commands::saves_open,
             commands::game_add_to_steam,
             commands::repack_update_check,
             commands::quit,

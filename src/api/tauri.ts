@@ -4,6 +4,8 @@ import type {
   AchList,
   ArtItem,
   BackupInfo,
+  SavesInfo,
+  SaveSnapshot,
   Bootstrap,
   BrowseFilters,
   Candidate,
@@ -200,6 +202,13 @@ export const api = {
   downloadsOpenFolder: (id: number) => invoke<void>("downloads_open_folder", { id }),
   diskSpace: (path: string) => invoke<{ freeBytes?: number | null }>("disk_space", { path }),
 
+  savesInfo: (id: number) => invoke<SavesInfo>("saves_info", { id }),
+  savesBackup: (id: number) => invoke<SaveSnapshot | null>("saves_backup", { id }),
+  savesRestore: (id: number, snapshot: number) => invoke<number>("saves_restore", { id, snapshot }),
+  savesDelete: (id: number, snapshot: number) => invoke<void>("saves_delete", { id, snapshot }),
+  savesAddPath: (id: number, path: string) => invoke<void>("saves_add_path", { id, path }),
+  savesRemovePath: (id: number, path: string) => invoke<void>("saves_remove_path", { id, path }),
+  savesOpen: (id: number, path: string) => invoke<void>("saves_open", { id, path }),
   gameShortcut: (id: number) => invoke<string>("game_shortcut", { id }),
   gameAddToSteam: (id: number) => invoke<string>("game_add_to_steam", { id }),
   repackUpdateDismiss: (gameId: number) => invoke<void>("repack_update_dismiss", { gameId }),
@@ -230,6 +239,7 @@ export type Events = {
   "downloads:finished": { id: number; title: string };
   "explore:art": null;
   "wishlist:changed": WishItem[];
+  "saves:changed": { gameId: number };
   "downloads:install": { id: number; phase: "running" | "done" | "cancelled" | "error" | "needs-folder"; message?: string | null; gameId?: number | null };
 };
 

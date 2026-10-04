@@ -473,6 +473,13 @@ export interface SeasonEvent {
   subtitle: string;
 }
 
+export interface SaveSnapshot { id: number; gameId: number; at: number; size: number; note: string }
+export interface SavesInfo {
+  paths: { path: string; source: "manifest" | "emulator" | "steam" | "manual"; bytes: number; files: number }[];
+  snapshots: SaveSnapshot[];
+  known: boolean;
+}
+
 export interface Ejg {
   version: 1;
   ready(): Promise<Ejg>;
@@ -491,6 +498,12 @@ export interface Ejg {
   tn(n: number, one: string, many: string, vars?: Record<string, string | number>): string;
   /** Traduce los elementos con `data-t` (texto y placeholder/title/aria-label/alt) dentro de `root`. */
   translate(root?: ParentNode): void;
+  saves: {
+    info(gameId: number): Promise<SavesInfo>;
+    backup(gameId: number): Promise<SaveSnapshot | null>;
+    restore(gameId: number, snapshotId: number): Promise<number>;
+    onChange(fn: (d: { gameId: number }) => void): () => void;
+  };
   library: {
     readonly all: Game[];
     get(): Promise<Game[]>;

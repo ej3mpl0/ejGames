@@ -3,6 +3,7 @@
 // Al cambiar de idioma se recarga la ventana (y con ella el tema).
 
 import en from "./en.json";
+import kit from "../../sdk/i18n/en.json";
 import { makeTranslator, observe } from "../../sdk/kit/translate.js";
 
 export type Lang = "es" | "en";
@@ -19,7 +20,7 @@ export function setLang(l: string) {
  *  texto y atributos, ahora y a medida que cambian. */
 export function startTranslator() {
   if (lang !== "en") return;
-  observe(makeTranslator(en as Record<string, string>), document);
+  observe(makeTranslator({ ...(kit as Record<string, string>), ...(en as Record<string, string>) }), document);
 }
 
 export const getLang = () => lang;

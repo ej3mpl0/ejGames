@@ -1011,5 +1011,5 @@ pub fn session_ended(st: &Arc<AppState>, game_id: i64) {
 }
 
 pub fn display_hotkey(k: &str) -> String {
-    k.split('+').map(|p| p.trim()).map(|p| if p.eq_ignore_ascii_case("shift") { "Mayús" } else { p }).collect::<Vec<_>>().join(" + ")
+    k.split('+').map(|p| p.trim()).map(|p| if p.eq_ignore_ascii_case("shift") { crate::i18n::t("Mayús").into_owned() } else { p.to_string() }).collect::<Vec<_>>().join(" + ")
 }

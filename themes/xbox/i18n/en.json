@@ -1,4 +1,5 @@
 {
+ "+ Colecciones": "+ Collections",
  "Administrar cola": "Manage queue",
  "Anclado": "Pinned",
  "Anclados": "Pinned",
@@ -20,6 +21,8 @@
  "Detalles": "Details",
  "Disponible": "Available",
  "El fondo cambia con el juego enfocado": "The background changes with the focused game",
+ "elemento pendiente": "item pending",
+ "elementos pendientes": "items pending",
  "Empieza tu colección": "Start your collection",
  "En disco": "On disk",
  "En línea": "Online",
@@ -28,6 +31,7 @@
  "Familiar": "Family",
  "Gestionar": "Manage",
  "Granja": "Farming",
+ "Hipervisor (HV)": "Hypervisor (HV)",
  "Ir a la Tienda": "Go to the Store",
  "Juego": "Game",
  "Juego base (obligatorio)": "Base game (required)",

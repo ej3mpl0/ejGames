@@ -144,7 +144,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
                   {t("¿Vienes de otro PC? Restaurar una copia")}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => void switchLanguage()}>
-                  {getLang() === "en" ? "Español" : "English"}
+                  {getLang() === "en" ? "Español\u200b" : "English"}
                 </Button>
               </div>
               <div className="mt-5 flex flex-wrap gap-2.5">

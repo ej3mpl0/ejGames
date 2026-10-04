@@ -150,7 +150,7 @@ export function SystemTab() {
           value={settings.uiLanguage as "" | "es" | "en"}
           options={[
             { value: "", label: t("El de Windows") },
-            { value: "es", label: "Español" },
+            { value: "es", label: "Español\u200b" },
             { value: "en", label: "English" },
           ]}
           onChange={async (v) => {

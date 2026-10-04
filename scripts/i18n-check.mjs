@@ -39,7 +39,7 @@ function walk(dir, exts, out = []) {
 function noise(t) {
   if (/^\{\d+\}[-_a-z]/.test(t)) return true;
   if (/(px|rem|vh|vw|deg|ms)\b/.test(t) && !/[áéíóú ]/.test(t)) return true;
-  if (/^[#.[\]{}()0-9a-zA-Z_:,;>+~*="' -]+$/.test(t) && !t.includes(" ") && !/[A-ZÁÉÍÓÚ][a-záéíóú]/.test(t)) return true;
+  if (/^[#.[\]{}()0-9a-zA-Z_:,;>+~*="' -]+$/.test(t) && /[#.[\]{}()0-9_:;>+~*="']/.test(t) && !t.includes(" ") && !/[A-ZÁÉÍÓÚ][a-záéíóú]/.test(t)) return true;
   if (/^[a-z]+(-[a-z0-9]+)+$/.test(t)) return true;
   if (/^(data:|http|\/|#|rgba?\(|var\(|linear-gradient|radial-gradient|translate|scale\(|calc\(|url\()/.test(t)) return true;
   if (/^\W+$/.test(t)) return true;
@@ -48,18 +48,37 @@ function noise(t) {
   return false;
 }
 
+// Palabras que solo salen en el lado español de los diccionarios: si un texto lleva alguna, es español.
+const tokens = (t) => (t.toLowerCase().match(/[a-záéíóúñü]{3,}/g) || []);
+const spanishOnly = (() => {
+  const es = new Set();
+  const en = new Set();
+  const dicts = ["src/lib/en.json", "sdk/i18n/en.json", "src-tauri/i18n/en.json"].map((f) => readJson(path.join(root, f)));
+  for (const t of fs.readdirSync(path.join(root, "themes"))) dicts.push(readJson(path.join(root, "themes", t, "i18n", "en.json")));
+  for (const d of dicts) for (const [k, v] of Object.entries(d)) {
+    tokens(k).forEach((w) => es.add(w));
+    tokens(String(v)).forEach((w) => en.add(w));
+  }
+  return new Set([...es].filter((w) => !en.has(w)));
+})();
+
 function keep(s, ctx) {
-  if (/^(<|--|\.|@|\$)/.test(s) || s.includes('="') || (s.includes("px") && !SPANISH.test(s))) return false;
+  if (/^(<|--|\.\S|@|\$)/.test(s) || s.includes('="') || (s.includes("px") && !SPANISH.test(s))) return false;
   if (/[;{}]\s*$/.test(s) && !SPANISH.test(s)) return false;
   if (/\b(solid|flex|grid|none|auto|inherit|center)\b/.test(s) && !SPANISH.test(s)) return false;
   if (SPANISH.test(s) || /^[A-ZÁÉÍÓÚÑ][A-Za-záéíóúñÁÉÍÓÚÑ ]{2,}$/.test(s)) return true;
+  if (tokens(s).some((w) => spanishOnly.has(w))) return true;
   // --wide: texto con pinta de interfaz aunque no lleve acentos ni palabras vacías.
-  return wide && ctx !== "lit" ? /^[A-ZÁÉÍÓÚÑ¿¡]/.test(s) : wide && /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+( [a-záéíóúñ]+){0,6}[.…:?!]?$/.test(s);
+  if (ctx === "t") return true; // lo que ya pasa por t() / tn() siempre tiene que estar en el diccionario
+  // Cualquier texto de interfaz (JSX, atributos, argumentos de h()) aunque no lleve acentos ni palabras vacías.
+  if (wide && ctx !== "lit") return /^[A-Za-zÁÉÍÓÚÑ¿¡{(·»«-]/.test(s) && /[A-Za-zÁ-ú]{3}/.test(s);
+  return wide && /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+( [/a-záéíóúñ]+){0,6}[.…:?!]?$/.test(s);
 }
 
 function addText(set, raw, ctx) {
   const t = raw.replace(/\s+/g, " ").trim();
-  if (t.length < 2 || !/[A-Za-zÁ-ú]/.test(t) || noise(t) || /^[a-z][a-zA-Z0-9]*$/.test(t)) return;
+  // Un U+200B al final marca un texto que no se traduce a propósito (nombres de idioma).
+  if (t.length < 2 || t.endsWith("​") || !/[A-Za-zÁ-ú]/.test(t) || noise(t) || /^[a-z][a-zA-Z0-9]*$/.test(t)) return;
   if (!keep(t, ctx)) return;
   set.add(t);
 }
@@ -78,7 +97,8 @@ function scanTs(file, set) {
       else if (ts.isCallExpression(p)) {
         const last = p.expression.getText().split(".").pop();
         if (last === "h" && p.arguments.indexOf(n) >= 2) ctx = "h-child";
-        else if (CALLS.has(last) || last === "t") ctx = "call";
+        else if (last === "t" || (last === "tn" && p.arguments.indexOf(n) >= 1)) ctx = "t";
+        else if (CALLS.has(last)) ctx = "call";
       } else if (ts.isBinaryExpression(p) && /textContent|innerText|title|placeholder/.test(p.left.getText())) ctx = "assign";
       if (!(ts.isImportDeclaration(p) || ts.isExportDeclaration(p) || ts.isExternalModuleReference(p))) addText(set, n.text, ctx);
     } else if (ts.isTemplateExpression(n)) {

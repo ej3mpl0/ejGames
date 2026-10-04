@@ -47,12 +47,12 @@ export function MetadataTab() {
           label="Idioma de las descripciones"
           value={val("language")}
           options={[
-            { value: "spanish", label: "Español (España)" },
-            { value: "latam", label: "Español (Latinoamérica)" },
+            { value: "spanish", label: "Español (España)\u200b" },
+            { value: "latam", label: "Español (Latinoamérica)\u200b" },
             { value: "english", label: "English" },
             { value: "french", label: "Français" },
             { value: "german", label: "Deutsch" },
-            { value: "italian", label: "Italiano" },
+            { value: "italian", label: "Italiano\u200b" },
             { value: "brazilian", label: "Português (Brasil)" },
           ]}
           onChange={(v) => save({ language: v })}

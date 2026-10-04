@@ -143,7 +143,7 @@ export function CaptureViewer({ k, list, index, onIndex, onClose }: K & { list: 
 export const keyLabel = (k: string) =>
   k
     .split("+")
-    .map((p) => (p.trim().toLowerCase() === "shift" ? "Mayús" : p.trim()))
+    .map((p) => (p.trim().toLowerCase() === "shift" ? t("Mayús") : p.trim()))
     .join(" + ");
 
 // ─────────── notas ───────────

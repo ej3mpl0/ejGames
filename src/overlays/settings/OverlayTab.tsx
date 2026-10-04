@@ -85,7 +85,7 @@ const MOD_KEYS = ["Shift", "Control", "Alt", "Meta"];
 export function hotkeyLabel(k: string) {
   return k
     .split("+")
-    .map((p) => (p.trim().toLowerCase() === "shift" ? "Mayús" : p.trim()))
+    .map((p) => (p.trim().toLowerCase() === "shift" ? t("Mayús") : p.trim()))
     .join(" + ");
 }
 

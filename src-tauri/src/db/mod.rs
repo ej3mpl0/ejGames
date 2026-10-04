@@ -38,6 +38,8 @@ const MIGRATIONS: &[Migration] = &[
     Migration::Sql(include_str!("../../migrations/016_saves.sql")),
     // 0.12.0: juegos de consola (ROMs + emuladores).
     Migration::Sql(include_str!("../../migrations/017_emulation.sql")),
+    // 1.0.0: modo juego por perfil.
+    Migration::Sql(include_str!("../../migrations/018_game_mode_profile.sql")),
 ];
 
 pub struct Db {

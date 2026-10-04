@@ -305,6 +305,8 @@ export interface Profile {
   discordEnabled: boolean;
   discordHideNames: boolean;
   launchBehavior: "none" | "minimize" | "saver";
+  gameModePower: boolean;
+  gameModeDnd: boolean;
   soundsVolume: number;
   createdAt: number;
   lastUsed?: number | null;
@@ -318,6 +320,8 @@ export interface ProfilePatch {
   discordEnabled?: boolean;
   discordHideNames?: boolean;
   launchBehavior?: string;
+  gameModePower?: boolean;
+  gameModeDnd?: boolean;
   soundsVolume?: number;
   pin?: string;
 }
@@ -500,8 +504,6 @@ export interface Settings {
   emulators: EmulatorCfg[];
   savesAuto: boolean;
   savesKeep: number;
-  gameModePower: boolean;
-  gameModeDnd: boolean;
   backupDir: string;
   backupAuto: boolean;
   backupMedia: boolean;

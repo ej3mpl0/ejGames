@@ -174,21 +174,6 @@ export function SystemTab() {
         <Toggle label="Entrar automáticamente con el último perfil" hint="Los perfiles con PIN siempre lo piden." checked={settings.autoLogin} onChange={(v) => save({ autoLogin: v })} />
       </Section>
 
-      <Section title={t("Modo juego")}>
-        <Toggle
-          label={t("Plan de energía de alto rendimiento")}
-          hint={t("Mientras juegas, Windows usa el plan de alto rendimiento; al cerrar el juego vuelve el que tenías.")}
-          checked={settings.gameModePower}
-          onChange={(v) => save({ gameModePower: v })}
-        />
-        <Toggle
-          label={t("Silenciar las notificaciones de Windows")}
-          hint={t("Sin avisos que te tapen la partida. Al cerrar el juego se activan otra vez.")}
-          checked={settings.gameModeDnd}
-          onChange={(v) => save({ gameModeDnd: v })}
-        />
-      </Section>
-
       <Section title="Discord Rich Presence">
         <Toggle
           label="Mostrar en Discord a qué estoy jugando"

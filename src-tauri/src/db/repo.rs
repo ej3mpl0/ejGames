@@ -1005,7 +1005,8 @@ pub fn selected_remote_url(c: &Connection, game_id: i64, kind: &str) -> rusqlite
 // ───────────────────────────── perfiles ─────────────────────────────
 
 const PROFILE_COLS: &str = "id, name, avatar, color, theme_id, theme_settings, custom_css, pin_hash,
-  discord_enabled, discord_hide_names, launch_behavior, sounds_volume, created_at, last_used";
+  discord_enabled, discord_hide_names, launch_behavior, sounds_volume, created_at, last_used,
+  game_mode_power, game_mode_dnd";
 
 fn row_profile(r: &Row) -> rusqlite::Result<Profile> {
     let ts: String = r.get(5)?;
@@ -1026,6 +1027,8 @@ fn row_profile(r: &Row) -> rusqlite::Result<Profile> {
         sounds_volume: r.get(11)?,
         created_at: r.get(12)?,
         last_used: r.get(13)?,
+        game_mode_power: r.get(14)?,
+        game_mode_dnd: r.get(15)?,
     })
 }
 
@@ -1088,6 +1091,12 @@ pub fn update_profile(c: &Connection, id: i64, p: &ProfilePatch) -> rusqlite::Re
     }
     if let Some(v) = p.sounds_volume {
         c.execute("UPDATE profiles SET sounds_volume = ?2 WHERE id = ?1", params![id, v])?;
+    }
+    if let Some(v) = p.game_mode_power {
+        c.execute("UPDATE profiles SET game_mode_power = ?2 WHERE id = ?1", params![id, v])?;
+    }
+    if let Some(v) = p.game_mode_dnd {
+        c.execute("UPDATE profiles SET game_mode_dnd = ?2 WHERE id = ?1", params![id, v])?;
     }
     if let Some(pin) = &p.pin {
         let v: Option<String> = if pin.is_empty() { None } else { Some(pin_hash(id, pin)) };

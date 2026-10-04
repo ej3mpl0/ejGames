@@ -126,9 +126,8 @@ pub struct Settings {
     pub saves_keep: u32,
 
     // ── Modo juego ──
-    /// Plan de energía de alto rendimiento mientras se juega.
+    /// Antes del modo juego por perfil (1.0.0): se pasa a los perfiles al arrancar.
     pub game_mode_power: bool,
-    /// Notificaciones de Windows en silencio mientras se juega.
     pub game_mode_dnd: bool,
     /// Lo que había antes de entrar (para deshacerlo si ejGames se cae).
     pub game_mode_saved_scheme: String,

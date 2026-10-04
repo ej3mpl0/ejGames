@@ -287,7 +287,7 @@ impl Track {
                     },
                 );
             }
-            gamemode::enter(st);
+            gamemode::enter(st, profile_id);
             crate::overlay::session_started(st, &self.game, profile_id, started, target.clone());
             crate::trainers::run::session_started(st, &self.game, target.clone());
             crate::achievements::watch(st.clone(), game_id, profile_id, pad_stop.clone());

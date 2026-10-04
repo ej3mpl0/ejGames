@@ -203,6 +203,9 @@ pub struct Profile {
     pub discord_hide_names: bool,
     pub launch_behavior: String,
     pub sounds_volume: f64,
+    /// Modo juego: plan de energía de alto rendimiento y notificaciones en silencio.
+    pub game_mode_power: bool,
+    pub game_mode_dnd: bool,
     pub created_at: i64,
     pub last_used: Option<i64>,
 }
@@ -219,6 +222,8 @@ pub struct ProfilePatch {
     pub discord_hide_names: Option<bool>,
     pub launch_behavior: Option<String>,
     pub sounds_volume: Option<f64>,
+    pub game_mode_power: Option<bool>,
+    pub game_mode_dnd: Option<bool>,
     /// Nuevo PIN ("" = quitar).
     pub pin: Option<String>,
 }

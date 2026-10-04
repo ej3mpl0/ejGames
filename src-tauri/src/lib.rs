@@ -338,6 +338,17 @@ pub fn run() {
             });
             app.manage(st.clone());
             launcher::gamemode::recover(&st);
+            // 0.10 guardaba el modo juego en los ajustes globales; ahora es de cada perfil.
+            {
+                let s = st.settings.get();
+                if s.game_mode_power || s.game_mode_dnd {
+                    let _ = st.db.with(|c| c.execute("UPDATE profiles SET game_mode_power = ?1, game_mode_dnd = ?2", rusqlite::params![s.game_mode_power, s.game_mode_dnd]));
+                    let _ = st.settings.update(|x| {
+                        x.game_mode_power = false;
+                        x.game_mode_dnd = false;
+                    });
+                }
+            }
             {
                 let st = st.clone();
                 std::thread::spawn(move || trainers::prune(&st));

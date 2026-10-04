@@ -6,6 +6,7 @@ import { openProfile, refreshPage } from "../../host/profile";
 import { Button, Cycle, Section, Slider, TextInput, Toggle, cx } from "../../components/ui";
 import { PROFILE_COLORS } from "../../lib/format";
 import { useApp } from "../../store/app";
+import { t } from "../../lib/i18n";
 import { Avatar } from "../ProfilePicker";
 
 export function ProfileTab() {
@@ -120,6 +121,22 @@ export function ProfileTab() {
             clearTimeout(volTimer.current);
             volTimer.current = window.setTimeout(() => void api.updateProfile(profile.id, { soundsVolume: v }), 400);
           }}
+        />
+      </Section>
+
+      <Section title={t("Modo juego")}>
+        <p className="px-3 pb-1 text-xs text-muted">{t("Es de este perfil: cada perfil elige si quiere el modo juego.")}</p>
+        <Toggle
+          label={t("Plan de energía de alto rendimiento")}
+          hint={t("Mientras juegas, Windows usa el plan de alto rendimiento; al cerrar el juego vuelve el que tenías.")}
+          checked={profile.gameModePower}
+          onChange={(v) => patch({ gameModePower: v })}
+        />
+        <Toggle
+          label={t("Silenciar las notificaciones de Windows")}
+          hint={t("Sin avisos que te tapen la partida. Al cerrar el juego se activan otra vez.")}
+          checked={profile.gameModeDnd}
+          onChange={(v) => patch({ gameModeDnd: v })}
         />
       </Section>
 

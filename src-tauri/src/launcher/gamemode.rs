@@ -74,9 +74,9 @@ fn set_toasts(_: u32) -> bool {
 }
 
 /// Entra en el modo (una vez, aunque haya varios juegos a la vez).
-pub fn enter(st: &AppState) {
-    let s = st.settings.get();
-    if !(s.game_mode_power || s.game_mode_dnd) {
+pub fn enter(st: &AppState, profile_id: i64) {
+    let Ok(p) = st.db.with(|c| crate::db::repo::get_profile(c, profile_id)) else { return };
+    if !(p.game_mode_power || p.game_mode_dnd) {
         return;
     }
     let mut active = ACTIVE.lock();
@@ -84,14 +84,14 @@ pub fn enter(st: &AppState) {
         return;
     }
     let mut saved = Saved::default();
-    if s.game_mode_power {
+    if p.game_mode_power {
         if let Some(cur) = active_scheme() {
             if cur != HIGH_PERFORMANCE && set_scheme(HIGH_PERFORMANCE) {
                 saved.scheme = Some(cur);
             }
         }
     }
-    if s.game_mode_dnd {
+    if p.game_mode_dnd {
         if let Some(cur) = toasts() {
             if cur != 0 && set_toasts(0) {
                 saved.toasts = Some(cur);
@@ -181,5 +181,24 @@ mod tests {
             assert!(set_scheme(&before));
         }
         assert_eq!(active_scheme(), Some(before));
+    }
+}
+
+#[cfg(test)]
+mod profile_tests {
+    use crate::db::{models::ProfilePatch, repo, Db};
+
+    #[test]
+    fn game_mode_is_stored_per_profile() {
+        let db = Db::memory().unwrap();
+        db.with(|c| {
+            c.execute("INSERT INTO profiles (id, name, created_at) VALUES (1, 'Ana', 1), (2, 'Beto', 1)", [])?;
+            repo::update_profile(c, 1, &ProfilePatch { game_mode_power: Some(true), ..Default::default() })?;
+            let (a, b) = (repo::get_profile(c, 1)?, repo::get_profile(c, 2)?);
+            assert!(a.game_mode_power && !a.game_mode_dnd);
+            assert!(!b.game_mode_power && !b.game_mode_dnd);
+            Ok(())
+        })
+        .unwrap();
     }
 }

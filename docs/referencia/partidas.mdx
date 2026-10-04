@@ -1,0 +1,60 @@
+---
+title: "Partidas guardadas, repacks y atajos"
+description: "ejg.saves, repackUpdateNote, howLongNote, atajos y año."
+icon: "floppy-disk"
+---
+
+## Partidas guardadas
+
+```js
+const info = await ejg.saves.info(id)
+// { paths: [{ path, source: "manifest" | "emulator" | "steam" | "manual", bytes, files }],
+//   snapshots: [{ id, at, size, note }], known }
+const copia = await ejg.saves.backup(id)       // la copia, o null si no ha cambiado nada
+await ejg.saves.restore(id, copia.id)          // con el juego cerrado
+ejg.saves.onChange(({ gameId }) => …)          // copia nueva, restaurada o rutas cambiadas
+```
+
+Dónde guarda cada juego sale del manifiesto de Ludusavi, de las carpetas de los emuladores de Steam y de Steam Cloud.
+
+## Repack con versión nueva
+
+Los juegos instalados desde Descargas traen `repackUpdate: { slug, installed, latest }` cuando la tienda tiene una
+versión más nueva (y el usuario no la ha ocultado). El kit pinta el aviso:
+
+```js
+import { repackUpdateNote } from "/_sdk/kit/updates.js"
+ficha.append(repackUpdateNote(game))      // HTMLElement | null
+```
+
+También: `ejg.game.dismissRepackUpdate(id)` y `ejg.game.checkRepackUpdates()`.
+
+## Cuánto dura
+
+```js
+const h = await ejg.game.hltb(id)         // { main, extra, complete, url } en horas, o null
+```
+
+```js
+import { howLongNote } from "/_sdk/kit/hltb.js"
+ficha.append(howLongNote(game))           // se rellena solo; si no hay dato, desaparece
+```
+
+## Lanzar desde fuera
+
+```js
+await ejg.game.shortcut(id)               // acceso directo en el escritorio (ruta del .lnk)
+await ejg.game.addToSteam(id)             // lo añade a Steam como juego que no es de Steam
+```
+
+## Juegos de consola
+
+Los juegos de ROMs traen `platform` (`"snes"`, `"ps2"`…). Las colecciones inteligentes admiten la regla
+`{ platform: "snes" }` y ejGames crea una por sistema.
+
+## Tu año
+
+```js
+const y = await ejg.stats.year(2026)      // horas, top de juegos, meses, rachas, logros…
+ejg.ui.open("year-review")                // el repaso en tarjetas del host
+```

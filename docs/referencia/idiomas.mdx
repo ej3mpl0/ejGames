@@ -1,0 +1,53 @@
+---
+title: "Idiomas"
+description: "ejg.t, ejg.lang y los diccionarios: tu tema en español e inglés."
+icon: "language"
+---
+
+ejGames se ve en **español** y en **inglés** (Ajustes → Sistema → Idioma; por defecto, el de Windows). Tu tema
+corre en el idioma que elija el usuario: tú escribes los textos en español y un diccionario dice cómo van en inglés.
+
+```js
+ejg.lang        // "es" | "en"
+ejg.locale      // "es-ES" | "en-US", para Intl y toLocaleString
+ejg.t("Jugar")                                // "Jugar" o "Play"
+ejg.t("Descargas ({n})", { n: 3 })            // "Downloads (3)"
+ejg.tn(n, "{n} juego", "{n} juegos")          // singular o plural
+```
+
+La **clave** de cada texto es el propio texto en español: si no hay traducción, se ve el original. Nunca hace falta
+dar un identificador.
+
+## El diccionario del tema
+
+`<tema>/i18n/en.json`, un objeto de «español» → «inglés»:
+
+```json
+{
+  "Jugar": "Play",
+  "Descargas ({0})": "Downloads ({0})",
+  "Tu biblioteca está vacía": "Your library is empty"
+}
+```
+
+- Los datos que cambian van como `{nombre}` (o `{0}`, `{1}`…) y el inglés los puede reordenar.
+- El kit (`/_sdk/kit/`) trae su propio diccionario en el SDK: no hace falta repetir lo suyo.
+- El nombre del tema, su descripción y las etiquetas de sus ajustes de `theme.json` también se traducen con él.
+
+## Traducción automática del DOM
+
+En inglés, ejGames **traduce solo** todo texto que pinte tu tema (nodos de texto y los atributos `title`,
+`placeholder`, `aria-label` y `alt`) en cuanto coincide con una clave del diccionario, también lo que se pinta
+después. Por eso un tema escrito en español solo necesita su `en.json`: no hay que envolver cada texto en `ejg.t()`.
+
+- Un texto se traduce **entero** (el nodo de texto, sin espacios sobrantes). Si lo montas con varias piezas
+  (`"Hola " + nombre`), cada pieza se traduce por separado; si necesitas reordenar, usa `ejg.t("Hola {n}", { n })`.
+- Un tema que lo escribe todo en mayúsculas (como Retro) no necesita las mayúsculas en el diccionario: «JUGAR» se
+  traduce a «PLAY» si existe «Jugar».
+- Un elemento con `data-no-t` (y todo lo que lleva dentro) no se traduce. Tampoco `<code>`, `<pre>`, `<script>`,
+  `<style>` ni `<textarea>`.
+
+## Comprobar que no falta nada
+
+En el repositorio de ejGames, `pnpm i18n:check --wide` lista los textos en español sin traducir y `pnpm check`
+lo da por bueno o no. Para un tema propio, copia el patrón de `themes/<tema>/i18n/en.json`.

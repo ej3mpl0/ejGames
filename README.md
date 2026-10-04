@@ -11,7 +11,8 @@
   <a href="https://github.com/ej3mpl0/ejGames/releases/latest"><b>Descargar</b></a> ·
   <a href="https://ej3mplo.mintlify.site">Documentación</a> ·
   <a href="https://ej3mplo.mintlify.site/temas">Crear temas</a> ·
-  <a href="CHANGELOG.md">Novedades</a>
+  <a href="CHANGELOG.md">Novedades</a> ·
+  <a href="README.en.md">Read in English</a>
 </p>
 
 ---
@@ -28,6 +29,12 @@
 * **6 temas de serie** (Steam, PS5, Xbox, Switch, Cinema y Retro) que se tunean sin código, o el tuyo desde cero con
   HTML, CSS y JavaScript.
 * **Mando y Big Picture**, perfiles, estadísticas, Discord Rich Presence y actualizaciones automáticas.
+* **Juegos de consola**: carpetas de ROMs por sistema, con RetroArch, PCSX2, Dolphin, PPSSPP, DuckStation, Cemu, RPCS3 o
+  tu emulador.
+* **Copias de seguridad** de la biblioteca (que viajan a otro PC por OneDrive o Drive) y de las **partidas guardadas** de
+  cada juego, **modo juego**, accesos directos y «Añadir a Steam», aviso de **repack nuevo**, cuánto dura cada juego y
+  **Tu año en ejGames**.
+* **Español e inglés**, con los temas traducibles con un diccionario.
 * **Ligero**: al jugar puede quedarse en la bandeja con unos 5 MB.
 
 Todo con detalle en la [documentación](https://ej3mplo.mintlify.site/funciones).

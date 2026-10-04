@@ -5,6 +5,7 @@ import type {
   ArtItem,
   BackupInfo,
   Hltb,
+  CommunityTheme,
   YearReview,
   SavesInfo,
   SaveSnapshot,
@@ -206,6 +207,8 @@ export const api = {
 
   overlayFpsGrant: () => invoke<void>("overlay_fps_grant"),
   getYearReview: (year?: number) => invoke<YearReview>("get_year_review", { year }),
+  communityThemes: () => invoke<CommunityTheme[]>("community_themes"),
+  communityThemeInstall: (id: string) => invoke<ThemeInfo>("community_theme_install", { id }),
   gameHltb: (id: number) => invoke<Hltb | null>("game_hltb", { id }),
   savesInfo: (id: number) => invoke<SavesInfo>("saves_info", { id }),
   savesBackup: (id: number) => invoke<SaveSnapshot | null>("saves_backup", { id }),

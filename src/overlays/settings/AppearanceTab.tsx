@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { CommunityThemes } from "./CommunityThemes";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { Code2, Copy, Download, FolderOpen, ImagePlus, RotateCcw, Trash2, Upload, X, RefreshCw } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
@@ -305,6 +306,8 @@ export function AppearanceTab() {
           ))}
         </div>
       </Section>
+
+      <CommunityThemes onInstalled={() => void refresh()} />
 
       {current && (
         <Section title="Hazlo tuyo">

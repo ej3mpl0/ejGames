@@ -217,6 +217,8 @@ pub fn run() {
             commands::game_shortcut,
             commands::game_hltb,
             commands::get_year_review,
+            commands::community_themes,
+            commands::community_theme_install,
             commands::overlay_fps_grant,
             commands::saves_info,
             commands::saves_backup,

@@ -1617,3 +1617,15 @@ pub async fn get_year_review(st: St<'_>, year: Option<i32>) -> CmdResult<crate::
     let s = st.inner().clone();
     blocking(move || s.db.with(|c| crate::stats::year(c, pid, y))).await
 }
+
+// ───────────────────────────── temas de la comunidad ─────────────────────────────
+
+#[tauri::command]
+pub async fn community_themes(st: St<'_>) -> CmdResult<Vec<themes::community::CommunityTheme>> {
+    Ok(themes::community::list(st.inner()).await?)
+}
+
+#[tauri::command]
+pub async fn community_theme_install(st: St<'_>, id: String) -> CmdResult<ThemeInfo> {
+    Ok(themes::community::install(st.inner(), &id).await?)
+}

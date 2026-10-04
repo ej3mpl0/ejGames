@@ -1,6 +1,7 @@
 //! Temas: carpetas con theme.json + HTML/CSS/JS. Los de usuario (en %APPDATA%)
 //! tienen prioridad sobre los de serie si comparten id.
 
+pub mod community;
 pub mod devwatch;
 pub mod package;
 
@@ -76,7 +77,7 @@ pub struct ThemeInfo {
 pub const THEME_ORIGIN: &str = "http://ejg-theme.localhost";
 pub const SAFE_ORIGIN: &str = "http://ejg-safe.localhost";
 
-fn valid_id(id: &str) -> bool {
+pub(crate) fn valid_id(id: &str) -> bool {
     !id.is_empty() && id.len() <= 64 && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
 }
 

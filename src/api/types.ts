@@ -435,6 +435,19 @@ export interface YearReview {
   firstGame: string | null;
 }
 
+export interface CommunityTheme {
+  id: string;
+  name: string;
+  author: string;
+  description: string;
+  version: string;
+  preview?: string | null;
+  download: string;
+  sha256: string;
+  /** Versión instalada en este PC. */
+  installed?: string | null;
+}
+
 export interface Hltb {
   id: number;
   name: string;

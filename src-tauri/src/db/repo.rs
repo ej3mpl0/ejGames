@@ -111,6 +111,7 @@ pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64,
                working_dir = CASE WHEN ?3 THEN working_dir ELSE COALESCE(?10, working_dir) END,
                platform = COALESCE(?15, platform),
                rom_path = COALESCE(?16, rom_path),
+               rom_meta = COALESCE(?17, rom_meta),
                missing = 0,
                installed = 1,
                -- Sin datos identificados ni nombre puesto a mano: el título es el
@@ -137,15 +138,16 @@ pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64,
                 sort_title(&g.title),
                 lock_launch,
                 g.platform,
-                g.rom_path
+                g.rom_path,
+                g.rom_meta
             ],
         )?;
         Ok(Some((id, false)))
     } else {
         c.execute(
             "INSERT INTO games (title, sort_title, source, source_id, folder_id, install_dir, exe_path,
-               args, working_dir, launch_uri, process_hints, engine, steam_appid, added_at, updated_at, platform, rom_path)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14, ?15, ?16)",
+               args, working_dir, launch_uri, process_hints, engine, steam_appid, added_at, updated_at, platform, rom_path, rom_meta)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14, ?15, ?16, ?17)",
             params![
                 g.title,
                 sort_title(&g.title),
@@ -162,7 +164,8 @@ pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64,
                 g.steam_appid,
                 ts,
                 g.platform,
-                g.rom_path
+                g.rom_path,
+                g.rom_meta
             ],
         )?;
         Ok(Some((c.last_insert_rowid(), true)))
@@ -213,7 +216,7 @@ const GAME_COLS: &str = "id, title, sort_title, source, source_id, folder_id, in
   working_dir, launch_uri, run_as_admin, process_hints, engine, steam_appid, sgdb_id, igdb_id,
   description, short_description, developer, publisher, release_date, genres, tags, rating,
   meta_status, match_confidence, meta_locked, discord_enabled, missing, added_at, updated_at,
-  installed, platform, rom_path";
+  installed, platform, rom_path, rom_meta";
 
 fn row_game(r: &Row) -> rusqlite::Result<Game> {
     Ok(Game {
@@ -252,6 +255,7 @@ fn row_game(r: &Row) -> rusqlite::Result<Game> {
         installed: r.get(32)?,
         platform: r.get(33)?,
         rom_path: r.get(34)?,
+        rom_meta: r.get(35)?,
     })
 }
 
@@ -592,7 +596,7 @@ fn collections_by_game(c: &Connection, profile_id: i64) -> rusqlite::Result<Hash
 const LIB_SQL: &str = "SELECT g.id, g.title, g.sort_title, g.source, g.engine, g.short_description,
    g.developer, g.publisher, g.release_date, g.genres, g.tags, g.rating, g.meta_status, g.missing, g.added_at,
    COALESCE(pg.favorite, 0), COALESCE(pg.hidden, 0), pg.last_played, COALESCE(pg.playtime_s, 0),
-   COALESCE(pg.launch_count, 0), pg.user_rating, g.installed, g.platform
+   COALESCE(pg.launch_count, 0), pg.user_rating, g.installed, g.platform, g.rom_meta
  FROM games g LEFT JOIN profile_game pg ON pg.game_id = g.id AND pg.profile_id = ?1";
 
 fn row_lib(r: &Row) -> rusqlite::Result<LibGame> {
@@ -620,6 +624,7 @@ fn row_lib(r: &Row) -> rusqlite::Result<LibGame> {
         user_rating: r.get(20)?,
         installed: r.get(21)?,
         platform: r.get(22)?,
+        rom: r.get::<_, Option<String>>(23)?.and_then(|s| serde_json::from_str(&s).ok()),
         ..Default::default()
     })
 }

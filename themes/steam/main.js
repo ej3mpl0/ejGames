@@ -6,7 +6,8 @@ import { h, img, initials, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { attachStream, trailerPlayer } from "/_sdk/kit/media.js";
 import { playtime, relative, date, description, SOURCE_LABEL } from "/_sdk/kit/format.js";
-import { visible, sort, search, inCollection, canUninstall, software, SORTS } from "/_sdk/kit/library.js";
+import { visible, sort, search, inCollection, canUninstall, software, roms, romsBySystem, SORTS } from "/_sdk/kit/library.js";
+import { emulatorNote } from "/_sdk/kit/emulator.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { repackUpdateNote } from "/_sdk/kit/updates.js";
@@ -167,7 +168,9 @@ window.addEventListener("resize", () => closeMenu(true));
 
 // ─────────────── datos ───────────────
 const games = () => visible(ejg.library.all);
-const CHIPS = { all: "Juegos", played: "Jugados", unplayed: "Sin jugar", fav: "Favoritos", software: "Software", hidden: "Ocultos" };
+const CHIPS = { all: "Juegos", played: "Jugados", unplayed: "Sin jugar", fav: "Favoritos", roms: "ROMs", software: "Software", hidden: "Ocultos" };
+/** Los juegos de consola (ROMs y homebrew): en «ROMs», agrupados por sistema. */
+const romList = () => roms(ejg.library.all);
 /** Los programas (emuladores): solo en «Software». */
 const softwareList = () => software(ejg.library.all);
 /** Los ocultos: no salen en ningún otro filtro, solo en «Ocultos». */
@@ -182,7 +185,8 @@ function filtered(sortKey = state.sort) {
   // Mostrado el último oculto, el filtro vuelve a «Juegos».
   if (state.chip === "hidden" && !hiddenGames().length) state.chip = "all";
   if (state.chip === "software" && !softwareList().length) state.chip = "all";
-  const list = state.chip === "hidden" ? hiddenGames() : state.chip === "software" ? softwareList() : chipped(games());
+  if (state.chip === "roms" && !romList().length) state.chip = "all";
+  const list = state.chip === "hidden" ? hiddenGames() : state.chip === "software" ? softwareList() : state.chip === "roms" ? romList() : chipped(games());
   if (state.filter) return search(list, state.filter, 500);
   return sort(list, sortKey);
 }
@@ -322,7 +326,7 @@ sideDrop.addEventListener("click", () =>
   openMenu(
     sideDrop,
     Object.entries(CHIPS)
-      .filter(([k]) => (k !== "hidden" || hiddenGames().length) && (k !== "software" || softwareList().length))
+      .filter(([k]) => (k !== "hidden" || hiddenGames().length) && (k !== "software" || softwareList().length) && (k !== "roms" || romList().length))
       .map(([k, label]) => ({
       label: k === "hidden" ? `${label} (${hiddenGames().length})` : label,
       on: state.chip === k,
@@ -376,6 +380,13 @@ function renderSidebar() {
   $("#side-cols").classList.toggle("on", state.view === "collections" || state.view === "collection");
   const favs = !state.filter && state.chip === "all" ? list.filter((g) => g.favorite) : [];
   const groups = [];
+  // ROMs: un grupo por sistema (Nintendo Switch, PS Vita…).
+  if (state.chip === "roms" && !state.filter) {
+    const order = new Map(list.map((g, i) => [g.id, i]));
+    for (const s of romsBySystem(ejg.library.all)) groups.push(sideGroup(`sys-${s.id}`, s.name, [...s.games].sort((a, b) => order.get(a.id) - order.get(b.id))));
+    if (sideList.children.length !== groups.length || [...sideList.children].some((c, i) => c !== groups[i])) sideList.replaceChildren(...groups);
+    return;
+  }
   if (favs.length) groups.push(sideGroup("fav", "Favoritos", favs));
   groups.push(sideGroup("all", state.filter ? "Resultados" : state.chip === "hidden" ? "Ocultos" : state.chip === "software" ? "Software" : favs.length ? "Sin categoría" : "Todos", favs.length ? list.filter((g) => !g.favorite) : list));
   if (sideList.children.length !== groups.length || [...sideList.children].some((c, i) => c !== groups[i])) sideList.replaceChildren(...groups);
@@ -726,7 +737,7 @@ async function renderGame(id) {
   const right = h("div", { class: "g-right" }, achSlot, guideSlot);
   const body = h("div", { class: "game-body" }, left, right);
   const bg = h("div", { class: "game-bg", style: heroUrl ? { backgroundImage: `url("${g.media.heroThumb || heroUrl}")` } : {} });
-  main.replaceChildren(h("div", { class: "game" }, bg, hero, playbar, g.hidden ? hiddenNote(g) : null, repackUpdateNote(g), howLongNote(g), gnav, body));
+  main.replaceChildren(h("div", { class: "game" }, bg, hero, playbar, g.hidden ? hiddenNote(g) : null, repackUpdateNote(g), emulatorNote(g), howLongNote(g), gnav, body));
   main.scrollTop = 0;
   focus.focus($("#play"), { instant: true, silent: true });
 

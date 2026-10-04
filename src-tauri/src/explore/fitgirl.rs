@@ -176,21 +176,21 @@ impl Failed {
 }
 
 /// (URL sin barra final, clave).
-fn relay() -> Option<(&'static str, &'static str)> {
+pub(crate) fn relay() -> Option<(&'static str, &'static str)> {
     let url = RELAY_URL?.trim_end_matches('/');
     let key = RELAY_KEY?;
     (!url.is_empty() && !key.is_empty()).then_some((url, key))
 }
 
 /// Firma de una petición al relay: HMAC-SHA256 en hex de «hora\nruta?consulta».
-fn relay_signature(key: &str, time: i64, path_and_query: &str) -> String {
+pub(crate) fn relay_signature(key: &str, time: i64, path_and_query: &str) -> String {
     use hmac::Mac;
     let mut mac = hmac::Hmac::<sha2::Sha256>::new_from_slice(key.as_bytes()).expect("HMAC admite claves de cualquier largo");
     mac.update(format!("{time}\n{path_and_query}").as_bytes());
     mac.finalize().into_bytes().iter().map(|b| format!("{b:02x}")).collect()
 }
 
-fn unix_now() -> i64 {
+pub(crate) fn unix_now() -> i64 {
     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0)
 }
 

@@ -38,6 +38,8 @@ pub struct NewGame {
     /// Sistema de consola (ROMs); None en los juegos de PC.
     pub platform: Option<String>,
     pub rom_path: Option<String>,
+    /// Lo leído de la cabecera de la ROM (JSON de `emulation::rominfo::RomInfo`).
+    pub rom_meta: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -78,6 +80,7 @@ pub struct Game {
     pub installed: bool,
     pub platform: Option<String>,
     pub rom_path: Option<String>,
+    pub rom_meta: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -133,6 +136,12 @@ pub struct LibGame {
     /// Sistema de consola ("snes", "ps2"…); None en los juegos de PC.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub platform: Option<String>,
+    /// Juegos de consola: TitleID, versión, región… de la ROM, y su DLC y actualizaciones.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rom: Option<serde_json::Value>,
+    /// Juegos de consola: el emulador con que se abrirá ("" si no hay ninguno puesto).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub emulator: Option<String>,
     /// Logros desbloqueados / totales (si el juego tiene).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub achievements: Option<crate::achievements::AchSummary>,

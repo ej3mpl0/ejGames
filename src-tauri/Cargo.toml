@@ -47,6 +47,7 @@ hmac = "0.12"
 url = "2.5"
 percent-encoding = "2.3"
 zip = { version = "2", default-features = false, features = ["deflate"] }
+flate2 = "1"
 # Guías de Steam: su HTML se recorre y se convierte en bloques seguros (sin HTML).
 scraper = { version = "0.24", default-features = false }
 ego-tree = "0.10"

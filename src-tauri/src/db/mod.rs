@@ -40,6 +40,8 @@ const MIGRATIONS: &[Migration] = &[
     Migration::Sql(include_str!("../../migrations/017_emulation.sql")),
     // 1.0.0: modo juego por perfil.
     Migration::Sql(include_str!("../../migrations/018_game_mode_profile.sql")),
+    // 1.3.0: ROMs propias (datos de la cabecera, DLC y actualizaciones) y homebrew.
+    Migration::Sql(include_str!("../../migrations/019_roms.sql")),
 ];
 
 pub struct Db {

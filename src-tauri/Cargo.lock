@@ -1399,6 +1399,7 @@ dependencies = [
  "dirs 6.0.0",
  "discord-rich-presence",
  "ego-tree",
+ "flate2",
  "futures",
  "gilrs",
  "hmac",

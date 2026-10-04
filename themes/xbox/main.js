@@ -7,7 +7,8 @@ import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { createBackdrop, attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
-import { visible, sort, recent, favorites, byGenre, inCollection, software, SORTS } from "/_sdk/kit/library.js";
+import { visible, sort, recent, favorites, byGenre, inCollection, software, romsBySystem, SORTS } from "/_sdk/kit/library.js";
+import { emulatorNote } from "/_sdk/kit/emulator.js";
 import { clock } from "/_sdk/kit/clock.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
@@ -165,6 +166,9 @@ function renderCollection() {
   // Si ya no queda ninguno oculto (o ningún programa), vuelta a «Todos».
   if (state.filter === "hidden" && !hid.length) state.filter = "all";
   if (state.filter === "software" && !sw.length) state.filter = "all";
+  // Juegos de consola: un filtro por sistema («ROMs · Nintendo Switch»).
+  const systems = romsBySystem(ejg.library.all);
+  if (state.filter.startsWith("sys:") && !systems.some((s) => `sys:${s.id}` === state.filter)) state.filter = "all";
   const opts = [
     ["all", "Todos", all.length],
     ["fav", "Favoritos", all.filter((g) => g.favorite).length],
@@ -184,6 +188,14 @@ function renderCollection() {
       ),
     ),
     h("button", { class: "filter sep", "data-focus": "", onclick: () => ejg.ui.open("collections") }, h("span", null, "+ Colecciones"), h("span")),
+    ...systems.map((s, i) =>
+      h(
+        "button",
+        { class: "filter" + (i === 0 ? " sep" : ""), "data-focus": "", "aria-pressed": String(state.filter === `sys:${s.id}`), onclick: pick(`sys:${s.id}`) },
+        h("span", null, i === 0 ? h("small", { class: "f-group" }, "ROMs") : null, s.name),
+        h("span", null, s.games.length),
+      ),
+    ),
     sw.length
       ? h(
           "button",
@@ -208,9 +220,15 @@ function renderCollection() {
   else if (state.filter === "new") list = all.filter((g) => !g.playtime);
   else if (state.filter === "hidden") list = hid;
   else if (state.filter === "software") list = sw;
+  else if (state.filter.startsWith("sys:")) list = systems.find((s) => `sys:${s.id}` === state.filter)?.games || [];
   else if (state.filter.startsWith("c")) list = inCollection(all, ejg.library.collections.find((c) => `c${c.id}` === state.filter));
   list = sort(list, state.sort);
-  $("#col-title").textContent = state.filter === "hidden" ? "Ocultos" : state.filter === "software" ? "Software" : opts.find((o) => o[0] === state.filter)?.[1] || "Mi colección";
+  $("#col-title").textContent =
+    state.filter === "hidden"
+      ? "Ocultos"
+      : state.filter === "software"
+        ? "Software"
+        : systems.find((s) => `sys:${s.id}` === state.filter)?.name || opts.find((o) => o[0] === state.filter)?.[1] || "Mi colección";
   $("#sort").textContent = `Ordenar: ${SORTS[state.sort].label}`;
   keyed($("#grid"), list, (g) => g.id, (g, prev) => tile(g, false, prev));
 }
@@ -244,6 +262,7 @@ async function openHub(id) {
     h("div", { class: "hub-meta" }, [year(g.releaseDate), g.developer, ...(g.genres || []).slice(0, 3)].filter(Boolean).join("  •  ")),
     g.hidden ? hiddenNote(g) : null,
     repackUpdateNote(g),
+    emulatorNote(g),
     howLongNote(g),
     h(
       "div",

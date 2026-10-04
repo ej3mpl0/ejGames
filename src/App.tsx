@@ -31,6 +31,8 @@ import { SettingsOverlay } from "./overlays/settings/Settings";
 import { StatsOverlay } from "./overlays/Stats";
 import { YearReviewOverlay } from "./overlays/YearReview";
 import { SoftwareStore } from "./overlays/SoftwareStore";
+import { HomebrewStore } from "./overlays/HomebrewStore";
+import { RomImport } from "./overlays/RomImport";
 import { activeTheme, useApp } from "./store/app";
 import { useHostSeason } from "./host/season";
 import { restoreBackup } from "./overlays/settings/BackupSection";
@@ -256,6 +258,10 @@ export default function App() {
             return <SearchOverlay key={key} onClose={onClose} />;
           case "software":
             return <SoftwareStore key={key} onClose={onClose} />;
+          case "homebrew":
+            return <HomebrewStore key={key} args={o.args} onClose={onClose} />;
+          case "rom-import":
+            return <RomImport key={key} onClose={onClose} />;
           case "year-review":
             return <YearReviewOverlay key={key} year={o.args?.year == null ? undefined : Number(o.args.year)} onClose={onClose} />;
           case "stats":

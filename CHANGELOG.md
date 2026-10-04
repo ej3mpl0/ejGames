@@ -5,6 +5,43 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.3.0
+
+**ROMs propias**
+- **Importar ROMs** (Ajustes → Biblioteca, y Tienda → Software): por archivos o por carpeta, con los `.zip` y `.7z`
+  descomprimidos. El sistema sale de la extensión y, si vale para varios, de la cabecera (un `.iso` o `.cso` de PSP,
+  PS2, PS1, GameCube o Wii; un `.cue` de Saturn o PlayStation). Se copian ordenadas a `roms\<sistema>` en la carpeta de
+  datos (una carpeta de la biblioteca por sistema) o se juegan donde están.
+- Nuevos sistemas: **PS Vita** (`.vpk`) y **Nintendo 3DS** (`.3ds`, `.cci`, `.cxi`, `.3dsx`; los `.cia` se instalan en el
+  emulador). Switch admite también `.nca` y `.nro`.
+- De la propia ROM se lee lo que trae en claro: TitleID, versión, región, serie y nombre interno (Switch, 3DS, Vita,
+  PSP, PS1, PS2, GameCube, Wii, N64, SNES, GBA, DS). Las **actualizaciones y DLC** de Switch, 3DS y Vita no salen como
+  juegos aparte: se enganchan a su juego por el TitleID.
+- **Carátulas sin clave**: si IGDB y SteamGridDB no dan portada, se busca en libretro-thumbnails por el nombre del
+  archivo.
+
+**Jugar**
+- Si el emulador elegido para un sistema no está, ejGames usa el que haya: el instalado desde Software (en Switch, Eden o
+  Ryujinx) o, buscándolo, uno del disco. Vita3K arranca por su TitleID los `.vpk` ya instalados.
+- **Partidas guardadas** de los juegos de consola: las de su emulador (RetroArch, PCSX2, DuckStation, PPSSPP, Eden,
+  Ryujinx, Vita3K, Azahar, RPCS3, Cemu, Dolphin), con las mismas copias al cerrar el juego.
+- **Tienda → Software** suma **Azahar** (3DS) y **Vita3K** (PS Vita).
+
+**Explorar → Homebrew**
+- Software libre o redistribuible para **Switch** (hb-appstore), **PS Vita** (VitaDB) y **3DS** (Universal-DB), con
+  búsqueda, categorías, orden y páginas. Cada ficha dice con qué emulador se juega (o si es solo para la consola real).
+- **Instalar** lo baja (de uno en uno), lo descomprime y lo deja en la biblioteca con su icono, capturas y descripción,
+  listo para **Jugar**. Se actualiza y se quita desde ahí.
+
+**En los seis temas**
+- Entrada **Homebrew** en la tienda; apartado **ROMs** en la biblioteca, agrupado por sistema; en la ficha de cada juego
+  de consola, «Requiere emulador: …» con su TitleID, versión, región, actualización y DLC (o el botón para instalar el
+  emulador).
+
+**Para temas**
+- Kit: `isRom`, `roms`, `romsBySystem`, `systemName`, `romParts` (`library.js`) y `emulatorNote(juego)`
+  (`emulator.js`). Los juegos traen `emulator` y `rom`; `ejg.ui.open("homebrew" | "rom-import")`.
+
 ## 1.2.0
 
 **Software en la biblioteca**

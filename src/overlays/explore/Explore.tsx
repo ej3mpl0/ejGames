@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { locale } from "../../lib/i18n";
-import { ArrowLeft, ChevronsUpDown, Compass, Cpu, Download, ExternalLink, Heart, Play, RefreshCw, Search, X } from "lucide-react";
+import { ArrowLeft, ChevronsUpDown, Compass, Cpu, Download, Gamepad2, ExternalLink, Heart, Play, RefreshCw, Search, X } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
 import type { BrowseFilters, ExploreHome, ExplorePage, Genre, Repack, RepackDetails, WishItem } from "../../api/types";
 import { Button, Empty, Modal, Spinner, cx } from "../../components/ui";
@@ -257,6 +257,9 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
       </Button>
       <Button size="sm" variant="ghost" icon={<Download size={15} />} onClick={() => openExplore("downloads")}>
         Descargas
+      </Button>
+      <Button size="sm" variant="ghost" icon={<Gamepad2 size={15} />} onClick={() => useApp.getState().open("homebrew")}>
+        Homebrew
       </Button>
       <Button size="sm" variant="ghost" icon={<Cpu size={15} />} onClick={() => useApp.getState().open("software")}>
         Software

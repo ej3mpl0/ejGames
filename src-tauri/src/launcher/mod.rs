@@ -155,7 +155,12 @@ pub async fn play(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow::
 async fn play_inner(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow::Result<()> {
     let (game, profile) = st.db.with(|c| Ok((repo::get_game(c, game_id)?, repo::get_profile(c, profile_id)?)))?;
     // Un juego de consola se lanza con el emulador de su sistema y la ROM como argumento.
-    let launch_game = crate::emulation::prepare(&st.settings.get(), &game)?;
+    // Si el elegido no está, el que haya: el instalado desde Software o, buscándolo, en el disco.
+    let emu_dir = crate::emulation::install::emu_dir(st);
+    let launch_game = {
+        let (settings, g) = (st.settings.get(), game.clone());
+        tauri::async_runtime::spawn_blocking(move || crate::emulation::prepare_in(&settings, Some(&emu_dir), true, &g)).await??
+    };
     let g2 = launch_game.clone();
     let launched = tauri::async_runtime::spawn_blocking(move || launch::launch(&g2)).await??;
     st.db.with(|c| repo::bump_launch(c, profile_id, game_id))?;

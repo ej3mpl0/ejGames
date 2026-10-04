@@ -7,7 +7,8 @@ import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
-import { visible, sort, recent, software } from "/_sdk/kit/library.js";
+import { visible, sort, recent, software, romsBySystem } from "/_sdk/kit/library.js";
+import { emulatorNote } from "/_sdk/kit/emulator.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { clock } from "/_sdk/kit/clock.js";
@@ -69,8 +70,8 @@ function renderRail() {
 // Filtro de «Todos los programas»: all | software | hidden (sus pestañas, solo si hay alguno).
 const hiddenGames = () => ejg.library.all.filter((g) => g.hidden && !g.missing);
 const softwareList = () => software(ejg.library.all);
-const allTabs = () => ["all", ...(softwareList().length ? ["software"] : []), ...(hiddenGames().length ? ["hidden"] : [])];
-const TAB_LABEL = { all: "Todos", software: "Software", hidden: "Ocultos" };
+const allTabs = () => ["all", ...(romsBySystem(ejg.library.all).length ? ["roms"] : []), ...(softwareList().length ? ["software"] : []), ...(hiddenGames().length ? ["hidden"] : [])];
+const TAB_LABEL = { all: "Todos", roms: "ROMs", software: "Software", hidden: "Ocultos" };
 function setAllFilter(f) {
   if (state.allFilter === f) return;
   state.allFilter = f;
@@ -112,9 +113,17 @@ function renderAll() {
   renderTabs(nHidden);
   const onlyHidden = state.allFilter === "hidden";
   const onlySoft = state.allFilter === "software";
-  const list = onlySoft ? softwareList() : sort(onlyHidden ? hiddenGames() : games(), "title");
-  $("#all-count").textContent = onlyHidden ? (list.length === 1 ? "1 oculto" : `${list.length} ocultos`) : `${list.length} programas`;
-  keyed($("#all-grid"), list, (g) => g.id, (g, prev) => {
+  const onlyRoms = state.allFilter === "roms";
+  // ROMs: por sistema, cada uno con su rótulo.
+  const list = onlyRoms
+    ? romsBySystem(ejg.library.all).flatMap((s) => [{ sys: s.id, title: s.name }, ...s.games])
+    : onlySoft
+      ? softwareList()
+      : sort(onlyHidden ? hiddenGames() : games(), "title");
+  const n = list.filter((g) => !g.sys).length;
+  $("#all-count").textContent = onlyHidden ? (n === 1 ? "1 oculto" : `${n} ocultos`) : `${n} programas`;
+  keyed($("#all-grid"), list, (g) => (g.sys ? `sys-${g.sys}` : g.id), (g, prev) => {
+    if (g.sys) return prev || h("h3", { class: "all-sys" }, g.title);
     const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.favorite}`;
     if (prev && prev.__sig === sig) return prev;
     const tile = stile(g);
@@ -163,6 +172,7 @@ async function openOptions(id) {
     h("div", { class: "stats" }, ...optionStats(g)),
     g.hidden ? hiddenNotice(g) : null,
     repackUpdateNote(g),
+    emulatorNote(g),
     howLongNote(g),
     h(
       "div",

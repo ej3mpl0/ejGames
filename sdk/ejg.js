@@ -431,6 +431,7 @@
     },
     ui: {
       /** settings | game | profiles | search | add-folder | stats | theme | collections | menu | explore | downloads | software (emuladores)
+       *  | homebrew ({system?: "switch"|"vita"|"3ds"}) | rom-import (importar ROMs)
        *  | guides, trainer, map ({id: gameId}) | profile | badges | profile-editor */
       open: function (name, args) { return call("ui.open", { name: name, args: args || null }); },
       toast: function (message, kind) { return call("ui.toast", { message: message, kind: kind || "info" }); },

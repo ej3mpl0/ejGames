@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { FilePlus2, FolderPlus, RefreshCw, Trash2, Eraser } from "lucide-react";
+import { FilePlus2, FolderPlus, HardDriveDownload, RefreshCw, Trash2, Eraser } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
 import type { EmulationCatalog, FolderInspection, LibraryFolder } from "../../api/types";
 import { Button, Cycle, Section } from "../../components/ui";
@@ -175,6 +175,9 @@ export function LibraryTab({ autoAdd }: { autoAdd?: boolean }) {
           )}
           <Button icon={<FilePlus2 size={16} />} onClick={addExe}>
             {t("Añadir un juego a mano (.exe o ROM)")}
+          </Button>
+          <Button icon={<HardDriveDownload size={16} />} onClick={() => useApp.getState().open("rom-import")}>
+            {t("Importar ROMs")}
           </Button>
           <Button
             icon={<Eraser size={16} />}

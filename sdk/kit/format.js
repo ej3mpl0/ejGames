@@ -67,4 +67,5 @@ export const SOURCE_LABEL = {
   manual: "Añadido a mano",
   repack: "Descargado",
   rom: "ROM",
+  homebrew: "Homebrew",
 };

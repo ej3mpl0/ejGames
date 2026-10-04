@@ -21,6 +21,10 @@ export interface LibGame {
   id: number;
   /** Sistema de consola ("snes", "ps2"…); sin valor en los juegos de PC. */
   platform?: string | null;
+  /** Juegos de consola: lo leído de la ROM, con su DLC y actualizaciones. */
+  rom?: RomInfo | null;
+  /** Juegos de consola: emulador con que se abre ("" si no hay ninguno). */
+  emulator?: string | null;
   /** El repack instalado tiene una versión más nueva en la tienda. */
   repackUpdate?: RepackUpdate;
   title: string;
@@ -1092,4 +1096,100 @@ export interface UpdateCheck {
   assetName?: string | null;
   assetSize?: number | null;
   publishedAt?: string | null;
+}
+
+// ───────────────────────────── ROMs y homebrew ─────────────────────────────
+
+/** Lo que se lee de la propia ROM (cuando el formato lo trae en claro). */
+export interface RomInfo {
+  titleId?: string;
+  version?: string;
+  region?: string;
+  serial?: string;
+  title?: string;
+  /** base | update | dlc */
+  kind?: string;
+  baseTitleId?: string;
+  /** Actualizaciones y DLC importados de este juego. */
+  extras?: { titleId: string; kind: "update" | "dlc"; version?: string | null; path: string }[];
+}
+
+/** Una ROM encontrada al escanear un archivo o una carpeta para importarla. */
+export interface RomEntry {
+  path: string;
+  /** Dentro de un .zip/.7z: su ruta en él. */
+  inner?: string;
+  name: string;
+  size: number;
+  /** Sistema detectado; null si la extensión vale para varios y la cabecera no lo aclara. */
+  platform: string | null;
+  options: string[];
+  info: RomInfo;
+  /** Ya está en la biblioteca. */
+  known: boolean;
+}
+
+export interface RomImportReport {
+  added: number;
+  extras: number;
+  skipped: number;
+  errors: string[];
+  gameIds: number[];
+}
+
+/** Emulador con que se abre un sistema ahora mismo. */
+export interface EmulatorConfig {
+  platform: string;
+  name: string;
+  exe: string;
+  kind: string;
+  /** settings (Ajustes) | software (instalado desde ejGames) | detected (en el disco) | none */
+  origin: "settings" | "software" | "detected" | "none";
+}
+
+export type HomebrewSystem = "switch" | "vita" | "3ds";
+
+export interface HomebrewEntry {
+  /** `<sistema>:<id del catálogo>` */
+  id: string;
+  system: HomebrewSystem;
+  name: string;
+  author: string;
+  version: string;
+  description: string;
+  details: string;
+  category: "game" | "emulator" | "tool" | "other";
+  icon?: string | null;
+  screens: string[];
+  size?: number | null;
+  url: string;
+  binary?: string | null;
+  site?: string | null;
+  license?: string | null;
+  updated?: string | null;
+  requirements?: string | null;
+  downloads: number;
+  /** Se juega con emulador desde ejGames (si no, es para la consola real). */
+  runnable: boolean;
+  installed?: { version: string; path: string; gameId?: number | null } | null;
+  update: boolean;
+}
+
+export interface HomebrewPage {
+  items: HomebrewEntry[];
+  total: number;
+  page: number;
+  pages: number;
+  categories: [string, number][];
+  emulator: string;
+  error?: string | null;
+}
+
+export interface HomebrewJob {
+  id: string;
+  name: string;
+  phase: "queued" | "download" | "extract" | "done" | "error";
+  received: number;
+  total: number;
+  message?: string | null;
 }

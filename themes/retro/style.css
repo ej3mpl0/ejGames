@@ -188,3 +188,6 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 #detail .hidden-note span::before { content: "! "; animation: blink 0.8s steps(1) infinite; }
 #detail .unhide { padding: 10px 16px; border: 2px solid var(--hi); color: var(--hi); }
 #detail .unhide.is-focused, #detail .unhide:hover { background: var(--hi); color: var(--bg); text-shadow: none; }
+
+/* ROMS: rótulo de cada sistema en la lista */
+#list li.sys { padding: 10px 6px 2px; color: var(--accent, #ffd23f); font-size: 0.8em; letter-spacing: 0.08em; opacity: 0.85; }

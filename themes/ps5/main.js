@@ -8,7 +8,8 @@ import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { createBackdrop, attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year } from "/_sdk/kit/format.js";
-import { visible, sort, recent, software, isSoftware } from "/_sdk/kit/library.js";
+import { visible, sort, recent, software, isSoftware, romsBySystem } from "/_sdk/kit/library.js";
+import { emulatorNote } from "/_sdk/kit/emulator.js";
 import { clock } from "/_sdk/kit/clock.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
@@ -160,7 +161,7 @@ function renderHub(g) {
   const upd = repackUpdateNote(g);
   if (upd) $("#update-note").replaceChildren(upd);
   else $("#update-note").replaceChildren();
-  $("#hltb-note").replaceChildren(howLongNote(g));
+  $("#hltb-note").replaceChildren(emulatorNote(g), howLongNote(g));
   $("#fav").classList.toggle("on", g.favorite);
   $("#stats").replaceChildren(
     ...[
@@ -418,7 +419,9 @@ function renderLibrary() {
   if (state.chip === "hidden" && !nHidden) state.chip = "all";
   const nSoft = softwareList().length;
   if (state.chip === "software" && !nSoft) state.chip = "all";
-  const chips = [...CHIPS, ...(nSoft ? [["software", "Software"]] : []), ...(nHidden ? [["hidden", `Ocultos (${nHidden})`]] : [])];
+  const systems = romsBySystem(ejg.library.all);
+  if (state.chip === "roms" && !systems.length) state.chip = "all";
+  const chips = [...CHIPS, ...(systems.length ? [["roms", "ROMs"]] : []), ...(nSoft ? [["software", "Software"]] : []), ...(nHidden ? [["hidden", `Ocultos (${nHidden})`]] : [])];
   $("#chips").replaceChildren(
     ...chips.map(([k, l]) =>
       h("button", { class: "chip", "data-focus": "", "aria-pressed": String(state.chip === k), onclick: () => ((state.chip = k), renderLibrary()) }, l),
@@ -428,7 +431,10 @@ function renderLibrary() {
   if (state.chip === "fav") list = list.filter((g) => g.favorite);
   if (state.chip === "played") list = list.filter((g) => g.playtime > 0 || g.lastPlayed);
   if (state.chip === "unplayed") list = list.filter((g) => !g.playtime && !g.lastPlayed);
-  keyed($("#lib-grid"), list, (g) => g.id, (g, prev) => {
+  // ROMs: por sistema, cada uno con su título.
+  if (state.chip === "roms") list = systems.flatMap((s) => [{ sys: s.id, title: s.name }, ...s.games]);
+  keyed($("#lib-grid"), list, (g) => (g.sys ? `sys-${g.sys}` : g.id), (g, prev) => {
+    if (g.sys) return prev || h("h3", { class: "lib-sys" }, g.title);
     const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}`;
     if (prev && prev.__sig === sig) return prev;
     const el = h(

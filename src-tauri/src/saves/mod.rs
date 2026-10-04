@@ -187,9 +187,18 @@ pub async fn locate(st: &Arc<AppState>, game: &Game) -> (Vec<(PathBuf, &'static 
     };
     let ctx = Ctx { base: game.install_dir.as_ref().map(PathBuf::from), appid, steam_root: steam_root.clone() };
 
-    // Ludusavi: por AppID y, si no, por nombre.
+    // Juegos de consola: lo que guarda su emulador (Ludusavi solo sabe de juegos de PC;
+    // por nombre podría confundirlos con otro).
     let mut known = false;
-    if let Some(idx) = manifest_index(st).await {
+    if let Some(pid) = game.platform.as_deref() {
+        if let Some(cfg) = crate::emulation::resolve(&st.settings.get(), Some(&crate::emulation::install::emu_dir(st)), pid, false) {
+            let g = game.clone();
+            let found_emu = tauri::async_runtime::spawn_blocking(move || crate::emulation::saves::locate(&cfg, &g)).await.unwrap_or_default();
+            known = !found_emu.is_empty();
+            found.extend(found_emu.into_iter().map(|p| (p, "emulator")));
+        }
+    } else if let Some(idx) = manifest_index(st).await {
+        // Ludusavi: por AppID y, si no, por nombre.
         let hit = appid
             .and_then(|a| idx.steam.get(&(a as u64)))
             .or_else(|| idx.names.get(&manifest::norm(&game.title)));

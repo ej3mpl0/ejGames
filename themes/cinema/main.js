@@ -7,7 +7,8 @@ import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
-import { visible, sort, recent, favorites, byGenre, software } from "/_sdk/kit/library.js";
+import { visible, sort, recent, favorites, byGenre, software, romsBySystem } from "/_sdk/kit/library.js";
+import { emulatorNote } from "/_sdk/kit/emulator.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { createGuideView, starsText } from "/_sdk/kit/guides.js";
@@ -191,6 +192,8 @@ function renderRows() {
     row("row-top", "Mejor valorados", sort(all.filter((g) => g.rating), "rating").slice(0, 20)),
   ];
   if (ejg.settings.genreRows !== false) byGenre(all, 3).slice(0, 6).forEach((grp) => rows.push(row(`row-g-${grp.name}`, grp.name, grp.games)));
+  // Juegos de consola (ROMs y homebrew): una fila por sistema.
+  romsBySystem(ejg.library.all).forEach((s) => rows.push(row(`row-sys-${s.id}`, s.name, s.games)));
   rows.push(row("row-all", "Toda tu biblioteca", sort(all, "title")));
   // Programas (emuladores): su propia fila, aparte de los juegos.
   if (sw.length) rows.push(row("row-sw", "Software", sw));
@@ -276,6 +279,7 @@ async function openModal(id) {
       null,
       hiddenNote(g),
       repackUpdateNote(g),
+      emulatorNote(g),
       howLongNote(g),
       sheetMeta(g),
       desc,

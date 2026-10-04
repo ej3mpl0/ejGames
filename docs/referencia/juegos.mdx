@@ -41,6 +41,20 @@ Sirve para cualquier juego que siga en su sitio. Para saber si enseñar la opci�
 Los emuladores instalados desde **Tienda → Software** están en `library.all` con `source: "emulator"`: no son juegos.
 `isSoftware(juego)` los distingue, `visible()` los deja fuera y `software(library.all)` los da para su apartado.
 
+Los juegos de consola (`source: "rom"` o `"homebrew"`) llevan `platform` (`"switch"`, `"vita"`, `"3ds"`, `"ps2"`…),
+`emulator` (con qué se abren; `""` si no hay ninguno) y `rom` (lo leído del archivo: `titleId`, `version`, `region`,
+`serial` y `extras`, sus actualizaciones y DLC). Del kit:
+
+```js
+import { isRom, romsBySystem, systemName, romParts } from "/_sdk/kit/library.js"
+import { emulatorNote } from "/_sdk/kit/emulator.js"
+
+romsBySystem(ejg.library.all)   // [{ id: "switch", name: "Nintendo Switch", games: [...] }, ...]
+ficha.append(emulatorNote(game)) // «Requiere emulador: Eden» + TitleID, versión, región, DLC; nada en los de PC
+ejg.ui.open("homebrew", { system: "vita" })  // Explorar → Homebrew
+ejg.ui.open("rom-import")                     // Importar ROMs
+```
+
 <Note>
 Al desinstalar, el juego sale de la biblioteca junto con sus horas y su actividad.
 </Note>

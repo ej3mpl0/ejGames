@@ -65,6 +65,53 @@ export const isSoftware = (g) => g.source === "emulator";
 /** Los programas de la biblioteca, por nombre. */
 export const software = (games) => games.filter((g) => isSoftware(g) && !g.missing).sort((a, b) => a.title.localeCompare(b.title));
 
+/** Nombre de cada sistema de consola (`g.platform`), como en Ajustes → Emuladores. */
+export const SYSTEMS = {
+  nes: "NES", snes: "Super Nintendo", gb: "Game Boy", gbc: "Game Boy Color", gba: "Game Boy Advance",
+  nds: "Nintendo DS", "3ds": "Nintendo 3DS", n64: "Nintendo 64", gc: "GameCube", wii: "Wii", wiiu: "Wii U",
+  switch: "Nintendo Switch", sms: "Master System", genesis: "Mega Drive / Genesis", gg: "Game Gear",
+  saturn: "Sega Saturn", dreamcast: "Dreamcast", pce: "PC Engine", psx: "PlayStation", ps2: "PlayStation 2",
+  psp: "PSP", vita: "PS Vita", ps3: "PlayStation 3", arcade: "Arcade",
+};
+export const systemName = (id) => SYSTEMS[id] || id || "";
+
+/** Juegos de consola (ROMs propias y homebrew): se juegan con un emulador. */
+export const isRom = (g) => !!g.platform && !isSoftware(g);
+/** Los juegos de consola visibles, por nombre. */
+export const roms = (games) => visible(games).filter(isRom).sort((a, b) => (a.sortTitle < b.sortTitle ? -1 : a.sortTitle > b.sortTitle ? 1 : 0));
+/** Los juegos de consola agrupados por sistema: [{ id, name, games }], por nombre del sistema. */
+export function romsBySystem(games) {
+  const by = new Map();
+  for (const g of roms(games)) {
+    if (!by.has(g.platform)) by.set(g.platform, []);
+    by.get(g.platform).push(g);
+  }
+  return [...by.entries()].map(([id, list]) => ({ id, name: systemName(id), games: list })).sort((a, b) => a.name.localeCompare(b.name));
+}
+/** «Requiere emulador: Eden» (o que falta uno) en texto; "" en los de PC. Para la ficha, `emulatorNote` de kit/emulator.js. */
+export function emulatorLabel(g) {
+  if (!isRom(g)) return "";
+  return g.emulator ? `Requiere emulador: ${g.emulator}` : `Requiere emulador (instálalo en Tienda → Software) · ${systemName(g.platform)}`;
+}
+/** Lo leído de la ROM, por partes (cada una en su elemento, para que se traduzca):
+ *  ["ID 0100…", "v1.2", "Europa", "2 DLC"]. */
+export function romParts(g) {
+  const r = g.rom;
+  if (!r) return [];
+  const ex = r.extras || [];
+  const upd = ex.filter((e) => e.kind === "update").length;
+  const dlc = ex.filter((e) => e.kind === "dlc").length;
+  return [
+    r.titleId && `ID ${r.titleId}`,
+    r.version && `v${String(r.version).replace(/^v/i, "")}`,
+    r.region,
+    upd && (upd === 1 ? "1 actualización" : `${upd} actualizaciones`),
+    dlc && `${dlc} DLC`,
+  ].filter(Boolean);
+}
+/** Lo mismo en una línea: «ID 0100… · v1.2 · Europa · 2 DLC». */
+export const romNote = (g) => romParts(g).join(" · ");
+
 /** Si `ejg.game.uninstall(id)` sirve para este juego: todos los que siguen en su sitio. */
 export const canUninstall = (g) => !g.missing && !g.platform && !isSoftware(g);
 

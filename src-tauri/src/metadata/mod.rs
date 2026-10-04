@@ -7,6 +7,7 @@ pub mod queue;
 pub mod ratelimit;
 pub mod sgdb;
 pub mod steam;
+pub mod libretro;
 
 use crate::db::models::Game;
 use crate::db::repo;
@@ -239,6 +240,10 @@ pub async fn process_batch(st: &Arc<AppState>, ids: &[i64], forced: &HashMap<i64
                 status = "review";
             }
         }
+        // Juegos de consola sin portada: la de libretro-thumbnails por el nombre del archivo.
+        if r.game.platform.is_some() && !meta.art.iter().any(|a| a.kind == "cover") && libretro::fill(&st.http, &r.game, &mut meta).await && status == "failed" {
+            status = "matched";
+        }
         if forced.contains_key(&gid) {
             status = "manual";
         }
@@ -308,7 +313,7 @@ async fn sgdb_fill(st: &AppState, g: &Game, m: &mut Metadata) -> anyhow::Result<
 }
 
 /// Guarda metadatos + filas de media y descarga el arte seleccionado.
-async fn apply(st: &Arc<AppState>, gid: i64, m: &Metadata, status: &str, conf: f64, replace: bool) -> anyhow::Result<()> {
+pub(crate) async fn apply(st: &Arc<AppState>, gid: i64, m: &Metadata, status: &str, conf: f64, replace: bool) -> anyhow::Result<()> {
     let st2 = st.clone();
     let mut m2 = m.clone();
     // Coincidencia dudosa: arte e información sí, pero ni el título ni el appid

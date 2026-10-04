@@ -10,6 +10,11 @@ import type {
   EmulationCatalog,
   EmulatorFound,
   SoftwareItem,
+  RomEntry,
+  RomImportReport,
+  EmulatorConfig,
+  HomebrewSystem,
+  HomebrewPage,
   SavesInfo,
   SaveSnapshot,
   Bootstrap,
@@ -88,6 +93,14 @@ export const api = {
   setUserRating: (id: number, value: number | null) => invoke<void>("set_user_rating", { id, value }),
   addManualGame: (exe: string, platform?: string) => invoke<number>("add_manual_game", { exe, platform }),
   romPlatforms: (path: string) => invoke<string[]>("rom_platforms", { path }),
+  romScanFolder: (path: string) => invoke<RomEntry[]>("rom_scan_folder", { path }),
+  romImport: (items: { path: string; inner?: string; platform: string }[], copy: boolean) => invoke<RomImportReport>("rom_import", { items, copy }),
+  romLaunch: (id: number) => invoke<void>("rom_launch", { id }),
+  emulatorForSystem: (system: string) => invoke<EmulatorConfig>("emulator_for_system", { system }),
+  homebrewCatalog: (q: { system: HomebrewSystem; query?: string; category?: string; sort?: string; page?: number; force?: boolean }) =>
+    invoke<HomebrewPage>("homebrew_catalog", q),
+  homebrewInstall: (id: string) => invoke<number>("homebrew_install", { id }),
+  homebrewUninstall: (id: string) => invoke<void>("homebrew_uninstall", { id }),
 
   inspectFolder: (path: string) => invoke<FolderInspection>("inspect_folder", { path }),
   listFolders: () => invoke<LibraryFolder[]>("list_folders"),
@@ -265,6 +278,8 @@ export type Events = {
   "wishlist:changed": WishItem[];
   "saves:changed": { gameId: number };
   "emu:progress": { id: string; phase: string; received: number; total: number };
+  "hb:progress": { id: string; phase: "download" | "extract" | "done" | "error"; received: number; total: number; message?: string | null };
+  "rom:import": { done: number; total: number; name: string };
   "downloads:install": { id: number; phase: "running" | "done" | "cancelled" | "error" | "needs-folder"; message?: string | null; gameId?: number | null };
 };
 

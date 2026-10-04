@@ -259,3 +259,6 @@ img { display: block; }
 :root[data-season="halloween"] .hub-hidden { background: rgba(123, 75, 214, 0.18); box-shadow: inset 3px 0 0 var(--accent); }
 :root[data-season="halloween"] .hub-hidden .hh-ico svg { color: var(--accent); }
 :root[data-season="halloween"] .tile .hid { background: rgba(14, 10, 24, 0.78); }
+
+/* Filtros de ROMs: el primero lleva el rótulo del grupo */
+.filter .f-group { display: block; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.6; }

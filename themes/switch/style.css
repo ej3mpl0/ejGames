@@ -74,6 +74,8 @@ img { display: block; }
 .all-grid .stile { width: 100%; height: auto; aspect-ratio: 1; content-visibility: auto; contain-intrinsic-size: auto 160px; }
 .all-grid .name { position: absolute; left: 0; right: 0; bottom: 0; font-size: 13px; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .all-grid .item { position: relative; padding-bottom: 24px; }
+.all-sys { grid-column: 1 / -1; margin: 10px 0 -6px; font-size: 16px; font-weight: 700; opacity: 0.8; }
+.all-sys:first-child { margin-top: 0; }
 
 #options { position: fixed; inset: 0; z-index: 5; background: rgba(0, 0, 0, 0.35); display: flex; justify-content: flex-end; animation: fade 0.18s ease; }
 #options[hidden] { display: none; }

@@ -17,12 +17,24 @@ export interface Game {
   title: string;
   /** Hay un repack con versión más nueva que el instalado (si no lo ocultaste). */
   repackUpdate?: { slug: string; installed: string; latest: string };
-  /** Sistema de consola ("snes", "ps2", "psx"…); sin valor en los juegos de PC. */
+  /** Sistema de consola ("snes", "ps2", "psx", "switch", "vita", "3ds"…); sin valor en los juegos de PC. */
   platform?: string;
+  /** Juegos de consola: emulador con que se abre ("" si no hay ninguno). `emulatorNote` del kit. */
+  emulator?: string;
+  /** Juegos de consola: lo leído de la ROM y su DLC/actualizaciones. `romNote` del kit. */
+  rom?: {
+    titleId?: string;
+    version?: string;
+    region?: string;
+    serial?: string;
+    title?: string;
+    extras?: { titleId: string; kind: "update" | "dlc"; version?: string | null; path: string }[];
+  };
   sortTitle: string;
   /** folder: carpeta de la biblioteca · manual: .exe añadido a mano · repack: instalado desde Descargas ·
-   *  rom: juego de consola · emulator: programa instalado desde Tienda → Software (no es un juego: `isSoftware` del kit). */
-  source: "folder" | "manual" | "repack" | "rom" | "emulator";
+   *  rom: juego de consola · homebrew: instalado desde Explorar → Homebrew (también de consola) ·
+   *  emulator: programa instalado desde Tienda → Software (no es un juego: `isSoftware` del kit). */
+  source: "folder" | "manual" | "repack" | "rom" | "homebrew" | "emulator";
   engine?: string;
   shortDescription?: string;
   developer?: string;
@@ -563,7 +575,8 @@ export interface Ejg {
     open(
       name:
         | "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads"
-        | "guides" | "trainer" | "map" | "profile" | "badges" | "profile-editor" | "year-review" | "software",
+        | "guides" | "trainer" | "map" | "profile" | "badges" | "profile-editor" | "year-review" | "software"
+        | "homebrew" | "rom-import",
       args?: any,
     ): Promise<void>;
     toast(message: string, kind?: "info" | "ok" | "error"): Promise<void>;

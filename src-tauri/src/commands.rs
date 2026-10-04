@@ -281,6 +281,7 @@ fn mark_running(st: &AppState, mut games: Vec<LibGame>) -> Vec<LibGame> {
     for g in games.iter_mut() {
         g.running = running.contains(&g.id);
     }
+    crate::emulation::decorate(st, &mut games);
     games
 }
 
@@ -306,6 +307,7 @@ pub async fn get_game_details(st: St<'_>, id: i64) -> CmdResult<GameDetails> {
     let s = st.inner().clone();
     let mut d = blocking(move || s.db.with(|c| repo::game_details(c, pid, id))).await?;
     d.lib.running = st.sessions.is_running(id);
+    crate::emulation::decorate(&st, std::slice::from_mut(&mut d.lib));
     Ok(d)
 }
 
@@ -1731,4 +1733,99 @@ pub async fn emulator_reveal(app: tauri::AppHandle, st: St<'_>, id: String) -> C
 #[tauri::command]
 pub async fn emulator_install_core(st: St<'_>, platform: String) -> CmdResult<String> {
     Ok(crate::emulation::install::install_core(st.inner(), &platform).await?)
+}
+
+// ───────────────────────────── ROMs y homebrew ─────────────────────────────
+
+/// ROMs que hay en un archivo o una carpeta (también dentro de .zip y .7z), con su sistema.
+#[tauri::command]
+pub async fn rom_scan_folder(st: St<'_>, path: String) -> CmdResult<Vec<crate::emulation::roms::RomEntry>> {
+    let s = st.inner().clone();
+    blocking(move || {
+        let known = crate::emulation::roms::known_paths(&s);
+        Ok(crate::emulation::roms::scan(std::path::Path::new(&path), &s.settings.get(), &known))
+    })
+    .await
+}
+
+/// Importa ROMs: con `copy`, a `<datos>\roms\<sistema>\`; si no, donde están.
+#[tauri::command]
+pub async fn rom_import(st: St<'_>, items: Vec<crate::emulation::roms::ImportItem>, copy: bool) -> CmdResult<crate::emulation::roms::ImportReport> {
+    Ok(crate::emulation::roms::import(st.inner(), items, copy).await?)
+}
+
+/// Juega una ROM (con el emulador de su sistema).
+#[tauri::command]
+pub async fn rom_launch(st: St<'_>, id: i64) -> CmdResult<()> {
+    let pid = active(&st)?;
+    let g = st.db.with(|c| repo::get_game(c, id))?;
+    if g.platform.is_none() {
+        return Err(CmdError::Msg(crate::i18n::t("No es un juego de consola").into_owned()));
+    }
+    Ok(crate::launcher::play(st.inner(), id, pid).await?)
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EmulatorForSystem {
+    platform: String,
+    /// Nombre del emulador ("" si no hay ninguno).
+    name: String,
+    exe: String,
+    kind: String,
+    /// settings (elegido en Ajustes) | software (instalado desde ejGames) | detected (en el disco) | none
+    origin: &'static str,
+}
+
+/// Con qué emulador se abre un sistema ahora mismo.
+#[tauri::command]
+pub async fn emulator_for_system(st: St<'_>, system: String) -> CmdResult<EmulatorForSystem> {
+    let s = st.inner().clone();
+    blocking(move || {
+        let settings = s.settings.get();
+        let dir = crate::emulation::install::emu_dir(&s);
+        let configured = settings.emulators.iter().any(|e| e.platform == system && std::path::Path::new(&e.exe).is_file());
+        let (cfg, origin) = match crate::emulation::resolve(&settings, Some(&dir), &system, false) {
+            Some(c) => (Some(c), if configured { "settings" } else { "software" }),
+            None => match crate::emulation::resolve(&settings, None, &system, true) {
+                Some(c) => (Some(c), "detected"),
+                None => (None, "none"),
+            },
+        };
+        Ok(EmulatorForSystem {
+            platform: system,
+            name: cfg.as_ref().map(crate::emulation::cfg_name).unwrap_or_default(),
+            exe: cfg.as_ref().map(|c| c.exe.clone()).unwrap_or_default(),
+            kind: cfg.map(|c| c.kind).unwrap_or_default(),
+            origin,
+        })
+    })
+    .await
+}
+
+/// Catálogo de homebrew de un sistema (switch | vita | 3ds), filtrado y paginado.
+#[tauri::command]
+pub async fn homebrew_catalog(st: St<'_>, system: String, query: Option<String>, category: Option<String>, sort: Option<String>, page: Option<usize>, force: Option<bool>) -> CmdResult<crate::explore::homebrew::HbPage> {
+    Ok(crate::explore::homebrew::page(
+        st.inner(),
+        &system,
+        query.as_deref().unwrap_or(""),
+        category.as_deref().unwrap_or(""),
+        sort.as_deref().unwrap_or("popular"),
+        page.unwrap_or(1),
+        force.unwrap_or(false),
+    )
+    .await)
+}
+
+/// Baja el homebrew, lo descomprime y lo deja en la biblioteca. Devuelve el id del juego.
+#[tauri::command]
+pub async fn homebrew_install(st: St<'_>, id: String) -> CmdResult<i64> {
+    Ok(crate::explore::homebrew::install(st.inner(), &id).await?)
+}
+
+#[tauri::command]
+pub async fn homebrew_uninstall(st: St<'_>, id: String) -> CmdResult<()> {
+    let s = st.inner().clone();
+    blocking(move || crate::explore::homebrew::uninstall(&s, &id)).await
 }

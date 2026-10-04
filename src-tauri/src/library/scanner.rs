@@ -156,6 +156,7 @@ pub fn to_new_game(a: &DirAnalysis, folder_id: Option<i64>) -> Option<NewGame> {
             .iter()
             .map(|c| (c.path.to_string_lossy().to_string(), c.score))
             .collect(),
+        rom_meta: None,
         platform: None,
         rom_path: None,
     })

@@ -8,6 +8,9 @@
 //! Ajustes → Biblioteca → Emuladores (`settings.emulators`).
 
 pub mod install;
+pub mod roms;
+pub mod rominfo;
+pub mod saves;
 
 use crate::db::models::{Game, LibraryFolder, NewGame};
 use crate::db::{repo, Db};
@@ -27,31 +30,35 @@ pub struct Platform {
     pub igdb: i64,
     /// Emuladores independientes que sirven para este sistema.
     pub presets: &'static [&'static str],
+    /// Nombre del sistema en libretro-thumbnails (carátulas sin clave); vacío si no tiene.
+    pub libretro: &'static str,
 }
 
 pub const PLATFORMS: &[Platform] = &[
-    Platform { id: "nes", name: "NES", exts: &["nes", "fds", "unf"], core: "nestopia_libretro", igdb: 18, presets: &[] },
-    Platform { id: "snes", name: "Super Nintendo", exts: &["sfc", "smc", "fig", "swc"], core: "snes9x_libretro", igdb: 19, presets: &[] },
-    Platform { id: "gb", name: "Game Boy", exts: &["gb"], core: "gambatte_libretro", igdb: 33, presets: &[] },
-    Platform { id: "gbc", name: "Game Boy Color", exts: &["gbc"], core: "gambatte_libretro", igdb: 22, presets: &[] },
-    Platform { id: "gba", name: "Game Boy Advance", exts: &["gba"], core: "mgba_libretro", igdb: 24, presets: &[] },
-    Platform { id: "nds", name: "Nintendo DS", exts: &["nds"], core: "melonds_libretro", igdb: 20, presets: &[] },
-    Platform { id: "n64", name: "Nintendo 64", exts: &["z64", "n64", "v64"], core: "mupen64plus_next_libretro", igdb: 4, presets: &[] },
-    Platform { id: "gc", name: "GameCube", exts: &["iso", "gcm", "rvz", "ciso", "gcz"], core: "dolphin_libretro", igdb: 21, presets: &["dolphin"] },
-    Platform { id: "wii", name: "Wii", exts: &["iso", "wbfs", "rvz", "wad"], core: "dolphin_libretro", igdb: 5, presets: &["dolphin"] },
-    Platform { id: "wiiu", name: "Wii U", exts: &["wua", "wud", "wux", "rpx"], core: "", igdb: 41, presets: &["cemu"] },
-    Platform { id: "switch", name: "Nintendo Switch", exts: &["nsp", "xci"], core: "", igdb: 130, presets: &["eden", "ryujinx"] },
-    Platform { id: "sms", name: "Master System", exts: &["sms"], core: "genesis_plus_gx_libretro", igdb: 64, presets: &[] },
-    Platform { id: "genesis", name: "Mega Drive / Genesis", exts: &["md", "gen", "smd"], core: "genesis_plus_gx_libretro", igdb: 29, presets: &[] },
-    Platform { id: "gg", name: "Game Gear", exts: &["gg"], core: "genesis_plus_gx_libretro", igdb: 35, presets: &[] },
-    Platform { id: "saturn", name: "Sega Saturn", exts: &["cue", "chd"], core: "mednafen_saturn_libretro", igdb: 32, presets: &[] },
-    Platform { id: "dreamcast", name: "Dreamcast", exts: &["gdi", "cdi", "chd"], core: "flycast_libretro", igdb: 23, presets: &[] },
-    Platform { id: "pce", name: "PC Engine", exts: &["pce", "chd"], core: "mednafen_pce_libretro", igdb: 86, presets: &[] },
-    Platform { id: "psx", name: "PlayStation", exts: &["cue", "chd", "pbp", "m3u", "iso"], core: "swanstation_libretro", igdb: 7, presets: &["duckstation"] },
-    Platform { id: "ps2", name: "PlayStation 2", exts: &["iso", "chd", "cso", "gz"], core: "pcsx2_libretro", igdb: 8, presets: &["pcsx2"] },
-    Platform { id: "psp", name: "PSP", exts: &["iso", "cso", "pbp"], core: "ppsspp_libretro", igdb: 38, presets: &["ppsspp"] },
-    Platform { id: "ps3", name: "PlayStation 3", exts: &["iso"], core: "", igdb: 9, presets: &["rpcs3"] },
-    Platform { id: "arcade", name: "Arcade (MAME / FBNeo)", exts: &["zip", "7z"], core: "fbneo_libretro", igdb: 52, presets: &[] },
+    Platform { id: "nes", name: "NES", exts: &["nes", "fds", "unf"], core: "nestopia_libretro", igdb: 18, presets: &[], libretro: "Nintendo - Nintendo Entertainment System" },
+    Platform { id: "snes", name: "Super Nintendo", exts: &["sfc", "smc", "fig", "swc"], core: "snes9x_libretro", igdb: 19, presets: &[], libretro: "Nintendo - Super Nintendo Entertainment System" },
+    Platform { id: "gb", name: "Game Boy", exts: &["gb"], core: "gambatte_libretro", igdb: 33, presets: &[], libretro: "Nintendo - Game Boy" },
+    Platform { id: "gbc", name: "Game Boy Color", exts: &["gbc"], core: "gambatte_libretro", igdb: 22, presets: &[], libretro: "Nintendo - Game Boy Color" },
+    Platform { id: "gba", name: "Game Boy Advance", exts: &["gba"], core: "mgba_libretro", igdb: 24, presets: &[], libretro: "Nintendo - Game Boy Advance" },
+    Platform { id: "nds", name: "Nintendo DS", exts: &["nds"], core: "melonds_libretro", igdb: 20, presets: &[], libretro: "Nintendo - Nintendo DS" },
+    Platform { id: "3ds", name: "Nintendo 3DS", exts: &["3ds", "cci", "cia", "cxi", "3dsx"], core: "", igdb: 37, presets: &["azahar"], libretro: "Nintendo - Nintendo 3DS" },
+    Platform { id: "n64", name: "Nintendo 64", exts: &["z64", "n64", "v64"], core: "mupen64plus_next_libretro", igdb: 4, presets: &[], libretro: "Nintendo - Nintendo 64" },
+    Platform { id: "gc", name: "GameCube", exts: &["iso", "gcm", "rvz", "ciso", "gcz"], core: "dolphin_libretro", igdb: 21, presets: &["dolphin"], libretro: "Nintendo - GameCube" },
+    Platform { id: "wii", name: "Wii", exts: &["iso", "wbfs", "rvz", "wad"], core: "dolphin_libretro", igdb: 5, presets: &["dolphin"], libretro: "Nintendo - Wii" },
+    Platform { id: "wiiu", name: "Wii U", exts: &["wua", "wud", "wux", "rpx"], core: "", igdb: 41, presets: &["cemu"], libretro: "Nintendo - Wii U" },
+    Platform { id: "switch", name: "Nintendo Switch", exts: &["nsp", "xci", "nca", "nro"], core: "", igdb: 130, presets: &["eden", "ryujinx"], libretro: "" },
+    Platform { id: "sms", name: "Master System", exts: &["sms"], core: "genesis_plus_gx_libretro", igdb: 64, presets: &[], libretro: "Sega - Master System - Mark III" },
+    Platform { id: "genesis", name: "Mega Drive / Genesis", exts: &["md", "gen", "smd"], core: "genesis_plus_gx_libretro", igdb: 29, presets: &[], libretro: "Sega - Mega Drive - Genesis" },
+    Platform { id: "gg", name: "Game Gear", exts: &["gg"], core: "genesis_plus_gx_libretro", igdb: 35, presets: &[], libretro: "Sega - Game Gear" },
+    Platform { id: "saturn", name: "Sega Saturn", exts: &["cue", "chd"], core: "mednafen_saturn_libretro", igdb: 32, presets: &[], libretro: "Sega - Saturn" },
+    Platform { id: "dreamcast", name: "Dreamcast", exts: &["gdi", "cdi", "chd"], core: "flycast_libretro", igdb: 23, presets: &[], libretro: "Sega - Dreamcast" },
+    Platform { id: "pce", name: "PC Engine", exts: &["pce", "chd"], core: "mednafen_pce_libretro", igdb: 86, presets: &[], libretro: "NEC - PC Engine - TurboGrafx 16" },
+    Platform { id: "psx", name: "PlayStation", exts: &["cue", "chd", "pbp", "m3u", "iso"], core: "swanstation_libretro", igdb: 7, presets: &["duckstation"], libretro: "Sony - PlayStation" },
+    Platform { id: "ps2", name: "PlayStation 2", exts: &["iso", "chd", "cso", "gz"], core: "pcsx2_libretro", igdb: 8, presets: &["pcsx2"], libretro: "Sony - PlayStation 2" },
+    Platform { id: "psp", name: "PSP", exts: &["iso", "cso", "pbp"], core: "ppsspp_libretro", igdb: 38, presets: &["ppsspp"], libretro: "Sony - PlayStation Portable" },
+    Platform { id: "vita", name: "PS Vita", exts: &["vpk"], core: "", igdb: 46, presets: &["vita3k"], libretro: "Sony - PlayStation Vita" },
+    Platform { id: "ps3", name: "PlayStation 3", exts: &["iso"], core: "", igdb: 9, presets: &["rpcs3"], libretro: "Sony - PlayStation 3" },
+    Platform { id: "arcade", name: "Arcade (MAME / FBNeo)", exts: &["zip", "7z"], core: "fbneo_libretro", igdb: 52, presets: &[], libretro: "FBNeo - Arcade Games" },
 ];
 
 pub fn platform(id: &str) -> Option<&'static Platform> {
@@ -77,6 +84,8 @@ pub const PRESETS: &[Preset] = &[
     Preset { id: "rpcs3", name: "RPCS3", exes: &["rpcs3.exe"], args: "--no-gui \"{rom}\"" },
     Preset { id: "eden", name: "Eden", exes: &["eden.exe"], args: "-f -g \"{rom}\"" },
     Preset { id: "ryujinx", name: "Ryujinx", exes: &["Ryujinx.exe"], args: "\"{rom}\"" },
+    Preset { id: "vita3k", name: "Vita3K", exes: &["Vita3K.exe"], args: "-F \"{rom}\"" },
+    Preset { id: "azahar", name: "Azahar", exes: &["azahar.exe", "azahar-qt.exe"], args: "-f \"{rom}\"" },
 ];
 
 pub fn preset(id: &str) -> Option<&'static Preset> {
@@ -223,18 +232,69 @@ pub fn platforms_for(path: &Path, settings: &Settings) -> Vec<&'static Platform>
     out
 }
 
+/// Título de una ROM: el que trae dentro el homebrew y los paquetes de Vita (sus
+/// archivos suelen llamarse «eboot.vpk» o «app.nro»); si no, el del archivo.
+pub fn title_of(rom: &Path, info: &rominfo::RomInfo) -> String {
+    let ext = rom.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    if matches!(ext.as_str(), "vpk" | "nro" | "3dsx") {
+        if let Some(t) = info.title.as_deref().filter(|t| !t.trim().is_empty()) {
+            return t.trim().to_string();
+        }
+    }
+    let stem = rom.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+    crate::library::names::clean_title(&stem)
+}
+
+fn meta_json(info: &rominfo::RomInfo) -> Option<String> {
+    (!info.is_empty()).then(|| serde_json::to_string(info).ok()).flatten()
+}
+
 /// Un juego de consola suelto (un archivo), para añadirlo a mano.
 pub fn rom_game(rom: &Path, pf: &Platform) -> NewGame {
-    let stem = rom.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+    let info = rominfo::read(rom, pf.id);
     NewGame {
-        title: crate::library::names::clean_title(&stem),
+        title: title_of(rom, &info),
         source: "rom".into(),
         source_id: norm_path(rom),
         install_dir: rom.parent().map(|p| p.to_string_lossy().into_owned()),
         platform: Some(pf.id.into()),
         rom_path: Some(rom.to_string_lossy().into_owned()),
+        rom_meta: meta_json(&info),
         ..Default::default()
     }
+}
+
+/// Guarda una actualización o un DLC enganchado a su juego base (por TitleID).
+pub fn save_extra(c: &rusqlite::Connection, platform: &str, rom: &Path, info: &rominfo::RomInfo) -> rusqlite::Result<()> {
+    let (Some(base), Some(tid), Some(kind)) = (&info.base_title_id, &info.title_id, &info.kind) else { return Ok(()) };
+    c.execute(
+        "INSERT INTO rom_extras (platform, base_title_id, title_id, kind, version, path, added_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, strftime('%s','now'))
+         ON CONFLICT(path) DO UPDATE SET base_title_id = excluded.base_title_id, title_id = excluded.title_id,
+           kind = excluded.kind, version = excluded.version",
+        rusqlite::params![platform, base, tid, kind, info.version, rom.to_string_lossy()],
+    )?;
+    Ok(())
+}
+
+/// Actualizaciones y DLC de todos los juegos (plataforma, TitleID base) → lista.
+pub fn extras_by_base(c: &rusqlite::Connection) -> rusqlite::Result<std::collections::HashMap<(String, String), Vec<serde_json::Value>>> {
+    let mut q = c.prepare("SELECT platform, base_title_id, title_id, kind, version, path FROM rom_extras ORDER BY kind, title_id, version")?;
+    let rows = q.query_map([], |r| {
+        Ok((
+            (r.get::<_, String>(0)?, r.get::<_, String>(1)?),
+            serde_json::json!({ "titleId": r.get::<_, String>(2)?, "kind": r.get::<_, String>(3)?, "version": r.get::<_, Option<String>>(4)?, "path": r.get::<_, String>(5)? }),
+        ))
+    })?;
+    let mut out: std::collections::HashMap<(String, String), Vec<serde_json::Value>> = Default::default();
+    for r in rows {
+        let (k, v) = r?;
+        // Solo los que siguen en su sitio.
+        if v["path"].as_str().is_some_and(|p| Path::new(p).is_file()) {
+            out.entry(k).or_default().push(v);
+        }
+    }
+    Ok(out)
 }
 
 pub fn scan_roms(db: &Db, folder: &LibraryFolder, platform_id: &str) -> anyhow::Result<ScanReport> {
@@ -244,20 +304,45 @@ pub fn scan_roms(db: &Db, folder: &LibraryFolder, platform_id: &str) -> anyhow::
         anyhow::bail!("La carpeta no existe: {}", folder.path);
     }
     let roms = find_roms(&root, pf);
+    // Lo ya leído no se vuelve a abrir: solo las ROMs nuevas (o de antes de 1.3.0).
+    let (read_before, extras_before): (std::collections::HashSet<String>, std::collections::HashSet<String>) = db.with(|c| {
+        let mut q = c.prepare("SELECT source_id FROM games WHERE source = 'rom' AND folder_id = ?1 AND rom_meta IS NOT NULL")?;
+        let a = q.query_map([folder.id], |r| r.get::<_, String>(0))?.collect::<rusqlite::Result<_>>()?;
+        let mut q = c.prepare("SELECT path FROM rom_extras WHERE platform = ?1")?;
+        let b = q.query_map([pf.id], |r| r.get::<_, String>(0))?.map(|p| p.map(|p| norm_path(Path::new(&p)))).collect::<rusqlite::Result<_>>()?;
+        Ok((a, b))
+    })?;
+    let infos: Vec<Option<rominfo::RomInfo>> = roms
+        .iter()
+        .map(|rom| {
+            let key = norm_path(rom);
+            (!read_before.contains(&key) && !extras_before.contains(&key)).then(|| rominfo::read(rom, pf.id))
+        })
+        .collect();
     let mut report = ScanReport::default();
     let mut present = vec![];
     db.with_mut(|c| {
         let tx = c.transaction()?;
-        for rom in &roms {
-            let stem = rom.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+        for (rom, info) in roms.iter().zip(infos) {
+            if extras_before.contains(&norm_path(rom)) {
+                continue;
+            }
+            if let Some(i) = info.as_ref().filter(|i| i.is_extra()) {
+                save_extra(&tx, pf.id, rom, i)?;
+                continue;
+            }
             let ng = NewGame {
-                title: crate::library::names::clean_title(&stem),
+                title: match &info {
+                    Some(i) => title_of(rom, i),
+                    None => crate::library::names::clean_title(&rom.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default()),
+                },
                 source: "rom".into(),
                 source_id: norm_path(rom),
                 folder_id: Some(folder.id),
                 install_dir: rom.parent().map(|p| p.to_string_lossy().into_owned()),
                 platform: Some(pf.id.into()),
                 rom_path: Some(rom.to_string_lossy().into_owned()),
+                rom_meta: info.as_ref().and_then(meta_json),
                 ..Default::default()
             };
             if let Some((id, is_new)) = repo::upsert_game(&tx, &ng)? {
@@ -286,22 +371,101 @@ pub fn expand_args(template: &str, rom: &str, core: &str) -> String {
     template.replace("{rom}", &quote_free(rom)).replace("{core}", &quote_free(core))
 }
 
+/// Nombre del emulador de una configuración.
+pub fn cfg_name(cfg: &EmulatorCfg) -> String {
+    match cfg.kind.as_str() {
+        "retroarch" => "RetroArch".into(),
+        "preset" => preset(&cfg.preset).map(|p| p.name.to_string()).unwrap_or_else(|| cfg.preset.clone()),
+        _ => Path::new(&cfg.exe).file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default(),
+    }
+}
+
+/// El emulador con que se abre un sistema: el elegido en Ajustes si sigue ahí; si no,
+/// uno de los suyos instalado desde Tienda → Software (Switch: Eden o Ryujinx, el que
+/// haya) y, para los sistemas con núcleo, RetroArch. Con `deep`, además se buscan en
+/// los sitios habituales del disco (más lento: solo al jugar).
+pub fn resolve(settings: &Settings, emu_dir: Option<&Path>, platform_id: &str, deep: bool) -> Option<EmulatorCfg> {
+    let pf = platform(platform_id)?;
+    if let Some(c) = settings.emulators.iter().find(|e| e.platform == pf.id && Path::new(&e.exe).is_file()) {
+        return Some(c.clone());
+    }
+    let mk = |kind: &str, preset: &str, exe: String| EmulatorCfg { platform: pf.id.into(), kind: kind.into(), preset: preset.into(), exe, core: String::new(), args: String::new() };
+    if let Some(dir) = emu_dir {
+        for p in pf.presets {
+            if let Some(i) = install::installed(dir, p) {
+                return Some(mk("preset", p, i.exe));
+            }
+        }
+        if !pf.core.is_empty() {
+            if let Some(i) = install::installed(dir, "retroarch") {
+                return Some(mk("retroarch", "retroarch", i.exe));
+            }
+        }
+    }
+    if deep {
+        let found = detect();
+        for p in pf.presets {
+            if let Some(f) = found.iter().find(|f| f.preset == *p) {
+                return Some(mk("preset", p, f.exe.clone()));
+            }
+        }
+        if !pf.core.is_empty() {
+            if let Some(f) = found.iter().find(|f| f.preset == "retroarch" && f.cores.iter().any(|c| c == pf.core)) {
+                return Some(mk("retroarch", "retroarch", f.exe.clone()));
+            }
+        }
+    }
+    None
+}
+
+/// Vita3K: el TitleID ya instalado en su ux0 (entonces se arranca con `-r`, sin reinstalar).
+fn vita3k_installed(exe: &Path, title_id: &str) -> bool {
+    if title_id.len() != 9 || !title_id.chars().all(|c| c.is_ascii_alphanumeric()) {
+        return false;
+    }
+    let mut roots: Vec<PathBuf> = exe.parent().map(|d| vec![d.to_path_buf()]).unwrap_or_default();
+    // Su config.yml puede llevar la carpeta de datos a otro sitio («pref-path»).
+    if let Some(cfg) = exe.parent().and_then(|d| std::fs::read_to_string(d.join("config.yml")).ok()) {
+        if let Some(p) = cfg.lines().find_map(|l| l.trim().strip_prefix("pref-path:").map(|v| v.trim().trim_matches(['\'', '"']).to_string())).filter(|p| !p.is_empty()) {
+            roots.push(PathBuf::from(p));
+        }
+    }
+    if let Some(a) = dirs::config_dir() {
+        roots.push(a.join("Vita3K").join("Vita3K"));
+    }
+    roots.iter().any(|r| r.join("ux0").join("app").join(title_id).join("eboot.bin").is_file())
+}
+
 /// El juego tal como hay que lanzarlo: con el emulador de su sistema y la ROM
 /// como argumento (el original no se toca).
+#[cfg(test)]
 pub fn prepare(settings: &Settings, g: &Game) -> anyhow::Result<Game> {
+    prepare_in(settings, None, false, g)
+}
+
+/// Como `prepare`, buscando también entre los emuladores instalados desde ejGames
+/// (`emu_dir`) y, con `deep`, en el disco si el del sistema no está puesto.
+pub fn prepare_in(settings: &Settings, emu_dir: Option<&Path>, deep: bool, g: &Game) -> anyhow::Result<Game> {
     let Some(pid) = g.platform.as_deref() else { return Ok(g.clone()) };
     let pf = platform(pid).ok_or_else(|| anyhow::anyhow!("Sistema desconocido: {pid}"))?;
     let rom = g.rom_path.clone().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("El juego no tiene archivo de ROM")))?;
     if !Path::new(&rom).is_file() {
         anyhow::bail!("{} {rom}", crate::i18n::t("No existe la ROM:"));
     }
-    let not_set = || anyhow::anyhow!("{} {}", crate::i18n::t("No hay emulador para este sistema. Elígelo en Ajustes → Biblioteca → Emuladores:"), pf.name);
-    let cfg: &EmulatorCfg = settings.emulators.iter().find(|e| e.platform == pid).ok_or_else(not_set)?;
-    if !Path::new(&cfg.exe).is_file() {
-        anyhow::bail!("{} {}", crate::i18n::t("No existe el emulador:"), cfg.exe);
+    let configured = settings.emulators.iter().find(|e| e.platform == pid);
+    let cfg = match resolve(settings, emu_dir, pid, deep) {
+        Some(c) => c,
+        None => match configured {
+            Some(c) => anyhow::bail!("{} {}", crate::i18n::t("No existe el emulador:"), c.exe),
+            None => anyhow::bail!("{} {}", crate::i18n::t("No hay emulador para este sistema. Instálalo en Tienda → Software o elígelo en Ajustes → Biblioteca → Emuladores:"), pf.name),
+        },
+    };
+    let rom_ext = Path::new(&rom).extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    if pid == "3ds" && rom_ext == "cia" {
+        anyhow::bail!("{}", crate::i18n::t("Los .cia se instalan en el emulador (Azahar → Archivo → Instalar CIA) y se juegan desde su lista. Para jugar desde ejGames, usa el .3ds o el .cci."));
     }
     let exe_dir = Path::new(&cfg.exe).parent().map(|p| p.to_string_lossy().into_owned());
-    let (template, core_path) = match cfg.kind.as_str() {
+    let (mut template, core_path) = match cfg.kind.as_str() {
         "retroarch" => {
             let core = if cfg.core.is_empty() { pf.core } else { cfg.core.as_str() };
             let dll = Path::new(&cfg.exe).parent().map(|d| d.join("cores").join(format!("{core}.dll"))).unwrap_or_default();
@@ -316,6 +480,13 @@ pub fn prepare(settings: &Settings, g: &Game) -> anyhow::Result<Game> {
         ),
         _ => (if cfg.args.trim().is_empty() { "\"{rom}\"".into() } else { cfg.args.clone() }, String::new()),
     };
+    // Vita3K instala el .vpk la primera vez; después se arranca por su TitleID.
+    if cfg.kind == "preset" && cfg.preset == "vita3k" && cfg.args.trim().is_empty() {
+        let tid = g.rom_meta.as_deref().and_then(|m| serde_json::from_str::<rominfo::RomInfo>(m).ok()).and_then(|i| i.title_id);
+        if let Some(t) = tid.filter(|t| vita3k_installed(Path::new(&cfg.exe), t)) {
+            template = format!("-F -r {t}");
+        }
+    }
     let mut out = g.clone();
     out.exe_path = Some(cfg.exe.clone());
     out.args = expand_args(&template, &rom, &core_path);
@@ -325,6 +496,28 @@ pub fn prepare(settings: &Settings, g: &Game) -> anyhow::Result<Game> {
     out.run_as_admin = false;
     out.process_hints = Path::new(&cfg.exe).file_name().map(|n| vec![n.to_string_lossy().to_lowercase()]).unwrap_or_default();
     Ok(out)
+}
+
+/// Lo que ven la biblioteca y los temas: con qué emulador se abrirá cada juego de
+/// consola ("" si ninguno) y su DLC y actualizaciones junto a lo leído de la ROM.
+pub fn decorate(st: &crate::state::AppState, games: &mut [crate::db::models::LibGame]) {
+    if !games.iter().any(|g| g.platform.is_some()) {
+        return;
+    }
+    let settings = st.settings.get();
+    let dir = install::emu_dir(st);
+    let mut names: std::collections::HashMap<String, String> = Default::default();
+    let extras = st.db.with(extras_by_base).unwrap_or_default();
+    for g in games.iter_mut() {
+        let Some(pid) = g.platform.clone() else { continue };
+        let name = names.entry(pid.clone()).or_insert_with(|| resolve(&settings, Some(&dir), &pid, false).map(|c| cfg_name(&c)).unwrap_or_default());
+        g.emulator = Some(name.clone());
+        let tid = g.rom.as_ref().and_then(|r| r.get("titleId")).and_then(|t| t.as_str()).map(str::to_string);
+        if let Some(list) = tid.and_then(|t| extras.get(&(pid.clone(), t))) {
+            let rom = g.rom.get_or_insert_with(|| serde_json::json!({}));
+            rom["extras"] = serde_json::Value::Array(list.clone());
+        }
+    }
 }
 
 #[cfg(test)]

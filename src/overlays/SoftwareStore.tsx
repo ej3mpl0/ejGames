@@ -3,7 +3,7 @@
 // RetroArch de cada sistema.
 
 import { useEffect, useMemo, useState } from "react";
-import { Cpu, Download, ExternalLink, FolderOpen, FolderPlus, Play, RefreshCw, Trash2 } from "lucide-react";
+import { Cpu, Download, ExternalLink, FolderOpen, FolderPlus, Gamepad2, HardDriveDownload, Play, RefreshCw, Trash2 } from "lucide-react";
 import { ask, open as openDialog } from "@tauri-apps/plugin-dialog";
 import { api, errMsg, on } from "../api/tauri";
 import type { EmulationCatalog, SoftwareItem } from "../api/types";
@@ -18,6 +18,7 @@ type Progress = { phase: string; received: number; total: number };
 // Lo que pide cada emulador antes del primer juego (sale de tu consola, ejGames no lo trae).
 const SETUP: Record<string, string> = {
   eden: "Antes del primer juego: pulsa «Abrir» y añade en Eden las claves (prod.keys) y el firmware de tu Switch.",
+  vita3k: "Antes del primer juego comercial: pulsa «Abrir» e instala en Vita3K el firmware oficial de PS Vita (el homebrew no lo necesita).",
   rpcs3: "Antes del primer juego: pulsa «Abrir» e instala en RPCS3 el firmware de PS3 (archivo PS3UPDAT.PUP).",
   pcsx2: "Antes del primer juego: pulsa «Abrir» y elige en PCSX2 la BIOS de tu PS2.",
   duckstation: "Para jugar necesita la BIOS de tu PlayStation: pulsa «Abrir» y añádela en sus ajustes.",
@@ -263,6 +264,12 @@ export function SoftwareStore({ onClose }: { onClose: () => void }) {
         <div className="mt-6 flex flex-wrap gap-2">
           <Button icon={<FolderPlus size={15} />} onClick={() => useApp.getState().open("settings", { tab: "library" })}>
             {t("Añadir carpeta de ROMs")}
+          </Button>
+          <Button icon={<HardDriveDownload size={15} />} onClick={() => useApp.getState().open("rom-import")}>
+            {t("Importar ROMs")}
+          </Button>
+          <Button icon={<Gamepad2 size={15} />} onClick={() => useApp.getState().open("homebrew")}>
+            {t("Homebrew")}
           </Button>
         </div>
       </div>

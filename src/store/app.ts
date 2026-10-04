@@ -10,6 +10,10 @@ import type {
   ThemeInfo,
   ProfileCard,
   WishItem,
+  HomebrewJob,
+  HomebrewPage,
+  HomebrewSystem,
+  EmulatorCfg,
 } from "../api/types";
 
 export type PadType = "xbox" | "playstation" | "nintendo" | "generic";
@@ -36,6 +40,8 @@ export type OverlayName =
   | "profile-editor"
   | "year-review"
   | "software"
+  | "homebrew"
+  | "rom-import"
   | "onboarding";
 
 export interface Overlay {
@@ -62,6 +68,10 @@ interface State {
   downloads: DownloadItem[];
   /** Lista de deseados de la tienda (del perfil activo). */
   wishlist: WishItem[];
+  /** Explorar → Homebrew: la última página vista de cada sistema (para volver sin esperar). */
+  homebrewCatalog: Partial<Record<HomebrewSystem, HomebrewPage>>;
+  /** Homebrew bajándose o en cola (por id). */
+  homebrewJobs: Record<string, HomebrewJob>;
   /** Tu perfil en corto (nivel, avatar, marco…), el que reciben los temas. */
   page: ProfileCard | null;
   overlays: Overlay[];
@@ -102,6 +112,8 @@ export const useApp = create<State>((set, get) => ({
   running: [],
   downloads: [],
   wishlist: [],
+  homebrewCatalog: {},
+  homebrewJobs: {},
   page: null,
   overlays: [],
   toasts: [],
@@ -146,4 +158,21 @@ export const useApp = create<State>((set, get) => ({
 export function activeTheme(s: Pick<State, "themes" | "profile" | "themeOverride">): ThemeInfo | undefined {
   const id = s.themeOverride ?? s.profile?.themeId ?? "steam";
   return s.themes.find((t) => t.id === id) ?? s.themes.find((t) => t.id === "steam") ?? s.themes[0];
+}
+
+/** Los juegos de consola de la biblioteca (ROMs propias y homebrew), por sistema. */
+export function romLibrary(s: Pick<State, "games">): Map<string, LibGame[]> {
+  const out = new Map<string, LibGame[]>();
+  for (const g of s.games) {
+    if (!g.platform || g.missing) continue;
+    const list = out.get(g.platform) ?? [];
+    list.push(g);
+    out.set(g.platform, list);
+  }
+  return out;
+}
+
+/** Emulador elegido para cada sistema en Ajustes → Biblioteca → Emuladores. */
+export function emulatorSettings(s: Pick<State, "settings">): Record<string, EmulatorCfg> {
+  return Object.fromEntries((s.settings?.emulators ?? []).map((e) => [e.platform, e]));
 }

@@ -24,6 +24,8 @@ const UI_NAMES: Record<string, OverlayName | "badges"> = {
   stats: "stats",
   "year-review": "year-review",
   software: "software",
+  homebrew: "homebrew",
+  "rom-import": "rom-import",
   theme: "theme",
   collections: "collections",
   menu: "menu",

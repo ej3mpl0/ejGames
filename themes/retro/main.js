@@ -7,7 +7,8 @@ import { repackUpdateNote } from "/_sdk/kit/updates.js";
 import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
-import { visible, sort, software } from "/_sdk/kit/library.js";
+import { visible, sort, software, romsBySystem, systemName } from "/_sdk/kit/library.js";
+import { emulatorNote } from "/_sdk/kit/emulator.js";
 import { clock } from "/_sdk/kit/clock.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { SIZES, drawCover, quantize, tones } from "./pixel.js";
@@ -25,6 +26,7 @@ const FILTERS = [
   ["played", "PLAYED"],
   ["new", "NEW"],
   ["fav", "FAV ★"],
+  ["roms", "ROMS"], // solo aparece si hay juegos de consola
   ["software", "SOFTWARE"], // solo aparece si hay programas (emuladores)
   ["hidden", "HIDDEN"], // solo aparece si hay juegos ocultos
 ];
@@ -39,6 +41,8 @@ const games = () => {
   const f = FILTERS[state.filter][0];
   // HIDDEN: solo los ocultos (para encontrarlos y volver a mostrarlos)
   if (f === "software") return software(ejg.library.all);
+  // ROMS: por sistema (en la lista, un rótulo por sistema).
+  if (f === "roms") return romsBySystem(ejg.library.all).flatMap((s) => s.games);
   let l = sort(f === "hidden" ? hiddenGames() : visible(ejg.library.all), "title");
   if (f === "fav") l = l.filter((g) => g.favorite);
   if (f === "played") l = l.filter((g) => g.playtime > 0 || g.lastPlayed);
@@ -48,7 +52,9 @@ const games = () => {
 
 // ─────────────── pestañas: filtros (+ HIDDEN) + SHOP + DOWNLOADS + OPTIONS ───────────────
 const SW = FILTERS.findIndex((f) => f[0] === "software");
-const filterTabs = () => FILTERS.map((_, i) => i).filter((i) => (i !== HID || hiddenGames().length) && (i !== SW || software(ejg.library.all).length));
+const RO = FILTERS.findIndex((f) => f[0] === "roms");
+const filterTabs = () =>
+  FILTERS.map((_, i) => i).filter((i) => (i !== HID || hiddenGames().length) && (i !== SW || software(ejg.library.all).length) && (i !== RO || romsBySystem(ejg.library.all).length));
 const tabList = () => [...filterTabs(), ...(ejg.explore.enabled ? ["shop"] : []), "downloads", "options"];
 const curTab = () => (state.view === "library" ? state.filter : state.view);
 const pending = () => ejg.downloads.all.filter((d) => ["queued", "downloading", "paused", "seeding", "completed", "installing", "error"].includes(d.state)).length;
@@ -105,8 +111,10 @@ function switchTab(d) {
 function renderList() {
   const l = games();
   const cur = focus.current?.dataset.gameId;
+  const byRom = FILTERS[state.filter][0] === "roms";
   list.replaceChildren(
-    ...l.map((g) =>
+    ...l.flatMap((g, i) => [
+      byRom && g.platform !== l[i - 1]?.platform ? h("li", { class: "sys" }, systemName(g.platform).toUpperCase()) : null,
       h(
         "li",
         null,
@@ -118,7 +126,7 @@ function renderList() {
           ejg.game.isRunning(g.id) ? h("span", { class: "run" }, "● PLAY") : null,
         ),
       ),
-    ),
+    ].filter(Boolean)),
   );
   if (!l.length) list.replaceChildren(h("li", { class: "empty" }, state.filter ? "NO HAY JUEGOS AQUÍ" : "INSERT GAME: pulsa ▶ para añadir carpetas", h("br"), h("button", { class: "item", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, "AÑADIR JUEGOS")));
   if (cur) {
@@ -218,7 +226,7 @@ async function openDetail(id) {
     h("button", { "data-focus": "", onclick: () => (closeDetail(), ejg.game.edit(g.id)) }, "EDIT"),
     h("button", { "data-focus": "", onclick: closeDetail }, "BACK"),
   );
-  detail.replaceChildren(...[h("h2", null, g.title.toUpperCase()), notice, repackUpdateNote(g), howLongNote(g), desc, shots, actions].filter(Boolean));
+  detail.replaceChildren(...[h("h2", null, g.title.toUpperCase()), notice, repackUpdateNote(g), emulatorNote(g), howLongNote(g), desc, shots, actions].filter(Boolean));
   detail.hidden = false;
   if (unhide) focus.focus(unhide, { instant: true });
   else focus.first(actions);

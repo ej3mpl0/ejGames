@@ -7,6 +7,7 @@ mod downloads;
 mod events;
 mod explore;
 mod guides;
+mod i18n;
 mod launcher;
 mod library;
 mod lifecycle;
@@ -195,6 +196,8 @@ pub fn run() {
             commands::cache_info,
             commands::clear_trailer_cache,
             commands::open_data_dir,
+            commands::ui_language,
+            commands::theme_strings,
             commands::quit,
             commands::get_achievements,
             commands::overlay_ready,
@@ -263,6 +266,7 @@ pub fn run() {
             let paths = paths::Paths::resolve(app.path().resource_dir().ok())?;
             let db = db::Db::open(&paths.db)?;
             let settings = settings::SettingsStore::load(paths.settings.clone());
+            i18n::set(&settings.get().ui_language);
             let http = reqwest::Client::builder()
                 .user_agent("ejGames/0.1 (game launcher)")
                 .timeout(Duration::from_secs(25))

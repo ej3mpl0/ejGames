@@ -8,6 +8,7 @@ import { Glyph } from "../../components/Hints";
 import { setBigPicture } from "../../host/window";
 import { checkNow, useUpdate } from "../../host/update";
 import { useApp } from "../../store/app";
+import { getLang, t } from "../../lib/i18n";
 
 function useSave() {
   const set = useApp((s) => s.set);
@@ -142,6 +143,23 @@ export function SystemTab() {
 
   return (
     <div>
+      <Section title={t("Idioma") + (getLang() === "es" ? " · Language" : " · Idioma")}>
+        <Cycle
+          label={t("Idioma de la interfaz")}
+          value={settings.uiLanguage as "" | "es" | "en"}
+          options={[
+            { value: "", label: t("El de Windows") },
+            { value: "es", label: "Español" },
+            { value: "en", label: "English" },
+          ]}
+          onChange={async (v) => {
+            await save({ uiLanguage: v });
+            // Todo (interfaz, tema y overlay) se vuelve a pintar en el idioma nuevo.
+            location.reload();
+          }}
+        />
+      </Section>
+
       <Section title="Inicio y bandeja">
         <Toggle label="Iniciar con Windows" hint="Arranca en la bandeja, sin ventana (apenas consume)." checked={settings.startWithWindows} onChange={(v) => save({ startWithWindows: v })} />
         <Toggle label="Arrancar minimizado en la bandeja" checked={settings.startMinimized} onChange={(v) => save({ startMinimized: v })} />

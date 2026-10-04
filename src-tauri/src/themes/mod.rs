@@ -7,6 +7,7 @@ pub mod package;
 use crate::paths::Paths;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 pub const SDK_VERSION: u32 = 1;
@@ -114,10 +115,71 @@ fn scan(root: &Path, builtin: bool, out: &mut Vec<ThemeInfo>) {
     }
 }
 
+/// Textos del tema en el idioma de la interfaz: los del SDK (`sdk/i18n/<lang>.json`,
+/// para el kit) y encima los del tema (`<tema>/i18n/<lang>.json`). En español,
+/// vacío: la clave ya es el texto.
+pub fn strings(paths: &Paths, dir: Option<&Path>, lang: &str) -> HashMap<String, String> {
+    let mut out = HashMap::new();
+    if lang == "es" {
+        return out;
+    }
+    let read = |p: PathBuf| -> HashMap<String, String> {
+        std::fs::read_to_string(p)
+            .ok()
+            .and_then(|t| serde_json::from_str(t.trim_start_matches('\u{feff}')).ok())
+            .unwrap_or_default()
+    };
+    out.extend(read(paths.sdk.join("i18n").join(format!("{lang}.json"))));
+    if let Some(d) = dir {
+        out.extend(read(d.join("i18n").join(format!("{lang}.json"))));
+    }
+    out
+}
+
+/// Nombre, descripción y etiquetas de los ajustes del tema, traducidos.
+fn localize(paths: &Paths, t: &mut ThemeInfo) {
+    let lang = crate::i18n::lang();
+    if lang == "es" {
+        return;
+    }
+    let d = strings(paths, Some(Path::new(&t.dir)), lang);
+    if d.is_empty() {
+        return;
+    }
+    for s in [&mut t.manifest.name, &mut t.manifest.description] {
+        if let Some(v) = d.get(s.as_str()) {
+            *s = v.clone();
+        }
+    }
+    fn walk(v: &mut Value, d: &HashMap<String, String>) {
+        match v {
+            Value::Object(o) => {
+                for (k, x) in o.iter_mut() {
+                    if let (true, Value::String(s)) = (matches!(k.as_str(), "label" | "description" | "group" | "hint" | "placeholder"), &mut *x) {
+                        if let Some(t) = d.get(s.as_str()) {
+                            *s = t.clone();
+                        }
+                    } else {
+                        walk(x, d);
+                    }
+                }
+            }
+            Value::Array(a) => a.iter_mut().for_each(|x| walk(x, d)),
+            _ => {}
+        }
+    }
+    for s in &mut t.manifest.settings {
+        walk(s, &d);
+    }
+}
+
 pub fn list(paths: &Paths) -> Vec<ThemeInfo> {
     let mut out = vec![];
     scan(&paths.user_themes, false, &mut out);
     scan(&paths.builtin_themes, true, &mut out);
+    for t in &mut out {
+        localize(paths, t);
+    }
     let order = ["steam", "ps5", "xbox", "switch", "cinema", "retro"];
     out.sort_by_key(|t| {
         (

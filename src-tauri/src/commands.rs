@@ -64,6 +64,12 @@ pub async fn bootstrap(st: St<'_>) -> CmdResult<Bootstrap> {
     })
 }
 
+/// Idioma de la interfaz ya resuelto ("es" | "en"), antes de pintar nada.
+#[tauri::command]
+pub fn ui_language() -> &'static str {
+    crate::i18n::lang()
+}
+
 /// El host ya pintó: mostrar la ventana (se crea oculta para evitar destellos).
 #[tauri::command]
 pub async fn app_ready(window: tauri::WebviewWindow) -> CmdResult<()> {
@@ -706,6 +712,17 @@ pub async fn list_themes(st: St<'_>) -> CmdResult<Vec<ThemeInfo>> {
     blocking(move || Ok(themes::list(&s.paths))).await
 }
 
+/// Textos traducidos del tema (y del kit del SDK) para el idioma de la interfaz.
+#[tauri::command]
+pub async fn theme_strings(st: St<'_>, id: String) -> CmdResult<std::collections::HashMap<String, String>> {
+    let s = st.inner().clone();
+    blocking(move || {
+        let dir = themes::dir_of(&s.paths, &id);
+        Ok(themes::strings(&s.paths, dir.as_deref(), crate::i18n::lang()))
+    })
+    .await
+}
+
 #[tauri::command]
 pub async fn duplicate_theme(st: St<'_>, id: String) -> CmdResult<ThemeInfo> {
     let s = st.inner().clone();
@@ -806,6 +823,17 @@ pub async fn update_settings(app: tauri::AppHandle, st: St<'_>, patch: Value) ->
     }
     if !crate::settings::OVERLAY_STYLES.contains(&next.overlay_style.as_str()) {
         return Err(CmdError::Msg("Estilo de los avisos no válido".into()));
+    }
+    if !crate::settings::UI_LANGUAGES.contains(&next.ui_language.as_str()) {
+        return Err(CmdError::Msg(crate::i18n::t("Idioma no válido").into()));
+    }
+    if next.ui_language != before.ui_language {
+        // Los datos de Steam siguen al idioma de la interfaz (si no se eligió otro).
+        let ui = crate::i18n::resolve(&next.ui_language);
+        if matches!(next.language.as_str(), "spanish" | "english") {
+            next.language = if ui == "en" { "english" } else { "spanish" }.into();
+        }
+        crate::i18n::set(&next.ui_language);
     }
     if !crate::settings::CLOSE_ACTIONS.contains(&next.close_action.as_str()) {
         return Err(CmdError::Msg("Opción al cerrar no válida".into()));

@@ -129,6 +129,7 @@ export const api = {
   deleteTheme: (id: string) => invoke<void>("delete_theme", { id }),
   importTheme: (path: string) => invoke<ThemeInfo>("import_theme", { path }),
   exportTheme: (id: string, dest: string) => invoke<void>("export_theme", { id, dest }),
+  themeStrings: (id: string) => invoke<Record<string, string>>("theme_strings", { id }),
   openThemeFolder: (id?: string) => invoke<void>("open_theme_folder", { id }),
   themeStorageGet: (themeId: string) => invoke<Record<string, unknown>>("theme_storage_get", { themeId }),
   themeStorageSet: (themeId: string, key: string, value: unknown) =>

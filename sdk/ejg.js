@@ -13,7 +13,7 @@
   var seq = 0;
   var pending = new Map();
   var listeners = new Map();
-  var state = { init: null, settings: {}, library: [], collections: [], profile: null, running: [], input: { source: "mouse", pad: "xbox" }, downloads: [], wishlist: [], explore: true, page: null, eventMode: "auto", season: null, rawSettings: {} };
+  var state = { init: null, settings: {}, library: [], collections: [], profile: null, running: [], input: { source: "mouse", pad: "xbox" }, downloads: [], wishlist: [], explore: true, page: null, eventMode: "auto", season: null, rawSettings: {}, lang: "es", strings: {} };
   var readyResolve;
   var readyPromise = new Promise(function (r) { readyResolve = r; });
   var initialized = false;
@@ -146,6 +146,33 @@
     if (el.parentNode && el !== el.parentNode.lastElementChild) el.parentNode.appendChild(el);
   }
 
+  // ───────────── idioma ─────────────
+  // La clave de cada texto es el propio texto en español; sin traducción se ve
+  // el original. Las traducciones del tema van en <tema>/i18n/en.json.
+  function t(s, vars) {
+    var out = Object.prototype.hasOwnProperty.call(state.strings, s) ? state.strings[s] : s;
+    if (vars) Object.keys(vars).forEach(function (k) { out = out.split("{" + k + "}").join(String(vars[k])); });
+    return out;
+  }
+  function locale() { return state.lang === "en" ? "en-US" : "es-ES"; }
+  /** Elementos con data-t: su texto y sus atributos placeholder/title/aria-label. */
+  function translateDom(rootEl) {
+    if (state.lang === "es") return;
+    var list = (rootEl || document).querySelectorAll("[data-t]");
+    for (var i = 0; i < list.length; i++) {
+      var el = list[i];
+      if (!el.children.length && el.textContent.trim()) {
+        var key = el.getAttribute("data-t") || el.textContent.trim();
+        el.setAttribute("data-t", key);
+        el.textContent = t(key);
+      }
+      ["placeholder", "title", "aria-label", "alt"].forEach(function (a) {
+        var k = "data-t-" + a, v = el.getAttribute(k) || el.getAttribute(a);
+        if (v) { el.setAttribute(k, v); el.setAttribute(a, t(v)); }
+      });
+    }
+  }
+
   // ───────────── mensajes del host ─────────────
   window.addEventListener("message", function (ev) {
     if (ev.source !== parent) return;
@@ -171,6 +198,10 @@
       state.page = m.data.page || null;
       state.eventMode = m.data.eventMode || "auto";
       state.season = m.data.season || null;
+      state.lang = m.data.lang === "en" ? "en" : "es";
+      state.strings = m.data.strings || {};
+      root.setAttribute("lang", state.lang);
+      translateDom();
       root.setAttribute("data-mode", m.data.mode || "desktop");
       applyInput();
       applySeason();
@@ -314,6 +345,20 @@
     get settings() { return state.settings; },
     get profile() { return state.profile; },
     get mode() { return root.getAttribute("data-mode") || "desktop"; },
+    /** Idioma de la interfaz: "es" | "en". */
+    get lang() { return state.lang; },
+    /** Locale para Intl / toLocaleString ("es-ES" | "en-US"). */
+    get locale() { return locale(); },
+    /** Traduce un texto (la clave es el texto en español) y sustituye {nombre} por vars.nombre. */
+    t: t,
+    /** Singular o plural: tn(n, "{n} juego", "{n} juegos"). */
+    tn: function (n, one, many, vars) {
+      var v = { n: Number(n).toLocaleString(locale()) };
+      Object.keys(vars || {}).forEach(function (k) { v[k] = vars[k]; });
+      return t(n === 1 ? one : many, v);
+    },
+    /** Traduce los elementos con data-t de un trozo de DOM recién creado (o de todo el documento). */
+    translate: translateDom,
 
     library: {
       /** Juegos visibles del perfil (copia en memoria, sin llamada). */

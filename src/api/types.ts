@@ -384,6 +384,8 @@ export interface ThemeInfo {
 }
 
 export interface Settings {
+  /** "" (el de Windows) | "es" | "en". */
+  uiLanguage: string;
   language: string;
   country: string;
   sgdbKey: string;

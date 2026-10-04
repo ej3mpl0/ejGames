@@ -9,6 +9,7 @@ import { activeTheme, useApp } from "../store/app";
 import { handleThemeCall } from "./bridge";
 import { configureSounds, playSound, type SoundName } from "./sounds";
 import { globalKey } from "./window";
+import { getLang } from "../lib/i18n";
 
 const ORIGIN = "http://ejg-theme.localhost";
 const SAFE_ORIGIN = "http://ejg-safe.localhost";
@@ -20,6 +21,14 @@ export function mergedSettings(theme: ThemeInfo | undefined, saved: Record<strin
 }
 
 let shownOnce = false;
+
+// Textos traducidos de cada tema (se piden una vez por tema).
+const stringsCache = new Map<string, Promise<Record<string, string>>>();
+function themeStrings(id: string | undefined) {
+  if (!id || getLang() === "es") return Promise.resolve({});
+  if (!stringsCache.has(id)) stringsCache.set(id, api.themeStrings(id).catch(() => ({})));
+  return stringsCache.get(id)!;
+}
 
 export function ThemeFrame() {
   const theme = useApp(activeTheme);
@@ -69,7 +78,7 @@ export function ThemeFrame() {
       if (!m || m.__ejg !== 1) return;
       switch (m.type) {
         case "hello":
-          sendInit();
+          void themeStrings(activeTheme(useApp.getState())?.id).then(sendInit);
           break;
         case "ready":
           beats.current = { ready: true, last: Date.now() };
@@ -124,7 +133,7 @@ export function ThemeFrame() {
     };
   });
 
-  function sendInit() {
+  function sendInit(strings: Record<string, string>) {
     const st = useApp.getState();
     const t = activeTheme(st);
     const games = st.games;
@@ -133,6 +142,8 @@ export function ThemeFrame() {
       type: "init",
       data: {
         sdk: 1,
+        lang: getLang(),
+        strings,
         theme: { id: t?.id, name: t?.name, settings: t?.settings ?? [], version: t?.version },
         settings: mergedSettings(t, st.profile?.themeSettings?.[t?.id ?? ""] as Record<string, unknown>),
         customCss: (t && st.profile?.customCss?.[t.id]) || "",
@@ -152,6 +163,9 @@ export function ThemeFrame() {
       },
     });
   }
+
+  // Al recargar el tema (modo desarrollo), sus textos se vuelven a leer.
+  useEffect(() => void stringsCache.clear(), [reload]);
 
   // Watchdog: listo en 6 s y latido cada 5 s (sin contar mientras está oculto).
   useEffect(() => {

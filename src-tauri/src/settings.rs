@@ -10,6 +10,9 @@ pub const DISCORD_CLIENT_ID: &str = "1553143273869287435";
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Settings {
+    /// Idioma de la interfaz: "" (el de Windows) | "es" | "en".
+    pub ui_language: String,
+    /// Idioma de los datos de Steam (descripciones, logros, guías).
     pub language: String,
     pub country: String,
     /// Clave de SteamGridDB (opcional).
@@ -100,6 +103,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Settings {
+            ui_language: String::new(),
             language: "spanish".into(),
             country: "ES".into(),
             sgdb_key: String::new(),
@@ -154,6 +158,8 @@ impl Default for Settings {
 
 pub const OVERLAY_CORNERS: [&str; 7] = ["auto", "top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right"];
 pub const SEED_POLICIES: [&str; 3] = ["never", "until-install", "ratio"];
+
+pub const UI_LANGUAGES: [&str; 3] = ["", "es", "en"];
 
 pub const CLOSE_ACTIONS: [&str; 3] = ["ask", "tray", "quit"];
 pub const EVENT_MODES: [&str; 3] = ["auto", "on", "off"];

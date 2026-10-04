@@ -479,6 +479,16 @@ export interface Ejg {
   readonly settings: Record<string, any>;
   readonly profile: Profile | null;
   readonly mode: "desktop" | "tv";
+  /** Idioma de la interfaz. */
+  readonly lang: "es" | "en";
+  /** "es-ES" | "en-US", para Intl y toLocaleString. */
+  readonly locale: string;
+  /** Traduce un texto (la clave es el texto en español; traducciones en `<tema>/i18n/en.json`). `{n}` → vars.n. */
+  t(text: string, vars?: Record<string, string | number>): string;
+  /** Singular o plural según n: `tn(n, "{n} juego", "{n} juegos")`. */
+  tn(n: number, one: string, many: string, vars?: Record<string, string | number>): string;
+  /** Traduce los elementos con `data-t` (texto y placeholder/title/aria-label/alt) dentro de `root`. */
+  translate(root?: ParentNode): void;
   library: {
     readonly all: Game[];
     get(): Promise<Game[]>;

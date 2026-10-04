@@ -22,6 +22,7 @@ const UI_NAMES: Record<string, OverlayName | "badges"> = {
   search: "search",
   "add-folder": "add-folder",
   stats: "stats",
+  "year-review": "year-review",
   theme: "theme",
   collections: "collections",
   menu: "menu",
@@ -93,6 +94,8 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
       const value = typeof params?.value === "boolean" ? params.value : !g?.favorite;
       return api.setFavorite(id, value);
     }
+    case "stats.year":
+      return api.getYearReview(params?.year == null ? undefined : num(params.year));
     case "game.hltb":
       return api.gameHltb(num(params?.id));
     case "saves.info":

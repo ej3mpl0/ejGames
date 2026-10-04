@@ -9,6 +9,7 @@ import { Button, Cycle, Modal, Spinner, cx } from "../components/ui";
 import { useOverlayNav } from "../input/nav";
 import { hours, playtime, relative } from "../lib/format";
 import { useApp } from "../store/app";
+import { t } from "../lib/i18n";
 
 function niceMax(v: number) {
   if (v <= 0) return 1;
@@ -145,6 +146,9 @@ export function StatsOverlay({ onClose }: { onClose: () => void }) {
           <div className="w-72">
             <Cycle label="" value={days} onChange={setDays} options={[{ value: "7", label: "Últimos 7 días" }, { value: "30", label: "Últimos 30 días" }, { value: "90", label: "Últimos 90 días" }, { value: "365", label: "Último año" }]} />
           </div>
+          <Button size="sm" variant="ghost" onClick={() => useApp.getState().open("year-review", {})}>
+            {t("Tu año")}
+          </Button>
           <Button size="sm" variant="ghost" icon={table ? <BarChart3 size={14} /> : <Table2 size={14} />} onClick={() => setTable(!table)}>
             {table ? "Gráficos" : "Tabla"}
           </Button>

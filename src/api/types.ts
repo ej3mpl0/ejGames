@@ -414,6 +414,27 @@ export interface SavesInfo {
   known: boolean;
 }
 
+export interface YearReview {
+  year: number;
+  totalSeconds: number;
+  sessions: number;
+  gamesPlayed: number;
+  daysPlayed: number;
+  bestStreak: number;
+  topGames: { gameId: number; title: string; seconds: number; sessions: number }[];
+  byMonth: number[];
+  topMonth: number | null;
+  favoriteHour: number | null;
+  favoriteWeekday: number | null;
+  longestSession: number;
+  longestSessionGame: string | null;
+  genres: [string, number][];
+  achievements: number;
+  rarest: { name: string; game: string; gameId: number; pct: number; at: number } | null;
+  newGames: number;
+  firstGame: string | null;
+}
+
 export interface Hltb {
   id: number;
   name: string;
@@ -440,6 +461,7 @@ export interface Settings {
   uiLanguage: string;
   overlayFps: boolean;
   hltbEnabled: boolean;
+  yearReviewSeen: number;
   savesAuto: boolean;
   savesKeep: number;
   gameModePower: boolean;

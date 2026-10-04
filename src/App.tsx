@@ -29,6 +29,7 @@ import { QuickMenu } from "./overlays/QuickMenu";
 import { SearchOverlay } from "./overlays/Search";
 import { SettingsOverlay } from "./overlays/settings/Settings";
 import { StatsOverlay } from "./overlays/Stats";
+import { YearReviewOverlay } from "./overlays/YearReview";
 import { activeTheme, useApp } from "./store/app";
 import { useHostSeason } from "./host/season";
 import { restoreBackup } from "./overlays/settings/BackupSection";
@@ -67,6 +68,16 @@ async function offerNewerBackup() {
   });
 }
 
+/** Del 1 de diciembre al 15 de enero, una vez por año: «Tu año en ejGames». */
+function offerYearReview() {
+  const now = new Date();
+  const year = now.getMonth() === 11 ? now.getFullYear() : now.getMonth() === 0 && now.getDate() <= 15 ? now.getFullYear() - 1 : 0;
+  const st = useApp.getState();
+  if (!year || (st.settings?.yearReviewSeen ?? 0) >= year) return;
+  void api.updateSettings({ yearReviewSeen: year }).then((s) => useApp.getState().set({ settings: s }));
+  st.toast("info", t("Tu año en ejGames ya está listo"), { label: t("Verlo"), run: () => useApp.getState().open("year-review", { year }) });
+}
+
 async function loadLibrary() {
   const [games, collections, running] = await Promise.all([api.getLibrary(), api.listCollections(), api.runningGames()]);
   useApp.getState().set({ games, collections, running });
@@ -90,6 +101,7 @@ export default function App() {
     setPhase("main");
     checkOnLaunch();
     void offerNewerBackup();
+    offerYearReview();
   }
 
   // Arranque.
@@ -241,6 +253,8 @@ export default function App() {
             return <GameEditor key={key} id={Number(o.args?.id)} onClose={onClose} />;
           case "search":
             return <SearchOverlay key={key} onClose={onClose} />;
+          case "year-review":
+            return <YearReviewOverlay key={key} year={o.args?.year == null ? undefined : Number(o.args.year)} onClose={onClose} />;
           case "stats":
             return <StatsOverlay key={key} onClose={onClose} />;
           case "collections":

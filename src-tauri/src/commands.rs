@@ -1608,3 +1608,12 @@ pub async fn game_hltb(st: St<'_>, id: i64) -> CmdResult<Option<crate::metadata:
     // Sin conexión o si la web cambia: sin dato, no un error en la ficha.
     Ok(crate::metadata::hltb::lookup(st.inner(), &g.title, year).await.unwrap_or(None))
 }
+
+/// Resumen de un año natural del perfil activo (por defecto, el actual).
+#[tauri::command]
+pub async fn get_year_review(st: St<'_>, year: Option<i32>) -> CmdResult<crate::stats::YearReview> {
+    let pid = active(&st)?;
+    let y = year.unwrap_or_else(|| chrono::Datelike::year(&chrono::Local::now()));
+    let s = st.inner().clone();
+    blocking(move || s.db.with(|c| crate::stats::year(c, pid, y))).await
+}

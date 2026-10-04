@@ -549,13 +549,18 @@ export interface Ejg {
     badges(): Promise<void>;
     edit(): Promise<void>;
   };
-  stats: { get(days?: number): Promise<any>; recent(limit?: number): Promise<any[]> };
+  stats: {
+    get(days?: number): Promise<any>;
+    recent(limit?: number): Promise<any[]>;
+    /** Resumen de un año natural (por defecto el actual): horas, top de juegos, meses, rachas y logros. */
+    year(year?: number): Promise<any>;
+  };
   storage: { getAll(): Promise<Record<string, any>>; get(key: string): Promise<any>; set(key: string, value: any): Promise<void> };
   ui: {
     open(
       name:
         | "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads"
-        | "guides" | "trainer" | "map" | "profile" | "badges" | "profile-editor",
+        | "guides" | "trainer" | "map" | "profile" | "badges" | "profile-editor" | "year-review",
       args?: any,
     ): Promise<void>;
     toast(message: string, kind?: "info" | "ok" | "error"): Promise<void>;

@@ -414,6 +414,8 @@
     stats: {
       get: function (days) { return call("stats.get", { days: days }); },
       recent: function (limit) { return call("stats.recent", { limit: limit }); },
+      /** Resumen de un año natural (por defecto el actual): horas, top de juegos, meses, rachas, logros… */
+      year: function (year) { return call("stats.year", { year: year == null ? null : year }); },
     },
     storage: {
       getAll: function () { return call("storage.get"); },

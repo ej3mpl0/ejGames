@@ -34,6 +34,7 @@ export type OverlayName =
   | "map"
   | "profile"
   | "profile-editor"
+  | "year-review"
   | "onboarding";
 
 export interface Overlay {

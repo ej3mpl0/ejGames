@@ -63,13 +63,13 @@ const spanishOnly = (() => {
 })();
 
 function keep(s, ctx) {
+  if (ctx === "t") return true; // lo que ya pasa por t() / tn() siempre tiene que estar en el diccionario
   if (/^(<|--|\.\S|@|\$)/.test(s) || s.includes('="') || (s.includes("px") && !SPANISH.test(s))) return false;
   if (/[;{}]\s*$/.test(s) && !SPANISH.test(s)) return false;
   if (/\b(solid|flex|grid|none|auto|inherit|center)\b/.test(s) && !SPANISH.test(s)) return false;
   if (SPANISH.test(s) || /^[A-ZÁÉÍÓÚÑ][A-Za-záéíóúñÁÉÍÓÚÑ ]{2,}$/.test(s)) return true;
   if (tokens(s).some((w) => spanishOnly.has(w))) return true;
   // --wide: texto con pinta de interfaz aunque no lleve acentos ni palabras vacías.
-  if (ctx === "t") return true; // lo que ya pasa por t() / tn() siempre tiene que estar en el diccionario
   // Cualquier texto de interfaz (JSX, atributos, argumentos de h()) aunque no lleve acentos ni palabras vacías.
   if (wide && ctx !== "lit") return /^[A-Za-zÁÉÍÓÚÑ¿¡{(·»«-]/.test(s) && /[A-Za-zÁ-ú]{3}/.test(s);
   return wide && /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+( [/a-záéíóúñ]+){0,6}[.…:?!]?$/.test(s);

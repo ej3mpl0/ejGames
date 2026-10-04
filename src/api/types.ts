@@ -429,6 +429,20 @@ export interface EmulatorCfg {
   core: string;
   args: string;
 }
+export interface SoftwareItem {
+  id: string;
+  name: string;
+  blurb: string;
+  systems: string[];
+  site: string;
+  /** Se instala desde ejGames (si no, se abre su web). */
+  auto: boolean;
+  installed?: { version: string; dir: string; exe: string } | null;
+  latest?: string | null;
+  size?: number | null;
+  update: boolean;
+  error?: string | null;
+}
 export interface EmulatorFound {
   preset: string;
   name: string;

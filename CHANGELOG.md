@@ -5,6 +5,33 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.1.0
+
+**Tienda → Software: emuladores con un clic**
+- Nuevo apartado **Software** en la tienda de los seis temas y en Explorar (también desde Ajustes → Biblioteca → Consolas →
+  «Descargar emuladores»). Instala RetroArch, PCSX2, DuckStation, PPSSPP, Cemu, RPCS3 y Eden desde su fuente oficial
+  (GitHub, el servidor de Eden o el de libretro), con la huella comprobada cuando la publican, en `emulators`, dentro de la
+  carpeta de datos.
+- Al instalarlo, el emulador queda puesto para sus sistemas: solo falta añadir la carpeta de ROMs. Se actualiza (avisa
+  cuando hay versión nueva) y se quita desde ahí; la carpeta `user` de cada emulador se conserva al actualizar.
+- **Núcleos de RetroArch**: lista los sistemas que juegas con RetroArch y baja el núcleo que les falta.
+- Dolphin se baja de su web (tiene protección anti-bots) y luego «Buscar emuladores» lo encuentra.
+- ejGames no incluye ni descarga juegos, BIOS, claves ni firmware.
+
+**Nintendo Switch**
+- Nuevo sistema Switch (`.nsp`, `.xci`) con los presets de Eden y Ryujinx. Necesita las claves y el firmware de tu
+  propia consola.
+
+**Modo juego por perfil**
+- El modo juego (plan de energía y «No molestar») pasa a **Ajustes → Perfil**: cada perfil decide. Lo que tenías puesto
+  se pasa a todos los perfiles.
+
+**Más completo**
+- Bloque **Partidas** en el panel del overlay de las siete pieles: última copia y «Copia ahora».
+- **Descargas → Actualizaciones**: los juegos con un repack más nuevo, con «Ver en la tienda» y «Ocultar».
+- Textos que faltaban en inglés (emuladores y copias de seguridad); `pnpm i18n:check` ya no se salta los textos de `t()`
+  que acaban en un hueco.
+
 ## 1.0.0
 
 **ejGames en inglés (y en español)**

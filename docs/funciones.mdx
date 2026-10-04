@@ -152,10 +152,16 @@ Select + Start durante 1 s) abre el panel del overlay. Para escribir con el mand
 ## Juegos de consola
 
 **Ajustes → Biblioteca → Consolas** añade carpetas de ROMs por sistema (NES, SNES, Game Boy, GBA, DS, N64, GameCube, Wii,
-Wii U, Master System, Mega Drive, Saturn, Dreamcast, PlayStation 1, 2, 3, PSP, arcade…). Cada sistema se juega con
-**RetroArch** y un núcleo, con un emulador independiente (**PCSX2, Dolphin, PPSSPP, DuckStation, Cemu, RPCS3**) o con
+Wii U, Switch, Master System, Mega Drive, Saturn, Dreamcast, PlayStation 1, 2, 3, PSP, arcade…). Cada sistema se juega con
+**RetroArch** y un núcleo, con un emulador independiente (**PCSX2, Dolphin, PPSSPP, DuckStation, Cemu, RPCS3, Eden, Ryujinx**) o con
 el programa que elijas. ejGames lanza el emulador con la ROM, cuenta las horas y saca el overlay y Discord. Los datos
 y las portadas salen de IGDB y SteamGridDB (con sus claves de **Ajustes → Info y arte**).
+
+**Tienda → Software** instala los emuladores con un clic: RetroArch, PCSX2, DuckStation, PPSSPP, Cemu, RPCS3 y Eden
+(Nintendo Switch). Se bajan de su fuente oficial (GitHub, el servidor de Eden o el de libretro), con su huella comprobada
+cuando la publican, a `emulators` en la carpeta de datos, y quedan puestos como emulador de sus sistemas. Desde ahí se
+actualizan y se quitan, y se instala el núcleo de RetroArch de cada sistema. Dolphin se baja de su web. ejGames no
+incluye juegos, BIOS, claves ni firmware: tienen que salir de tus propias consolas.
 
 ## Cuánto dura, y tu año
 
@@ -181,7 +187,7 @@ las carpetas del nuevo y se reconocen solos.
 
 ## Modo juego y lanzar desde fuera
 
-- **Modo juego** (Ajustes → Sistema): plan de energía de alto rendimiento y notificaciones de Windows en silencio
+- **Modo juego** (Ajustes → Perfil, cada perfil el suyo): plan de energía de alto rendimiento y notificaciones de Windows en silencio
   mientras juegas. Al cerrar el juego, todo vuelve como estaba.
 - **Acceso directo y Añadir a Steam** (Editar juego): abren el juego a través de ejGames (`ejgames.exe --play <id>`),
   así que se cuentan las horas y salen el overlay y Discord. Añadir a Steam necesita Steam cerrado.

@@ -430,7 +430,7 @@
       set: function (key, value) { return call("storage.set", { key: key, value: value === undefined ? null : value }); },
     },
     ui: {
-      /** settings | game | profiles | search | add-folder | stats | theme | collections | menu | explore | downloads
+      /** settings | game | profiles | search | add-folder | stats | theme | collections | menu | explore | downloads | software (emuladores)
        *  | guides, trainer, map ({id: gameId}) | profile | badges | profile-editor */
       open: function (name, args) { return call("ui.open", { name: name, args: args || null }); },
       toast: function (message, kind) { return call("ui.toast", { message: message, kind: kind || "info" }); },

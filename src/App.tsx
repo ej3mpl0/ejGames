@@ -30,6 +30,7 @@ import { SearchOverlay } from "./overlays/Search";
 import { SettingsOverlay } from "./overlays/settings/Settings";
 import { StatsOverlay } from "./overlays/Stats";
 import { YearReviewOverlay } from "./overlays/YearReview";
+import { SoftwareStore } from "./overlays/SoftwareStore";
 import { activeTheme, useApp } from "./store/app";
 import { useHostSeason } from "./host/season";
 import { restoreBackup } from "./overlays/settings/BackupSection";
@@ -253,6 +254,8 @@ export default function App() {
             return <GameEditor key={key} id={Number(o.args?.id)} onClose={onClose} />;
           case "search":
             return <SearchOverlay key={key} onClose={onClose} />;
+          case "software":
+            return <SoftwareStore key={key} onClose={onClose} />;
           case "year-review":
             return <YearReviewOverlay key={key} year={o.args?.year == null ? undefined : Number(o.args.year)} onClose={onClose} />;
           case "stats":

@@ -247,5 +247,8 @@
  "TROPHIES": 1,
  "UNKNOWN": 1,
  "UNSAVE": 1,
- "YEAR": 1
+ "YEAR": 1,
+ "Software": 1,
+ "SOFTWARE": 1,
+ "{pc} · {date} · {games}": 1
 }

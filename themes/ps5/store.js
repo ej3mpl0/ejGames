@@ -220,6 +220,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
       mi("search", "Buscar", "search", () => openSearch(true)),
       mi("wishlist", "Lista de deseos", "heart", openWishlist, h("span", { class: "st-count wl", hidden: !w }, String(w))),
       mi("downloads", "Descargas", "download", openDownloads, h("span", { class: "st-count", hidden: !n }, String(n))),
+      mi("software", "Software", null, () => ejg.ui.open("software")),
     );
   }
 

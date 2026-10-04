@@ -244,6 +244,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     pill("front", "Destacados", () => goFront()),
     pill("catalog", "Explorar", () => openCatalog()),
     h("button", { class: "st-pill st-wish", "data-focus": "", "data-st": "wish", onclick: () => openWish() }, icon("heart"), "Lista de deseos", wCount),
+    pill("software", "Software", () => ejg.ui.open("software")),
     h("label", { class: "st-search" }, icon("search"), input),
     h("button", { class: "st-queue", "data-focus": "", onclick: () => setView("queue") }, icon("queue"), "Cola", qCount),
   );

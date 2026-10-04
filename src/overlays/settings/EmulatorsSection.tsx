@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { FolderPlus, Search, Gamepad2 } from "lucide-react";
+import { Download, FolderPlus, Search, Gamepad2 } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
 import type { EmulatorCfg, EmulatorFound, EmulationCatalog } from "../../api/types";
 import { Button, Cycle, Field, Section, TextInput } from "../../components/ui";
@@ -72,6 +72,9 @@ export function EmulatorsSection({ onFolderAdded }: { onFolderAdded: () => void 
         </div>
         <Button size="sm" variant="primary" icon={<FolderPlus size={14} />} onClick={() => void addRoms()}>
           {t("Añadir carpeta de ROMs")}
+        </Button>
+        <Button size="sm" icon={<Download size={14} />} onClick={() => useApp.getState().open("software")}>
+          {t("Descargar emuladores")}
         </Button>
         <Button size="sm" icon={<Search size={14} />} onClick={() => void detect()}>
           {t("Buscar emuladores")}

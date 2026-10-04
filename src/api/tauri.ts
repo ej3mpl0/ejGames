@@ -9,6 +9,7 @@ import type {
   YearReview,
   EmulationCatalog,
   EmulatorFound,
+  SoftwareItem,
   SavesInfo,
   SaveSnapshot,
   Bootstrap,
@@ -211,6 +212,10 @@ export const api = {
   overlayFpsGrant: () => invoke<void>("overlay_fps_grant"),
   emulationCatalog: () => invoke<EmulationCatalog>("emulation_catalog"),
   emulatorsDetect: () => invoke<EmulatorFound[]>("emulators_detect"),
+  emulatorStore: (force: boolean) => invoke<SoftwareItem[]>("emulator_store", { force }),
+  emulatorInstall: (id: string) => invoke<{ version: string; dir: string; exe: string }>("emulator_install", { id }),
+  emulatorUninstall: (id: string) => invoke<void>("emulator_uninstall", { id }),
+  emulatorInstallCore: (platform: string) => invoke<string>("emulator_install_core", { platform }),
   emulatorCores: (exe: string) => invoke<string[]>("emulator_cores", { exe }),
   getYearReview: (year?: number) => invoke<YearReview>("get_year_review", { year }),
   communityThemes: () => invoke<CommunityTheme[]>("community_themes"),
@@ -256,6 +261,7 @@ export type Events = {
   "explore:art": null;
   "wishlist:changed": WishItem[];
   "saves:changed": { gameId: number };
+  "emu:progress": { id: string; phase: string; received: number; total: number };
   "downloads:install": { id: number; phase: "running" | "done" | "cancelled" | "error" | "needs-folder"; message?: string | null; gameId?: number | null };
 };
 

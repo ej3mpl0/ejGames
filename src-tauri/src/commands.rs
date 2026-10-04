@@ -14,7 +14,7 @@ use serde::Serialize;
 use serde_json::Value;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tauri::State;
+use tauri::{Emitter, State};
 
 type St<'a> = State<'a, Arc<AppState>>;
 
@@ -1683,4 +1683,32 @@ pub async fn emulators_detect() -> CmdResult<Vec<crate::emulation::Found>> {
 #[tauri::command]
 pub async fn emulator_cores(exe: String) -> CmdResult<Vec<String>> {
     blocking(move || Ok(crate::emulation::installed_cores(std::path::Path::new(&exe)))).await
+}
+
+/// Tienda de emuladores (apartado «Software»): catálogo, instalado y última versión.
+#[tauri::command]
+pub async fn emulator_store(st: St<'_>, force: bool) -> CmdResult<Vec<crate::emulation::install::StoreItem>> {
+    Ok(crate::emulation::install::store(st.inner(), force).await)
+}
+
+/// Baja el emulador de su fuente oficial y lo deja puesto para sus sistemas.
+#[tauri::command]
+pub async fn emulator_install(st: St<'_>, id: String) -> CmdResult<crate::emulation::install::Installed> {
+    let r = crate::emulation::install::install(st.inner(), &id).await?;
+    let _ = st.app.emit("settings:changed", st.settings.get());
+    Ok(r)
+}
+
+#[tauri::command]
+pub async fn emulator_uninstall(st: St<'_>, id: String) -> CmdResult<()> {
+    let s = st.inner().clone();
+    blocking(move || crate::emulation::install::uninstall(&s, &id)).await?;
+    let _ = st.app.emit("settings:changed", st.settings.get());
+    Ok(())
+}
+
+/// Núcleo de RetroArch de un sistema.
+#[tauri::command]
+pub async fn emulator_install_core(st: St<'_>, platform: String) -> CmdResult<String> {
+    Ok(crate::emulation::install::install_core(st.inner(), &platform).await?)
 }

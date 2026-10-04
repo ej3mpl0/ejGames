@@ -7,6 +7,8 @@
 //! sistema y se lanza con la ROM como argumento. Los emuladores se configuran en
 //! Ajustes → Biblioteca → Emuladores (`settings.emulators`).
 
+pub mod install;
+
 use crate::db::models::{Game, LibraryFolder, NewGame};
 use crate::db::{repo, Db};
 use crate::library::scanner::ScanReport;
@@ -38,6 +40,7 @@ pub const PLATFORMS: &[Platform] = &[
     Platform { id: "gc", name: "GameCube", exts: &["iso", "gcm", "rvz", "ciso", "gcz"], core: "dolphin_libretro", igdb: 21, presets: &["dolphin"] },
     Platform { id: "wii", name: "Wii", exts: &["iso", "wbfs", "rvz", "wad"], core: "dolphin_libretro", igdb: 5, presets: &["dolphin"] },
     Platform { id: "wiiu", name: "Wii U", exts: &["wua", "wud", "wux", "rpx"], core: "", igdb: 41, presets: &["cemu"] },
+    Platform { id: "switch", name: "Nintendo Switch", exts: &["nsp", "xci"], core: "", igdb: 130, presets: &["eden", "ryujinx"] },
     Platform { id: "sms", name: "Master System", exts: &["sms"], core: "genesis_plus_gx_libretro", igdb: 64, presets: &[] },
     Platform { id: "genesis", name: "Mega Drive / Genesis", exts: &["md", "gen", "smd"], core: "genesis_plus_gx_libretro", igdb: 29, presets: &[] },
     Platform { id: "gg", name: "Game Gear", exts: &["gg"], core: "genesis_plus_gx_libretro", igdb: 35, presets: &[] },
@@ -72,6 +75,8 @@ pub const PRESETS: &[Preset] = &[
     Preset { id: "duckstation", name: "DuckStation", exes: &["duckstation-qt-x64-ReleaseLTCG.exe", "duckstation-nogui-x64-ReleaseLTCG.exe"], args: "-batch -fullscreen -- \"{rom}\"" },
     Preset { id: "cemu", name: "Cemu", exes: &["Cemu.exe"], args: "-g \"{rom}\" -f" },
     Preset { id: "rpcs3", name: "RPCS3", exes: &["rpcs3.exe"], args: "--no-gui \"{rom}\"" },
+    Preset { id: "eden", name: "Eden", exes: &["eden.exe"], args: "-f -g \"{rom}\"" },
+    Preset { id: "ryujinx", name: "Ryujinx", exes: &["Ryujinx.exe"], args: "\"{rom}\"" },
 ];
 
 pub fn preset(id: &str) -> Option<&'static Preset> {

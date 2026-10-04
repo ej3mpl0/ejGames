@@ -118,6 +118,8 @@ pub struct Settings {
 
     /// Un emulador por sistema de consola.
     pub emulators: Vec<EmulatorCfg>,
+    /// Dónde instala ejGames los emuladores de la tienda ("" = <datos>\emulators).
+    pub emulators_dir: String,
 
     // ── Partidas guardadas ──
     /// Copia automática de las partidas al cerrar cada juego.
@@ -207,6 +209,7 @@ impl Default for Settings {
             peer_limit: 0,
             torrent_proxy: String::new(),
             emulators: vec![],
+            emulators_dir: String::new(),
             saves_auto: true,
             saves_keep: 10,
             game_mode_power: false,

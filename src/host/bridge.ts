@@ -23,6 +23,7 @@ const UI_NAMES: Record<string, OverlayName | "badges"> = {
   "add-folder": "add-folder",
   stats: "stats",
   "year-review": "year-review",
+  software: "software",
   theme: "theme",
   collections: "collections",
   menu: "menu",

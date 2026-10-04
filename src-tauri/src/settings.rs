@@ -52,6 +52,8 @@ pub struct Settings {
     /// switch | cinema | retro | ejgames.
     pub overlay_style: String,
     pub overlay_sound: bool,
+    /// Medir los FPS del juego (ETW, sin inyectar) para el panel del overlay.
+    pub overlay_fps: bool,
     /// Aviso al empezar la partida con el atajo del overlay.
     pub overlay_start_hint: bool,
     /// Atajo de las capturas de pantalla ("F12"; "" = sin atajo).
@@ -154,6 +156,7 @@ impl Default for Settings {
             overlay_corner: "auto".into(),
             overlay_style: "auto".into(),
             overlay_sound: true,
+            overlay_fps: false,
             overlay_start_hint: true,
             screenshot_hotkey: "F12".into(),
             screenshot_dir: String::new(),

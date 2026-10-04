@@ -202,6 +202,7 @@ export const api = {
   downloadsOpenFolder: (id: number) => invoke<void>("downloads_open_folder", { id }),
   diskSpace: (path: string) => invoke<{ freeBytes?: number | null }>("disk_space", { path }),
 
+  overlayFpsGrant: () => invoke<void>("overlay_fps_grant"),
   savesInfo: (id: number) => invoke<SavesInfo>("saves_info", { id }),
   savesBackup: (id: number) => invoke<SaveSnapshot | null>("saves_backup", { id }),
   savesRestore: (id: number, snapshot: number) => invoke<number>("saves_restore", { id, snapshot }),

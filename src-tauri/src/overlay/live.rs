@@ -36,6 +36,10 @@ pub struct Perf {
     pub sys_cpu: f32,
     pub sys_ram_used: u64,
     pub sys_ram_total: u64,
+    /// FPS del juego (si «Mostrar FPS» está activo y hay datos).
+    pub fps: Option<super::fps::FpsStats>,
+    /// off | on | denied | error: el estado de la medición de FPS.
+    pub fps_status: &'static str,
 }
 
 #[derive(Debug, Clone, Serialize, Default, PartialEq)]
@@ -239,7 +243,7 @@ impl PerfState {
             Some(g) => g.sample(pids),
             None => (None, None),
         };
-        Some(Perf { cpu, ram, gpu, vram, sys_cpu, sys_ram_used, sys_ram_total })
+        Some(Perf { cpu, ram, gpu, vram, sys_cpu, sys_ram_used, sys_ram_total, fps: super::fps::snapshot(), fps_status: super::fps::status() })
     }
 
     #[cfg(not(windows))]

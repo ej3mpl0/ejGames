@@ -1583,3 +1583,9 @@ pub async fn saves_open(st: St<'_>, id: i64, path: String) -> CmdResult<()> {
     std::process::Command::new("explorer").arg(target).spawn().map_err(|e| CmdError::Msg(e.to_string()))?;
     Ok(())
 }
+
+/// Da permiso para medir FPS sin ser administrador (pide el aviso de Windows una vez).
+#[tauri::command]
+pub async fn overlay_fps_grant() -> CmdResult<()> {
+    blocking(crate::overlay::fps::grant_access).await
+}

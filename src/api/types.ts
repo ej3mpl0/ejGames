@@ -151,6 +151,9 @@ export interface OverlayLive {
     sysCpu: number;
     sysRamUsed: number;
     sysRamTotal: number;
+    fps?: { fps: number; low1: number; frametime: number } | null;
+    /** off | on | denied | error */
+    fpsStatus?: string;
   } | null;
   media?: {
     title: string;
@@ -426,6 +429,7 @@ export interface BackupInfo {
 export interface Settings {
   /** "" (el de Windows) | "es" | "en". */
   uiLanguage: string;
+  overlayFps: boolean;
   savesAuto: boolean;
   savesKeep: number;
   gameModePower: boolean;

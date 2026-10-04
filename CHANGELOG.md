@@ -5,6 +5,26 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.11.0
+
+**Copias de las partidas guardadas**
+- Al cerrar un juego, ejGames copia sus partidas guardadas (solo si han cambiado) y guarda las últimas 10. Dónde las
+  guarda cada juego sale del manifiesto de [Ludusavi](https://github.com/mtkennerly/ludusavi-manifest) (más de 12.000
+  juegos), de las carpetas de los emuladores de Steam (Goldberg, GSE…) y de Steam Cloud. Se baja cada dos semanas.
+- Editar juego → Partidas guardadas: dónde están, copias hechas, «Hacer una copia ahora» y «Restaurar» (con el juego
+  cerrado; antes de restaurar se copian las de ahora). Si no las encuentra, añades la carpeta a mano.
+- Se puede desactivar ahí mismo.
+
+**FPS en el overlay** (Ajustes → Overlay → Mostrar FPS, desactivado de serie)
+- FPS, 1 % bajo y tiempo de fotograma en el panel, sin tocar el juego: se leen los eventos de presentación que Windows
+  ya emite (como PresentMon). Funciona con juegos DirectX 9, 10, 11 y 12; con Vulkan y OpenGL el panel lo dice.
+- Windows exige permiso para leerlos: el botón «Dar permiso para medir FPS» te mete una sola vez en el grupo
+  «Usuarios del registro de rendimiento» (aviso de Windows) y, tras volver a iniciar sesión en Windows, funciona sin ser
+  administrador.
+
+**Para temas**
+- `ejg.saves.info(id)`, `ejg.saves.backup(id)`, `ejg.saves.restore(id, copia)` y el evento `ejg.saves.onChange`.
+
 ## 0.10.0
 
 **Copias de seguridad y llevarte la biblioteca a otro PC**

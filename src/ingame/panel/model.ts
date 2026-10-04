@@ -14,6 +14,7 @@ export interface PerfHistory {
   cpu: number[];
   gpu: number[];
   ram: number[];
+  fps: number[];
 }
 
 export interface AchGroups {
@@ -73,7 +74,7 @@ export function usePanel(data: OverlayPanel, live: OverlayLive) {
   const ach = useMemo(() => groups(data.achievements), [data.achievements]);
 
   // Historial de rendimiento (llega un dato por segundo con el panel abierto).
-  const hist = useRef<PerfHistory>({ cpu: [], gpu: [], ram: [] });
+  const hist = useRef<PerfHistory>({ cpu: [], gpu: [], ram: [], fps: [] });
   const [, bump] = useState(0);
   useEffect(() => {
     const p = live.perf;
@@ -86,6 +87,7 @@ export function usePanel(data: OverlayPanel, live: OverlayLive) {
     push(h.cpu, p.cpu);
     push(h.gpu, p.gpu ?? 0);
     push(h.ram, p.ram);
+    push(h.fps, p.fps?.fps ?? 0);
     bump((x) => x + 1);
   }, [live.perf]);
 

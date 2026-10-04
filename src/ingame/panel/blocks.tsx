@@ -3,6 +3,7 @@
 // pueden elegir con mando o teclado llevan `data-nav`.
 
 import { useEffect, useState, type ReactNode } from "react";
+import { t } from "../../lib/i18n";
 import type { Achievement, Capture } from "../../api/types";
 import { autoNav } from "../../input/nav";
 import { useApp } from "../../store/app";
@@ -306,6 +307,24 @@ export function PerfTiles({ k, p, spark = true }: K & { p: Panel; spark?: boolea
     },
     { id: "ram", label: "Memoria", value: gb(f.ram), sub: `Sistema: ${gb(f.sysRamUsed)} de ${gb(f.sysRamTotal)}`, hist: p.history.ram, max: ramMax },
   ];
+  // FPS: solo si el ajuste está activo (Ajustes → Overlay → Mostrar FPS).
+  if (f.fpsStatus && f.fpsStatus !== "off") {
+    const fp = f.fps;
+    const none =
+      f.fpsStatus === "denied"
+        ? t("Sin permiso (Ajustes → Overlay)")
+        : f.fpsStatus === "error"
+          ? t("No disponible")
+          : t("Este juego no usa DirectX 9-12");
+    tiles.push({
+      id: "fps",
+      label: t("FPS"),
+      value: fp ? String(Math.round(fp.fps)) : "—",
+      sub: fp ? t("1 % bajo {low} · {ms} ms", { low: Math.round(fp.low1), ms: fp.frametime.toFixed(1) }) : none,
+      hist: p.history.fps,
+      max: Math.max(...p.history.fps, 60) * 1.1,
+    });
+  }
   return (
     <div className={`${k}-perf`}>
       {tiles.map((t) => (

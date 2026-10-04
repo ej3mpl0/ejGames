@@ -13,6 +13,7 @@
 //! usuario puede forzar otro en Ajustes → Overlay.
 
 pub mod capture;
+pub mod fps;
 pub mod hotkey;
 pub mod live;
 #[cfg(windows)]
@@ -911,6 +912,10 @@ pub fn session_started(st: &Arc<AppState>, game: &Game, profile_id: i64, started
             move |pid, hwnd| (hwnd != 0 && hwnd == st_t.overlay.hwnd.load(Ordering::Relaxed)) || tracker::matches_pid(&target, pid)
         }),
     );
+    if s.overlay_fps {
+        let target = target.clone();
+        let _ = std::thread::Builder::new().name("ejg-fps-start".into()).spawn(move || fps::start(target));
+    }
     let hotkey_label = guard.as_ref().and(panel_key);
     let screenshot_label = guard.as_ref().and(shot_key);
     tracing::info!("overlay: partida de «{}», atajo: {:?}, capturas: {:?}", game.title, hotkey_label, screenshot_label);
@@ -998,6 +1003,7 @@ pub fn session_ended(st: &Arc<AppState>, game_id: i64) {
         }
     };
     if let Some(live) = ended {
+        fps::stop();
         close_panel(st, false);
         let _ = pin_map(st, None);
         session_summary(st, live);

@@ -6,6 +6,7 @@ import type { NoticeLook, OverlayNotice, Settings } from "../../api/types";
 import { Button, Cycle, Section, Toggle } from "../../components/ui";
 import { NOTICE_STYLES, NoticeStack, NoticeView } from "../../ingame/notices";
 import { useApp } from "../../store/app";
+import { t } from "../../lib/i18n";
 
 function useSave() {
   const set = useApp((s) => s.set);
@@ -227,6 +228,30 @@ export function OverlayTab() {
             <Cycle label="Dónde salen" value={settings.overlayCorner} options={CORNERS} onChange={(v) => save({ overlayCorner: v })} />
             <NoticePreview settings={settings} />
             <Toggle label="Sonido al desbloquear un logro" checked={settings.overlaySound} onChange={(v) => save({ overlaySound: v })} />
+            <Toggle
+              label={t("Mostrar FPS en el panel")}
+              hint={t("FPS, 1 % bajo y tiempo de fotograma de juegos DirectX 9-12, sin tocar el juego. Windows exige permiso para leerlos.")}
+              checked={settings.overlayFps}
+              onChange={(v) => save({ overlayFps: v })}
+            />
+            {settings.overlayFps && (
+              <div className="flex flex-wrap items-center gap-3 px-3 pb-3 text-sm">
+                <span className="flex-1 text-muted">
+                  {t("Si el panel dice «Sin permiso», pulsa el botón, acepta el aviso de Windows y vuelve a iniciar sesión en Windows una vez.")}
+                </span>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    api.overlayFpsGrant().then(
+                      () => useApp.getState().toast("ok", t("Permiso concedido. Cierra la sesión de Windows y vuelve a entrar.")),
+                      (e) => useApp.getState().toast("error", errMsg(e)),
+                    )
+                  }
+                >
+                  {t("Dar permiso para medir FPS")}
+                </Button>
+              </div>
+            )}
             <Toggle
               label="Recordar el atajo al empezar a jugar"
               hint="Un aviso de unos segundos, como el de Steam."

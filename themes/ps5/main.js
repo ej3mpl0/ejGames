@@ -4,6 +4,7 @@
 
 import { h, img, initials, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
 import { repackUpdateNote } from "/_sdk/kit/updates.js";
+import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { createBackdrop, attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year } from "/_sdk/kit/format.js";
@@ -156,6 +157,7 @@ function renderHub(g) {
   const upd = repackUpdateNote(g);
   if (upd) $("#update-note").replaceChildren(upd);
   else $("#update-note").replaceChildren();
+  $("#hltb-note").replaceChildren(howLongNote(g));
   $("#fav").classList.toggle("on", g.favorite);
   $("#stats").replaceChildren(
     ...[

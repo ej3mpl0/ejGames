@@ -3,6 +3,7 @@
 
 import { h, img, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
 import { repackUpdateNote } from "/_sdk/kit/updates.js";
+import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { createBackdrop, attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
@@ -230,6 +231,7 @@ async function openHub(id) {
     h("div", { class: "hub-meta" }, [year(g.releaseDate), g.developer, ...(g.genres || []).slice(0, 3)].filter(Boolean).join("  •  ")),
     g.hidden ? hiddenNote(g) : null,
     repackUpdateNote(g),
+    howLongNote(g),
     h(
       "div",
       { class: "hub-actions", "data-focus-group": "actions" },

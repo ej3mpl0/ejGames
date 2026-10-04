@@ -1,6 +1,7 @@
 //! Metadatos: identificar el juego (Steam/IGDB/SteamGridDB), aplicar datos y arte,
 //! y descargar el arte principal. Todo en segundo plano vía la cola.
 
+pub mod hltb;
 pub mod igdb;
 pub mod queue;
 pub mod ratelimit;

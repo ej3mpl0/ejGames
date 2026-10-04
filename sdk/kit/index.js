@@ -16,3 +16,4 @@ export * from "./guides.js";
 export * from "./profile.js";
 export * from "./events.js";
 export * from "./updates.js";
+export * from "./hltb.js";

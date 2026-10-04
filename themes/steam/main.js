@@ -10,6 +10,7 @@ import { visible, sort, search, inCollection, canUninstall, SORTS } from "/_sdk/
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { repackUpdateNote } from "/_sdk/kit/updates.js";
+import { howLongNote } from "/_sdk/kit/hltb.js";
 import { downloadLabel, percent, speed } from "/_sdk/kit/store.js";
 import { createProfilePages, avatar as kitAvatar, levelBadge } from "/_sdk/kit/profile.js";
 import { createGuideView, starsText } from "/_sdk/kit/guides.js";
@@ -722,7 +723,7 @@ async function renderGame(id) {
   const right = h("div", { class: "g-right" }, achSlot, guideSlot);
   const body = h("div", { class: "game-body" }, left, right);
   const bg = h("div", { class: "game-bg", style: heroUrl ? { backgroundImage: `url("${g.media.heroThumb || heroUrl}")` } : {} });
-  main.replaceChildren(h("div", { class: "game" }, bg, hero, playbar, g.hidden ? hiddenNote(g) : null, repackUpdateNote(g), gnav, body));
+  main.replaceChildren(h("div", { class: "game" }, bg, hero, playbar, g.hidden ? hiddenNote(g) : null, repackUpdateNote(g), howLongNote(g), gnav, body));
   main.scrollTop = 0;
   focus.focus($("#play"), { instant: true, silent: true });
 

@@ -4,6 +4,7 @@ import type {
   AchList,
   ArtItem,
   BackupInfo,
+  Hltb,
   SavesInfo,
   SaveSnapshot,
   Bootstrap,
@@ -203,6 +204,7 @@ export const api = {
   diskSpace: (path: string) => invoke<{ freeBytes?: number | null }>("disk_space", { path }),
 
   overlayFpsGrant: () => invoke<void>("overlay_fps_grant"),
+  gameHltb: (id: number) => invoke<Hltb | null>("game_hltb", { id }),
   savesInfo: (id: number) => invoke<SavesInfo>("saves_info", { id }),
   savesBackup: (id: number) => invoke<SaveSnapshot | null>("saves_backup", { id }),
   savesRestore: (id: number, snapshot: number) => invoke<number>("saves_restore", { id, snapshot }),

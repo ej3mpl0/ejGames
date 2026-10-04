@@ -23,6 +23,8 @@ pub struct Settings {
     /// Discord Rich Presence («Jugando a…»). Además se puede quitar por perfil y
     /// por juego.
     pub discord_enabled: bool,
+    /// Consultar HowLongToBeat (cuánto dura) al abrir la ficha de un juego.
+    pub hltb_enabled: bool,
     /// Tamaño máximo de la caché de tráilers en MB.
     pub trailer_cache_mb: u64,
     /// Calidad máxima de tráiler (alto en píxeles).
@@ -140,6 +142,7 @@ impl Default for Settings {
             igdb_client_id: String::new(),
             igdb_client_secret: String::new(),
             discord_enabled: true,
+            hltb_enabled: true,
             trailer_cache_mb: 2048,
             trailer_max_height: 720,
             start_with_windows: false,

@@ -525,6 +525,8 @@ export interface Ejg {
     shortcut(id: number): Promise<string>;
     /** Lo añade a Steam como juego que no es de Steam (con Steam cerrado). */
     addToSteam(id: number): Promise<string>;
+    /** Cuánto dura según HowLongToBeat ({main, extra, complete} en horas), o null si no hay dato. */
+    hltb(id: number): Promise<{ id: number; name: string; main: number; extra: number; complete: number; url: string } | null>;
     /** Oculta el aviso de repack nuevo del juego (vuelve si sale otra versión). */
     dismissRepackUpdate(id: number): Promise<void>;
     /** Busca ya versiones nuevas de los repacks instalados; resuelve con cuántos juegos cambiaron. */

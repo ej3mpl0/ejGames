@@ -1589,3 +1589,22 @@ pub async fn saves_open(st: St<'_>, id: i64, path: String) -> CmdResult<()> {
 pub async fn overlay_fps_grant() -> CmdResult<()> {
     blocking(crate::overlay::fps::grant_access).await
 }
+
+/// Cuánto dura el juego según HowLongToBeat (de la caché o de la web).
+#[tauri::command]
+pub async fn game_hltb(st: St<'_>, id: i64) -> CmdResult<Option<crate::metadata::hltb::Hltb>> {
+    if !st.settings.get().hltb_enabled {
+        return Ok(None);
+    }
+    let g = st.db.with(|c| repo::get_game(c, id))?;
+    // «2020-09-17» o «17 Sep, 2020»: el primer año de cuatro cifras.
+    let year = g.release_date.as_deref().and_then(|d| {
+        let b = d.as_bytes();
+        (0..b.len().saturating_sub(3)).find_map(|i| {
+            let w = &d[i..i + 4];
+            (w.bytes().all(|c| c.is_ascii_digit()) && (w.starts_with("19") || w.starts_with("20"))).then(|| w.parse::<i64>().ok()).flatten()
+        })
+    });
+    // Sin conexión o si la web cambia: sin dato, no un error en la ficha.
+    Ok(crate::metadata::hltb::lookup(st.inner(), &g.title, year).await.unwrap_or(None))
+}

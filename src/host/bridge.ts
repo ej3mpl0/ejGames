@@ -93,6 +93,8 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
       const value = typeof params?.value === "boolean" ? params.value : !g?.favorite;
       return api.setFavorite(id, value);
     }
+    case "game.hltb":
+      return api.gameHltb(num(params?.id));
     case "saves.info":
       return api.savesInfo(num(params?.id));
     case "saves.backup":

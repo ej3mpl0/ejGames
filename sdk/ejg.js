@@ -381,6 +381,8 @@
       shortcut: function (id) { return call("game.shortcut", { id: id }); },
       /** Lo añade a Steam como juego que no es de Steam (con Steam cerrado). Resuelve con un mensaje. */
       addToSteam: function (id) { return call("game.addToSteam", { id: id }); },
+      /** Cuánto dura según HowLongToBeat: {main, extra, complete} en horas, o null. */
+      hltb: function (id) { return call("game.hltb", { id: id }); },
       /** Oculta el aviso de repack nuevo de un juego (vuelve si sale otra versión). */
       dismissRepackUpdate: function (id) { return call("game.repackDismiss", { id: id }); },
       /** Busca ya versiones nuevas de los repacks instalados; resuelve con cuántos juegos cambiaron. */

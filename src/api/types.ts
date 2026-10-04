@@ -414,6 +414,15 @@ export interface SavesInfo {
   known: boolean;
 }
 
+export interface Hltb {
+  id: number;
+  name: string;
+  main: number;
+  extra: number;
+  complete: number;
+  url: string;
+}
+
 export interface BackupInfo {
   app: string;
   version: string;
@@ -430,6 +439,7 @@ export interface Settings {
   /** "" (el de Windows) | "es" | "en". */
   uiLanguage: string;
   overlayFps: boolean;
+  hltbEnabled: boolean;
   savesAuto: boolean;
   savesKeep: number;
   gameModePower: boolean;

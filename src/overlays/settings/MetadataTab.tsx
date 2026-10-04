@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { DownloadCloud, RefreshCcw, Trash2 } from "lucide-react";
 import { api } from "../../api/tauri";
 import type { Settings } from "../../api/types";
-import { Button, Cycle, Field, Section, Slider, TextInput } from "../../components/ui";
+import { Button, Cycle, Field, Section, Slider, TextInput, Toggle } from "../../components/ui";
 import { useApp } from "../../store/app";
+import { t } from "../../lib/i18n";
 
 export function MetadataTab() {
   const settings = useApp((s) => s.settings)!;
@@ -55,6 +56,12 @@ export function MetadataTab() {
             { value: "brazilian", label: "Português (Brasil)" },
           ]}
           onChange={(v) => save({ language: v })}
+        />
+        <Toggle
+          label={t("Mostrar cuánto dura cada juego")}
+          hint={t("Consulta HowLongToBeat con el nombre del juego al abrir su ficha (historia, extras y completarlo).")}
+          checked={settings.hltbEnabled}
+          onChange={(v) => save({ hltbEnabled: v })}
         />
         {dirtyKeys && (
           <div className="flex justify-end p-2">

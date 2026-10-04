@@ -215,6 +215,7 @@ pub fn run() {
             commands::backup_dismiss,
             commands::repack_update_dismiss,
             commands::game_shortcut,
+            commands::game_hltb,
             commands::overlay_fps_grant,
             commands::saves_info,
             commands::saves_backup,

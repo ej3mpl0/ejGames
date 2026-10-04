@@ -383,9 +383,27 @@ export interface ThemeInfo {
   compatible: boolean;
 }
 
+export interface BackupInfo {
+  app: string;
+  version: string;
+  created: number;
+  pc: string;
+  games: number;
+  profiles: number;
+  withMedia: boolean;
+  path: string;
+  size: number;
+}
+
 export interface Settings {
   /** "" (el de Windows) | "es" | "en". */
   uiLanguage: string;
+  backupDir: string;
+  backupAuto: boolean;
+  backupMedia: boolean;
+  backupKeep: number;
+  backupLast: number;
+  backupSeen: number;
   language: string;
   country: string;
   sgdbKey: string;

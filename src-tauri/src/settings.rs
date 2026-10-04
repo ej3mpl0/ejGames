@@ -93,6 +93,19 @@ pub struct Settings {
     /// Proxy SOCKS5 para el torrent ("socks5://usuario:clave@host:puerto").
     pub torrent_proxy: String,
 
+    // ── Copias de seguridad ──
+    /// Carpeta de las copias automáticas ("" = sin copias automáticas).
+    pub backup_dir: String,
+    pub backup_auto: bool,
+    /// Incluir el arte descargado (más grande, pero no hay que volver a bajarlo).
+    pub backup_media: bool,
+    /// Copias automáticas de este PC que se guardan.
+    pub backup_keep: u32,
+    /// Última copia automática (segundos Unix).
+    pub backup_last: i64,
+    /// Copia más nueva ya vista (restaurada o descartada) de otro PC.
+    pub backup_seen: i64,
+
     // ── Actualizaciones ──
     /// Buscar una versión nueva al abrir.
     pub update_auto: bool,
@@ -150,6 +163,12 @@ impl Default for Settings {
             extra_trackers: true,
             peer_limit: 0,
             torrent_proxy: String::new(),
+            backup_dir: String::new(),
+            backup_auto: false,
+            backup_media: true,
+            backup_keep: 5,
+            backup_last: 0,
+            backup_seen: 0,
             update_auto: true,
             update_skipped: String::new(),
         }

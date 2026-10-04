@@ -1398,3 +1398,64 @@ pub async fn update_install(app: tauri::AppHandle, st: St<'_>, path: String) -> 
     });
     Ok(())
 }
+
+// ───────────────────────────── copias de seguridad ─────────────────────────────
+
+#[tauri::command]
+pub async fn backup_create(st: St<'_>, dest: String, with_media: bool) -> CmdResult<crate::backup::BackupInfo> {
+    let s = st.inner().clone();
+    blocking(move || crate::backup::create(&s.db, &s.paths, std::path::Path::new(&dest), with_media)).await
+}
+
+#[tauri::command]
+pub async fn backup_inspect(path: String) -> CmdResult<crate::backup::BackupInfo> {
+    blocking(move || crate::backup::inspect(std::path::Path::new(&path))).await
+}
+
+/// Prepara la restauración y reinicia ejGames para aplicarla.
+#[tauri::command]
+pub async fn backup_restore(app: tauri::AppHandle, st: St<'_>, path: String) -> CmdResult<()> {
+    if st.sessions.any() {
+        return Err(CmdError::Msg(crate::i18n::t("Cierra el juego antes de restaurar una copia").into()));
+    }
+    let s = st.inner().clone();
+    let info = blocking(move || crate::backup::stage_restore(&s.paths, std::path::Path::new(&path))).await?;
+    // La copia ya vista no se vuelve a ofrecer (va en los ajustes que se restauran).
+    let created = info.created;
+    let settings_path = st.paths.root.join(".restore").join("settings.json");
+    if let Ok(b) = std::fs::read(&settings_path) {
+        if let Ok(mut v) = serde_json::from_slice::<serde_json::Value>(&b) {
+            v["backupSeen"] = created.into();
+            // Las copias automáticas siguen en esta carpeta, no en la del otro PC.
+            let cur = st.settings.get();
+            v["backupDir"] = cur.backup_dir.clone().into();
+            v["backupAuto"] = cur.backup_auto.into();
+            let _ = std::fs::write(&settings_path, serde_json::to_vec_pretty(&v).unwrap_or_default());
+        }
+    }
+    crate::launcher::finish_all(st.inner());
+    crate::downloads::shutdown(st.inner());
+    app.restart();
+}
+
+#[tauri::command]
+pub async fn backup_list(st: St<'_>) -> CmdResult<Vec<crate::backup::BackupInfo>> {
+    let dir = st.settings.get().backup_dir;
+    if dir.trim().is_empty() {
+        return Ok(vec![]);
+    }
+    blocking(move || Ok(crate::backup::list(std::path::Path::new(&dir)))).await
+}
+
+/// Copia más nueva de otro PC aún sin ver (para ofrecer pasarla a este).
+#[tauri::command]
+pub async fn backup_newer(st: St<'_>) -> CmdResult<Option<crate::backup::BackupInfo>> {
+    let s = st.inner().clone();
+    blocking(move || Ok(crate::backup::newer_from_other_pc(&s))).await
+}
+
+#[tauri::command]
+pub async fn backup_dismiss(st: St<'_>, created: i64) -> CmdResult<()> {
+    st.settings.update(|x| x.backup_seen = x.backup_seen.max(created))?;
+    Ok(())
+}

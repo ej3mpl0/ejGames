@@ -3,6 +3,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
   AchList,
   ArtItem,
+  BackupInfo,
   Bootstrap,
   BrowseFilters,
   Candidate,
@@ -198,6 +199,13 @@ export const api = {
   downloadsFinishInstall: (id: number, dir: string) => invoke<void>("downloads_finish_install", { id, dir }),
   downloadsOpenFolder: (id: number) => invoke<void>("downloads_open_folder", { id }),
   diskSpace: (path: string) => invoke<{ freeBytes?: number | null }>("disk_space", { path }),
+
+  backupCreate: (dest: string, withMedia: boolean) => invoke<BackupInfo>("backup_create", { dest, withMedia }),
+  backupInspect: (path: string) => invoke<BackupInfo>("backup_inspect", { path }),
+  backupRestore: (path: string) => invoke<void>("backup_restore", { path }),
+  backupList: () => invoke<BackupInfo[]>("backup_list"),
+  backupNewer: () => invoke<BackupInfo | null>("backup_newer"),
+  backupDismiss: (created: number) => invoke<void>("backup_dismiss", { created }),
 
   updateCheck: (force: boolean) => invoke<UpdateCheck>("update_check", { force }),
   updateDownload: () => invoke<{ path: string; size: number }>("update_download"),

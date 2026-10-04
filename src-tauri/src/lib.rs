@@ -1,5 +1,6 @@
 mod achievements;
 mod activity;
+mod backup;
 mod commands;
 mod db;
 mod discord;
@@ -198,6 +199,12 @@ pub fn run() {
             commands::open_data_dir,
             commands::ui_language,
             commands::theme_strings,
+            commands::backup_create,
+            commands::backup_inspect,
+            commands::backup_restore,
+            commands::backup_list,
+            commands::backup_newer,
+            commands::backup_dismiss,
             commands::quit,
             commands::get_achievements,
             commands::overlay_ready,
@@ -264,6 +271,8 @@ pub fn run() {
         ])
         .setup(move |app| {
             let paths = paths::Paths::resolve(app.path().resource_dir().ok())?;
+            // Restauración pendiente (se aplica antes de abrir la base).
+            backup::apply_pending(&paths);
             let db = db::Db::open(&paths.db)?;
             let settings = settings::SettingsStore::load(paths.settings.clone());
             i18n::set(&settings.get().ui_language);
@@ -347,6 +356,15 @@ pub fn run() {
                     st_bg.meta.push_many(pending.into_iter().map(|g| g.id));
                 }
                 achievements::refresh_library(&st_bg).await;
+                // Copias automáticas: al arrancar si toca, y luego cada 6 h.
+                let st_b = st_bg.clone();
+                tauri::async_runtime::spawn(async move {
+                    loop {
+                        let s = st_b.clone();
+                        let _ = tauri::async_runtime::spawn_blocking(move || backup::auto_if_due(&s)).await;
+                        tokio::time::sleep(Duration::from_secs(6 * 3600)).await;
+                    }
+                });
                 let st3 = st_bg.clone();
                 let _ = tauri::async_runtime::spawn_blocking(move || {
                     media::trailers::prune(&st3.paths.trailers, st3.settings.get().trailer_cache_mb);

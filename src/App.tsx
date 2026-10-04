@@ -31,6 +31,8 @@ import { SettingsOverlay } from "./overlays/settings/Settings";
 import { StatsOverlay } from "./overlays/Stats";
 import { activeTheme, useApp } from "./store/app";
 import { useHostSeason } from "./host/season";
+import { restoreBackup } from "./overlays/settings/BackupSection";
+import { t } from "./lib/i18n";
 
 /** Aplica al host los colores del tema activo (theme.json → "host"). */
 function useHostStyle() {
@@ -52,6 +54,17 @@ function useHostStyle() {
     else root.removeProperty("--h-font");
     document.documentElement.dataset.hostLight = h.dark === false && !season ? "true" : "false";
   }, [theme, profile?.color, season]);
+}
+
+/** Hay una copia más nueva de otro PC en la carpeta de copias: ofrecer traerla. */
+async function offerNewerBackup() {
+  const b = await api.backupNewer().catch(() => null);
+  if (!b) return;
+  void api.backupDismiss(b.created);
+  useApp.getState().toast("info", t("Hay una copia más nueva de tu biblioteca en {pc}", { pc: b.pc }), {
+    label: t("Restaurar"),
+    run: () => void restoreBackup(b),
+  });
 }
 
 async function loadLibrary() {
@@ -76,6 +89,7 @@ export default function App() {
     useApp.getState().closeAll();
     setPhase("main");
     checkOnLaunch();
+    void offerNewerBackup();
   }
 
   // Arranque.

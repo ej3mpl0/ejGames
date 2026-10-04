@@ -11,6 +11,8 @@ import { useOverlayNav } from "../input/nav";
 import { PROFILE_COLORS, bytes } from "../lib/format";
 import { useApp } from "../store/app";
 import { Hints } from "../components/Hints";
+import { getLang, t } from "../lib/i18n";
+import { restoreBackup } from "./settings/BackupSection";
 
 export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) {
   const themes = useApp((s) => s.themes);
@@ -40,6 +42,22 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
   async function pickDownloads() {
     const path = await openDialog({ directory: true, multiple: false, title: "Carpeta de descargas", defaultPath: dlDir || undefined });
     if (typeof path === "string") setDlDir(path);
+  }
+
+  // «¿Vienes de otro PC?»: restaurar una copia de ejGames.
+  async function restoreFromFile() {
+    const file = await openDialog({ multiple: false, filters: [{ name: t("Copia de ejGames"), extensions: ["zip"] }] });
+    if (typeof file !== "string") return;
+    try {
+      await restoreBackup(await api.backupInspect(file));
+    } catch (e) {
+      toast("error", errMsg(e));
+    }
+  }
+
+  async function switchLanguage() {
+    await api.updateSettings({ uiLanguage: getLang() === "en" ? "es" : "en" });
+    location.reload();
   }
 
   async function addFolder() {
@@ -120,6 +138,14 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
                   onKeyDown={(e) => e.key === "Enter" && name.trim() && setStep(1)}
                   className="h-12 text-lg"
                 />
+              </div>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Button size="sm" variant="ghost" onClick={() => void restoreFromFile()}>
+                  {t("¿Vienes de otro PC? Restaurar una copia")}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => void switchLanguage()}>
+                  {getLang() === "en" ? "Español" : "English"}
+                </Button>
               </div>
               <div className="mt-5 flex flex-wrap gap-2.5">
                 {PROFILE_COLORS.map((c) => (

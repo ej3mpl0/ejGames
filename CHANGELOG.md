@@ -14,14 +14,14 @@ biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 - Cada sistema se juega con RetroArch (y un núcleo), con un emulador independiente (PCSX2, Dolphin, PPSSPP,
   DuckStation, Cemu o RPCS3) o con el programa que tú elijas y sus argumentos. «Buscar emuladores» los encuentra en
   los sitios habituales. Las horas, el overlay y Discord funcionan igual que con un juego de PC.
-- La portada y los datos salen de IGDB (con la clave de Ajustes → Información) y de SteamGridDB, buscando en el
+- La portada y los datos salen de IGDB (con la clave de Ajustes → Info y arte) y de SteamGridDB, buscando en el
   sistema correcto. Cada sistema tiene su colección inteligente, que los temas ya enseñan como filtro.
 - Una ROM no se desinstala: así nunca se borra la carpeta de ROMs.
 
 **Cuánto dura cada juego**
 - En la ficha de cada juego, las horas de historia, con extras y completista de
   [HowLongToBeat](https://howlongtobeat.com), con una barra de las que llevas. Se puede desactivar en
-  Ajustes → Información.
+  Ajustes → Info y arte.
 
 **Tu año en ejGames**
 - Estadísticas → «Tu año»: un repaso en tarjetas de tus horas, juegos, mes, hora y día favoritos, racha, partida más

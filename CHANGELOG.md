@@ -5,6 +5,27 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.0.0
+
+**ejGames en inglés (y en español)**
+- Toda la interfaz está en los dos idiomas: ventanas del host, overlay y avisos, los seis temas y los mensajes del núcleo
+  y de la bandeja. **Ajustes → Sistema → Idioma**: el de Windows (por defecto), español o English; también se cambia en el
+  primer paso del asistente. Fechas, números y horas siguen el idioma.
+- Los temas escritos en español se traducen con un diccionario (`<tema>/i18n/en.json`), sin tocar su código: ejGames
+  traduce solo los textos que pinta el tema y sus ajustes de `theme.json`. Ver [Idiomas](https://ej3mplo.mintlify.site/referencia/idiomas).
+
+**Volver a una versión anterior**
+- Ajustes → Sistema → «Volver a una versión anterior»: lista las versiones publicadas en GitHub y reinstala la que
+  elijas, con su huella comprobada. Antes guarda una copia de la biblioteca en `rollback`, en la carpeta de datos.
+
+**Más fiable**
+- `pnpm check` comprueba tipos, sintaxis de los temas y del SDK, los `theme.json` y que no falte ningún texto por traducir.
+  `pnpm i18n:check --wide` lista lo que falta.
+
+**Para temas**
+- `ejg.lang`, `ejg.locale`, `ejg.t()` y `ejg.tn()`; `ejg.translate(raíz)` y el atributo `data-t` para traducir a mano.
+- El módulo `/_sdk/kit/translate.js` (el mismo traductor que usa ejGames).
+
 ## 0.12.0
 
 **Juegos de consola**

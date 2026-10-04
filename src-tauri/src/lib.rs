@@ -205,6 +205,8 @@ pub fn run() {
             commands::backup_list,
             commands::backup_newer,
             commands::backup_dismiss,
+            commands::repack_update_dismiss,
+            commands::repack_update_check,
             commands::quit,
             commands::get_achievements,
             commands::overlay_ready,
@@ -356,6 +358,21 @@ pub fn run() {
                     st_bg.meta.push_many(pending.into_iter().map(|g| g.id));
                 }
                 achievements::refresh_library(&st_bg).await;
+                // Versiones nuevas de los repacks instalados: a los 2 min y cada 12 h.
+                let st_u = st_bg.clone();
+                tauri::async_runtime::spawn(async move {
+                    tokio::time::sleep(Duration::from_secs(120)).await;
+                    loop {
+                        if st_u.settings.get().explore_enabled {
+                            match explore::updates::check(&st_u, false).await {
+                                Ok(ids) if !ids.is_empty() => events::library_changed(&st_u, ids),
+                                Ok(_) => {}
+                                Err(e) => tracing::info!("versiones de repacks: {e:#}"),
+                            }
+                        }
+                        tokio::time::sleep(Duration::from_secs(12 * 3600)).await;
+                    }
+                });
                 // Copias automáticas: al arrancar si toca, y luego cada 6 h.
                 let st_b = st_bg.clone();
                 tauri::async_runtime::spawn(async move {

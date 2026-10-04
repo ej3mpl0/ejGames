@@ -2,6 +2,7 @@
 // Explorar y Mis descargas están en store.js.
 
 import { h, img, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
+import { repackUpdateNote } from "/_sdk/kit/updates.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
@@ -268,6 +269,7 @@ async function openModal(id) {
       "div",
       null,
       hiddenNote(g),
+      repackUpdateNote(g),
       sheetMeta(g),
       desc,
     ),

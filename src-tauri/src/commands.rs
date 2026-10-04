@@ -1459,3 +1459,24 @@ pub async fn backup_dismiss(st: St<'_>, created: i64) -> CmdResult<()> {
     st.settings.update(|x| x.backup_seen = x.backup_seen.max(created))?;
     Ok(())
 }
+
+// ───────────────────────────── repack con versión nueva ─────────────────────────────
+
+/// Oculta el aviso de la versión nueva de un repack (vuelve si sale otra).
+#[tauri::command]
+pub async fn repack_update_dismiss(st: St<'_>, game_id: i64) -> CmdResult<()> {
+    let s = st.inner().clone();
+    blocking(move || s.db.with(|c| repo::dismiss_repack_update(c, game_id))).await?;
+    crate::events::library_changed(st.inner(), vec![game_id]);
+    Ok(())
+}
+
+/// Busca ya si hay versiones nuevas de los repacks instalados.
+#[tauri::command]
+pub async fn repack_update_check(st: St<'_>) -> CmdResult<usize> {
+    let ids = crate::explore::updates::check(st.inner(), true).await?;
+    if !ids.is_empty() {
+        crate::events::library_changed(st.inner(), ids.clone());
+    }
+    Ok(ids.len())
+}

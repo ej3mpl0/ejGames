@@ -377,6 +377,10 @@
       rate: function (id, value) { return call("game.rate", { id: id, value: value }); },
       edit: function (id) { return call("ui.open", { name: "game", args: { id: id } }); },
       openFolder: function (id) { return call("game.folder", { id: id }); },
+      /** Oculta el aviso de repack nuevo de un juego (vuelve si sale otra versión). */
+      dismissRepackUpdate: function (id) { return call("game.repackDismiss", { id: id }); },
+      /** Busca ya versiones nuevas de los repacks instalados; resuelve con cuántos juegos cambiaron. */
+      checkRepackUpdates: function () { return call("game.repackCheck"); },
       /** Abre el diálogo «Desinstalar» del host (el usuario confirma). */
       uninstall: function (id) { return call("game.uninstall", { id: id }); },
       isRunning: function (id) { return state.running.some(function (r) { return r.gameId === id; }); },

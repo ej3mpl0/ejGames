@@ -2,6 +2,7 @@
 // La eShop y la gestión de descargas están en store.js.
 
 import { h, img, initials, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
+import { repackUpdateNote } from "/_sdk/kit/updates.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
@@ -150,6 +151,7 @@ async function openOptions(id) {
     h("div", { class: "sub" }, [g.developer, year(g.releaseDate)].filter(Boolean).join(" · ")),
     h("div", { class: "stats" }, ...optionStats(g)),
     g.hidden ? hiddenNotice(g) : null,
+    repackUpdateNote(g),
     h(
       "div",
       { class: "menu" },

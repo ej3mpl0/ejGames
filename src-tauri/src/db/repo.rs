@@ -619,6 +619,7 @@ pub fn library(c: &Connection, profile_id: i64) -> rusqlite::Result<Vec<LibGame>
     let mut media = selected_media(c, None)?;
     let mut cols = collections_by_game(c, profile_id)?;
     let mut ach = crate::achievements::summaries(c)?;
+    let mut upd = repack_updates(c)?;
     let mut st = c.prepare_cached(&format!("{LIB_SQL} ORDER BY g.sort_title"))?;
     let rows = st.query_map([profile_id], row_lib)?;
     let mut out = Vec::new();
@@ -627,6 +628,7 @@ pub fn library(c: &Connection, profile_id: i64) -> rusqlite::Result<Vec<LibGame>
         g.media = media.remove(&g.id).unwrap_or_default();
         g.collections = cols.remove(&g.id).unwrap_or_default();
         g.achievements = ach.remove(&g.id);
+        g.repack_update = upd.remove(&g.id);
         out.push(g);
     }
     Ok(out)
@@ -637,7 +639,78 @@ pub fn lib_game(c: &Connection, profile_id: i64, id: i64) -> rusqlite::Result<Li
     g.media = selected_media(c, Some(id))?.remove(&id).unwrap_or_default();
     g.collections = collections_by_game(c, profile_id)?.remove(&id).unwrap_or_default();
     g.achievements = crate::achievements::summary(c, id)?;
+    g.repack_update = repack_updates(c)?.remove(&id);
     Ok(g)
+}
+
+// ───────────────────────── repacks con versión nueva ─────────────────────────
+
+/// Avisos vigentes (sin los que el usuario ocultó), por juego.
+pub fn repack_updates(c: &Connection) -> rusqlite::Result<HashMap<i64, RepackUpdate>> {
+    let mut st = c.prepare_cached(
+        "SELECT game_id, slug, installed_version, latest_version FROM repack_updates
+         WHERE dismissed_version IS NULL OR dismissed_version <> latest_version",
+    )?;
+    let rows = st.query_map([], |r| {
+        Ok((r.get::<_, i64>(0)?, RepackUpdate { slug: r.get(1)?, installed: r.get(2)?, latest: r.get(3)? }))
+    })?;
+    rows.collect()
+}
+
+/// (juego, slug, versión bajada) de cada repack instalado; el último por juego.
+pub fn installed_repacks(c: &Connection) -> rusqlite::Result<Vec<(i64, String, String)>> {
+    let mut st = c.prepare_cached(
+        "SELECT game_id, slug, version FROM downloads
+         WHERE state = 'installed' AND game_id IS NOT NULL AND slug IS NOT NULL AND version IS NOT NULL
+           AND game_id IN (SELECT id FROM games) ORDER BY id",
+    )?;
+    let rows = st.query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?)))?;
+    let mut by_game: HashMap<i64, (String, String)> = HashMap::new();
+    for r in rows {
+        let (g, s, v) = r?;
+        by_game.insert(g, (s, v));
+    }
+    Ok(by_game.into_iter().map(|(g, (s, v))| (g, s, v)).collect())
+}
+
+/// Anota (o actualiza) el aviso; true si es nuevo o cambió la versión.
+pub fn set_repack_update(c: &Connection, game_id: i64, slug: &str, installed: &str, latest: &str, now: i64) -> rusqlite::Result<bool> {
+    let prev: Option<String> = c
+        .query_row("SELECT latest_version FROM repack_updates WHERE game_id = ?1", [game_id], |r| r.get(0))
+        .ok();
+    c.execute(
+        "INSERT INTO repack_updates (game_id, slug, installed_version, latest_version, checked_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)
+         ON CONFLICT(game_id) DO UPDATE SET slug = ?2, installed_version = ?3, latest_version = ?4, checked_at = ?5",
+        params![game_id, slug, installed, latest, now],
+    )?;
+    Ok(prev.as_deref() != Some(latest))
+}
+
+/// Quita el aviso (ya está al día); true si había uno.
+pub fn clear_repack_update(c: &Connection, game_id: i64) -> rusqlite::Result<bool> {
+    Ok(c.execute("DELETE FROM repack_updates WHERE game_id = ?1", [game_id])? > 0)
+}
+
+pub fn dismiss_repack_update(c: &Connection, game_id: i64) -> rusqlite::Result<()> {
+    c.execute("UPDATE repack_updates SET dismissed_version = latest_version WHERE game_id = ?1", [game_id])?;
+    Ok(())
+}
+
+/// Última revisión (guardada en `metadata_cache`, sin tabla aparte).
+pub fn repack_updates_checked(c: &Connection) -> rusqlite::Result<i64> {
+    Ok(c
+        .query_row("SELECT fetched_at FROM metadata_cache WHERE provider = 'explore' AND key = 'updates:checked'", [], |r| r.get(0))
+        .unwrap_or(0))
+}
+
+pub fn repack_updates_touch(c: &Connection, now: i64) -> rusqlite::Result<()> {
+    c.execute(
+        "INSERT INTO metadata_cache (provider, key, json, fetched_at) VALUES ('explore', 'updates:checked', '{}', ?1)
+         ON CONFLICT(provider, key) DO UPDATE SET fetched_at = ?1",
+        [now],
+    )?;
+    Ok(())
 }
 
 pub fn list_media(c: &Connection, game_id: i64, kind: Option<&str>) -> rusqlite::Result<Vec<MediaItem>> {

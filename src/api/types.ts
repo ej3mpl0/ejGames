@@ -11,8 +11,16 @@ export interface MediaUrls {
   microtrailer?: string;
 }
 
+export interface RepackUpdate {
+  slug: string;
+  installed: string;
+  latest: string;
+}
+
 export interface LibGame {
   id: number;
+  /** El repack instalado tiene una versión más nueva en la tienda. */
+  repackUpdate?: RepackUpdate;
   title: string;
   sortTitle: string;
   source: string;

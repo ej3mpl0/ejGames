@@ -3,6 +3,7 @@
 // están en store.js.
 
 import { h, debounce } from "/_sdk/kit/dom.js";
+import { repackUpdateNote } from "/_sdk/kit/updates.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
 import { visible, sort } from "/_sdk/kit/library.js";
@@ -213,7 +214,7 @@ async function openDetail(id) {
     h("button", { "data-focus": "", onclick: () => (closeDetail(), ejg.game.edit(g.id)) }, "EDIT"),
     h("button", { "data-focus": "", onclick: closeDetail }, "BACK"),
   );
-  detail.replaceChildren(...[h("h2", null, g.title.toUpperCase()), notice, desc, shots, actions].filter(Boolean));
+  detail.replaceChildren(...[h("h2", null, g.title.toUpperCase()), notice, repackUpdateNote(g), desc, shots, actions].filter(Boolean));
   detail.hidden = false;
   if (unhide) focus.focus(unhide, { instant: true });
   else focus.first(actions);

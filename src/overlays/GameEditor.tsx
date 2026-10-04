@@ -7,6 +7,8 @@ import { Button, Field, Modal, Section, Spinner, Tabs, TextInput, Toggle, cx } f
 import { useOverlayNav } from "../input/nav";
 import { playtime, SOURCE_LABEL } from "../lib/format";
 import { useApp } from "../store/app";
+import { t } from "../lib/i18n";
+import { openExplore } from "../host/downloads";
 
 /** Juegos que ejGames sabe desinstalar (todos los que siguen en su sitio). */
 const canUninstall = (g: { missing?: boolean }) => !g.missing;
@@ -130,6 +132,21 @@ function GeneralTab({ data, reload, onClose }: { data: GameFull; reload: () => v
 
   return (
     <div>
+      {lib.repackUpdate && (
+        <Section title={t("Versión nueva del repack")}>
+          <div className="flex flex-wrap items-center gap-3 px-3 py-2 text-sm">
+            <span className="flex-1">
+              {lib.repackUpdate.installed} → <b>{lib.repackUpdate.latest}</b>
+            </span>
+            <Button size="sm" variant="primary" onClick={() => (onClose(), openExplore("repack", { slug: lib.repackUpdate!.slug }))}>
+              {t("Ver en la tienda")}
+            </Button>
+            <Button size="sm" onClick={() => void api.repackUpdateDismiss(g.id)}>
+              {t("Ocultar")}
+            </Button>
+          </div>
+        </Section>
+      )}
       <Section title="Juego">
         <Field label="Nombre">
           <TextInput value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => title.trim() && title !== g.title && save({ title: title.trim() })} />

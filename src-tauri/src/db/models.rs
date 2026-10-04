@@ -128,6 +128,17 @@ pub struct LibGame {
     /// Logros desbloqueados / totales (si el juego tiene).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub achievements: Option<crate::achievements::AchSummary>,
+    /// El repack instalado tiene una versión más nueva en la tienda.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub repack_update: Option<RepackUpdate>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct RepackUpdate {
+    pub slug: String,
+    pub installed: String,
+    pub latest: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

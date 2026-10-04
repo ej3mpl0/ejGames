@@ -200,6 +200,8 @@ export const api = {
   downloadsOpenFolder: (id: number) => invoke<void>("downloads_open_folder", { id }),
   diskSpace: (path: string) => invoke<{ freeBytes?: number | null }>("disk_space", { path }),
 
+  repackUpdateDismiss: (gameId: number) => invoke<void>("repack_update_dismiss", { gameId }),
+  repackUpdateCheck: () => invoke<number>("repack_update_check"),
   backupCreate: (dest: string, withMedia: boolean) => invoke<BackupInfo>("backup_create", { dest, withMedia }),
   backupInspect: (path: string) => invoke<BackupInfo>("backup_inspect", { path }),
   backupRestore: (path: string) => invoke<void>("backup_restore", { path }),

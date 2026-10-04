@@ -3,6 +3,7 @@
 // y Descargas están en store.js.
 
 import { h, img, initials, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
+import { repackUpdateNote } from "/_sdk/kit/updates.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { createBackdrop, attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year } from "/_sdk/kit/format.js";
@@ -152,6 +153,9 @@ function renderHub(g) {
   $("#meta").textContent = [year(g.releaseDate), g.developer, ...(g.genres || []).slice(0, 2)].filter(Boolean).join("  ·  ");
   updatePlay(g);
   $("#hidden-note").hidden = !g.hidden;
+  const upd = repackUpdateNote(g);
+  if (upd) $("#update-note").replaceChildren(upd);
+  else $("#update-note").replaceChildren();
   $("#fav").classList.toggle("on", g.favorite);
   $("#stats").replaceChildren(
     ...[

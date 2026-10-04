@@ -15,6 +15,8 @@ export interface MediaUrls {
 export interface Game {
   id: number;
   title: string;
+  /** Hay un repack con versión más nueva que el instalado (si no lo ocultaste). */
+  repackUpdate?: { slug: string; installed: string; latest: string };
   sortTitle: string;
   /** folder: carpeta de la biblioteca · manual: .exe añadido a mano · repack: instalado desde Descargas. */
   source: "folder" | "manual" | "repack";

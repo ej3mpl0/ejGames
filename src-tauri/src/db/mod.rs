@@ -32,6 +32,8 @@ const MIGRATIONS: &[Migration] = &[
     Migration::Sql(include_str!("../../migrations/013_local_profile.sql")),
     // 0.8.1: la caché de la tienda no sabía de los cracks de hipervisor.
     Migration::Sql(include_str!("../../migrations/014_store_cache.sql")),
+    // 0.10.0: aviso de repack con versión nueva.
+    Migration::Sql(include_str!("../../migrations/015_repack_updates.sql")),
 ];
 
 pub struct Db {

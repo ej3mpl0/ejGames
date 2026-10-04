@@ -93,6 +93,10 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
       const value = typeof params?.value === "boolean" ? params.value : !g?.favorite;
       return api.setFavorite(id, value);
     }
+    case "game.repackDismiss":
+      return api.repackUpdateDismiss(num(params?.id));
+    case "game.repackCheck":
+      return api.repackUpdateCheck();
     case "game.hide":
       return api.setHidden(num(params?.id), !!params?.value);
     case "game.rate":

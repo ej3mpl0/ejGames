@@ -473,7 +473,6 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
         ),
       ),
       h("span", { class: "s-arrow" }, "▶"),
-      h("button", { class: "s-sec", "data-focus": "", onclick: () => ejg.ui.open("homebrew") }, "HOMEBREW"),
       h("button", { class: "s-sec", "data-focus": "", onclick: () => ejg.ui.open("software") }, "SOFTWARE"),
     );
     const input = h("input", {

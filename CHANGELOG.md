@@ -5,6 +5,10 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.3.1
+
+- **Homebrew** sale de Explorar y de la tienda de los seis temas: se abre desde **Tienda → Software**.
+
 ## 1.3.0
 
 **ROMs propias**

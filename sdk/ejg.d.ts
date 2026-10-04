@@ -508,6 +508,14 @@ export interface Ejg {
     rate(id: number, value: number | null): Promise<void>;
     edit(id: number): Promise<void>;
     openFolder(id: number): Promise<void>;
+    /** Acceso directo del juego en el escritorio (abre ejGames con --play). Resuelve con la ruta del .lnk. */
+    shortcut(id: number): Promise<string>;
+    /** Lo añade a Steam como juego que no es de Steam (con Steam cerrado). */
+    addToSteam(id: number): Promise<string>;
+    /** Oculta el aviso de repack nuevo del juego (vuelve si sale otra versión). */
+    dismissRepackUpdate(id: number): Promise<void>;
+    /** Busca ya versiones nuevas de los repacks instalados; resuelve con cuántos juegos cambiaron. */
+    checkRepackUpdates(): Promise<number>;
     /**
      * Abre el diálogo «Desinstalar» del host, que enseña qué pasará (desinstalador
      * del juego o carpeta a la papelera) y pide confirmación.

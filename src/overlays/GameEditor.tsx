@@ -124,6 +124,7 @@ function GeneralTab({ data, reload, onClose }: { data: GameFull; reload: () => v
   const [hints, setHints] = useState(g.processHints.join(", "));
   const [confirm, setConfirm] = useState(false);
   const [newCol, setNewCol] = useState("");
+  const toast = useApp((s) => s.toast);
 
   async function toggleCol(cid: number, member: boolean) {
     await api.setInCollection(cid, g.id, member);
@@ -154,6 +155,28 @@ function GeneralTab({ data, reload, onClose }: { data: GameFull; reload: () => v
         <Toggle label="Favorito" checked={lib.favorite} onChange={(v) => api.setFavorite(g.id, v)} />
         <Toggle label="Ocultar de la biblioteca" checked={lib.hidden} onChange={(v) => api.setHidden(g.id, v)} />
         <Toggle label="Mostrar en Discord" checked={g.discordEnabled} onChange={(v) => save({ discordEnabled: v }).then(reload)} />
+      </Section>
+
+      <Section title={t("Lanzar desde fuera de ejGames")}>
+        <p className="px-3 pb-2 text-xs text-muted">
+          {t("Un acceso directo o una entrada de Steam abren este juego a través de ejGames: se cuentan las horas y salen el overlay y Discord.")}
+        </p>
+        <div className="flex flex-wrap gap-2 px-3 pb-3">
+          <Button
+            size="sm"
+            onClick={() =>
+              api.gameShortcut(g.id).then(
+                () => toast("ok", t("Acceso directo creado en el escritorio")),
+                (e) => toast("error", errMsg(e)),
+              )
+            }
+          >
+            {t("Acceso directo en el escritorio")}
+          </Button>
+          <Button size="sm" onClick={() => api.gameAddToSteam(g.id).then((m) => toast("ok", m), (e) => toast("error", errMsg(e)))}>
+            {t("Añadir a Steam")}
+          </Button>
+        </div>
       </Section>
 
       <Section title="Cómo se lanza">

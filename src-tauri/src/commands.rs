@@ -1480,3 +1480,39 @@ pub async fn repack_update_check(st: St<'_>) -> CmdResult<usize> {
     }
     Ok(ids.len())
 }
+
+// ───────────────────────────── lanzar desde fuera ─────────────────────────────
+
+/// Acceso directo del juego en el escritorio (abre ejGames con `--play`).
+#[tauri::command]
+pub async fn game_shortcut(st: St<'_>, id: i64) -> CmdResult<String> {
+    let s = st.inner().clone();
+    blocking(move || {
+        let game = s.db.with(|c| repo::get_game(c, id))?;
+        let dir = dirs::desktop_dir().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No se encontró el escritorio")))?;
+        let exe = std::env::current_exe()?;
+        let lnk = crate::launcher::shortcuts::create_shortcut(&game, &exe, &dir)?;
+        Ok(lnk.to_string_lossy().into_owned())
+    })
+    .await
+}
+
+/// Añade el juego a Steam como «juego que no es de Steam» (con Steam cerrado).
+#[tauri::command]
+pub async fn game_add_to_steam(st: St<'_>, id: i64) -> CmdResult<String> {
+    let s = st.inner().clone();
+    blocking(move || {
+        let game = s.db.with(|c| repo::get_game(c, id))?;
+        let root = crate::achievements::steam_local::steam_root().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No se encontró Steam en este PC")))?;
+        let (_, user) = crate::achievements::steam_local::active_user(&root).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Steam todavía no tiene ninguna cuenta en este PC")))?;
+        // Con Steam abierto, al cerrarse sobrescribiría el archivo y se perdería la entrada.
+        let steam = crate::launcher::tracker::Target { install_dir: None, exe_names: vec!["steam.exe".into()], launched_pid: None };
+        if !crate::launcher::tracker::find_pids(&steam, &mut Default::default()).is_empty() {
+            anyhow::bail!("{}", crate::i18n::t("Cierra Steam del todo y vuelve a intentarlo: si está abierto, borra la entrada al salir"));
+        }
+        let exe = std::env::current_exe()?;
+        crate::launcher::shortcuts::add_to_shortcuts(&user.join("config"), &game, &exe)?;
+        Ok(crate::i18n::t("Añadido. Abre Steam: lo encontrarás en tu biblioteca.").into_owned())
+    })
+    .await
+}

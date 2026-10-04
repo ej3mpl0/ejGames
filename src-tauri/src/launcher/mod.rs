@@ -4,6 +4,7 @@ pub mod admin;
 pub mod gamemode;
 pub mod gamepad_home;
 pub mod launch;
+pub mod shortcuts;
 pub mod tracker;
 
 use crate::db::models::Game;
@@ -110,6 +111,36 @@ pub fn finish_all(st: &AppState) {
     }
     st.discord.clear();
     gamemode::exit(st, true);
+}
+
+/// Perfil con el que lanzar desde fuera (acceso directo, Steam): el activo o el
+/// último, si no tiene PIN.
+fn cli_profile(st: &Arc<AppState>) -> Option<i64> {
+    if let Some(p) = *st.profile.read() {
+        return Some(p);
+    }
+    let pid = st.settings.get().last_profile?;
+    let p = st.db.with(|c| repo::get_profile(c, pid)).ok()?;
+    if p.has_pin {
+        return None;
+    }
+    *st.profile.write() = Some(pid);
+    crate::commands::watch_active_theme(st);
+    Some(pid)
+}
+
+/// `ejgames.exe --play <id>`: lanza el juego sin abrir la ventana. Si no se puede
+/// (perfil con PIN, juego que ya no existe…), abre ejGames y lo cuenta.
+pub async fn play_cli(st: &Arc<AppState>, game_id: i64) {
+    let Some(pid) = cli_profile(st) else {
+        crate::lifecycle::show_main(st);
+        crate::events::toast(st, "info", crate::i18n::t("Elige tu perfil para lanzar el juego"));
+        return;
+    };
+    if let Err(e) = play(st, game_id, pid).await {
+        crate::lifecycle::show_main(st);
+        crate::events::toast(st, "error", format!("{e:#}"));
+    }
 }
 
 pub async fn play(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow::Result<()> {

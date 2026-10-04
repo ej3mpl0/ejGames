@@ -68,14 +68,21 @@ pub fn run() {
     tracing::info!("ejGames {} arrancando", env!("CARGO_PKG_VERSION"));
 
     let safe_mode = shift_held();
-    let started_hidden = std::env::args().any(|a| a == "--minimized");
+    let play_id = launcher::shortcuts::play_arg(std::env::args());
+    let started_hidden = play_id.is_some() || std::env::args().any(|a| a == "--minimized");
 
     let mut builder = tauri::Builder::default();
     // Primero: una segunda instancia solo enfoca la existente. Las instancias
     // aisladas (EJGAMES_DATA_DIR, pruebas) conviven con la instalada.
     if !paths::isolated() {
-        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             if let Some(st) = app.try_state::<Arc<AppState>>() {
+                // Acceso directo o Steam: `ejgames.exe --play <id>` lanza sin abrir la ventana.
+                if let Some(id) = launcher::shortcuts::play_arg(argv) {
+                    let st = st.inner().clone();
+                    tauri::async_runtime::spawn(async move { launcher::play_cli(&st, id).await });
+                    return;
+                }
                 lifecycle::show_main(st.inner());
             }
         }));
@@ -206,6 +213,8 @@ pub fn run() {
             commands::backup_newer,
             commands::backup_dismiss,
             commands::repack_update_dismiss,
+            commands::game_shortcut,
+            commands::game_add_to_steam,
             commands::repack_update_check,
             commands::quit,
             commands::get_achievements,
@@ -343,6 +352,10 @@ pub fn run() {
 
             if !(started_hidden || s.start_minimized) {
                 lifecycle::create_main(app.handle())?;
+            }
+            if let Some(id) = play_id {
+                let st = st.clone();
+                tauri::async_runtime::spawn(async move { launcher::play_cli(&st, id).await });
             }
 
             // Mantenimiento en segundo plano, sin estorbar al arranque.

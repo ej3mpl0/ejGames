@@ -377,6 +377,10 @@
       rate: function (id, value) { return call("game.rate", { id: id, value: value }); },
       edit: function (id) { return call("ui.open", { name: "game", args: { id: id } }); },
       openFolder: function (id) { return call("game.folder", { id: id }); },
+      /** Crea el acceso directo del juego en el escritorio (abre ejGames con --play). Resuelve con la ruta del .lnk. */
+      shortcut: function (id) { return call("game.shortcut", { id: id }); },
+      /** Lo añade a Steam como juego que no es de Steam (con Steam cerrado). Resuelve con un mensaje. */
+      addToSteam: function (id) { return call("game.addToSteam", { id: id }); },
       /** Oculta el aviso de repack nuevo de un juego (vuelve si sale otra versión). */
       dismissRepackUpdate: function (id) { return call("game.repackDismiss", { id: id }); },
       /** Busca ya versiones nuevas de los repacks instalados; resuelve con cuántos juegos cambiaron. */

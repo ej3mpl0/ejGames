@@ -309,6 +309,7 @@ pub fn run() {
                 trainers: Default::default(),
             });
             app.manage(st.clone());
+            launcher::gamemode::recover(&st);
             {
                 let st = st.clone();
                 std::thread::spawn(move || trainers::prune(&st));

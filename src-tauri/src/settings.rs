@@ -93,6 +93,15 @@ pub struct Settings {
     /// Proxy SOCKS5 para el torrent ("socks5://usuario:clave@host:puerto").
     pub torrent_proxy: String,
 
+    // ── Modo juego ──
+    /// Plan de energía de alto rendimiento mientras se juega.
+    pub game_mode_power: bool,
+    /// Notificaciones de Windows en silencio mientras se juega.
+    pub game_mode_dnd: bool,
+    /// Lo que había antes de entrar (para deshacerlo si ejGames se cae).
+    pub game_mode_saved_scheme: String,
+    pub game_mode_saved_toasts: i64,
+
     // ── Copias de seguridad ──
     /// Carpeta de las copias automáticas ("" = sin copias automáticas).
     pub backup_dir: String,
@@ -163,6 +172,10 @@ impl Default for Settings {
             extra_trackers: true,
             peer_limit: 0,
             torrent_proxy: String::new(),
+            game_mode_power: false,
+            game_mode_dnd: false,
+            game_mode_saved_scheme: String::new(),
+            game_mode_saved_toasts: -1,
             backup_dir: String::new(),
             backup_auto: false,
             backup_media: true,

@@ -406,6 +406,8 @@ export interface BackupInfo {
 export interface Settings {
   /** "" (el de Windows) | "es" | "en". */
   uiLanguage: string;
+  gameModePower: boolean;
+  gameModeDnd: boolean;
   backupDir: string;
   backupAuto: boolean;
   backupMedia: boolean;

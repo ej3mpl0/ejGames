@@ -1,6 +1,7 @@
 //! Partidas: lanzar, seguir procesos, registrar sesiones, Discord y modo ahorro.
 
 pub mod admin;
+pub mod gamemode;
 pub mod gamepad_home;
 pub mod launch;
 pub mod tracker;
@@ -108,6 +109,7 @@ pub fn finish_all(st: &AppState) {
         }
     }
     st.discord.clear();
+    gamemode::exit(st, true);
 }
 
 pub async fn play(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow::Result<()> {
@@ -252,6 +254,7 @@ impl Track {
                     },
                 );
             }
+            gamemode::enter(st);
             crate::overlay::session_started(st, &self.game, profile_id, started, target.clone());
             crate::trainers::run::session_started(st, &self.game, target.clone());
             crate::achievements::watch(st.clone(), game_id, profile_id, pad_stop.clone());
@@ -278,6 +281,7 @@ impl Track {
             }
         }
         st.sessions.running.lock().remove(&game_id);
+        gamemode::exit(st, false);
         crate::events::game_state(st, game_id, "stopped", played.map(|p| p.1 - p.0));
         crate::events::library_changed(st, vec![game_id]);
         outcome

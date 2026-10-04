@@ -5,6 +5,38 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.10.0
+
+**Copias de seguridad y llevarte la biblioteca a otro PC**
+- Ajustes → Sistema → Copias de seguridad: guarda en un .zip tu biblioteca, horas, logros, perfiles, notas,
+  colecciones, ajustes y temas propios (y, si quieres, el arte descargado). Restaurarla reinicia ejGames; lo que había
+  se guarda en la carpeta de datos, en `.before-restore`.
+- Copias automáticas en la carpeta que elijas, como mucho una al día, guardando las últimas 3, 5, 10 o 20.
+- Si esa carpeta está en OneDrive o Google Drive, tu biblioteca te sigue: en el otro PC, ejGames avisa de que hay una
+  copia más nueva y la restauras con un clic. También se puede restaurar desde el asistente de bienvenida.
+
+**Aviso de repack nuevo**
+- Cuando la tienda tiene una versión más nueva de un juego que instalaste desde Descargas, su ficha lo dice (v1.03 →
+  v1.04) con «Ver en la tienda» y «Ocultar». Se comprueba al abrir ejGames, como mucho cada 12 horas.
+
+**Modo juego** (Ajustes → Sistema, desactivado de serie)
+- Mientras juegas: plan de energía de alto rendimiento y notificaciones de Windows en silencio. Al cerrar el juego
+  vuelve todo como estaba, y si ejGames se cae con el modo puesto, lo deshace al abrirse.
+
+**Lanzar desde fuera de ejGames**
+- En Editar juego: acceso directo en el escritorio y «Añadir a Steam». Los dos abren `ejgames.exe --play <id>`, así
+  que se cuentan las horas y salen el overlay y Discord. Con Steam cerrado; Steam dará el juego por cerrado enseguida
+  (las horas se cuentan en ejGames).
+
+**Idioma**
+- Ajustes → Sistema → Idioma (el de Windows, español o English). Es la base: los textos en inglés llegan con la 1.0.
+
+**Para temas**
+- `ejg.t()`, `ejg.tn()`, `ejg.lang`, `ejg.locale` y el atributo `data-t` para traducir; las traducciones van en
+  `<tema>/i18n/en.json`.
+- Los juegos traen `repackUpdate`; `repackUpdateNote(g)` en `/_sdk/kit/updates.js` pinta el aviso.
+- `ejg.game.shortcut(id)`, `ejg.game.addToSteam(id)`, `ejg.game.dismissRepackUpdate(id)`.
+
 ## 0.9.4
 
 **Discord: el icono del juego en el canal de voz**

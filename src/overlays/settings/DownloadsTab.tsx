@@ -1,6 +1,7 @@
 // Ajustes → Descargas: carpetas, velocidad, al jugar, al terminar, red y Explorar.
 
 import { useEffect, useState } from "react";
+import { locale } from "../../lib/i18n";
 import { FolderOpen, HardDrive, Shuffle } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
 import type { DownloadDefaults, SeedPolicy, Settings } from "../../api/types";
@@ -174,7 +175,7 @@ export function DownloadsTab() {
             max={5}
             step={0.5}
             value={s.seedRatio}
-            format={(v) => `subir ${v.toLocaleString("es")} × lo descargado`}
+            format={(v) => `subir ${v.toLocaleString(locale())} × lo descargado`}
             onChange={(v) => save({ seedRatio: v })}
           />
         )}

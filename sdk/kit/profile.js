@@ -10,6 +10,7 @@
 
 import { h } from "./dom.js";
 import { playtime, relative } from "./format.js";
+const loc = () => (globalThis.ejg && globalThis.ejg.locale) || "es-ES";
 
 // ───────────────────────────── nivel e insignias ─────────────────────────────
 
@@ -173,7 +174,7 @@ const key = (el, k) => (el.dataset.key = k, el);
 function hours(minutes = 0) {
   const h = minutes / 60;
   const n = h >= 100 ? Math.round(h) : Math.round(h * 10) / 10;
-  return `${n.toLocaleString("es", { useGrouping: "always" })} h`;
+  return `${n.toLocaleString(loc(), { useGrouping: "always" })} h`;
 }
 
 const MONTHS = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
@@ -221,7 +222,7 @@ function achIcons(p, g, c, max = 5) {
 
 /** Una fila de estadísticas de vitrina (valor grande y etiqueta gris). */
 const statsRowBase = (c, ...cells) =>
-  h("div", { class: `${c}statrow` }, ...cells.filter(Boolean).map(([v, l]) => h("div", { class: `${c}stat` }, h("div", { class: `${c}stat-v` }, typeof v === "number" ? v.toLocaleString("es", { useGrouping: "always" }) : v), h("div", { class: `${c}stat-l` }, l))));
+  h("div", { class: `${c}statrow` }, ...cells.filter(Boolean).map(([v, l]) => h("div", { class: `${c}stat` }, h("div", { class: `${c}stat-v` }, typeof v === "number" ? v.toLocaleString(loc(), { useGrouping: "always" }) : v), h("div", { class: `${c}stat-l` }, l))));
 
 /** Caja de vitrina de Steam: barra con degradado y el contenido debajo. */
 const custom = (c, title, extra, ...kids) =>
@@ -341,7 +342,7 @@ let regions;
 const country = (cc) => {
   if (!cc || !/^[A-Z]{2}$/.test(cc)) return "";
   try {
-    regions ??= new Intl.DisplayNames(["es"], { type: "region" });
+    regions ??= new Intl.DisplayNames([loc()], { type: "region" });
     return regions.of(cc) || cc;
   } catch {
     return cc;
@@ -491,7 +492,7 @@ export function createProfileView({
     const playing = p.presence?.game;
     const badges = [...(p.badges || [])].sort((a, b) => (b.tier || 0) - (a.tier || 0));
     const st = p.summary?.stats || {};
-    const count = (label, n, ...preview) => h("div", { class: `${c}count` }, h("div", { class: `${c}count-link` }, h("span", null, label), "  ", h("span", { class: `${c}count-total` }, n == null ? " " : n.toLocaleString("es", { useGrouping: "always" }))), preview.length ? h("div", { class: `${c}count-preview` }, ...preview) : null);
+    const count = (label, n, ...preview) => h("div", { class: `${c}count` }, h("div", { class: `${c}count-link` }, h("span", null, label), "  ", h("span", { class: `${c}count-total` }, n == null ? " " : n.toLocaleString(loc(), { useGrouping: "always" }))), preview.length ? h("div", { class: `${c}count-preview` }, ...preview) : null);
     return h(
       "div",
       { class: `${c}rc` },
@@ -562,7 +563,7 @@ export function createProfileView({
                   "div",
                   { class: `${c}favbadge` },
                   h("span", { class: `${c}favbadge-ico` }, badgeEl(featured, c)),
-                  h("span", { class: `${c}favbadge-desc` }, h("span", { class: `${c}favbadge-name` }, `${fav.name} - ${fav.tierName}`), h("span", { class: `${c}favbadge-xp` }, `${(fav.tier * 50).toLocaleString("es")} EXP`)),
+                  h("span", { class: `${c}favbadge-desc` }, h("span", { class: `${c}favbadge-name` }, `${fav.name} - ${fav.tierName}`), h("span", { class: `${c}favbadge-xp` }, `${(fav.tier * 50).toLocaleString(loc())} EXP`)),
                 )
               : null,
             h("div", { class: `${c}ph-actions` }, ...actions()),
@@ -589,7 +590,7 @@ export function createProfileView({
     games: '<rect x="3" y="7" width="18" height="11" rx="5"/><path d="M8 11v3M6.5 12.5h3"/><circle cx="16" cy="11.5" r="1"/><circle cx="17.5" cy="14" r="1"/>',
     badges: '<circle cx="12" cy="9" r="6"/><path d="m9 14-2 7 5-3 5 3-2-7"/>',
   };
-  const num = (n) => (n || 0).toLocaleString("es", { useGrouping: "always" });
+  const num = (n) => (n || 0).toLocaleString(loc(), { useGrouping: "always" });
 
   function facts() {
     const prof = p.profile || {};
@@ -1027,7 +1028,7 @@ export function createBadgesView({ ejg, root, focus, cls = "s-", onExit = () => 
     const xp = p.xp || 0;
     const need = Math.max(0, xpFor(lv + 1) - xp);
     const done = pct(xp - xpFor(lv), xpFor(lv + 1) - xpFor(lv));
-    const num = (n) => n.toLocaleString("es", { useGrouping: "always" });
+    const num = (n) => n.toLocaleString(loc(), { useGrouping: "always" });
     const head = h(
       "div",
       { class: `${c}ph-bg ${c}ph-small` },

@@ -732,7 +732,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
       f.maxGb ? ["chip-size", SIZES.find((o) => o.gb === f.maxGb)?.label || `Hasta ${f.maxGb} GB`, () => store.browse({ maxGb: null })] : null,
       f.hideOwned ? ["chip-owned", "Sin los que ya tengo", () => store.browse({ hideOwned: false })] : null,
     ].filter(Boolean);
-    const count = c.loading && !c.items.length ? "Buscando…" : `${c.filtered && c.page < c.pages ? "Unos " : ""}${c.total.toLocaleString("es")} resultados coinciden con tus filtros`;
+    const count = c.loading && !c.items.length ? "Buscando…" : `${c.filtered && c.page < c.pages ? "Unos " : ""}${c.total.toLocaleString(ejg.locale)} resultados coinciden con tus filtros`;
     const list = h("div", { class: "srows", "data-focus-group": "results" });
     keyed(list, c.items, (r) => r.slug, (r) => resultRow(r));
     const more = c.page > 0 && c.page < c.pages;
@@ -822,7 +822,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
   }
 
   // ─────────────── lista de deseados ───────────────
-  const addedDate = (t) => new Date(t * 1000).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" }).replace(".", "");
+  const addedDate = (t) => new Date(t * 1000).toLocaleDateString(ejg.locale, { day: "numeric", month: "short", year: "numeric" }).replace(".", "");
   function wishRow(r) {
     const act = repackAction(r);
     return h(

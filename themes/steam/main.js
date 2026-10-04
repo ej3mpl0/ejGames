@@ -390,7 +390,7 @@ function bucket(ts) {
   if (diff < 7) return "Esta semana";
   if (diff < 14) return "La semana pasada";
   if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) return "Este mes";
-  const m = cap1(d.toLocaleDateString("es-ES", { month: "long" }));
+  const m = cap1(d.toLocaleDateString(ejg.locale, { month: "long" }));
   return d.getFullYear() === now.getFullYear() ? m : `${m} de ${d.getFullYear()}`;
 }
 
@@ -913,7 +913,7 @@ async function loadGuidesCard(id, token, slot) {
     h(
       "div",
       { class: "card guides-card", "data-focus-group": "guides-card" },
-      h("h3", null, "Guías de la comunidad", list.total ? h("span", { class: "n" }, ` ${list.total.toLocaleString("es")}`) : null),
+      h("h3", null, "Guías de la comunidad", list.total ? h("span", { class: "n" }, ` ${list.total.toLocaleString(ejg.locale)}`) : null),
       ...rows,
       h("button", { class: "gnav-link guides-all", "data-focus": "", onclick: () => openGuides(id) }, "Ver todas las guías"),
     ),

@@ -364,7 +364,7 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
       onMore: () => store.browseMore(),
       none: "No se ha encontrado ningún programa con estos filtros.",
     });
-    catBox.count.textContent = c.loading && !c.items.length ? "" : `${c.filtered && c.page < c.pages ? "unos " : ""}${c.total.toLocaleString("es")} programas`;
+    catBox.count.textContent = c.loading && !c.items.length ? "" : `${c.filtered && c.page < c.pages ? "unos " : ""}${c.total.toLocaleString(ejg.locale)} programas`;
     fillPicker();
   }
 

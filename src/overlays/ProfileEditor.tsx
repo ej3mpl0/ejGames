@@ -6,6 +6,7 @@
 // local.
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { locale } from "../lib/i18n";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { ArrowDown, ArrowUp, ChevronDown, Plus, X } from "lucide-react";
 import { api, errMsg } from "../api/tauri";
@@ -40,7 +41,7 @@ function countryOptions(): Opt[] {
   if (countries) return countries;
   const out: Opt[] = [];
   try {
-    const names = new Intl.DisplayNames(["es"], { type: "region" });
+    const names = new Intl.DisplayNames([locale()], { type: "region" });
     const A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     for (const a of A)
       for (const b of A) {
@@ -52,7 +53,7 @@ function countryOptions(): Opt[] {
   } catch {
     /* sin Intl: solo «ninguno» */
   }
-  out.sort((x, y) => x.label.localeCompare(y.label, "es"));
+  out.sort((x, y) => x.label.localeCompare(y.label, locale()));
   countries = [{ value: "", label: "— No mostrar —" }, ...out];
   return countries;
 }

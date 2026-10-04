@@ -4,6 +4,7 @@
 // de deseados (por perfil, solo en este PC).
 
 import { useEffect, useRef, useState } from "react";
+import { locale } from "../../lib/i18n";
 import { ArrowLeft, ChevronsUpDown, Compass, Download, ExternalLink, Heart, Play, RefreshCw, Search, X } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
 import type { BrowseFilters, ExploreHome, ExplorePage, Genre, Repack, RepackDetails, WishItem } from "../../api/types";
@@ -323,7 +324,7 @@ export function ExploreOverlay({ args, onClose }: { args?: Record<string, unknow
                 {loading && !page
                   ? "Buscando…"
                   : page
-                    ? `${page.filtered && page.page < page.pages ? "Unos " : ""}${page.total.toLocaleString("es")} juegos${f.query ? ` con «${f.query}»` : ""}`
+                    ? `${page.filtered && page.page < page.pages ? "Unos " : ""}${page.total.toLocaleString(locale())} juegos${f.query ? ` con «${f.query}»` : ""}`
                     : ""}
               </span>
             </div>

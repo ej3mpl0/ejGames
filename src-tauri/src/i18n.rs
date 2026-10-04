@@ -55,15 +55,6 @@ pub fn t(s: &str) -> Cow<'_, str> {
     Cow::Borrowed(s)
 }
 
-/// Texto traducido con `{nombre}` sustituidos.
-pub fn tf(s: &str, args: &[(&str, &dyn std::fmt::Display)]) -> String {
-    let mut out = t(s).into_owned();
-    for (k, v) in args {
-        out = out.replace(&format!("{{{k}}}"), &v.to_string());
-    }
-    out
-}
-
 /// Nombre de la configuración regional del usuario ("es-ES", "en-US"…).
 pub fn system_locale() -> String {
     #[cfg(windows)]
@@ -85,10 +76,5 @@ mod tests {
     #[test]
     fn dictionary_parses() {
         assert!(!dict().is_empty());
-    }
-
-    #[test]
-    fn placeholders() {
-        assert_eq!(tf("Atajo no válido: {k}", &[("k", &"F99")]).replace("Invalid shortcut", "Atajo no válido"), "Atajo no válido: F99");
     }
 }

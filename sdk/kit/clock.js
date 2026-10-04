@@ -1,10 +1,11 @@
+const loc = () => (globalThis.ejg && globalThis.ejg.locale) || "es-ES";
 // Reloj que se actualiza una vez por minuto (alineado), sin timers de alta frecuencia.
 
 export function clock(el, { seconds = false, format } = {}) {
   let t = 0;
   const fmt =
     format ||
-    ((d) => d.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: seconds ? "2-digit" : undefined }));
+    ((d) => d.toLocaleTimeString(loc(), { hour: "2-digit", minute: "2-digit", second: seconds ? "2-digit" : undefined }));
   function tick() {
     const d = new Date();
     el.textContent = fmt(d);

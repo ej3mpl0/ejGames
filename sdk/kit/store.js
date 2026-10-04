@@ -4,11 +4,12 @@
 //   import { createExplore, createDownloads, fileSelection, bytes, speed } from "/_sdk/kit/store.js";
 
 import { h } from "./dom.js";
+const loc = () => (globalThis.ejg && globalThis.ejg.locale) || "es-ES";
 
 // ───────────────────────────── formatos ─────────────────────────────
 
-const nf1 = new Intl.NumberFormat("es", { maximumFractionDigits: 1 });
-const nf2 = new Intl.NumberFormat("es", { maximumFractionDigits: 2 });
+const nf1 = { format: (n) => new Intl.NumberFormat(loc(), { maximumFractionDigits: 1 }).format(n) };
+const nf2 = { format: (n) => new Intl.NumberFormat(loc(), { maximumFractionDigits: 2 }).format(n) };
 
 /** 19327352832 → "18 GB"; 536870912 → "512 MB" */
 export function bytes(n) {
@@ -336,7 +337,7 @@ export const WISH_SORTS = [
 /** La lista en el orden pedido (sin tocar la original). */
 export function sortWishlist(items = [], sort = "added") {
   const list = [...items];
-  if (sort === "name") list.sort((a, b) => a.title.localeCompare(b.title, "es"));
+  if (sort === "name") list.sort((a, b) => a.title.localeCompare(b.title, loc()));
   else if (sort === "date") list.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
   else if (sort === "size") list.sort((a, b) => (a.repackBytes || Infinity) - (b.repackBytes || Infinity));
   else list.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));

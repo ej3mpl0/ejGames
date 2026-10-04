@@ -4,6 +4,7 @@
 // previa de Ajustes.
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { locale } from "../lib/i18n";
 import type { NoticeLook, NoticeStyle, OverlayNotice } from "../api/types";
 import "./notices.css";
 
@@ -20,7 +21,7 @@ export const NOTICE_STYLES: { value: NoticeStyle; label: string }[] = [
 /** Lo que tarda en irse cada aviso (la animación de salida más larga). */
 export const LEAVE_MS = 650;
 
-const pct = (p: number) => p.toLocaleString("es", { maximumFractionDigits: p < 10 ? 1 : 0 });
+const pct = (p: number) => p.toLocaleString(locale(), { maximumFractionDigits: p < 10 ? 1 : 0 });
 export const isRare = (n: OverlayNotice) => n.kind === "achievement" && n.rarity != null && n.rarity < 10;
 const completed = (n: OverlayNotice) => n.kind === "achievement" && !!n.progress && n.progress[1] > 0 && n.progress[0] >= n.progress[1];
 /** "3 logros desbloqueados" → 3 (así lo escribe el núcleo en el resumen). */

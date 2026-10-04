@@ -202,6 +202,13 @@
       state.strings = m.data.strings || {};
       root.setAttribute("lang", state.lang);
       translateDom();
+      // En inglés, todo lo que pinta el tema se traduce con su diccionario (lo suyo y lo del kit).
+      if (state.lang === "en" && !state.translator) {
+        state.translator = true;
+        import("/_sdk/kit/translate.js").then(function (m) {
+          m.observe(m.makeTranslator(state.strings), document);
+        }).catch(function (e) { console.warn("[ejg] traductor", e); });
+      }
       root.setAttribute("data-mode", m.data.mode || "desktop");
       applyInput();
       applySeason();

@@ -413,7 +413,7 @@ async function loadGuideRow(id, wrap) {
       { class: "eps", "data-focus-group": "guides" },
       ...mine.map((x) => ep(x, x.pinned ? "✓ En mi lista" : `Seguir viendo${x.progress ? ` · parte ${x.progress.section + 1}` : ""}`)),
       ...top.map((x) => ep(x, [starsText(x.stars), x.author].filter(Boolean).join(" · "))),
-      h("button", { class: "ep cg-all", "data-focus": "", onclick: () => openGuides(id) }, h("b", null, "Ver todas"), h("small", null, `${list.total.toLocaleString("es")} guías`)),
+      h("button", { class: "ep cg-all", "data-focus": "", onclick: () => openGuides(id) }, h("b", null, "Ver todas"), h("small", null, `${list.total.toLocaleString(ejg.locale)} guías`)),
     ),
   );
 }

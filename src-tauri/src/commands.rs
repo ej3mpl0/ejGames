@@ -844,6 +844,7 @@ pub async fn update_settings(app: tauri::AppHandle, st: St<'_>, patch: Value) ->
             next.language = if ui == "en" { "english" } else { "spanish" }.into();
         }
         crate::i18n::set(&next.ui_language);
+        crate::lifecycle::refresh_tray(&app);
     }
     if !crate::settings::CLOSE_ACTIONS.contains(&next.close_action.as_str()) {
         return Err(CmdError::Msg("Opción al cerrar no válida".into()));

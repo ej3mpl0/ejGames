@@ -1,3 +1,5 @@
+import { locale } from "./i18n";
+
 export function playtime(seconds: number, empty = "Sin jugar") {
   const s = Math.max(0, Math.floor(seconds || 0));
   if (s < 60) return s > 0 ? "< 1 min" : empty;
@@ -12,17 +14,17 @@ export function hours(seconds: number) {
   return h >= 100 ? `${Math.round(h)} h` : h >= 10 ? `${h.toFixed(0)} h` : `${h.toFixed(1)} h`;
 }
 
-const rtf = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
+const rtf = () => new Intl.RelativeTimeFormat(locale(), { numeric: "auto" });
 export function relative(ts?: number | null) {
   if (!ts) return "Nunca";
   const diff = ts - Date.now() / 1000;
   const a = Math.abs(diff);
   if (a < 60) return "Ahora mismo";
-  if (a < 3600) return rtf.format(Math.round(diff / 60), "minute");
-  if (a < 86400) return rtf.format(Math.round(diff / 3600), "hour");
-  if (a < 86400 * 30) return rtf.format(Math.round(diff / 86400), "day");
-  if (a < 86400 * 365) return rtf.format(Math.round(diff / (86400 * 30)), "month");
-  return rtf.format(Math.round(diff / (86400 * 365)), "year");
+  if (a < 3600) return rtf().format(Math.round(diff / 60), "minute");
+  if (a < 86400) return rtf().format(Math.round(diff / 3600), "hour");
+  if (a < 86400 * 30) return rtf().format(Math.round(diff / 86400), "day");
+  if (a < 86400 * 365) return rtf().format(Math.round(diff / (86400 * 30)), "month");
+  return rtf().format(Math.round(diff / (86400 * 365)), "year");
 }
 
 export const SOURCE_LABEL: Record<string, string> = {
@@ -35,8 +37,8 @@ export const SOURCE_LABEL: Record<string, string> = {
 /** Bytes → "18,4 GB" / "512 MB". */
 export function bytes(n?: number | null) {
   const b = Math.max(0, n || 0);
-  if (b >= 1024 ** 4) return `${(b / 1024 ** 4).toLocaleString("es", { maximumFractionDigits: 2 })} TB`;
-  if (b >= 1024 ** 3) return `${(b / 1024 ** 3).toLocaleString("es", { maximumFractionDigits: 1 })} GB`;
+  if (b >= 1024 ** 4) return `${(b / 1024 ** 4).toLocaleString(locale(), { maximumFractionDigits: 2 })} TB`;
+  if (b >= 1024 ** 3) return `${(b / 1024 ** 3).toLocaleString(locale(), { maximumFractionDigits: 1 })} GB`;
   if (b >= 1024 ** 2) return `${Math.round(b / 1024 ** 2)} MB`;
   if (b >= 1024) return `${Math.round(b / 1024)} KB`;
   return `${b} B`;
@@ -45,7 +47,7 @@ export function bytes(n?: number | null) {
 /** Bytes/s → "12,3 MB/s". */
 export function speed(bps?: number | null) {
   const b = Math.max(0, bps || 0);
-  if (b >= 1024 ** 2) return `${(b / 1024 ** 2).toLocaleString("es", { maximumFractionDigits: 1 })} MB/s`;
+  if (b >= 1024 ** 2) return `${(b / 1024 ** 2).toLocaleString(locale(), { maximumFractionDigits: 1 })} MB/s`;
   return `${Math.round(b / 1024)} KB/s`;
 }
 

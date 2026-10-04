@@ -6,6 +6,7 @@
 //   import { createGuides, renderGuide, createReader, GUIDE_CATEGORIES } from "/_sdk/kit/guides.js";
 
 import { h, img } from "./dom.js";
+const loc = () => (globalThis.ejg && globalThis.ejg.locale) || "es-ES";
 
 export const GUIDE_SORTS = [
   { value: "toprated", label: "Mejor valoradas" },
@@ -392,7 +393,7 @@ export function createGuideView({ ejg, root, focus, gameId, gameTitle = "", cls 
     search: "Buscar en las guías",
     index: "Índice",
     end: "Fin de la guía · de la comunidad de Steam",
-    count: (n) => `${n.toLocaleString("es")} guías`,
+    count: (n) => `${n.toLocaleString(loc())} guías`,
     ...labels,
   };
   const guides = createGuides(ejg, gameId, () => paintList());
@@ -559,7 +560,7 @@ export function createGuideView({ ejg, root, focus, gameId, gameTitle = "", cls 
     const body = h("div", { class: `${c}rbody` }, doc.el, h("div", { class: `${c}end` }, L.end));
     const secBtn = g.sections.length > 1 ? h("button", { class: `${c}rbtn ${c}rbtn-toc`, "data-focus": "", onclick: openToc }, `1 / ${g.sections.length}`) : null;
     const pinBtn = h("button", { class: `${c}rbtn ${c}rbtn-pin` + (g.pinned ? " is-on" : ""), "data-focus": "", onclick: togglePin }, g.pinned ? L.pinned : L.pin);
-    const meta = [g.stars != null ? starsText(g.stars) : null, g.ratings ? `${g.ratings.toLocaleString("es")} valoraciones` : null, g.authors.join(", ") || null, g.updated ? `act. ${g.updated}` : g.published]
+    const meta = [g.stars != null ? starsText(g.stars) : null, g.ratings ? `${g.ratings.toLocaleString(loc())} valoraciones` : null, g.authors.join(", ") || null, g.updated ? `act. ${g.updated}` : g.published]
       .filter(Boolean)
       .join(" · ");
     readerEl.replaceChildren(

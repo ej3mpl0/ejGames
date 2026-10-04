@@ -1,6 +1,7 @@
 // Formato de tiempos, fechas y descripciones.
 
 import { h } from "./dom.js";
+const loc = () => (globalThis.ejg && globalThis.ejg.locale) || "es-ES";
 
 /** 45296 → "12 h 34 min"; 300 → "5 min"; 0 → "Sin jugar" */
 export function playtime(seconds, { empty = "Sin jugar", short = false } = {}) {
@@ -13,7 +14,7 @@ export function playtime(seconds, { empty = "Sin jugar", short = false } = {}) {
   return min ? `${hrs} h ${min} min` : `${hrs} h`;
 }
 
-const rtf = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
+const rtf = () => new Intl.RelativeTimeFormat(loc(), { numeric: "auto" });
 
 /** Timestamp Unix (s) → "hace 3 días", "ayer", "hoy". */
 export function relative(ts) {
@@ -21,11 +22,11 @@ export function relative(ts) {
   const diff = ts - Date.now() / 1000;
   const abs = Math.abs(diff);
   if (abs < 60) return "Ahora mismo";
-  if (abs < 3600) return rtf.format(Math.round(diff / 60), "minute");
-  if (abs < 86400) return rtf.format(Math.round(diff / 3600), "hour");
-  if (abs < 86400 * 30) return rtf.format(Math.round(diff / 86400), "day");
-  if (abs < 86400 * 365) return rtf.format(Math.round(diff / (86400 * 30)), "month");
-  return rtf.format(Math.round(diff / (86400 * 365)), "year");
+  if (abs < 3600) return rtf().format(Math.round(diff / 60), "minute");
+  if (abs < 86400) return rtf().format(Math.round(diff / 3600), "hour");
+  if (abs < 86400 * 30) return rtf().format(Math.round(diff / 86400), "day");
+  if (abs < 86400 * 365) return rtf().format(Math.round(diff / (86400 * 30)), "month");
+  return rtf().format(Math.round(diff / (86400 * 365)), "year");
 }
 
 /** "2022-02-24" → "24 feb 2022" */
@@ -33,7 +34,7 @@ export function date(iso) {
   if (!iso) return "";
   const d = new Date(iso);
   if (isNaN(+d)) return iso;
-  return d.toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" });
+  return d.toLocaleDateString(loc(), { day: "numeric", month: "short", year: "numeric" });
 }
 
 export function year(iso) {

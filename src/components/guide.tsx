@@ -7,6 +7,7 @@
 // cambia de sección, Y guarda, X abre en Steam y Atrás vuelve a la lista.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { locale } from "../lib/i18n";
 import { api, errMsg } from "../api/tauri";
 import type { Guide, GuideBlock, GuideItem, GuideShelf, GuideShelfItem, GuideSpan, NavAction } from "../api/types";
 import { getGuide, openGuideInBrowser, openGuideLink } from "../host/guides";
@@ -342,7 +343,7 @@ export function GuideListView({ gameId, onOpen, list }: { gameId: number; onOpen
           {shelf.recent.map((it) => (
             <ShelfRow key={it.id} it={it} onOpen={onOpen} />
           ))}
-          <div className="gd-sub">De la comunidad{s.total ? ` · ${s.total.toLocaleString("es")} guías` : ""}</div>
+          <div className="gd-sub">De la comunidad{s.total ? ` · ${s.total.toLocaleString(locale())} guías` : ""}</div>
         </div>
       )}
 
@@ -624,7 +625,7 @@ export function GuideReader({
           <div className="gd-title">{g.title}</div>
           <div className="gd-meta">
             <Stars n={g.stars} />
-            {g.ratings ? ` · ${g.ratings.toLocaleString("es")} valoraciones` : ""}
+            {g.ratings ? ` · ${g.ratings.toLocaleString(locale())} valoraciones` : ""}
             {g.authors.length ? ` · ${g.authors.join(", ")}` : ""}
             {g.updated || g.published ? ` · ${g.updated ? "act. " + g.updated : g.published}` : ""}
           </div>

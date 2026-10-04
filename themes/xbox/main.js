@@ -557,7 +557,7 @@ async function loadGuideRow(id, my, row) {
       { class: "gtrack" },
       ...mine.map((x) => tile(x, x.pinned ? "★ Guardada" : `Seguir leyendo${x.progress ? ` · sección ${x.progress.section + 1}` : ""}`)),
       ...top.map((x) => tile(x, [starsText(x.stars), x.author].filter(Boolean).join(" · "))),
-      h("button", { class: "gtile gtile-all", "data-focus": "", onclick: () => openGuides(id) }, h("span", { html: ICON.book }), h("b", null, "Ver todas"), h("small", null, `${list.total.toLocaleString("es")} guías`)),
+      h("button", { class: "gtile gtile-all", "data-focus": "", onclick: () => openGuides(id) }, h("span", { html: ICON.book }), h("b", null, "Ver todas"), h("small", null, `${list.total.toLocaleString(ejg.locale)} guías`)),
     ),
   );
 }

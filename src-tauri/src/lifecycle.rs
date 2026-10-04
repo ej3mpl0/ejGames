@@ -195,14 +195,27 @@ fn set_eco(_on: bool) {}
 #[cfg(not(windows))]
 pub(crate) fn trim_memory() {}
 
-pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
-    let open = MenuItem::with_id(app, "open", "Abrir ejGames", true, None::<&str>)?;
+/// Menú de la bandeja en el idioma de la interfaz.
+fn tray_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
+    use crate::i18n::t;
+    let open = MenuItem::with_id(app, "open", t("Abrir ejGames"), true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
-    let pause = MenuItem::with_id(app, "downloads-pause", "Pausar descargas", true, None::<&str>)?;
-    let resume = MenuItem::with_id(app, "downloads-resume", "Reanudar descargas", true, None::<&str>)?;
+    let pause = MenuItem::with_id(app, "downloads-pause", t("Pausar descargas"), true, None::<&str>)?;
+    let resume = MenuItem::with_id(app, "downloads-resume", t("Reanudar descargas"), true, None::<&str>)?;
     let sep2 = PredefinedMenuItem::separator(app)?;
-    let quit = MenuItem::with_id(app, "quit", "Salir", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open, &sep, &pause, &resume, &sep2, &quit])?;
+    let quit = MenuItem::with_id(app, "quit", t("Salir"), true, None::<&str>)?;
+    Menu::with_items(app, &[&open, &sep, &pause, &resume, &sep2, &quit])
+}
+
+/// Al cambiar de idioma, el menú de la bandeja se vuelve a escribir.
+pub fn refresh_tray(app: &AppHandle) {
+    if let (Some(tray), Ok(menu)) = (app.tray_by_id("main"), tray_menu(app)) {
+        let _ = tray.set_menu(Some(menu));
+    }
+}
+
+pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
+    let menu = tray_menu(app)?;
     let mut b = TrayIconBuilder::with_id("main")
         .tooltip("ejGames")
         .menu(&menu)

@@ -208,7 +208,7 @@ export function SteamPanel({ p }: { p: Panel }) {
       body = (
         <Window title="Rendimiento">
           <PerfTiles k="sx" p={p} />
-          <p className="sx-foot">Lo que gasta el juego ahora mismo. Los FPS no se pueden medir sin entrar en el juego.</p>
+          <p className="sx-foot">Lo que gasta el juego ahora mismo.</p>
         </Window>
       );
       break;

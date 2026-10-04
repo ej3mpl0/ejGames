@@ -531,7 +531,7 @@ export function createStore({ ejg, focus, pages, setView, openImage, onChange })
     const sortLabel = SORTS.find((o) => o.id === f.sort)?.label || SORTS[0].label;
     const genresLabel = f.genres.length ? f.genres.map(genreName).join(", ") : "Todos";
     const sizeLabel = SIZES.find((o) => o.gb === (f.maxGb || null))?.label || "";
-    const count = c.loading && !c.items.length ? "Buscando…" : `${c.filtered && c.page < c.pages ? "Unos " : ""}${c.total.toLocaleString("es")} juegos`;
+    const count = c.loading && !c.items.length ? "Buscando…" : `${c.filtered && c.page < c.pages ? "Unos " : ""}${c.total.toLocaleString(ejg.locale)} juegos`;
     const grid = h("div", { class: "st-grid", "data-focus-group": "st-results" });
     keyed(grid, c.items, (r) => r.slug, boxTile);
     return h(

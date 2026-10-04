@@ -3,6 +3,7 @@
 // Al cambiar de idioma se recarga la ventana (y con ella el tema).
 
 import en from "./en.json";
+import { makeTranslator, observe } from "../../sdk/kit/translate.js";
 
 export type Lang = "es" | "en";
 
@@ -12,6 +13,13 @@ const dicts: Record<Lang, Record<string, string> | null> = { es: null, en: en as
 export function setLang(l: string) {
   lang = l === "en" ? "en" : "es";
   document.documentElement.lang = lang;
+}
+
+/** En inglés, traduce también lo que pinta la interfaz sin pasar por `t()`: nodos de
+ *  texto y atributos, ahora y a medida que cambian. */
+export function startTranslator() {
+  if (lang !== "en") return;
+  observe(makeTranslator(en as Record<string, string>), document);
 }
 
 export const getLang = () => lang;

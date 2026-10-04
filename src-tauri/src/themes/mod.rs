@@ -261,3 +261,36 @@ pub fn delete(paths: &Paths, id: &str) -> anyhow::Result<()> {
     std::fs::remove_dir_all(dir)?;
     Ok(())
 }
+
+#[cfg(test)]
+mod i18n_tests {
+    use super::*;
+
+    #[test]
+    fn theme_strings_merge_sdk_and_theme_and_skip_spanish() {
+        let d = tempfile::tempdir().unwrap();
+        let root = d.path();
+        std::fs::create_dir_all(root.join("sdk").join("i18n")).unwrap();
+        std::fs::create_dir_all(root.join("mi-tema").join("i18n")).unwrap();
+        std::fs::write(root.join("sdk").join("i18n").join("en.json"), r#"{"Jugar":"Play","Cerrar":"Close"}"#).unwrap();
+        // El BOM no debe romper la lectura; el tema pisa lo del kit.
+        std::fs::write(root.join("mi-tema").join("i18n").join("en.json"), "\u{feff}{\"Cerrar\":\"Dismiss\",\"Hola\":\"Hi\"}").unwrap();
+        let paths = Paths {
+            root: root.to_path_buf(),
+            db: root.join("x.db"),
+            settings: root.join("s.json"),
+            media: root.join("m"),
+            trailers: root.join("t"),
+            user_themes: root.join("u"),
+            builtin_themes: root.join("b"),
+            sdk: root.join("sdk"),
+            logs: root.join("l"),
+            portable: false,
+        };
+        let en = strings(&paths, Some(&root.join("mi-tema")), "en");
+        assert_eq!(en.get("Jugar").map(String::as_str), Some("Play"));
+        assert_eq!(en.get("Cerrar").map(String::as_str), Some("Dismiss"));
+        assert_eq!(en.get("Hola").map(String::as_str), Some("Hi"));
+        assert!(strings(&paths, Some(&root.join("mi-tema")), "es").is_empty());
+    }
+}

@@ -297,7 +297,7 @@ mod year_tests {
             c.execute("INSERT INTO profiles (id, name, color, theme_id, created_at) VALUES (1, 'Ana', '#fff', 'steam', 1)", [])?;
             let a = repo::upsert_game(c, &NewGame { title: "Hades".into(), source: "folder".into(), source_id: "a".into(), ..Default::default() })?.unwrap().0;
             let b = repo::upsert_game(c, &NewGame { title: "Celeste".into(), source: "folder".into(), source_id: "b".into(), ..Default::default() })?.unwrap().0;
-            let mut put = |g: i64, t: i64, d: i64| {
+            let put = |g: i64, t: i64, d: i64| {
                 c.execute("INSERT INTO sessions (profile_id, game_id, started_at, ended_at, duration_s) VALUES (1, ?1, ?2, ?3, ?4)", params![g, t, t + d, d])
             };
             put(a, ts(2025, 12, 31, 23), 600)?; // otro año

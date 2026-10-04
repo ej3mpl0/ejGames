@@ -423,7 +423,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
     const badge = brFilter.querySelector(".st-count");
     badge.hidden = !n;
     badge.textContent = String(n);
-    brCount.textContent = c.loading && !c.items.length ? "Buscando…" : `${c.filtered && c.page < c.pages ? "Unos " : ""}${c.total.toLocaleString("es")} juegos`;
+    brCount.textContent = c.loading && !c.items.length ? "Buscando…" : `${c.filtered && c.page < c.pages ? "Unos " : ""}${c.total.toLocaleString(ejg.locale)} juegos`;
     // Filtros puestos, como pastillas que se quitan.
     const had = focus.current && brChips.contains(focus.current);
     const chip = (key, label, fn) => h("button", { class: "br-chip", "data-focus": "", "data-key": key, onclick: fn }, h("span", null, label), icon("x"));
@@ -561,7 +561,7 @@ export function createStore({ ejg, root, layer, focus, bg, openViewer, setTab, f
       ...groups,
     );
     const c = s.catalog;
-    sheet.layer.querySelector(".fs-sub").textContent = c.loading ? "Buscando…" : `${c.filtered && c.page < c.pages ? "Unos " : ""}${c.total.toLocaleString("es")} juegos`;
+    sheet.layer.querySelector(".fs-sub").textContent = c.loading ? "Buscando…" : `${c.filtered && c.page < c.pages ? "Unos " : ""}${c.total.toLocaleString(ejg.locale)} juegos`;
     if (key) {
       const el = sheet.layer.querySelector(`[data-key="${key}"]`);
       if (el && el !== focus.current) focus.focus(el, { silent: true, noScroll: true });

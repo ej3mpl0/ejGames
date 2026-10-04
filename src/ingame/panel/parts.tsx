@@ -1,6 +1,7 @@
 // Piezas y formatos que comparten los paneles de todas las plataformas.
 
 import { useState, type ReactNode } from "react";
+import { locale } from "../../lib/i18n";
 import type { Achievement } from "../../api/types";
 
 export const cls = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
@@ -13,7 +14,7 @@ const two = (n: number) => String(n).padStart(2, "0");
 export const clock = (d: Date) => `${two(d.getHours())}:${two(d.getMinutes())}`;
 
 /** "sábado, 27 de septiembre" */
-export const dayLabel = (d: Date) => d.toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long" });
+export const dayLabel = (d: Date) => d.toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "long" });
 
 /** 1523 → "25 min"; 7300 → "2 h 1 min" */
 export function dur(seconds: number) {
@@ -34,26 +35,26 @@ export function hms(seconds: number) {
 export function hoursLabel(seconds: number) {
   const h = seconds / 3600;
   if (h < 1) return dur(seconds);
-  return `${h.toLocaleString("es", { maximumFractionDigits: h < 10 ? 1 : 0 })} h`;
+  return `${h.toLocaleString(locale(), { maximumFractionDigits: h < 10 ? 1 : 0 })} h`;
 }
 
 export function gb(bytes?: number | null) {
   const b = Math.max(0, bytes || 0);
-  if (b >= 1024 ** 3) return `${(b / 1024 ** 3).toLocaleString("es", { maximumFractionDigits: 1 })} GB`;
+  if (b >= 1024 ** 3) return `${(b / 1024 ** 3).toLocaleString(locale(), { maximumFractionDigits: 1 })} GB`;
   return `${Math.round(b / 1024 ** 2)} MB`;
 }
 
 export function speed(bps?: number | null) {
   const b = Math.max(0, bps || 0);
-  if (b >= 1024 ** 2) return `${(b / 1024 ** 2).toLocaleString("es", { maximumFractionDigits: 1 })} MB/s`;
+  if (b >= 1024 ** 2) return `${(b / 1024 ** 2).toLocaleString(locale(), { maximumFractionDigits: 1 })} MB/s`;
   return `${Math.round(b / 1024)} KB/s`;
 }
 
 /** 12.345 → "12,3" (una cifra decimal por debajo de 10). */
-export const pctNum = (p: number) => p.toLocaleString("es", { maximumFractionDigits: p < 10 ? 1 : 0 });
+export const pctNum = (p: number) => p.toLocaleString(locale(), { maximumFractionDigits: p < 10 ? 1 : 0 });
 
 /** Fecha de un desbloqueo: "27 sept 2026". */
-export const shortDate = (ts: number) => new Date(ts * 1000).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" });
+export const shortDate = (ts: number) => new Date(ts * 1000).toLocaleDateString(locale(), { day: "numeric", month: "short", year: "numeric" });
 
 /** "hoy a las 21:04", "ayer a las 9:10", "12 sept 2026". */
 export function whenLabel(ts: number) {

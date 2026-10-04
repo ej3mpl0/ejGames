@@ -9,7 +9,7 @@ import { Button, Cycle, Modal, Spinner, cx } from "../components/ui";
 import { useOverlayNav } from "../input/nav";
 import { hours, playtime, relative } from "../lib/format";
 import { useApp } from "../store/app";
-import { t } from "../lib/i18n";
+import { locale, t } from "../lib/i18n";
 
 function niceMax(v: number) {
   if (v <= 0) return 1;
@@ -131,7 +131,7 @@ export function StatsOverlay({ onClose }: { onClose: () => void }) {
         const date = new Date(d.day + "T12:00:00");
         return {
           key: d.day,
-          label: date.toLocaleDateString("es", { day: "numeric", month: "short" }),
+          label: date.toLocaleDateString(locale(), { day: "numeric", month: "short" }),
           value: d.seconds / 3600,
           tip: playtime(d.seconds, "0 min"),
         };

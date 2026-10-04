@@ -5,6 +5,7 @@ mod commands;
 mod db;
 mod discord;
 mod downloads;
+mod emulation;
 mod events;
 mod explore;
 mod guides;
@@ -216,6 +217,9 @@ pub fn run() {
             commands::repack_update_dismiss,
             commands::game_shortcut,
             commands::game_hltb,
+            commands::emulation_catalog,
+            commands::emulators_detect,
+            commands::emulator_cores,
             commands::get_year_review,
             commands::community_themes,
             commands::community_theme_install,

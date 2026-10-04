@@ -158,6 +158,11 @@ pub async fn process_batch(st: &Arc<AppState>, ids: &[i64], forced: &HashMap<i64
             resolved.push(Resolved { game: g, appid, confidence: 1.0 });
             continue;
         }
+        // Los juegos de consola no están en Steam: se salta a IGDB (por su sistema).
+        if g.platform.is_some() {
+            resolved.push(Resolved { game: g, appid: None, confidence: 0.0 });
+            continue;
+        }
         // Un appid guardado es seguro salvo que venga de una coincidencia dudosa
         // ("review"): esa se vuelve a buscar.
         if let Some(a) = g.steam_appid.filter(|_| g.meta_status != "review") {
@@ -253,7 +258,8 @@ async fn igdb_lookup(st: &AppState, g: &Game, forced: Option<i64>) -> anyhow::Re
         None => {
             let names = search_names(g);
             let Some(first) = names.first() else { return Ok(None) };
-            let cands = st.providers.igdb.search(&st.http, id, secret, first).await?;
+            let plat = g.platform.as_deref().and_then(crate::emulation::platform).map(|p| p.igdb);
+            let cands = st.providers.igdb.search_on(&st.http, id, secret, first, plat).await?;
             match best_candidate(&cands, &names) {
                 Some((c, s)) if s >= MIN_APPLY => (c.id, s),
                 _ => return Ok(None),

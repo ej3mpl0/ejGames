@@ -12,7 +12,7 @@ import { openExplore } from "../host/downloads";
 import { SavesTab } from "./SavesTab";
 
 /** Juegos que ejGames sabe desinstalar (todos los que siguen en su sitio). */
-const canUninstall = (g: { missing?: boolean }) => !g.missing;
+const canUninstall = (g: { missing?: boolean; platform?: string | null }) => !g.missing && !g.platform;
 
 type Tab = "general" | "match" | "art" | "saves" | "info";
 const ART_KINDS = [

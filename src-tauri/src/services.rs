@@ -44,6 +44,7 @@ pub async fn scan_folder(st: &Arc<AppState>, folder_id: i64, incremental: bool) 
         .ok_or_else(|| anyhow::anyhow!("carpeta desconocida"))?;
     let st2 = st.clone();
     let name = folder.path.clone();
+    let rom_platform = folder.mode.strip_prefix("roms:").map(str::to_string);
     let report = tauri::async_runtime::spawn_blocking(move || {
         scanner::scan_folder(&st2.db, &folder, incremental, &|done, total, cur| {
             crate::events::scan_progress(&st2, &name, done, total, cur);
@@ -51,6 +52,12 @@ pub async fn scan_folder(st: &Arc<AppState>, folder_id: i64, incremental: bool) 
     })
     .await??;
     crate::events::scan_progress(st, "done", 1, 1, "");
+    if let (Some(pid), Some(pf)) = (*st.profile.read(), rom_platform.as_deref().and_then(crate::emulation::platform)) {
+        if report.found > 0 {
+            let _ = st.db.with(|c| repo::ensure_platform_collection(c, pid, pf.name, pf.id));
+            crate::events::library_reset(st);
+        }
+    }
     let new = report.new_games.clone();
     after_new_games(st, new).await;
     if report.missing > 0 {

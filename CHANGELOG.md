@@ -5,6 +5,36 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 0.12.0
+
+**Juegos de consola**
+- Ajustes → Biblioteca → Consolas: añade una carpeta de ROMs de un sistema (NES, Super Nintendo, Game Boy / Color /
+  Advance, Nintendo DS y 64, GameCube, Wii, Wii U, Master System, Mega Drive, Game Gear, Saturn, Dreamcast, PC Engine,
+  PlayStation 1, 2, 3 y PSP, arcade) y ejGames crea un juego por ROM.
+- Cada sistema se juega con RetroArch (y un núcleo), con un emulador independiente (PCSX2, Dolphin, PPSSPP,
+  DuckStation, Cemu o RPCS3) o con el programa que tú elijas y sus argumentos. «Buscar emuladores» los encuentra en
+  los sitios habituales. Las horas, el overlay y Discord funcionan igual que con un juego de PC.
+- La portada y los datos salen de IGDB (con la clave de Ajustes → Información) y de SteamGridDB, buscando en el
+  sistema correcto. Cada sistema tiene su colección inteligente, que los temas ya enseñan como filtro.
+- Una ROM no se desinstala: así nunca se borra la carpeta de ROMs.
+
+**Cuánto dura cada juego**
+- En la ficha de cada juego, las horas de historia, con extras y completista de
+  [HowLongToBeat](https://howlongtobeat.com), con una barra de las que llevas. Se puede desactivar en
+  Ajustes → Información.
+
+**Tu año en ejGames**
+- Estadísticas → «Tu año»: un repaso en tarjetas de tus horas, juegos, mes, hora y día favoritos, racha, partida más
+  larga, géneros y logros (el más raro). Del 1 de diciembre al 15 de enero, ejGames te avisa una vez.
+
+**Temas de la comunidad**
+- Ajustes → Apariencia → De la comunidad: temas de otras personas, que se instalan con un clic. La lista vive en el
+  repositorio de ejGames (`community/`); ejGames comprueba la huella SHA-256 de cada descarga antes de instalarla.
+
+**Para temas**
+- `ejg.game.hltb(id)`, `ejg.stats.year(año)` y `howLongNote(g)` en `/_sdk/kit/hltb.js`.
+- Los juegos de consola traen `platform`; las colecciones inteligentes admiten la regla `platform`.
+
 ## 0.11.0
 
 **Copias de las partidas guardadas**

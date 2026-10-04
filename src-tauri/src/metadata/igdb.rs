@@ -61,8 +61,14 @@ impl Igdb {
     }
 
     pub async fn search(&self, http: &reqwest::Client, id: &str, secret: &str, term: &str) -> anyhow::Result<Vec<Candidate>> {
+        self.search_on(http, id, secret, term, None).await
+    }
+
+    /// Búsqueda limitada a una plataforma de IGDB (juegos de consola).
+    pub async fn search_on(&self, http: &reqwest::Client, id: &str, secret: &str, term: &str, platform: Option<i64>) -> anyhow::Result<Vec<Candidate>> {
         let term = term.replace('"', "");
-        let rows = self.query(http, id, secret, format!("search \"{term}\"; {FIELDS} limit 10;")).await?;
+        let filter = platform.map(|p| format!("where platforms = ({p}); ")).unwrap_or_default();
+        let rows = self.query(http, id, secret, format!("search \"{term}\"; {FIELDS} {filter}limit 10;")).await?;
         Ok(rows
             .iter()
             .filter_map(|g| {

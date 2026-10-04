@@ -7,6 +7,23 @@ use std::path::PathBuf;
 /// Aplicación "ejGames" del Developer Portal de Discord (siempre esta).
 pub const DISCORD_CLIENT_ID: &str = "1553143273869287435";
 
+/// Emulador de un sistema (Ajustes → Biblioteca → Emuladores).
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default, rename_all = "camelCase")]
+pub struct EmulatorCfg {
+    /// Id del sistema (`snes`, `ps2`…).
+    pub platform: String,
+    /// retroarch | preset | custom
+    pub kind: String,
+    /// Con `preset`: pcsx2, dolphin, ppsspp, duckstation, cemu o rpcs3.
+    pub preset: String,
+    pub exe: String,
+    /// Con `retroarch`: núcleo (sin .dll); vacío = el de serie del sistema.
+    pub core: String,
+    /// Argumentos con `{rom}` y `{core}`; vacío = los del preset.
+    pub args: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Settings {
@@ -99,6 +116,9 @@ pub struct Settings {
     /// Proxy SOCKS5 para el torrent ("socks5://usuario:clave@host:puerto").
     pub torrent_proxy: String,
 
+    /// Un emulador por sistema de consola.
+    pub emulators: Vec<EmulatorCfg>,
+
     // ── Partidas guardadas ──
     /// Copia automática de las partidas al cerrar cada juego.
     pub saves_auto: bool,
@@ -187,6 +207,7 @@ impl Default for Settings {
             extra_trackers: true,
             peer_limit: 0,
             torrent_proxy: String::new(),
+            emulators: vec![],
             saves_auto: true,
             saves_keep: 10,
             game_mode_power: false,

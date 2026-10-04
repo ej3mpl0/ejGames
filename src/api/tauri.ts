@@ -7,6 +7,8 @@ import type {
   Hltb,
   CommunityTheme,
   YearReview,
+  EmulationCatalog,
+  EmulatorFound,
   SavesInfo,
   SaveSnapshot,
   Bootstrap,
@@ -206,6 +208,9 @@ export const api = {
   diskSpace: (path: string) => invoke<{ freeBytes?: number | null }>("disk_space", { path }),
 
   overlayFpsGrant: () => invoke<void>("overlay_fps_grant"),
+  emulationCatalog: () => invoke<EmulationCatalog>("emulation_catalog"),
+  emulatorsDetect: () => invoke<EmulatorFound[]>("emulators_detect"),
+  emulatorCores: (exe: string) => invoke<string[]>("emulator_cores", { exe }),
   getYearReview: (year?: number) => invoke<YearReview>("get_year_review", { year }),
   communityThemes: () => invoke<CommunityTheme[]>("community_themes"),
   communityThemeInstall: (id: string) => invoke<ThemeInfo>("community_theme_install", { id }),

@@ -60,7 +60,7 @@ export function visible(games, { hidden = false, missing = false, installed = "a
 export const isInstalled = (g) => g.installed !== false;
 
 /** Si `ejg.game.uninstall(id)` sirve para este juego: todos los que siguen en su sitio. */
-export const canUninstall = (g) => !g.missing;
+export const canUninstall = (g) => !g.missing && !g.platform;
 
 export const SORTS = {
   title: { label: "Nombre", fn: (a, b) => (a.sortTitle < b.sortTitle ? -1 : a.sortTitle > b.sortTitle ? 1 : 0) },
@@ -113,6 +113,7 @@ export function inCollection(games, col) {
   return games.filter((g) => {
     if (r.genre && !(g.genres || []).includes(r.genre)) return false;
     if (r.source && g.source !== r.source) return false;
+    if (r.platform && g.platform !== r.platform) return false;
     if (r.favorite && !g.favorite) return false;
     if (r.unplayed && g.playtime > 0) return false;
     if (r.minHours && g.playtime < r.minHours * 3600) return false;

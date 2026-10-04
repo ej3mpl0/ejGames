@@ -223,6 +223,9 @@ fn other_dirs(st: &AppState, id: i64) -> Vec<String> {
 
 fn resolve(st: &AppState, id: i64) -> anyhow::Result<(Game, Plan, Action)> {
     let g = st.db.with(|c| repo::get_game(c, id)).map_err(|_| anyhow::anyhow!("Ese juego ya no está en la biblioteca"))?;
+    if g.platform.is_some() {
+        bail!("{}", crate::i18n::t("Una ROM no se desinstala: quítala de la biblioteca o borra su archivo."));
+    }
     if st.sessions.is_running(id) {
         bail!("Cierra el juego antes de desinstalarlo.");
     }

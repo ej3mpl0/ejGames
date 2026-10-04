@@ -109,6 +109,8 @@ pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64,
                steam_appid = COALESCE(steam_appid, ?8),
                folder_id = COALESCE(?9, folder_id),
                working_dir = CASE WHEN ?3 THEN working_dir ELSE COALESCE(?10, working_dir) END,
+               platform = COALESCE(?15, platform),
+               rom_path = COALESCE(?16, rom_path),
                missing = 0,
                installed = 1,
                -- Sin datos identificados ni nombre puesto a mano: el título es el
@@ -133,15 +135,17 @@ pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64,
                 ts,
                 g.title,
                 sort_title(&g.title),
-                lock_launch
+                lock_launch,
+                g.platform,
+                g.rom_path
             ],
         )?;
         Ok(Some((id, false)))
     } else {
         c.execute(
             "INSERT INTO games (title, sort_title, source, source_id, folder_id, install_dir, exe_path,
-               args, working_dir, launch_uri, process_hints, engine, steam_appid, added_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14)",
+               args, working_dir, launch_uri, process_hints, engine, steam_appid, added_at, updated_at, platform, rom_path)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14, ?15, ?16)",
             params![
                 g.title,
                 sort_title(&g.title),
@@ -156,7 +160,9 @@ pub fn upsert_game(c: &Connection, g: &NewGame) -> rusqlite::Result<Option<(i64,
                 hints,
                 g.engine,
                 g.steam_appid,
-                ts
+                ts,
+                g.platform,
+                g.rom_path
             ],
         )?;
         Ok(Some((c.last_insert_rowid(), true)))
@@ -207,7 +213,7 @@ const GAME_COLS: &str = "id, title, sort_title, source, source_id, folder_id, in
   working_dir, launch_uri, run_as_admin, process_hints, engine, steam_appid, sgdb_id, igdb_id,
   description, short_description, developer, publisher, release_date, genres, tags, rating,
   meta_status, match_confidence, meta_locked, discord_enabled, missing, added_at, updated_at,
-  installed";
+  installed, platform, rom_path";
 
 fn row_game(r: &Row) -> rusqlite::Result<Game> {
     Ok(Game {
@@ -244,6 +250,8 @@ fn row_game(r: &Row) -> rusqlite::Result<Game> {
         added_at: r.get(30)?,
         updated_at: r.get(31)?,
         installed: r.get(32)?,
+        platform: r.get(33)?,
+        rom_path: r.get(34)?,
     })
 }
 
@@ -584,7 +592,7 @@ fn collections_by_game(c: &Connection, profile_id: i64) -> rusqlite::Result<Hash
 const LIB_SQL: &str = "SELECT g.id, g.title, g.sort_title, g.source, g.engine, g.short_description,
    g.developer, g.publisher, g.release_date, g.genres, g.tags, g.rating, g.meta_status, g.missing, g.added_at,
    COALESCE(pg.favorite, 0), COALESCE(pg.hidden, 0), pg.last_played, COALESCE(pg.playtime_s, 0),
-   COALESCE(pg.launch_count, 0), pg.user_rating, g.installed
+   COALESCE(pg.launch_count, 0), pg.user_rating, g.installed, g.platform
  FROM games g LEFT JOIN profile_game pg ON pg.game_id = g.id AND pg.profile_id = ?1";
 
 fn row_lib(r: &Row) -> rusqlite::Result<LibGame> {
@@ -611,6 +619,7 @@ fn row_lib(r: &Row) -> rusqlite::Result<LibGame> {
         launch_count: r.get(19)?,
         user_rating: r.get(20)?,
         installed: r.get(21)?,
+        platform: r.get(22)?,
         ..Default::default()
     })
 }
@@ -1157,6 +1166,23 @@ pub fn list_collections(c: &Connection, profile: i64) -> rusqlite::Result<Vec<Co
         out.push(col);
     }
     Ok(out)
+}
+
+/// Colección inteligente «<sistema>» del perfil (la crea si no está): así los
+/// temas pueden filtrar por consola con las colecciones que ya enseñan.
+pub fn ensure_platform_collection(c: &Connection, profile: i64, name: &str, platform: &str) -> rusqlite::Result<()> {
+    let needle = format!("%\"platform\":\"{platform}\"%");
+    let have: Option<i64> = c
+        .query_row(
+            "SELECT id FROM collections WHERE profile_id = ?1 AND kind = 'smart' AND REPLACE(rules, ' ', '') LIKE ?2",
+            params![profile, needle],
+            |r| r.get(0),
+        )
+        .optional()?;
+    if have.is_none() {
+        create_collection(c, profile, name, "smart", &serde_json::json!({ "platform": platform }))?;
+    }
+    Ok(())
 }
 
 pub fn create_collection(

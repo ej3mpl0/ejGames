@@ -29,6 +29,7 @@ export const SOURCE_LABEL: Record<string, string> = {
   folder: "Carpeta local",
   manual: "Manual",
   repack: "Repack",
+  rom: "ROM",
 };
 
 /** Bytes → "18,4 GB" / "512 MB". */

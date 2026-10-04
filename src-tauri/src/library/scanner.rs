@@ -126,6 +126,8 @@ pub fn to_new_game(a: &DirAnalysis, folder_id: Option<i64>) -> Option<NewGame> {
             .iter()
             .map(|c| (c.path.to_string_lossy().to_string(), c.score))
             .collect(),
+        platform: None,
+        rom_path: None,
     })
 }
 
@@ -143,6 +145,9 @@ pub fn scan_folder(
     incremental: bool,
     on_progress: &(dyn Fn(usize, usize, &str) + Sync),
 ) -> anyhow::Result<ScanReport> {
+    if let Some(platform) = folder.mode.strip_prefix("roms:") {
+        return crate::emulation::scan_roms(db, folder, platform);
+    }
     let root = PathBuf::from(&folder.path);
     if !root.is_dir() {
         anyhow::bail!("La carpeta no existe: {}", folder.path);

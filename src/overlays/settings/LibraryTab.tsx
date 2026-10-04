@@ -6,6 +6,8 @@ import type { FolderInspection, LibraryFolder } from "../../api/types";
 import { Button, Cycle, Section } from "../../components/ui";
 import { relative } from "../../lib/format";
 import { useApp } from "../../store/app";
+import { t } from "../../lib/i18n";
+import { EmulatorsSection } from "./EmulatorsSection";
 
 export function LibraryTab({ autoAdd }: { autoAdd?: boolean }) {
   const toast = useApp((s) => s.toast);
@@ -100,7 +102,7 @@ export function LibraryTab({ autoAdd }: { autoAdd?: boolean }) {
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm">{f.path}</div>
               <div className="text-xs text-muted">
-                {f.gameCount} juegos · {f.mode === "single" ? "un juego" : "subcarpetas"} · escaneada {relative(f.lastScan)}
+                {f.gameCount} juegos · {f.mode.startsWith("roms:") ? t("ROMs de {sistema}", { sistema: f.mode.slice(5) }) : f.mode === "single" ? "un juego" : "subcarpetas"} · escaneada {relative(f.lastScan)}
               </div>
             </div>
             <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} onClick={() => api.rescan(f.id)}>
@@ -120,6 +122,8 @@ export function LibraryTab({ autoAdd }: { autoAdd?: boolean }) {
           </div>
         ))}
       </Section>
+
+      <EmulatorsSection onFolderAdded={() => void load()} />
 
       <Section title="Otras acciones">
         <div className="flex flex-wrap gap-2 p-2">

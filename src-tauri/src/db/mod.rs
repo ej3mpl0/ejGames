@@ -36,6 +36,8 @@ const MIGRATIONS: &[Migration] = &[
     Migration::Sql(include_str!("../../migrations/015_repack_updates.sql")),
     // 0.11.0: copias de las partidas guardadas.
     Migration::Sql(include_str!("../../migrations/016_saves.sql")),
+    // 0.12.0: juegos de consola (ROMs + emuladores).
+    Migration::Sql(include_str!("../../migrations/017_emulation.sql")),
 ];
 
 pub struct Db {

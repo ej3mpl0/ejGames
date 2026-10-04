@@ -35,6 +35,9 @@ pub struct NewGame {
     pub engine: Option<String>,
     pub steam_appid: Option<i64>,
     pub exe_candidates: Vec<(String, f32)>,
+    /// Sistema de consola (ROMs); None en los juegos de PC.
+    pub platform: Option<String>,
+    pub rom_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -73,6 +76,8 @@ pub struct Game {
     pub added_at: i64,
     pub updated_at: i64,
     pub installed: bool,
+    pub platform: Option<String>,
+    pub rom_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -125,6 +130,9 @@ pub struct LibGame {
     pub collections: Vec<i64>,
     pub media: MediaUrls,
     pub running: bool,
+    /// Sistema de consola ("snes", "ps2"…); None en los juegos de PC.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub platform: Option<String>,
     /// Logros desbloqueados / totales (si el juego tiene).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub achievements: Option<crate::achievements::AchSummary>,

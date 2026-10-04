@@ -65,4 +65,5 @@ export const SOURCE_LABEL = {
   folder: "Carpeta local",
   manual: "Añadido a mano",
   repack: "Descargado",
+  rom: "ROM",
 };

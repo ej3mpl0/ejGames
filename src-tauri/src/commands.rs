@@ -421,7 +421,11 @@ pub async fn list_folders(st: St<'_>) -> CmdResult<Vec<LibraryFolder>> {
 
 #[tauri::command]
 pub async fn add_folder(st: St<'_>, path: String, mode: String) -> CmdResult<i64> {
-    let mode = if mode == "single" { "single" } else { "subfolders" }.to_string();
+    let mode = match mode.as_str() {
+        "single" => "single".to_string(),
+        m if m.strip_prefix("roms:").is_some_and(|p| crate::emulation::platform(p).is_some()) => m.to_string(),
+        _ => "subfolders".to_string(),
+    };
     let s = st.inner().clone();
     let path_norm = crate::util::clean_dir(&path);
     if !PathBuf::from(&path_norm).is_dir() {
@@ -823,6 +827,12 @@ pub async fn update_settings(app: tauri::AppHandle, st: St<'_>, patch: Value) ->
     }
     if !crate::settings::OVERLAY_STYLES.contains(&next.overlay_style.as_str()) {
         return Err(CmdError::Msg("Estilo de los avisos no válido".into()));
+    }
+    for e in &next.emulators {
+        let known = crate::emulation::platform(&e.platform).is_some();
+        if !known || !["retroarch", "preset", "custom"].contains(&e.kind.as_str()) || e.exe.trim().is_empty() {
+            return Err(CmdError::Msg(crate::i18n::t("Emulador no válido").into()));
+        }
     }
     if !crate::settings::UI_LANGUAGES.contains(&next.ui_language.as_str()) {
         return Err(CmdError::Msg(crate::i18n::t("Idioma no válido").into()));
@@ -1628,4 +1638,31 @@ pub async fn community_themes(st: St<'_>) -> CmdResult<Vec<themes::community::Co
 #[tauri::command]
 pub async fn community_theme_install(st: St<'_>, id: String) -> CmdResult<ThemeInfo> {
     Ok(themes::community::install(st.inner(), &id).await?)
+}
+
+// ───────────────────────────── emuladores ─────────────────────────────
+
+/// Sistemas y emuladores que ejGames conoce (para Ajustes → Biblioteca → Emuladores).
+#[tauri::command]
+pub fn emulation_catalog() -> serde_json::Value {
+    serde_json::json!({
+        "platforms": crate::emulation::PLATFORMS.iter().map(|p| serde_json::json!({
+            "id": p.id, "name": p.name, "exts": p.exts, "core": p.core, "presets": p.presets,
+        })).collect::<Vec<_>>(),
+        "presets": crate::emulation::PRESETS.iter().map(|p| serde_json::json!({
+            "id": p.id, "name": p.name, "args": p.args,
+        })).collect::<Vec<_>>(),
+    })
+}
+
+/// Busca RetroArch y los emuladores conocidos en los sitios habituales.
+#[tauri::command]
+pub async fn emulators_detect() -> CmdResult<Vec<crate::emulation::Found>> {
+    blocking(|| Ok(crate::emulation::detect())).await
+}
+
+/// Núcleos instalados junto a un RetroArch.
+#[tauri::command]
+pub async fn emulator_cores(exe: String) -> CmdResult<Vec<String>> {
+    blocking(move || Ok(crate::emulation::installed_cores(std::path::Path::new(&exe)))).await
 }

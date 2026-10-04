@@ -154,7 +154,9 @@ pub async fn play(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow::
 
 async fn play_inner(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow::Result<()> {
     let (game, profile) = st.db.with(|c| Ok((repo::get_game(c, game_id)?, repo::get_profile(c, profile_id)?)))?;
-    let g2 = game.clone();
+    // Un juego de consola se lanza con el emulador de su sistema y la ROM como argumento.
+    let launch_game = crate::emulation::prepare(&st.settings.get(), &game)?;
+    let g2 = launch_game.clone();
     let launched = tauri::async_runtime::spawn_blocking(move || launch::launch(&g2)).await??;
     st.db.with(|c| repo::bump_launch(c, profile_id, game_id))?;
     crate::events::library_changed(st, vec![game_id]);
@@ -167,7 +169,7 @@ async fn play_inner(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow
     let behavior = profile.launch_behavior.clone();
     apply_behavior(st, &behavior);
 
-    let target = tracker::Target::from_game(&game, launched.pid);
+    let target = tracker::Target::from_game(&launch_game, launched.pid);
     let discovery = if launched.via_uri { Duration::from_secs(300) } else { Duration::from_secs(120) };
     let discord = if st.settings.get().discord_enabled && profile.discord_enabled && game.discord_enabled {
         let own = crate::settings::DISCORD_CLIENT_ID;

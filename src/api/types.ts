@@ -19,6 +19,8 @@ export interface RepackUpdate {
 
 export interface LibGame {
   id: number;
+  /** Sistema de consola ("snes", "ps2"…); sin valor en los juegos de PC. */
+  platform?: string | null;
   /** El repack instalado tiene una versión más nueva en la tienda. */
   repackUpdate?: RepackUpdate;
   title: string;
@@ -414,6 +416,26 @@ export interface SavesInfo {
   known: boolean;
 }
 
+export interface EmulatorCfg {
+  platform: string;
+  /** retroarch | preset | custom */
+  kind: string;
+  preset: string;
+  exe: string;
+  core: string;
+  args: string;
+}
+export interface EmulatorFound {
+  preset: string;
+  name: string;
+  exe: string;
+  cores: string[];
+}
+export interface EmulationCatalog {
+  platforms: { id: string; name: string; exts: string[]; core: string; presets: string[] }[];
+  presets: { id: string; name: string; args: string }[];
+}
+
 export interface YearReview {
   year: number;
   totalSeconds: number;
@@ -475,6 +497,7 @@ export interface Settings {
   overlayFps: boolean;
   hltbEnabled: boolean;
   yearReviewSeen: number;
+  emulators: EmulatorCfg[];
   savesAuto: boolean;
   savesKeep: number;
   gameModePower: boolean;

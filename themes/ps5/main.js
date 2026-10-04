@@ -8,7 +8,7 @@ import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { createBackdrop, attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year } from "/_sdk/kit/format.js";
-import { visible, sort, recent } from "/_sdk/kit/library.js";
+import { visible, sort, recent, software, isSoftware } from "/_sdk/kit/library.js";
 import { clock } from "/_sdk/kit/clock.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
@@ -37,6 +37,9 @@ const games = () => visible(ejg.library.all);
 // Ocultos: solo salen en su filtro de la Biblioteca; el que se abre desde ahí
 // (state.peek) se ve en la fila mientras siga seleccionado.
 const hiddenGames = () => visible(ejg.library.all, { hidden: true }).filter((g) => g.hidden);
+const softwareList = () => software(ejg.library.all);
+// Lo que solo sale en su filtro (ocultos y programas): se ve en la fila mientras esté seleccionado.
+const peekable = (g) => g && (g.hidden || isSoftware(g));
 
 function rowGames() {
   const all = games();
@@ -59,7 +62,7 @@ function rowGames() {
   }
   list = list.slice(0, 20);
   const peek = state.peek === state.selected && ejg.library.byId(state.peek);
-  const sel = state.selected && (all.find((g) => g.id === state.selected) || (peek?.hidden ? peek : null));
+  const sel = state.selected && (all.find((g) => g.id === state.selected) || (peekable(peek) ? peek : null));
   if (sel && !list.includes(sel)) list = [sel, ...list.slice(0, 19)];
   return list;
 }
@@ -413,13 +416,15 @@ function renderLibrary() {
   const nHidden = hiddenGames().length;
   // Si ya no queda ninguno oculto, se vuelve a Todos.
   if (state.chip === "hidden" && !nHidden) state.chip = "all";
-  const chips = nHidden ? [...CHIPS, ["hidden", `Ocultos (${nHidden})`]] : CHIPS;
+  const nSoft = softwareList().length;
+  if (state.chip === "software" && !nSoft) state.chip = "all";
+  const chips = [...CHIPS, ...(nSoft ? [["software", "Software"]] : []), ...(nHidden ? [["hidden", `Ocultos (${nHidden})`]] : [])];
   $("#chips").replaceChildren(
     ...chips.map(([k, l]) =>
       h("button", { class: "chip", "data-focus": "", "aria-pressed": String(state.chip === k), onclick: () => ((state.chip = k), renderLibrary()) }, l),
     ),
   );
-  let list = sort(state.chip === "hidden" ? hiddenGames() : games(), "title");
+  let list = sort(state.chip === "hidden" ? hiddenGames() : state.chip === "software" ? softwareList() : games(), "title");
   if (state.chip === "fav") list = list.filter((g) => g.favorite);
   if (state.chip === "played") list = list.filter((g) => g.playtime > 0 || g.lastPlayed);
   if (state.chip === "unplayed") list = list.filter((g) => !g.playtime && !g.lastPlayed);
@@ -433,7 +438,7 @@ function renderLibrary() {
         "data-focus": "",
         "data-game-id": g.id,
         onclick: () => {
-          state.peek = g.hidden ? g.id : null;
+          state.peek = peekable(g) ? g.id : null;
           state.selected = g.id;
           setTab("home");
           select(g.id, true);

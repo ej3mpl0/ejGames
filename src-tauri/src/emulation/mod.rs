@@ -206,6 +206,37 @@ pub fn find_roms(root: &Path, pf: &Platform) -> Vec<PathBuf> {
     all
 }
 
+/// Sistemas a los que puede pertenecer un archivo (por su extensión). Si varios lo admiten
+/// (un .iso), primero los que ya tienen emulador puesto; si solo uno lo tiene, solo ese.
+pub fn platforms_for(path: &Path, settings: &Settings) -> Vec<&'static Platform> {
+    let all: Vec<&Platform> = PLATFORMS.iter().filter(|p| has_ext(path, p.exts)).collect();
+    let ready: Vec<&Platform> = all
+        .iter()
+        .copied()
+        .filter(|p| settings.emulators.iter().any(|e| e.platform == p.id && Path::new(&e.exe).is_file()))
+        .collect();
+    if ready.len() == 1 {
+        return ready;
+    }
+    let mut out = ready.clone();
+    out.extend(all.into_iter().filter(|p| !ready.iter().any(|r| r.id == p.id)));
+    out
+}
+
+/// Un juego de consola suelto (un archivo), para añadirlo a mano.
+pub fn rom_game(rom: &Path, pf: &Platform) -> NewGame {
+    let stem = rom.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+    NewGame {
+        title: crate::library::names::clean_title(&stem),
+        source: "rom".into(),
+        source_id: norm_path(rom),
+        install_dir: rom.parent().map(|p| p.to_string_lossy().into_owned()),
+        platform: Some(pf.id.into()),
+        rom_path: Some(rom.to_string_lossy().into_owned()),
+        ..Default::default()
+    }
+}
+
 pub fn scan_roms(db: &Db, folder: &LibraryFolder, platform_id: &str) -> anyhow::Result<ScanReport> {
     let pf = platform(platform_id).ok_or_else(|| anyhow::anyhow!("Sistema desconocido: {platform_id}"))?;
     let root = PathBuf::from(&folder.path);
@@ -302,6 +333,31 @@ mod tests {
 
     fn game(platform: &str, rom: &str) -> Game {
         Game { id: 1, title: "Mario".into(), source: "rom".into(), platform: Some(platform.into()), rom_path: Some(rom.into()), ..Default::default() }
+    }
+
+    #[test]
+    fn a_loose_rom_knows_its_system() {
+        let mut s = Settings::default();
+        assert_eq!(platforms_for(Path::new("C:/j/Zelda.nsp"), &s).iter().map(|p| p.id).collect::<Vec<_>>(), ["switch"]);
+        assert!(platforms_for(Path::new("C:/j/juego.txt"), &s).is_empty());
+        // Un .iso vale para varios; con un solo emulador puesto, es de ese.
+        assert!(platforms_for(Path::new("C:/j/God of War.iso"), &s).len() > 2);
+        let exe = std::env::current_exe().unwrap().to_string_lossy().into_owned();
+        s.emulators.push(EmulatorCfg { platform: "ps2".into(), kind: "preset".into(), preset: "pcsx2".into(), exe, core: String::new(), args: String::new() });
+        assert_eq!(platforms_for(Path::new("C:/j/God of War.iso"), &s).iter().map(|p| p.id).collect::<Vec<_>>(), ["ps2"]);
+        let g = rom_game(Path::new("C:/j/Zelda.nsp"), platform("switch").unwrap());
+        assert_eq!((g.source.as_str(), g.platform.as_deref(), g.title.as_str()), ("rom", Some("switch"), "Zelda"));
+    }
+
+    #[test]
+    fn a_folder_of_roms_is_detected() {
+        let d = tempfile::tempdir().unwrap();
+        std::fs::write(d.path().join("Zelda.nsp"), b"x").unwrap();
+        std::fs::write(d.path().join("Mario.xci"), b"x").unwrap();
+        std::fs::write(d.path().join("extra.zip"), b"x").unwrap();
+        let i = crate::library::scanner::inspect(d.path());
+        assert_eq!(i.suggested_mode, "roms:switch");
+        assert_eq!(i.preview.len(), 2);
     }
 
     #[test]

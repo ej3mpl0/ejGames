@@ -402,8 +402,14 @@ pub async fn set_user_rating(st: St<'_>, id: i64, value: Option<i64>) -> CmdResu
 }
 
 #[tauri::command]
-pub async fn add_manual_game(st: St<'_>, exe: String) -> CmdResult<i64> {
-    Ok(crate::services::add_manual(st.inner(), exe).await?)
+pub async fn add_manual_game(st: St<'_>, exe: String, platform: Option<String>) -> CmdResult<i64> {
+    Ok(crate::services::add_manual(st.inner(), exe, platform).await?)
+}
+
+/// Sistemas posibles de un archivo de juego de consola (vacío si es un programa de PC o no se conoce).
+#[tauri::command]
+pub async fn rom_platforms(st: St<'_>, path: String) -> CmdResult<Vec<String>> {
+    Ok(crate::emulation::platforms_for(std::path::Path::new(&path), &st.settings.get()).iter().map(|p| p.id.to_string()).collect())
 }
 
 // ───────────────────────────── carpetas ─────────────────────────────
@@ -1704,6 +1710,20 @@ pub async fn emulator_uninstall(st: St<'_>, id: String) -> CmdResult<()> {
     let s = st.inner().clone();
     blocking(move || crate::emulation::install::uninstall(&s, &id)).await?;
     let _ = st.app.emit("settings:changed", st.settings.get());
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn emulator_open(st: St<'_>, id: String) -> CmdResult<()> {
+    Ok(crate::emulation::install::open(&st, &id)?)
+}
+
+#[tauri::command]
+pub async fn emulator_reveal(app: tauri::AppHandle, st: St<'_>, id: String) -> CmdResult<()> {
+    use tauri_plugin_opener::OpenerExt;
+    let i = crate::emulation::install::installed(&crate::emulation::install::emu_dir(&st), &id)
+        .ok_or_else(|| CmdError::Msg(crate::i18n::t("No está instalado").into_owned()))?;
+    app.opener().reveal_item_in_dir(i.exe).map_err(|e| CmdError::Msg(e.to_string()))?;
     Ok(())
 }
 

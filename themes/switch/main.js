@@ -7,7 +7,7 @@ import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
-import { visible, sort, recent } from "/_sdk/kit/library.js";
+import { visible, sort, recent, software } from "/_sdk/kit/library.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { clock } from "/_sdk/kit/clock.js";
@@ -66,8 +66,11 @@ function renderRail() {
   if (!list.length && !dls.length) $("#sel-title").textContent = "Pulsa + para añadir tus juegos";
 }
 
-// Filtro de «Todos los programas»: all | hidden (pestaña «Ocultos», solo si hay alguno).
+// Filtro de «Todos los programas»: all | software | hidden (sus pestañas, solo si hay alguno).
 const hiddenGames = () => ejg.library.all.filter((g) => g.hidden && !g.missing);
+const softwareList = () => software(ejg.library.all);
+const allTabs = () => ["all", ...(softwareList().length ? ["software"] : []), ...(hiddenGames().length ? ["hidden"] : [])];
+const TAB_LABEL = { all: "Todos", software: "Software", hidden: "Ocultos" };
 function setAllFilter(f) {
   if (state.allFilter === f) return;
   state.allFilter = f;
@@ -75,17 +78,23 @@ function setAllFilter(f) {
   renderAll();
   focus.focus($(`#all-tabs [data-filter="${f}"]`), { silent: true });
 }
-// LB/RB cambian de pestaña en «Todos los programas» (solo hay dos).
-function tabCycle() {
+// LB/RB cambian de pestaña en «Todos los programas».
+function tabCycle(d = 1) {
   if (state.view !== "all" || !options.hidden || $("#all-tabs").hidden) return false;
-  setAllFilter(state.allFilter === "all" ? "hidden" : "all");
+  const list = allTabs();
+  setAllFilter(list[(list.indexOf(state.allFilter) + d + list.length) % list.length]);
   return true;
 }
+const nextTab = () => {
+  const list = allTabs();
+  return list[(list.indexOf(state.allFilter) + 1) % list.length];
+};
 function renderTabs(nHidden) {
   const tabs = $("#all-tabs");
-  if (tabs.hidden !== !nHidden) queueMicrotask(updateHints);
-  tabs.hidden = !nHidden;
-  if (!nHidden) return tabs.replaceChildren();
+  const show = allTabs().length > 1;
+  if (tabs.hidden !== !show) queueMicrotask(updateHints);
+  tabs.hidden = !show;
+  if (!show) return tabs.replaceChildren();
   const tab = (f, label) => {
     const on = state.allFilter === f;
     const b = tabs.querySelector(`[data-filter="${f}"]`) || h("button", { class: "tab", "data-focus": "", "data-filter": f, onclick: () => setAllFilter(f) });
@@ -93,16 +102,17 @@ function renderTabs(nHidden) {
     b.classList.toggle("is-on", on);
     return b;
   };
-  tabs.replaceChildren(tab("all", "Todos"), tab("hidden", `Ocultos (${nHidden})`));
+  tabs.replaceChildren(...allTabs().map((f) => tab(f, f === "hidden" ? `Ocultos (${nHidden})` : TAB_LABEL[f])));
 }
 
 function renderAll() {
   const nHidden = hiddenGames().length;
-  // Si ya no queda ninguno oculto, se vuelve al filtro por defecto.
-  if (!nHidden) state.allFilter = "all";
+  // Si ya no queda ninguno en la pestaña, se vuelve al filtro por defecto.
+  if (!allTabs().includes(state.allFilter)) state.allFilter = "all";
   renderTabs(nHidden);
   const onlyHidden = state.allFilter === "hidden";
-  const list = sort(onlyHidden ? hiddenGames() : games(), "title");
+  const onlySoft = state.allFilter === "software";
+  const list = onlySoft ? softwareList() : sort(onlyHidden ? hiddenGames() : games(), "title");
   $("#all-count").textContent = onlyHidden ? (list.length === 1 ? "1 oculto" : `${list.length} ocultos`) : `${list.length} programas`;
   keyed($("#all-grid"), list, (g) => g.id, (g, prev) => {
     const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.favorite}`;
@@ -348,7 +358,7 @@ const actions = {
     if (id) ejg.game.favorite(id);
     return true;
   },
-  lb: () => gv("lb") || shop.cycle(-1) || tabCycle(),
+  lb: () => gv("lb") || shop.cycle(-1) || tabCycle(-1),
   rb: () => gv("rb") || shop.cycle(1) || tabCycle(),
   menu: () => (ejg.ui.open("menu"), true),
   view: () => gv("view") || (ejg.ui.open("search"), true),
@@ -470,7 +480,7 @@ function updateHints() {
   const d = el?.dataset?.dlId && ejg.downloads.byId(Number(el.dataset.dlId));
   if (d) return hintBar.set([["accept", "Ver descarga"], ...(isActive(d) || d.state === "paused" ? [["x", isActive(d) ? "Pausar" : "Reanudar"]] : []), ["back", "Atrás"]]);
   if (el?.closest?.(".circles")) return hintBar.set([["accept", "Aceptar"], ["back", "Atrás"]]);
-  const tabs = state.view === "all" && !$("#all-tabs").hidden ? [["lb", state.allFilter === "all" ? "Ocultos" : "Todos"]] : [];
+  const tabs = state.view === "all" && !$("#all-tabs").hidden ? [["lb", TAB_LABEL[nextTab()]]] : [];
   if (el?.closest?.("#all-tabs")) return hintBar.set([["accept", "Ver"], ...tabs, ["back", "Atrás"]]);
   const g = Number(el?.dataset?.gameId) && ejg.library.byId(Number(el.dataset.gameId));
   hintBar.set([

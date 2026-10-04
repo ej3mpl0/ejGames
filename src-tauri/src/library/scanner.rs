@@ -98,12 +98,42 @@ pub fn inspect(path: &Path) -> FolderInspection {
             .filter_map(|d| d.file_name().map(|n| super::names::clean_title(&n.to_string_lossy())))
             .collect()
     };
+    if exists && !single {
+        if let Some((pf, roms)) = rom_folder(path) {
+            return FolderInspection {
+                path: path.to_string_lossy().to_string(),
+                suggested_mode: format!("roms:{}", pf.id),
+                preview: roms.iter().take(40).filter_map(|r| r.file_stem().map(|n| super::names::clean_title(&n.to_string_lossy()))).collect(),
+                exists,
+            };
+        }
+    }
     FolderInspection {
         path: path.to_string_lossy().to_string(),
         suggested_mode: if single { "single".into() } else { "subfolders".into() },
         preview,
         exists,
     }
+}
+
+/// Carpeta de juegos de consola: el sistema con más ROMs inconfundibles (extensión de un solo sistema;
+/// ni .zip ni .7z, que salen en cualquier carpeta de descargas).
+fn rom_folder(path: &Path) -> Option<(&'static crate::emulation::Platform, Vec<PathBuf>)> {
+    let mut count: std::collections::HashMap<&str, usize> = Default::default();
+    for e in walkdir::WalkDir::new(path).max_depth(3).into_iter().filter_map(Result::ok).take(5000) {
+        let Some(ext) = e.path().extension().map(|x| x.to_string_lossy().to_lowercase()) else { continue };
+        if !e.file_type().is_file() || matches!(ext.as_str(), "zip" | "7z" | "gz") {
+            continue;
+        }
+        let owners: Vec<_> = crate::emulation::PLATFORMS.iter().filter(|p| p.exts.contains(&ext.as_str())).collect();
+        if let [one] = owners.as_slice() {
+            *count.entry(one.id).or_default() += 1;
+        }
+    }
+    let (id, _) = count.into_iter().max_by_key(|(_, n)| *n)?;
+    let pf = crate::emulation::platform(id)?;
+    let roms = crate::emulation::find_roms(path, pf);
+    (!roms.is_empty()).then_some((pf, roms))
 }
 
 pub fn to_new_game(a: &DirAnalysis, folder_id: Option<i64>) -> Option<NewGame> {

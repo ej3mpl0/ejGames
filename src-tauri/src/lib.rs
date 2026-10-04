@@ -224,6 +224,9 @@ pub fn run() {
             commands::emulator_install,
             commands::emulator_uninstall,
             commands::emulator_install_core,
+            commands::emulator_open,
+            commands::rom_platforms,
+            commands::emulator_reveal,
             commands::get_year_review,
             commands::community_themes,
             commands::community_theme_install,
@@ -406,6 +409,7 @@ pub fn run() {
                     st_bg.meta.push_many(pending.into_iter().map(|g| g.id));
                 }
                 achievements::refresh_library(&st_bg).await;
+                emulation::install::link_all(&st_bg).await;
                 // Versiones nuevas de los repacks instalados: a los 2 min y cada 12 h.
                 let st_u = st_bg.clone();
                 tauri::async_runtime::spawn(async move {

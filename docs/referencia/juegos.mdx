@@ -38,6 +38,9 @@ explica qué va a pasar y pide confirmación.
 Sirve para cualquier juego que siga en su sitio. Para saber si enseñar la opción, usa
 `canUninstall(juego)` del kit (`/_sdk/kit/library.js`).
 
+Los emuladores instalados desde **Tienda → Software** están en `library.all` con `source: "emulator"`: no son juegos.
+`isSoftware(juego)` los distingue, `visible()` los deja fuera y `software(library.all)` los da para su apartado.
+
 <Note>
 Al desinstalar, el juego sale de la biblioteca junto con sus horas y su actividad.
 </Note>

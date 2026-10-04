@@ -7,7 +7,7 @@ import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { createBackdrop, attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
-import { visible, sort, recent, favorites, byGenre, inCollection, SORTS } from "/_sdk/kit/library.js";
+import { visible, sort, recent, favorites, byGenre, inCollection, software, SORTS } from "/_sdk/kit/library.js";
 import { clock } from "/_sdk/kit/clock.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
@@ -161,8 +161,10 @@ $("#q-btn").addEventListener("click", () => setView("queue"));
 function renderCollection() {
   const all = games();
   const hid = hiddenGames();
-  // Si ya no queda ninguno oculto, vuelta a «Todos».
+  const sw = software(ejg.library.all);
+  // Si ya no queda ninguno oculto (o ningún programa), vuelta a «Todos».
   if (state.filter === "hidden" && !hid.length) state.filter = "all";
+  if (state.filter === "software" && !sw.length) state.filter = "all";
   const opts = [
     ["all", "Todos", all.length],
     ["fav", "Favoritos", all.filter((g) => g.favorite).length],
@@ -172,6 +174,7 @@ function renderCollection() {
   ];
   const pick = (k) => () => ((state.filter = k), renderCollection());
   $("#filters").replaceChildren(
+    ...[
     ...opts.map(([k, l, n], i) =>
       h(
         "button",
@@ -181,6 +184,14 @@ function renderCollection() {
       ),
     ),
     h("button", { class: "filter sep", "data-focus": "", onclick: () => ejg.ui.open("collections") }, h("span", null, "+ Colecciones"), h("span")),
+    sw.length
+      ? h(
+          "button",
+          { class: "filter sep", "data-focus": "", "aria-pressed": String(state.filter === "software"), onclick: pick("software") },
+          h("span", null, "Software"),
+          h("span", null, sw.length),
+        )
+      : null,
     hid.length
       ? h(
           "button",
@@ -189,15 +200,17 @@ function renderCollection() {
           h("span", null, hid.length),
         )
       : null,
+    ].filter(Boolean), // replaceChildren pintaría «null» como texto
   );
   let list = all;
   if (state.filter === "fav") list = all.filter((g) => g.favorite);
   else if (state.filter === "played") list = all.filter((g) => g.playtime);
   else if (state.filter === "new") list = all.filter((g) => !g.playtime);
   else if (state.filter === "hidden") list = hid;
+  else if (state.filter === "software") list = sw;
   else if (state.filter.startsWith("c")) list = inCollection(all, ejg.library.collections.find((c) => `c${c.id}` === state.filter));
   list = sort(list, state.sort);
-  $("#col-title").textContent = state.filter === "hidden" ? "Ocultos" : opts.find((o) => o[0] === state.filter)?.[1] || "Mi colección";
+  $("#col-title").textContent = state.filter === "hidden" ? "Ocultos" : state.filter === "software" ? "Software" : opts.find((o) => o[0] === state.filter)?.[1] || "Mi colección";
   $("#sort").textContent = `Ordenar: ${SORTS[state.sort].label}`;
   keyed($("#grid"), list, (g) => g.id, (g, prev) => tile(g, false, prev));
 }

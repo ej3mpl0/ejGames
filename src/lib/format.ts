@@ -32,6 +32,7 @@ export const SOURCE_LABEL: Record<string, string> = {
   manual: "Manual",
   repack: "Repack",
   rom: "ROM",
+  emulator: "Emulador",
 };
 
 /** Bytes → "18,4 GB" / "512 MB". */

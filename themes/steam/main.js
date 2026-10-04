@@ -6,7 +6,7 @@ import { h, img, initials, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { attachStream, trailerPlayer } from "/_sdk/kit/media.js";
 import { playtime, relative, date, description, SOURCE_LABEL } from "/_sdk/kit/format.js";
-import { visible, sort, search, inCollection, canUninstall, SORTS } from "/_sdk/kit/library.js";
+import { visible, sort, search, inCollection, canUninstall, software, SORTS } from "/_sdk/kit/library.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { repackUpdateNote } from "/_sdk/kit/updates.js";
@@ -167,7 +167,9 @@ window.addEventListener("resize", () => closeMenu(true));
 
 // ─────────────── datos ───────────────
 const games = () => visible(ejg.library.all);
-const CHIPS = { all: "Juegos", played: "Jugados", unplayed: "Sin jugar", fav: "Favoritos", hidden: "Ocultos" };
+const CHIPS = { all: "Juegos", played: "Jugados", unplayed: "Sin jugar", fav: "Favoritos", software: "Software", hidden: "Ocultos" };
+/** Los programas (emuladores): solo en «Software». */
+const softwareList = () => software(ejg.library.all);
 /** Los ocultos: no salen en ningún otro filtro, solo en «Ocultos». */
 const hiddenGames = () => ejg.library.all.filter((g) => g.hidden && !g.missing);
 function chipped(list) {
@@ -179,7 +181,8 @@ function chipped(list) {
 function filtered(sortKey = state.sort) {
   // Mostrado el último oculto, el filtro vuelve a «Juegos».
   if (state.chip === "hidden" && !hiddenGames().length) state.chip = "all";
-  const list = state.chip === "hidden" ? hiddenGames() : chipped(games());
+  if (state.chip === "software" && !softwareList().length) state.chip = "all";
+  const list = state.chip === "hidden" ? hiddenGames() : state.chip === "software" ? softwareList() : chipped(games());
   if (state.filter) return search(list, state.filter, 500);
   return sort(list, sortKey);
 }
@@ -319,7 +322,7 @@ sideDrop.addEventListener("click", () =>
   openMenu(
     sideDrop,
     Object.entries(CHIPS)
-      .filter(([k]) => k !== "hidden" || hiddenGames().length)
+      .filter(([k]) => (k !== "hidden" || hiddenGames().length) && (k !== "software" || softwareList().length))
       .map(([k, label]) => ({
       label: k === "hidden" ? `${label} (${hiddenGames().length})` : label,
       on: state.chip === k,
@@ -374,7 +377,7 @@ function renderSidebar() {
   const favs = !state.filter && state.chip === "all" ? list.filter((g) => g.favorite) : [];
   const groups = [];
   if (favs.length) groups.push(sideGroup("fav", "Favoritos", favs));
-  groups.push(sideGroup("all", state.filter ? "Resultados" : state.chip === "hidden" ? "Ocultos" : favs.length ? "Sin categoría" : "Todos", favs.length ? list.filter((g) => !g.favorite) : list));
+  groups.push(sideGroup("all", state.filter ? "Resultados" : state.chip === "hidden" ? "Ocultos" : state.chip === "software" ? "Software" : favs.length ? "Sin categoría" : "Todos", favs.length ? list.filter((g) => !g.favorite) : list));
   if (sideList.children.length !== groups.length || [...sideList.children].some((c, i) => c !== groups[i])) sideList.replaceChildren(...groups);
 }
 

@@ -3,8 +3,8 @@
 // RetroArch de cada sistema.
 
 import { useEffect, useMemo, useState } from "react";
-import { Cpu, Download, ExternalLink, FolderPlus, RefreshCw, Trash2 } from "lucide-react";
-import { ask } from "@tauri-apps/plugin-dialog";
+import { Cpu, Download, ExternalLink, FolderOpen, FolderPlus, Play, RefreshCw, Trash2 } from "lucide-react";
+import { ask, open as openDialog } from "@tauri-apps/plugin-dialog";
 import { api, errMsg, on } from "../api/tauri";
 import type { EmulationCatalog, SoftwareItem } from "../api/types";
 import { Button, Modal, Spinner, cx } from "../components/ui";
@@ -14,6 +14,14 @@ import { t } from "../lib/i18n";
 import { useApp } from "../store/app";
 
 type Progress = { phase: string; received: number; total: number };
+
+// Lo que pide cada emulador antes del primer juego (sale de tu consola, ejGames no lo trae).
+const SETUP: Record<string, string> = {
+  eden: "Antes del primer juego: pulsa «Abrir» y añade en Eden las claves (prod.keys) y el firmware de tu Switch.",
+  rpcs3: "Antes del primer juego: pulsa «Abrir» e instala en RPCS3 el firmware de PS3 (archivo PS3UPDAT.PUP).",
+  pcsx2: "Antes del primer juego: pulsa «Abrir» y elige en PCSX2 la BIOS de tu PS2.",
+  duckstation: "Para jugar necesita la BIOS de tu PlayStation: pulsa «Abrir» y añádela en sus ajustes.",
+};
 
 export function SoftwareStore({ onClose }: { onClose: () => void }) {
   const toast = useApp((s) => s.toast);
@@ -45,14 +53,27 @@ export function SoftwareStore({ onClose }: { onClose: () => void }) {
 
   const refreshSettings = async () => set({ settings: await api.getSettings() });
 
+  // Carpeta de juegos de ese emulador: si sirve un solo sistema, se añade directamente.
+  const addGames = async (it: SoftwareItem) => {
+    if (it.platforms.length !== 1) return useApp.getState().open("settings", { tab: "library" });
+    const dir = await openDialog({ directory: true, title: t("Carpeta con juegos de {system}", { system: it.systems[0] }) });
+    if (typeof dir !== "string") return;
+    try {
+      await api.addFolder(dir, `roms:${it.platforms[0]}`);
+      toast("ok", t("Carpeta añadida. Escaneando…"));
+    } catch (e) {
+      toast("error", errMsg(e));
+    }
+  };
+
   const install = async (it: SoftwareItem) => {
     setBusy((b) => ({ ...b, [it.id]: { phase: "download", received: 0, total: it.size ?? 0 } }));
     try {
       await api.emulatorInstall(it.id);
       await refreshSettings();
       toast("ok", t("«{name}» instalado y listo para {systems}", { name: it.name, systems: it.systems.join(", ") }), {
-        label: t("Añadir ROMs"),
-        run: () => useApp.getState().open("settings", { tab: "library" }),
+        label: t("Añadir juegos"),
+        run: () => void addGames(it),
       });
     } catch (e) {
       toast("error", errMsg(e));
@@ -147,6 +168,7 @@ export function SoftwareStore({ onClose }: { onClose: () => void }) {
                     <span className="truncate text-xs text-muted">{it.systems.join(" · ")}</span>
                   </div>
                   <p className="text-sm text-muted">{t(it.blurb)}</p>
+                  {it.installed && SETUP[it.id] && <p className="rounded-lg bg-accent/10 px-3 py-2 text-xs">{t(SETUP[it.id])}</p>}
                   <div className="text-xs text-muted">
                     {it.installed ? t("Instalado: {v}", { v: it.installed.version }) : t("No instalado")}
                     {it.latest && ` · ${t("Última: {v}", { v: it.latest })}`}
@@ -180,6 +202,19 @@ export function SoftwareStore({ onClose }: { onClose: () => void }) {
                         <Button size="sm" variant="primary" icon={<ExternalLink size={14} />} onClick={() => void api.openExternal(it.site)}>
                           {t("Descargar en su web")}
                         </Button>
+                      )}
+                      {it.installed && (
+                        <>
+                          <Button size="sm" icon={<Play size={14} />} onClick={() => void api.emulatorOpen(it.id).catch((e) => toast("error", errMsg(e)))}>
+                            {t("Abrir")}
+                          </Button>
+                          <Button size="sm" icon={<FolderPlus size={14} />} onClick={() => void addGames(it)}>
+                            {t("Añadir juegos")}
+                          </Button>
+                          <Button size="sm" variant="ghost" icon={<FolderOpen size={14} />} onClick={() => void api.emulatorReveal(it.id).catch((e) => toast("error", errMsg(e)))}>
+                            {t("Carpeta")}
+                          </Button>
+                        </>
                       )}
                       {it.installed && (
                         <Button size="sm" variant="ghost" icon={<Trash2 size={14} />} onClick={() => void remove(it)}>

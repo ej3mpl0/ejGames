@@ -20,8 +20,9 @@ export interface Game {
   /** Sistema de consola ("snes", "ps2", "psx"…); sin valor en los juegos de PC. */
   platform?: string;
   sortTitle: string;
-  /** folder: carpeta de la biblioteca · manual: .exe añadido a mano · repack: instalado desde Descargas. */
-  source: "folder" | "manual" | "repack";
+  /** folder: carpeta de la biblioteca · manual: .exe añadido a mano · repack: instalado desde Descargas ·
+   *  rom: juego de consola · emulator: programa instalado desde Tienda → Software (no es un juego: `isSoftware` del kit). */
+  source: "folder" | "manual" | "repack" | "rom" | "emulator";
   engine?: string;
   shortDescription?: string;
   developer?: string;

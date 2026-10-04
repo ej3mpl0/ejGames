@@ -347,7 +347,8 @@ export interface LibraryFolder {
 
 export interface FolderInspection {
   path: string;
-  suggestedMode: "subfolders" | "single";
+  /** "subfolders" | "single" | "roms:<sistema>" (carpeta de juegos de consola). */
+  suggestedMode: string;
   preview: string[];
   exists: boolean;
 }
@@ -434,6 +435,8 @@ export interface SoftwareItem {
   name: string;
   blurb: string;
   systems: string[];
+  /** Ids de esos sistemas, en el mismo orden. */
+  platforms: string[];
   site: string;
   /** Se instala desde ejGames (si no, se abre su web). */
   auto: boolean;

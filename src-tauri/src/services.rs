@@ -85,11 +85,36 @@ pub fn sync_watcher(st: &Arc<AppState>) {
     }
 }
 
-/// Juego añadido a mano a partir de un exe.
-pub async fn add_manual(st: &Arc<AppState>, exe: String) -> anyhow::Result<i64> {
+/// Juego añadido a mano a partir de un exe, o de una ROM (se juega con el emulador de su sistema).
+/// `platform`: el sistema de la ROM cuando su extensión sirve para varios (un .iso).
+pub async fn add_manual(st: &Arc<AppState>, exe: String, platform: Option<String>) -> anyhow::Result<i64> {
     let p = Path::new(&exe);
     if !p.is_file() {
         anyhow::bail!("No existe el fichero");
+    }
+    let ext = p.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    if !matches!(ext.as_str(), "exe" | "lnk" | "bat" | "cmd" | "url") {
+        let pf = match platform.as_deref() {
+            Some(id) => crate::emulation::platform(id).ok_or_else(|| anyhow::anyhow!("Sistema desconocido: {id}"))?,
+            None => match crate::emulation::platforms_for(p, &st.settings.get()).as_slice() {
+                [] => anyhow::bail!("{}", crate::i18n::t("No es un programa ni un juego de consola que ejGames conozca")),
+                [one, ..] => one,
+            },
+        };
+        let g = crate::emulation::rom_game(p, pf);
+        let (id, is_new) = st
+            .db
+            .with(|c| repo::upsert_game(c, &g))?
+            .ok_or_else(|| anyhow::anyhow!("Ese juego ya está en la biblioteca"))?;
+        // Como en las carpetas de ROMs: su colección del sistema («Nintendo Switch»).
+        if let Some(pid) = *st.profile.read() {
+            let _ = st.db.with(|c| repo::ensure_platform_collection(c, pid, pf.name, pf.id));
+        }
+        if is_new {
+            after_new_games(st, vec![(id, None)]).await;
+        }
+        crate::events::library_reset(st);
+        return Ok(id);
     }
     let dir = p.parent().map(|d| d.to_string_lossy().to_string());
     let title = pe_info::read(p)

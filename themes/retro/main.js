@@ -7,7 +7,7 @@ import { repackUpdateNote } from "/_sdk/kit/updates.js";
 import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
-import { visible, sort } from "/_sdk/kit/library.js";
+import { visible, sort, software } from "/_sdk/kit/library.js";
 import { clock } from "/_sdk/kit/clock.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { SIZES, drawCover, quantize, tones } from "./pixel.js";
@@ -25,6 +25,7 @@ const FILTERS = [
   ["played", "PLAYED"],
   ["new", "NEW"],
   ["fav", "FAV ★"],
+  ["software", "SOFTWARE"], // solo aparece si hay programas (emuladores)
   ["hidden", "HIDDEN"], // solo aparece si hay juegos ocultos
 ];
 const HID = FILTERS.length - 1;
@@ -37,6 +38,7 @@ const hiddenGames = () => ejg.library.all.filter((g) => g.hidden);
 const games = () => {
   const f = FILTERS[state.filter][0];
   // HIDDEN: solo los ocultos (para encontrarlos y volver a mostrarlos)
+  if (f === "software") return software(ejg.library.all);
   let l = sort(f === "hidden" ? hiddenGames() : visible(ejg.library.all), "title");
   if (f === "fav") l = l.filter((g) => g.favorite);
   if (f === "played") l = l.filter((g) => g.playtime > 0 || g.lastPlayed);
@@ -45,7 +47,8 @@ const games = () => {
 };
 
 // ─────────────── pestañas: filtros (+ HIDDEN) + SHOP + DOWNLOADS + OPTIONS ───────────────
-const filterTabs = () => FILTERS.map((_, i) => i).filter((i) => i !== HID || hiddenGames().length);
+const SW = FILTERS.findIndex((f) => f[0] === "software");
+const filterTabs = () => FILTERS.map((_, i) => i).filter((i) => (i !== HID || hiddenGames().length) && (i !== SW || software(ejg.library.all).length));
 const tabList = () => [...filterTabs(), ...(ejg.explore.enabled ? ["shop"] : []), "downloads", "options"];
 const curTab = () => (state.view === "library" ? state.filter : state.view);
 const pending = () => ejg.downloads.all.filter((d) => ["queued", "downloading", "paused", "seeding", "completed", "installing", "error"].includes(d.state)).length;

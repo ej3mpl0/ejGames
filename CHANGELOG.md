@@ -5,6 +5,25 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.2.0
+
+**Software en la biblioteca**
+- Los emuladores instalados desde la tienda salen en la biblioteca de los seis temas, en su apartado **Software**,
+  aparte de los juegos: se abren desde ejGames para poner sus claves, firmware o BIOS. Los que ya tenías instalados
+  se añaden solos al arrancar.
+- En **Tienda → Software**, cada emulador instalado tiene «Abrir», «Añadir juegos» (la carpeta de juegos de su
+  consola) y «Carpeta», y un aviso de lo que pide antes del primer juego.
+
+**Juegos de consola sueltos**
+- **Ajustes → Biblioteca → Añadir un juego a mano** acepta ROMs (`.nsp`, `.xci`, `.iso`…): ejGames reconoce la consola
+  por la extensión (si vale para varias, primero las que tienen emulador, y si no, pregunta) y al darle a **Jugar** se
+  abre su emulador con el juego.
+- Al añadir una carpeta, si es de juegos de consola, propone «Juegos de <consola> (ROMs)».
+
+**Para temas**
+- Kit: `isSoftware(juego)` y `software(juegos)`; `visible()` deja fuera los programas.
+- Xbox: el «null» que salía bajo los filtros de «Mi colección».
+
 ## 1.1.0
 
 **Tienda → Software: emuladores con un clic**

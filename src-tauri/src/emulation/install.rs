@@ -146,8 +146,10 @@ pub struct StoreItem {
     pub id: String,
     pub name: String,
     pub blurb: String,
-    /// Sistemas (ids y nombres) que sirve.
+    /// Nombres de los sistemas que sirve.
     pub systems: Vec<String>,
+    /// Sus ids (`switch`, `ps2`…), en el mismo orden.
+    pub platforms: Vec<String>,
     pub site: String,
     /// Se puede instalar desde ejGames.
     pub auto: bool,
@@ -312,6 +314,7 @@ pub async fn store(st: &Arc<AppState>, force: bool) -> Vec<StoreItem> {
                 name: e.name.into(),
                 blurb: e.blurb.into(),
                 systems: systems_of(e).iter().filter_map(|p| platform(p)).map(|p| p.name.to_string()).collect(),
+                platforms: systems_of(e).iter().filter(|p| platform(p).is_some()).map(|p| p.to_string()).collect(),
                 site: e.site.into(),
                 auto: !matches!(e.source, Source::Web),
                 installed: inst,
@@ -463,9 +466,63 @@ async fn install_inner(st: &Arc<AppState>, e: &'static Entry) -> anyhow::Result<
     res?;
     let inst = installed(&root, e.id).ok_or_else(|| anyhow::anyhow!("No se pudo dejar instalado"))?;
     configure(st, e, &inst.exe)?;
+    link(st, e, &inst).await;
     *LATEST.lock() = None;
     emit(st, e.id, "done", 0, 0);
     Ok(inst)
+}
+
+/// El emulador también sale en la biblioteca (origen «emulator»), para abrirlo desde ejGames como un juego más.
+async fn link(st: &Arc<AppState>, e: &Entry, inst: &Installed) {
+    let g = crate::db::models::NewGame {
+        title: e.name.into(),
+        source: "emulator".into(),
+        source_id: e.id.into(),
+        install_dir: Some(inst.dir.clone()),
+        exe_path: Some(inst.exe.clone()),
+        working_dir: Some(inst.dir.clone()),
+        ..Default::default()
+    };
+    match st.db.with(|c| crate::db::repo::upsert_game(c, &g)) {
+        Ok(Some((id, is_new))) => {
+            if is_new {
+                // No es un juego: sin búsqueda de datos (IGDB confundiría «Eden» con otra cosa); su icono, del .exe.
+                let _ = st.db.with(|c| c.execute("UPDATE games SET meta_status = 'manual' WHERE id = ?1", [id]));
+                let (st2, exe) = (st.clone(), inst.exe.clone());
+                let _ = tauri::async_runtime::spawn_blocking(move || {
+                    let png = crate::library::pe_info::extract_icon_png(Path::new(&exe))?;
+                    let hash = crate::media::store::put(&st2.paths, &png, "png").ok()?;
+                    st2.db
+                        .with(|c| {
+                            let mid = crate::db::repo::insert_media(c, id, "icon", None, "exe", true, 0, None, None)?;
+                            crate::db::repo::set_media_file(c, mid, &hash, "png", None, None, None)
+                        })
+                        .ok()
+                })
+                .await;
+            }
+            crate::events::library_changed(st, vec![id]);
+        }
+        Ok(None) => {}
+        Err(err) => tracing::warn!("emulador {} en la biblioteca: {err}", e.id),
+    }
+}
+
+/// Al arrancar: los emuladores instalados que aún no están en la biblioteca.
+pub async fn link_all(st: &Arc<AppState>) {
+    let root = emu_dir(st);
+    for e in CATALOG {
+        if let Some(inst) = installed(&root, e.id) {
+            let known: bool = st
+                .db
+                .with(|c| c.query_row("SELECT COUNT(*) FROM games WHERE source = 'emulator' AND source_id = ?1", [e.id], |r| r.get::<_, i64>(0)))
+                .map(|n| n > 0)
+                .unwrap_or(true);
+            if !known {
+                link(st, e, &inst).await;
+            }
+        }
+    }
 }
 
 /// Deja el emulador puesto en los sistemas que sirve. Uno independiente manda sobre RetroArch;
@@ -497,6 +554,13 @@ fn configure(st: &AppState, e: &Entry, exe: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Abre el emulador instalado tal cual (para poner las claves, el firmware o la BIOS, o sus mandos).
+pub fn open(st: &AppState, id: &str) -> anyhow::Result<()> {
+    let i = installed(&emu_dir(st), id).ok_or_else(|| anyhow::anyhow!(crate::i18n::t("No está instalado")))?;
+    std::process::Command::new(&i.exe).current_dir(&i.dir).spawn()?;
+    Ok(())
+}
+
 /// Quita el programa de ejGames y los sistemas que lo usaban.
 pub fn uninstall(st: &AppState, id: &str) -> anyhow::Result<()> {
     let dir = emu_dir(st).join(id);
@@ -507,6 +571,8 @@ pub fn uninstall(st: &AppState, id: &str) -> anyhow::Result<()> {
     if let Some(exe) = exe {
         st.settings.update(|s| s.emulators.retain(|c| c.exe != exe))?;
     }
+    st.db.with(|c| c.execute("DELETE FROM games WHERE source = 'emulator' AND source_id = ?1", [id]))?;
+    crate::events::library_reset(st);
     *LATEST.lock() = None;
     Ok(())
 }

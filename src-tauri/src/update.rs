@@ -218,6 +218,11 @@ impl Updater {
         if !url.starts_with("https://github.com/") && !url.starts_with("https://objects.githubusercontent.com/") {
             anyhow::bail!("Origen del instalador no permitido");
         }
+        self.fetch_installer(st, &url, &name, check.asset_size, check.asset_sha256.clone()).await
+    }
+
+    /// Descarga un instalador (progreso en `update:progress`) y comprueba su huella.
+    async fn fetch_installer(&self, st: &AppState, url: &str, name: &str, size: Option<u64>, sha256: Option<String>) -> anyhow::Result<Downloaded> {
         // Solo el nombre del fichero: viene de la red.
         let safe: String = name.chars().filter(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-')).collect();
         let path = update_dir().join(if safe.is_empty() { "ejGames-setup.exe".to_string() } else { safe });
@@ -226,8 +231,8 @@ impl Updater {
             let _ = st.app.emit("update:progress", serde_json::json!({ "received": received, "total": total }));
         };
         // Ya descargado y entero: se reutiliza.
-        if let (Ok(meta), Some(size)) = (std::fs::metadata(&path), check.asset_size) {
-            let intact = match &check.asset_sha256 {
+        if let (Ok(meta), Some(size)) = (std::fs::metadata(&path), size) {
+            let intact = match &sha256 {
                 Some(expected) => std::fs::read(&path).map(|b| &hex(&Sha256::digest(&b)) == expected).unwrap_or(false),
                 None => true,
             };
@@ -242,8 +247,8 @@ impl Updater {
             .connect_timeout(Duration::from_secs(15))
             .user_agent(format!("ejGames/{}", self.current))
             .build()?;
-        let mut resp = client.get(&url).send().await?.error_for_status()?;
-        let total = resp.content_length().or(check.asset_size).unwrap_or(0);
+        let mut resp = client.get(url).send().await?.error_for_status()?;
+        let total = resp.content_length().or(size).unwrap_or(0);
         let mut file = std::fs::File::create(&partial)?;
         let mut received = 0u64;
         let mut hasher = Sha256::new();
@@ -259,13 +264,13 @@ impl Updater {
         }
         file.flush()?;
         drop(file);
-        if let Some(size) = check.asset_size {
+        if let Some(size) = size {
             if received != size {
                 let _ = std::fs::remove_file(&partial);
                 anyhow::bail!("Descarga incompleta ({received} de {size} bytes)");
             }
         }
-        if let Some(expected) = &check.asset_sha256 {
+        if let Some(expected) = &sha256 {
             if &hex(&hasher.finalize()) != expected {
                 let _ = std::fs::remove_file(&partial);
                 anyhow::bail!("El instalador descargado no coincide con el publicado");
@@ -274,6 +279,80 @@ impl Updater {
         std::fs::rename(&partial, &path)?;
         emit(received, received);
         Ok(Downloaded { path: path.to_string_lossy().into_owned(), size: received })
+    }
+}
+
+/// Una versión publicada (para volver a una anterior).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReleaseEntry {
+    pub version: String,
+    pub published_at: Option<String>,
+    pub url: String,
+    pub asset_url: Option<String>,
+    pub asset_name: Option<String>,
+    pub asset_size: Option<u64>,
+    pub asset_sha256: Option<String>,
+}
+
+fn release_entry(r: &serde_json::Value) -> Option<ReleaseEntry> {
+    if r.get("draft").and_then(|v| v.as_bool()) == Some(true) || r.get("prerelease").and_then(|v| v.as_bool()) == Some(true) {
+        return None;
+    }
+    let tag = r.get("tag_name")?.as_str()?;
+    let (a, b, c) = parse_version(tag)?;
+    let assets = r.get("assets").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+    let asset = pick_asset(&assets)?;
+    let s = |k: &str| r.get(k).and_then(|v| v.as_str()).map(str::to_string);
+    Some(ReleaseEntry {
+        version: format!("{a}.{b}.{c}"),
+        published_at: s("published_at"),
+        url: s("html_url").unwrap_or_else(|| RELEASES_URL.into()),
+        asset_sha256: asset_digest(&assets, &asset.0),
+        asset_url: Some(asset.1),
+        asset_name: Some(asset.0),
+        asset_size: Some(asset.2).filter(|n| *n > 0),
+    })
+}
+
+impl Updater {
+    /// Últimas versiones publicadas con instalador (la actual incluida).
+    pub async fn releases(&self) -> anyhow::Result<Vec<ReleaseEntry>> {
+        let resp = self
+            .http
+            .get(format!("https://api.github.com/repos/{}/releases?per_page=20", repo()))
+            .header("accept", "application/vnd.github+json")
+            .header("x-github-api-version", "2022-11-28")
+            .send()
+            .await
+            .map_err(|e| if e.is_connect() { anyhow::anyhow!("Sin conexión") } else { anyhow::anyhow!("{e}") })?;
+        let status = resp.status();
+        if status == reqwest::StatusCode::FORBIDDEN || status.as_u16() == 429 {
+            anyhow::bail!("GitHub ha limitado las consultas; prueba más tarde");
+        }
+        if !status.is_success() {
+            anyhow::bail!("GitHub respondió {}", status.as_u16());
+        }
+        let list: Vec<serde_json::Value> = resp.json().await?;
+        Ok(list.iter().filter_map(release_entry).collect())
+    }
+
+    /// Descarga el instalador de una versión concreta (para volver a ella).
+    pub async fn download_version(&self, st: &AppState, version: &str) -> anyhow::Result<Downloaded> {
+        let _guard = self.download_lock.lock().await;
+        let entry = self
+            .releases()
+            .await?
+            .into_iter()
+            .find(|r| r.version == version)
+            .ok_or_else(|| anyhow::anyhow!("Esa versión ya no está publicada"))?;
+        let (Some(url), Some(name)) = (entry.asset_url.clone(), entry.asset_name.clone()) else {
+            anyhow::bail!("Esta versión no trae instalador");
+        };
+        if !url.starts_with("https://github.com/") && !url.starts_with("https://objects.githubusercontent.com/") {
+            anyhow::bail!("Origen del instalador no permitido");
+        }
+        self.fetch_installer(st, &url, &name, entry.asset_size, entry.asset_sha256.clone()).await
     }
 }
 
@@ -315,6 +394,20 @@ mod tests {
     }
 
     #[test]
+    fn release_list_skips_drafts_and_unsigned_assets() {
+        let r = |tag: &str, draft: bool, with_asset: bool| {
+            serde_json::json!({
+                "tag_name": tag, "draft": draft, "prerelease": false, "html_url": "https://github.com/x",
+                "assets": if with_asset { serde_json::json!([{ "name": "ejGames_1.0.0_Setup.exe", "browser_download_url": "https://github.com/a", "size": 5 }]) } else { serde_json::json!([]) }
+            })
+        };
+        assert_eq!(release_entry(&r("v0.9.4", false, true)).unwrap().version, "0.9.4");
+        assert!(release_entry(&r("v0.9.3", true, true)).is_none());
+        assert!(release_entry(&r("v0.9.2", false, false)).is_none());
+        assert!(release_entry(&r("nada", false, true)).is_none());
+    }
+
+    #[test]
     fn picks_the_installer() {
         let assets = serde_json::json!([
             { "name": "notas.txt", "browser_download_url": "https://github.com/a", "size": 1 },
@@ -328,5 +421,22 @@ mod tests {
         // El que se publica desde la 0.3.0: el instalador propio (installer-app/).
         let own = serde_json::json!([{ "name": "ejGames_0.3.1_Setup.exe", "browser_download_url": "https://github.com/c", "size": 5 }]);
         assert_eq!(pick_asset(own.as_array().unwrap()).unwrap().0, "ejGames_0.3.1_Setup.exe");
+    }
+}
+
+#[cfg(test)]
+mod live_tests {
+    use super::*;
+
+    /// Con GitHub de verdad: `cargo test --lib live_releases -- --ignored --nocapture`.
+    #[test]
+    #[ignore]
+    fn live_releases() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let list = rt.block_on(Updater::new("0.12.0".into()).releases()).unwrap();
+        for r in list.iter().take(4) {
+            println!("{} {:?} {:?}", r.version, r.asset_name, r.asset_size);
+        }
+        assert!(list.iter().any(|r| r.version == "0.9.4") && list.iter().all(|r| r.asset_url.is_some()));
     }
 }

@@ -10,6 +10,7 @@ import { checkNow, useUpdate } from "../../host/update";
 import { useApp } from "../../store/app";
 import { getLang, t } from "../../lib/i18n";
 import { BackupSection } from "./BackupSection";
+import { RollbackSection } from "./RollbackSection";
 
 function useSave() {
   const set = useApp((s) => s.set);
@@ -208,6 +209,8 @@ export function SystemTab() {
       </Section>
 
       <BackupSection />
+
+      <RollbackSection />
 
       <Section title="Datos">
         <div className="flex items-center gap-3 px-3 py-2 text-sm">

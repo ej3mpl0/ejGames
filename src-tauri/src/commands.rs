@@ -1395,6 +1395,23 @@ pub async fn update_download(st: St<'_>) -> CmdResult<crate::update::Downloaded>
     Ok(st.updater.download(st.inner()).await?)
 }
 
+/// Versiones publicadas con instalador (para volver a una anterior).
+#[tauri::command]
+pub async fn update_versions(st: St<'_>) -> CmdResult<Vec<crate::update::ReleaseEntry>> {
+    Ok(st.updater.releases().await?)
+}
+
+/// Descarga el instalador de una versión concreta. Antes guarda una copia de la
+/// biblioteca (sin arte) en `<datos>/rollback/`, por si la versión elegida es más
+/// vieja y no entiende algo que añadió una más nueva.
+#[tauri::command]
+pub async fn update_download_version(st: St<'_>, version: String) -> CmdResult<crate::update::Downloaded> {
+    let s = st.inner().clone();
+    let dest = st.paths.root.join("rollback").join(format!("ejGames-antes-de-volver-a-{}.zip", version.replace(|c: char| !c.is_ascii_alphanumeric() && c != '.', "_")));
+    blocking(move || crate::backup::create(&s.db, &s.paths, &dest, false)).await?;
+    Ok(st.updater.download_version(st.inner(), &version).await?)
+}
+
 /// Abre el instalador descargado y cierra ejGames para que pueda sustituirlo
 /// (al salir se guardan las partidas y el progreso de las descargas).
 #[tauri::command]

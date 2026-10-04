@@ -1052,6 +1052,16 @@ export interface UninstallPlan {
   sizeBytes: number | null;
 }
 
+export interface ReleaseEntry {
+  version: string;
+  publishedAt?: string | null;
+  url: string;
+  assetUrl?: string | null;
+  assetName?: string | null;
+  assetSize?: number | null;
+  assetSha256?: string | null;
+}
+
 export interface UpdateCheck {
   current: string;
   latest: string;

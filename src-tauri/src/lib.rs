@@ -296,6 +296,8 @@ pub fn run() {
             commands::update_check,
             commands::update_download,
             commands::update_install,
+            commands::update_versions,
+            commands::update_download_version,
         ])
         .setup(move |app| {
             let paths = paths::Paths::resolve(app.path().resource_dir().ok())?;

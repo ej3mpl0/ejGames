@@ -43,6 +43,7 @@ import type {
   ThemeInfo,
   UninstallPlan,
   UpdateCheck,
+  ReleaseEntry,
   MapGame,
   TrainerFound,
   TrainerInstalled,
@@ -235,6 +236,8 @@ export const api = {
 
   updateCheck: (force: boolean) => invoke<UpdateCheck>("update_check", { force }),
   updateDownload: () => invoke<{ path: string; size: number }>("update_download"),
+  updateVersions: () => invoke<ReleaseEntry[]>("update_versions"),
+  updateDownloadVersion: (version: string) => invoke<{ path: string; size: number }>("update_download_version", { version }),
   updateInstall: (path: string) => invoke<void>("update_install", { path }),
 };
 

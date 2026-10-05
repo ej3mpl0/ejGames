@@ -46,7 +46,7 @@ sha2 = "0.10"
 hmac = "0.12"
 url = "2.5"
 percent-encoding = "2.3"
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "2", default-features = false, features = ["deflate", "aes-crypto"] }
 flate2 = "1"
 # Guías de Steam: su HTML se recorre y se convierte en bloques seguros (sin HTML).
 scraper = { version = "0.24", default-features = false }
@@ -65,7 +65,7 @@ librqbit = { version = "=9.0.1", default-features = false }
 librqbit-core = { version = "=9.0.1", default-features = false, features = ["sha1-crypto-hash"] }
 reqwest013 = { package = "reqwest", version = "0.13", default-features = false, features = ["native-tls"] }
 # Emuladores de la tienda que vienen en .7z (PCSX2, RPCS3, RetroArch).
-sevenz-rust2 = { version = "0.20.2", default-features = false, features = ["util", "bzip2", "ppmd"] }
+sevenz-rust2 = { version = "0.20.2", default-features = false, features = ["util", "bzip2", "ppmd", "aes256"] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"

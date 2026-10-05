@@ -17,7 +17,12 @@
 // /hb/file?system=…&id=…: el relay busca la URL en el catálogo (nunca la recibe de
 // la app), así que solo baja lo que está en ellos.
 //
+// Catálogos (relay/adapters/catalog-adapter.js): /catalog/<fuente>/<ruta>, solo
+// para las fuentes dadas de alta en la variable CATALOG_SOURCES del Worker.
+//
 // Se despliega en Cloudflare Workers (ver wrangler.toml).
+
+import { catalog, isCatalog } from "./adapters/catalog-adapter.js";
 
 const ORIGIN = "https://fitgirl-repacks.site";
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
@@ -119,7 +124,8 @@ export default {
     }
     const url = new URL(request.url);
     const isHb = url.pathname.startsWith("/hb/");
-    if (!isHb && !ALLOWED.includes(url.pathname)) {
+    const isCat = isCatalog(url);
+    if (!isHb && !isCat && !ALLOWED.includes(url.pathname)) {
       return new Response("Not Found", { status: 404 });
     }
     if (!(await signed(request, url, env))) {
@@ -129,6 +135,7 @@ export default {
     if (env.LIMITER && !(await env.LIMITER.limit({ key: ip })).success) {
       return new Response("Too Many Requests", { status: 429, headers: { "Retry-After": "60" } });
     }
+    if (isCat) return catalog(url, env);
     if (isHb) {
       try {
         return await homebrew(url);

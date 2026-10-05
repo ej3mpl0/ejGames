@@ -11,6 +11,8 @@ import type {
   ProfileCard,
   WishItem,
   HomebrewJob,
+  CatalogJob,
+  CatalogState,
   HomebrewPage,
   HomebrewSystem,
   EmulatorCfg,
@@ -42,6 +44,7 @@ export type OverlayName =
   | "software"
   | "homebrew"
   | "rom-import"
+  | "catalogs"
   | "onboarding";
 
 export interface Overlay {
@@ -72,6 +75,10 @@ interface State {
   homebrewCatalog: Partial<Record<HomebrewSystem, HomebrewPage>>;
   /** Homebrew bajándose o en cola (por id). */
   homebrewJobs: Record<string, HomebrewJob>;
+  /** Explorar → Catálogos: fuentes configuradas (null = sin leer). */
+  catalogState: CatalogState | null;
+  /** Descargas directas de los catálogos (por `<fuente>|<id>`). */
+  catalogJobs: Record<string, CatalogJob>;
   /** Tu perfil en corto (nivel, avatar, marco…), el que reciben los temas. */
   page: ProfileCard | null;
   overlays: Overlay[];
@@ -114,6 +121,8 @@ export const useApp = create<State>((set, get) => ({
   wishlist: [],
   homebrewCatalog: {},
   homebrewJobs: {},
+  catalogState: null,
+  catalogJobs: {},
   page: null,
   overlays: [],
   toasts: [],

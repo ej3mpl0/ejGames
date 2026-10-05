@@ -1,0 +1,128 @@
+{
+  "_ayuda": [
+    "Copia este archivo como %APPDATA%\\ejGames\\config\\catalog-sources.json (o pulsa «Editar fuentes» en Explorar → Catálogos) y cambia las direcciones y selectores de ejemplo por los de tus fuentes.",
+    "type: «scrape» (web HTML, con selectores CSS) o «api» (JSON, con apiFields).",
+    "apiEndpoints admite {query}, {page}, {page0} (página desde 0), {platform} (id de abajo), {platformPath} (platformPaths o la clave de platformMapping) e {id}.",
+    "Selectores: varios separados por comas se prueban en orden; «@atributo» al final toma ese atributo («img.cover@src»).",
+    "Plataformas: switch, wii, wii-u, gamecube, n64, snes, nes, gba, gb, gbc, ds, 3ds, ps1, ps2, ps3, ps4, psp, ps-vita, xbox, xbox-360, xbox-one, genesis, saturn, dreamcast, master-system, game-gear, neo-geo, arcade, mame, pc-engine, turbografx, wonderswan, pc, dos, windows.",
+    "relay: «auto» (si la conexión directa falla, por el relay de ejGames si su dueño dio de alta esta fuente), «always» o «never»."
+  ],
+  "sources": [
+    {
+      "id": "catalogo-multiplataforma-1",
+      "name": "Catálogo Multi-Plataforma Principal",
+      "baseUrl": "https://ejemplo-catalogo.com",
+      "type": "scrape",
+      "enabled": true,
+      "platforms": [
+        "switch", "wii", "wii-u", "gamecube",
+        "ps1", "ps2", "ps3", "ps4", "psp", "ps-vita",
+        "n64", "snes", "nes", "genesis", "saturn", "dreamcast"
+      ],
+      "apiEndpoints": {
+        "search": "/?s={query}&page={page}",
+        "popular": "/populares/page/{page}/",
+        "newest": "/novedades/page/{page}/",
+        "byPlatform": "/{platformPath}/page/{page}/",
+        "detail": "{id}"
+      },
+      "selectors": {
+        "gameList": ".game-item, .rom-item, .entry",
+        "title": "h2.title, .game-title, h3",
+        "description": ".description, .excerpt",
+        "coverImage": "img.cover@src, .game-cover img@src",
+        "detailLink": "a.game-link@href, h2 a@href",
+        "downloadLink": "a.download@href, .download-btn@href",
+        "platform": ".platform-badge, .console-tag, .category",
+        "region": ".region-flag, .badge-region",
+        "language": ".languages, .badge-lang",
+        "size": ".file-size, .size",
+        "version": ".version",
+        "category": ".type-badge",
+        "breadcrumbs": ".breadcrumbs a",
+        "screenshots": ".screenshots img@src",
+        "nextPage": "a.next@href, .pagination .next@href"
+      },
+      "platformMapping": {
+        "Nintendo Switch": "switch",
+        "Switch": "switch",
+        "Wii U": "wii-u",
+        "Wii": "wii",
+        "GameCube": "gamecube",
+        "N64": "n64",
+        "SNES": "snes",
+        "NES": "nes",
+        "PlayStation": "ps1",
+        "PS1": "ps1",
+        "PS2": "ps2",
+        "PS3": "ps3",
+        "PS4": "ps4",
+        "PSP": "psp",
+        "PS Vita": "ps-vita",
+        "Vita": "ps-vita",
+        "Genesis": "genesis",
+        "Mega Drive": "genesis",
+        "Saturn": "saturn",
+        "Dreamcast": "dreamcast"
+      },
+      "platformPaths": {
+        "switch": "switch-games",
+        "ps2": "ps2-games"
+      },
+      "headers": {
+        "Accept-Language": "es-ES,es;q=0.9"
+      },
+      "imageHosts": ["cdn.ejemplo-catalogo.com"],
+      "extractPasswords": [],
+      "rateLimitPerMinute": 30,
+      "cacheMinutes": 30,
+      "relay": "auto",
+      "icon": "🎮"
+    },
+    {
+      "id": "catalogo-api-ejemplo",
+      "name": "Catálogo con API (ejemplo)",
+      "baseUrl": "https://api.ejemplo-catalogo.com",
+      "type": "api",
+      "enabled": false,
+      "platforms": ["snes", "gba", "n64"],
+      "apiEndpoints": {
+        "search": "/v1/games?q={query}&page={page}",
+        "popular": "/v1/games?sort=popular&page={page}",
+        "byPlatform": "/v1/games?platform={platformPath}&page={page}",
+        "detail": "/v1/games/{id}"
+      },
+      "apiFields": {
+        "items": "data.results",
+        "totalPages": "data.pages",
+        "id": "id",
+        "title": "name",
+        "platform": "system",
+        "cover": "images.cover",
+        "description": "summary",
+        "region": "region",
+        "language": "languages",
+        "size": "bytes",
+        "version": "version",
+        "category": "type",
+        "detail": "data",
+        "downloads": "files",
+        "downloadUrl": "url",
+        "downloadLabel": "name",
+        "screenshots": "images.screens"
+      },
+      "platformPaths": {
+        "snes": "super-nintendo"
+      },
+      "headers": {},
+      "rateLimitPerMinute": 60,
+      "relay": "never"
+    }
+  ],
+  "downloadSettings": {
+    "defaultRomPath": "%APPDATA%\\ejGames\\roms",
+    "extractPasswords": ["common-password-1", "common-password-2"],
+    "autoExtract": true,
+    "organizeByPlatform": true
+  }
+}

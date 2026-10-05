@@ -27,6 +27,13 @@ const HOSTS: [&str; 9] = [
 ];
 
 static MAP: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(Default::default);
+/// Hosts de los catálogos que configura el usuario (`catalog-sources.json`) y de sus imágenes.
+static EXTRA_HOSTS: parking_lot::RwLock<Vec<String>> = parking_lot::RwLock::new(Vec::new());
+
+/// Cambia los hosts de imágenes de los catálogos del usuario.
+pub fn set_extra_hosts(hosts: Vec<String>) {
+    *EXTRA_HOSTS.write() = hosts.into_iter().map(|h| h.trim().trim_start_matches("*.").to_ascii_lowercase()).filter(|h| h.contains('.')).collect();
+}
 
 /// URL https normalizada si el host está permitido.
 fn allowed(url: &str) -> Option<String> {
@@ -43,7 +50,8 @@ fn allowed(url: &str) -> Option<String> {
     if host == "wp.com" || (host.ends_with(".wp.com") && !host.starts_with('i')) {
         return None;
     }
-    HOSTS.iter().any(|h| host == *h || host.ends_with(&format!(".{h}"))).then_some(url)
+    let extra = EXTRA_HOSTS.read();
+    HOSTS.iter().copied().chain(extra.iter().map(String::as_str)).any(|h| host == h || host.ends_with(&format!(".{h}"))).then_some(url)
 }
 
 fn id_of(url: &str) -> String {

@@ -364,7 +364,7 @@
  "Reloj": "Clock",
  "Repack borrado": "Repack deleted",
  "RePág": "PgUp",
- "Requiere emulador (instálalo en Tienda → Software) · {0}": "Requires an emulator (install it in Store → Software) · {0}",
+ "Requiere emulador (instálalo en Tienda → Homebrew) · {0}": "Requires an emulator (install it in Store → Homebrew) · {0}",
  "Requiere emulador para {system}": "Requires an emulator for {system}",
  "Requiere emulador:": "Requires emulator:",
  "Requiere emulador: {0}": "Requires emulator: {0}",
@@ -488,5 +488,8 @@
  "Última vez": "Last time",
  "Última vez: {0}": "Last time: {0}",
  "★ Guardada": "★ Saved",
- "☆ Guardar": "☆ Save"
+ "☆ Guardar": "☆ Save",
+ "Catálogos": "Catalogs",
+ "CATÁLOGOS": "CATALOGS",
+ "HOMEBREW": "HOMEBREW"
 }

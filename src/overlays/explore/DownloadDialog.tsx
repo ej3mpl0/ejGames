@@ -24,7 +24,20 @@ interface Selection {
   fits(free?: number | null): boolean;
 }
 
-export function DownloadDialog({ slug, title, onClose, onStarted }: { slug: string; title: string; onClose: () => void; onStarted: () => void }) {
+export function DownloadDialog({
+  slug,
+  title,
+  prepare,
+  onClose,
+  onStarted,
+}: {
+  slug: string;
+  title: string;
+  /** Otra forma de pedir la lista (los torrents de los catálogos); por defecto, la ficha de la tienda. */
+  prepare?: () => Promise<PreparedDownload>;
+  onClose: () => void;
+  onStarted: () => void;
+}) {
   const toast = useApp((s) => s.toast);
   const [prep, setPrep] = useState<PreparedDownload | null>(null);
   const [error, setError] = useState("");
@@ -35,8 +48,7 @@ export function DownloadDialog({ slug, title, onClose, onStarted }: { slug: stri
 
   useEffect(() => {
     let alive = true;
-    api
-      .downloadsPrepare(slug)
+    (prepare ? prepare() : api.downloadsPrepare(slug))
       .then((p) => {
         if (!alive) return;
         setPrep(p);

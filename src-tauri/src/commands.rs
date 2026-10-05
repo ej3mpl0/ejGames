@@ -1829,3 +1829,171 @@ pub async fn homebrew_uninstall(st: St<'_>, id: String) -> CmdResult<()> {
     let s = st.inner().clone();
     blocking(move || crate::explore::homebrew::uninstall(&s, &id)).await
 }
+
+// ───────────────────────────── catálogos ─────────────────────────────
+
+/// Fuentes configuradas, sus plataformas y con qué emulador se jugaría cada una.
+#[tauri::command]
+pub async fn catalogs_state(st: St<'_>) -> CmdResult<crate::catalogs::CatalogState> {
+    let s = st.inner().clone();
+    blocking(move || Ok(crate::catalogs::state(&s))).await
+}
+
+/// Vuelve a leer `catalog-sources.json` y `emulators.json`.
+#[tauri::command]
+pub async fn catalogs_reload(st: St<'_>) -> CmdResult<crate::catalogs::CatalogState> {
+    let s = st.inner().clone();
+    blocking(move || {
+        crate::catalogs::load(&s);
+        crate::events::library_reset(&s);
+        Ok(crate::catalogs::state(&s))
+    })
+    .await
+}
+
+/// Abre (creándolo con el ejemplo si no existe) uno de los dos archivos: `sources` | `emulators`.
+#[tauri::command]
+pub async fn catalogs_open_config(app: tauri::AppHandle, st: St<'_>, which: String) -> CmdResult<String> {
+    use tauri_plugin_opener::OpenerExt;
+    let root = st.paths.root.clone();
+    let p = match which.as_str() {
+        "emulators" => crate::emulation::custom::ensure_file(&root)?,
+        _ => crate::catalogs::config::ensure_file(&root)?,
+    };
+    crate::catalogs::load(&st);
+    let path = p.to_string_lossy().into_owned();
+    if app.opener().open_path(&path, None::<&str>).is_err() {
+        app.opener().reveal_item_in_dir(&p).map_err(|e| CmdError::Msg(e.to_string()))?;
+    }
+    Ok(path)
+}
+
+/// Una página de una fuente: `mode` = popular | newest | search | platform.
+#[tauri::command]
+pub async fn catalog_browse(st: St<'_>, source_id: String, mode: String, query: Option<String>, platform: Option<String>, page: Option<usize>, force: Option<bool>) -> CmdResult<crate::catalogs::CatalogPage> {
+    Ok(crate::catalogs::browse(
+        st.inner(),
+        &source_id,
+        crate::catalogs::Mode::parse(&mode),
+        query.as_deref().unwrap_or(""),
+        platform.as_deref().filter(|p| !p.is_empty()),
+        page.unwrap_or(1),
+        force.unwrap_or(false),
+    )
+    .await)
+}
+
+/// Busca en todas las fuentes a la vez (solo en las de esas plataformas, si se dan).
+#[tauri::command]
+pub async fn catalog_search_all(st: St<'_>, query: String, platforms: Option<Vec<String>>, page: Option<usize>) -> CmdResult<Vec<crate::catalogs::CatalogPage>> {
+    Ok(crate::catalogs::search_all(st.inner(), &query, &platforms.unwrap_or_default(), page.unwrap_or(1)).await)
+}
+
+/// Ficha de una entrada con sus enlaces de descarga.
+#[tauri::command]
+pub async fn catalog_detail(st: St<'_>, source_id: String, id: String, force: Option<bool>) -> CmdResult<crate::catalogs::CatalogDetail> {
+    Ok(crate::catalogs::detail(st.inner(), &source_id, &id, force.unwrap_or(false)).await?)
+}
+
+/// Baja un enlace directo, lo descomprime, lo ordena y lo mete en la biblioteca.
+#[tauri::command]
+pub async fn catalog_install(st: St<'_>, req: crate::catalogs::pipeline::InstallRequest) -> CmdResult<crate::catalogs::pipeline::InstallOutcome> {
+    Ok(crate::catalogs::pipeline::install_http(st.inner(), req).await?)
+}
+
+#[tauri::command]
+pub async fn catalog_cancel(job: String) -> CmdResult<()> {
+    crate::catalogs::pipeline::cancel(&job);
+    Ok(())
+}
+
+/// Un magnet o .torrent de un catálogo: la lista de archivos para el diálogo de descarga.
+#[tauri::command]
+pub async fn catalog_prepare_torrent(st: St<'_>, req: crate::catalogs::pipeline::InstallRequest) -> CmdResult<crate::downloads::PreparedDownload> {
+    Ok(crate::catalogs::pipeline::prepare_torrent(st.inner(), req).await?)
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EmulatorOption {
+    /// Identifica la opción en la lista.
+    key: String,
+    name: String,
+    /// settings | json | software | detected
+    origin: &'static str,
+    exe: String,
+    /// La configuración que se guarda en Ajustes al elegirla.
+    cfg: crate::settings::EmulatorCfg,
+    /// La que se usa ahora.
+    active: bool,
+}
+
+/// Emuladores que pueden abrir un sistema (para elegir el preferido).
+#[tauri::command]
+pub async fn emulator_options(st: St<'_>, platform: String) -> CmdResult<Vec<EmulatorOption>> {
+    let s = st.inner().clone();
+    blocking(move || {
+        use crate::emulation::{self, custom, install};
+        let unknown = || CmdError::Msg(crate::i18n::t("Sistema desconocido").into_owned());
+        let sys = crate::catalogs::platforms::internal(&platform).ok_or_else(unknown)?;
+        let pf = emulation::platform(sys).ok_or_else(unknown)?;
+        let settings = s.settings.get();
+        let dir = install::emu_dir(&s);
+        let active = emulation::resolve(&settings, Some(&dir), sys, true);
+        let mut out: Vec<EmulatorOption> = vec![];
+        let mut push = |origin: &'static str, cfg: crate::settings::EmulatorCfg| {
+            if out.iter().any(|o| o.exe.eq_ignore_ascii_case(&cfg.exe) && o.cfg.core == cfg.core && o.cfg.kind == cfg.kind) {
+                return;
+            }
+            let on = active.as_ref().is_some_and(|a| a.exe.eq_ignore_ascii_case(&cfg.exe) && a.kind == cfg.kind);
+            out.push(EmulatorOption { key: format!("{origin}:{}:{}", cfg.preset, cfg.exe), name: emulation::cfg_name(&cfg), origin, exe: cfg.exe.clone(), cfg, active: on });
+        };
+        if let Some(c) = settings.emulators.iter().find(|e| e.platform == sys && std::path::Path::new(&e.exe).is_file()) {
+            push("settings", c.clone());
+        }
+        for c in custom::available(sys, Some(&dir), true) {
+            push("json", c);
+        }
+        let mk = |kind: &str, preset: &str, exe: String| crate::settings::EmulatorCfg { platform: sys.into(), kind: kind.into(), preset: preset.into(), exe, core: String::new(), args: String::new() };
+        for p in pf.presets {
+            if let Some(i) = install::installed(&dir, p) {
+                push("software", mk("preset", p, i.exe));
+            }
+        }
+        if !pf.core.is_empty() {
+            if let Some(i) = install::installed(&dir, "retroarch") {
+                push("software", mk("retroarch", "retroarch", i.exe));
+            }
+        }
+        for f in emulation::detect() {
+            if pf.presets.contains(&f.preset.as_str()) {
+                push("detected", mk("preset", &f.preset, f.exe.clone()));
+            } else if f.preset == "retroarch" && !pf.core.is_empty() && f.cores.iter().any(|c| c == pf.core) {
+                push("detected", mk("retroarch", "retroarch", f.exe.clone()));
+            }
+        }
+        Ok(out)
+    })
+    .await
+}
+
+/// Juega un archivo de ROM (lo añade a la biblioteca si no estaba).
+#[tauri::command]
+pub async fn rom_launch_file(st: St<'_>, path: String, platform: String) -> CmdResult<i64> {
+    let pid = active(&st)?;
+    let unknown = || CmdError::Msg(crate::i18n::t("Sistema desconocido").into_owned());
+    let sys = crate::catalogs::platforms::internal(&platform).ok_or_else(unknown)?;
+    let pf = crate::emulation::platform(sys).ok_or_else(unknown)?;
+    let p = std::path::PathBuf::from(&path);
+    if !p.is_file() {
+        return Err(CmdError::Msg(format!("{} {path}", crate::i18n::t("No existe la ROM:"))));
+    }
+    let g = crate::emulation::rom_game(&p, pf);
+    let (id, is_new) = st.db.with(|c| repo::upsert_game(c, &g))?.ok_or_else(|| CmdError::Msg(crate::i18n::t("No se pudo añadir a la biblioteca").into_owned()))?;
+    if is_new {
+        crate::services::after_new_games(st.inner(), vec![(id, None)]).await;
+        crate::events::library_reset(&st);
+    }
+    crate::launcher::play(st.inner(), id, pid).await?;
+    Ok(id)
+}

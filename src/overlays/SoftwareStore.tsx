@@ -1,9 +1,9 @@
-// Tienda → Software: emuladores que se bajan de su fuente oficial y quedan
+// Tienda → Homebrew: emuladores que se bajan de su fuente oficial y quedan
 // integrados en ejGames (puestos como emulador de sus sistemas), y los núcleos de
 // RetroArch de cada sistema.
 
 import { useEffect, useMemo, useState } from "react";
-import { Cpu, Download, ExternalLink, FolderOpen, FolderPlus, Gamepad2, HardDriveDownload, Play, RefreshCw, Trash2 } from "lucide-react";
+import { Cpu, Download, ExternalLink, FolderOpen, FolderPlus, HardDriveDownload, Library, Play, RefreshCw, Trash2 } from "lucide-react";
 import { ask, open as openDialog } from "@tauri-apps/plugin-dialog";
 import { api, errMsg, on } from "../api/tauri";
 import type { EmulationCatalog, SoftwareItem } from "../api/types";
@@ -139,7 +139,7 @@ export function SoftwareStore({ onClose }: { onClose: () => void }) {
       ref={ref}
       title={
         <span className="flex items-center gap-2">
-          <Cpu size={18} className="text-accent" /> {t("Software")}
+          <Cpu size={18} className="text-accent" /> {t("Homebrew")}
         </span>
       }
       headerExtra={
@@ -268,8 +268,8 @@ export function SoftwareStore({ onClose }: { onClose: () => void }) {
           <Button icon={<HardDriveDownload size={15} />} onClick={() => useApp.getState().open("rom-import")}>
             {t("Importar ROMs")}
           </Button>
-          <Button icon={<Gamepad2 size={15} />} onClick={() => useApp.getState().open("homebrew")}>
-            {t("Homebrew")}
+          <Button icon={<Library size={15} />} onClick={() => useApp.getState().open("catalogs")}>
+            {t("Catálogos")}
           </Button>
         </div>
       </div>

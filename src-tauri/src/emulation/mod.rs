@@ -7,6 +7,7 @@
 //! sistema y se lanza con la ROM como argumento. Los emuladores se configuran en
 //! Ajustes → Biblioteca → Emuladores (`settings.emulators`).
 
+pub mod custom;
 pub mod install;
 pub mod roms;
 pub mod rominfo;
@@ -59,6 +60,9 @@ pub const PLATFORMS: &[Platform] = &[
     Platform { id: "vita", name: "PS Vita", exts: &["vpk"], core: "", igdb: 46, presets: &["vita3k"], libretro: "Sony - PlayStation Vita" },
     Platform { id: "ps3", name: "PlayStation 3", exts: &["iso"], core: "", igdb: 9, presets: &["rpcs3"], libretro: "Sony - PlayStation 3" },
     Platform { id: "arcade", name: "Arcade (MAME / FBNeo)", exts: &["zip", "7z"], core: "fbneo_libretro", igdb: 52, presets: &[], libretro: "FBNeo - Arcade Games" },
+    Platform { id: "wonderswan", name: "WonderSwan", exts: &["ws", "wsc"], core: "mednafen_wswan_libretro", igdb: 57, presets: &[], libretro: "Bandai - WonderSwan" },
+    Platform { id: "xbox", name: "Xbox", exts: &["iso", "xiso"], core: "", igdb: 11, presets: &["xemu"], libretro: "Microsoft - Xbox" },
+    Platform { id: "xbox360", name: "Xbox 360", exts: &["iso", "xex", "zar"], core: "", igdb: 12, presets: &["xenia"], libretro: "Microsoft - Xbox 360" },
 ];
 
 pub fn platform(id: &str) -> Option<&'static Platform> {
@@ -86,6 +90,8 @@ pub const PRESETS: &[Preset] = &[
     Preset { id: "ryujinx", name: "Ryujinx", exes: &["Ryujinx.exe"], args: "\"{rom}\"" },
     Preset { id: "vita3k", name: "Vita3K", exes: &["Vita3K.exe"], args: "-F \"{rom}\"" },
     Preset { id: "azahar", name: "Azahar", exes: &["azahar.exe", "azahar-qt.exe"], args: "-f \"{rom}\"" },
+    Preset { id: "xemu", name: "xemu", exes: &["xemu.exe"], args: "-full-screen -dvd_path \"{rom}\"" },
+    Preset { id: "xenia", name: "Xenia", exes: &["xenia_canary.exe", "xenia.exe"], args: "--fullscreen \"{rom}\"" },
 ];
 
 pub fn preset(id: &str) -> Option<&'static Preset> {
@@ -188,12 +194,15 @@ fn has_ext(p: &Path, exts: &[&str]) -> bool {
 /// ROMs de una carpeta (hasta 4 niveles). De un `.cue` y su `.bin`, solo el `.cue`;
 /// de varios discos de un `.m3u`, solo el `.m3u`.
 pub fn find_roms(root: &Path, pf: &Platform) -> Vec<PathBuf> {
+    let extra = custom::extra_exts(pf.id);
+    let extra: Vec<&str> = extra.iter().map(String::as_str).collect();
     let mut all: Vec<PathBuf> = walkdir::WalkDir::new(root)
         .max_depth(4)
         .into_iter()
-        .filter_entry(|e| e.depth() == 0 || !e.file_name().to_string_lossy().starts_with('.'))
+        // Las partidas que ejGames deja junto a las ROMs descargadas no son juegos.
+        .filter_entry(|e| e.depth() == 0 || !(e.file_name().to_string_lossy().starts_with('.') || (e.file_type().is_dir() && e.file_name().eq_ignore_ascii_case("saves"))))
         .filter_map(Result::ok)
-        .filter(|e| e.file_type().is_file() && has_ext(e.path(), pf.exts))
+        .filter(|e| e.file_type().is_file() && (has_ext(e.path(), pf.exts) || has_ext(e.path(), &extra)))
         .map(|e| e.into_path())
         .collect();
     if pf.exts.contains(&"m3u") {
@@ -366,9 +375,18 @@ fn quote_free(s: &str) -> String {
     s.replace('"', "")
 }
 
-/// Argumentos finales: `{rom}` y `{core}` sustituidos.
+/// Argumentos finales: `{rom}` (o `{romPath}`), `{romDir}`, `{romName}` y `{core}` sustituidos.
 pub fn expand_args(template: &str, rom: &str, core: &str) -> String {
-    template.replace("{rom}", &quote_free(rom)).replace("{core}", &quote_free(core))
+    let p = Path::new(rom);
+    let dir = p.parent().map(|d| d.to_string_lossy().into_owned()).unwrap_or_default();
+    let name = p.file_stem().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    template
+        .replace("{romPath}", &quote_free(rom))
+        .replace("{rom}", &quote_free(rom))
+        .replace("{romDir}", &quote_free(&dir))
+        .replace("{romName}", &quote_free(&name))
+        .replace("{core}", &quote_free(core))
+        .replace("{fullscreen}", "")
 }
 
 /// Nombre del emulador de una configuración.
@@ -376,20 +394,32 @@ pub fn cfg_name(cfg: &EmulatorCfg) -> String {
     match cfg.kind.as_str() {
         "retroarch" => "RetroArch".into(),
         "preset" => preset(&cfg.preset).map(|p| p.name.to_string()).unwrap_or_else(|| cfg.preset.clone()),
+        _ if cfg.preset.starts_with("json:") => custom::name_of(&cfg.preset).unwrap_or_else(|| cfg.preset[5..].to_string()),
         _ => Path::new(&cfg.exe).file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default(),
     }
 }
 
 /// El emulador con que se abre un sistema: el elegido en Ajustes si sigue ahí; si no,
-/// uno de los suyos instalado desde Tienda → Software (Switch: Eden o Ryujinx, el que
-/// haya) y, para los sistemas con núcleo, RetroArch. Con `deep`, además se buscan en
-/// los sitios habituales del disco (más lento: solo al jugar).
+/// el preferido de `emulators.json`, uno de los suyos instalado desde Tienda → Homebrew
+/// (Switch: Eden o Ryujinx, el que haya), para los sistemas con núcleo RetroArch, y los
+/// de `emulators.json` que se encuentren. Con `deep`, además se buscan en los sitios
+/// habituales del disco (más lento: solo al jugar).
 pub fn resolve(settings: &Settings, emu_dir: Option<&Path>, platform_id: &str, deep: bool) -> Option<EmulatorCfg> {
     let pf = platform(platform_id)?;
     if let Some(c) = settings.emulators.iter().find(|e| e.platform == pf.id && Path::new(&e.exe).is_file()) {
         return Some(c.clone());
     }
     let mk = |kind: &str, preset: &str, exe: String| EmulatorCfg { platform: pf.id.into(), kind: kind.into(), preset: preset.into(), exe, core: String::new(), args: String::new() };
+    // El preferido del archivo: uno suyo o uno de los que ejGames conoce.
+    if let Some(pref) = custom::preferred(pf.id) {
+        if let Some(d) = custom::def(&pref) {
+            if let Some(exe) = custom::locate(&d.id, emu_dir, deep) {
+                return Some(custom::cfg(&d, pf.id, &exe, true));
+            }
+        } else if let Some(i) = emu_dir.and_then(|dir| install::installed(dir, &pref)) {
+            return Some(mk(if pref == "retroarch" { "retroarch" } else { "preset" }, &pref, i.exe));
+        }
+    }
     if let Some(dir) = emu_dir {
         for p in pf.presets {
             if let Some(i) = install::installed(dir, p) {
@@ -401,6 +431,9 @@ pub fn resolve(settings: &Settings, emu_dir: Option<&Path>, platform_id: &str, d
                 return Some(mk("retroarch", "retroarch", i.exe));
             }
         }
+    }
+    if let Some(c) = custom::available(pf.id, emu_dir, deep).into_iter().next() {
+        return Some(c);
     }
     if deep {
         let found = detect();
@@ -457,7 +490,7 @@ pub fn prepare_in(settings: &Settings, emu_dir: Option<&Path>, deep: bool, g: &G
         Some(c) => c,
         None => match configured {
             Some(c) => anyhow::bail!("{} {}", crate::i18n::t("No existe el emulador:"), c.exe),
-            None => anyhow::bail!("{} {}", crate::i18n::t("No hay emulador para este sistema. Instálalo en Tienda → Software o elígelo en Ajustes → Biblioteca → Emuladores:"), pf.name),
+            None => anyhow::bail!("{} {}", crate::i18n::t("No hay emulador para este sistema. Instálalo en Tienda → Homebrew o elígelo en Ajustes → Biblioteca → Emuladores:"), pf.name),
         },
     };
     let rom_ext = Path::new(&rom).extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
@@ -478,7 +511,19 @@ pub fn prepare_in(settings: &Settings, emu_dir: Option<&Path>, deep: bool, g: &G
             preset(&cfg.preset).map(|p| p.args.to_string()).filter(|_| cfg.args.trim().is_empty()).unwrap_or_else(|| cfg.args.clone()),
             String::new(),
         ),
-        _ => (if cfg.args.trim().is_empty() { "\"{rom}\"".into() } else { cfg.args.clone() }, String::new()),
+        _ => {
+            // Un emulador de `emulators.json` con núcleo de RetroArch: la DLL va en `{core}`.
+            let core = if cfg.core.trim().is_empty() {
+                String::new()
+            } else {
+                let dll = Path::new(&cfg.exe).parent().map(|d| d.join("cores").join(format!("{}.dll", cfg.core.trim_end_matches(".dll")))).unwrap_or_default();
+                if !dll.is_file() {
+                    anyhow::bail!("{} {}", crate::i18n::t("Falta el núcleo de RetroArch (instálalo en RetroArch → Cargar núcleo → Descargar un núcleo):"), cfg.core);
+                }
+                dll.to_string_lossy().into_owned()
+            };
+            (if cfg.args.trim().is_empty() { "\"{rom}\"".into() } else { cfg.args.clone() }, core)
+        }
     };
     // Vita3K instala el .vpk la primera vez; después se arranca por su TitleID.
     if cfg.kind == "preset" && cfg.preset == "vita3k" && cfg.args.trim().is_empty() {
@@ -513,7 +558,9 @@ pub fn decorate(st: &crate::state::AppState, games: &mut [crate::db::models::Lib
         let name = names.entry(pid.clone()).or_insert_with(|| resolve(&settings, Some(&dir), &pid, false).map(|c| cfg_name(&c)).unwrap_or_default());
         g.emulator = Some(name.clone());
         let tid = g.rom.as_ref().and_then(|r| r.get("titleId")).and_then(|t| t.as_str()).map(str::to_string);
-        if let Some(list) = tid.and_then(|t| extras.get(&(pid.clone(), t))) {
+        // Las extras de juegos sin TitleID (bajadas de un catálogo) van por el id del juego.
+        let list = tid.and_then(|t| extras.get(&(pid.clone(), t))).or_else(|| extras.get(&(pid.clone(), format!("game:{}", g.id))));
+        if let Some(list) = list {
             let rom = g.rom.get_or_insert_with(|| serde_json::json!({}));
             rom["extras"] = serde_json::Value::Array(list.clone());
         }

@@ -3,7 +3,7 @@
 
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { api, errMsg, on } from "../api/tauri";
-import type { DownloadItem, HomebrewEntry, HomebrewJob } from "../api/types";
+import type { CatalogInstallRequest, CatalogJob, DownloadItem, HomebrewEntry, HomebrewJob } from "../api/types";
 import { t } from "../lib/i18n";
 import { activeTheme, useApp } from "../store/app";
 
@@ -150,4 +150,80 @@ export function installHomebrew(e: HomebrewEntry) {
 /** Quita de la lista un homebrew que falló. */
 export function dismissHomebrewJob(id: string) {
   setJob(id, null);
+}
+
+// ───────────────────────────── catálogos ─────────────────────────────
+// Explorar → Catálogos. Enlaces directos: cola HTTP propia, de una en una, que al
+// acabar descomprime, ordena en roms\<plataforma>\<juego>\ y lo mete en la
+// biblioteca (catalogs/pipeline.rs). Magnets y .torrent: van a Descargas como
+// cualquier torrent y «Instalar» hace lo mismo.
+
+const catQueue: CatalogInstallRequest[] = [];
+let catRunning = false;
+let catListening = false;
+
+const catKey = (r: Pick<CatalogInstallRequest, "sourceId" | "gameId">) => `${r.sourceId}|${r.gameId}`;
+
+function setCatJob(id: string, patch: Partial<CatalogJob> | null) {
+  const jobs = { ...useApp.getState().catalogJobs };
+  if (patch === null) delete jobs[id];
+  else jobs[id] = { ...(jobs[id] ?? { id, name: id, phase: "queued", received: 0, total: 0 }), ...patch };
+  useApp.getState().set({ catalogJobs: jobs });
+}
+
+async function catNext() {
+  if (catRunning) return;
+  const r = catQueue.shift();
+  if (!r) return;
+  catRunning = true;
+  const id = catKey(r);
+  setCatJob(id, { phase: "download" });
+  try {
+    const out = await api.catalogInstall(r);
+    const gameId = out.gameIds[0] ?? null;
+    setCatJob(id, { phase: "done", gameId });
+    const st = useApp.getState();
+    if (out.notEmulated) st.toast("info", t("«{name}» descargado en {dir} (sin emulador en ejGames)", { name: r.title, dir: out.dir }));
+    else
+      st.toast("ok", t("«{name}» ya está en tu biblioteca", { name: r.title }), gameId ? { label: t("Jugar"), run: () => void api.romLaunch(gameId).catch((e) => st.toast("error", errMsg(e))) } : undefined);
+  } catch (err) {
+    setCatJob(id, { phase: "error", message: errMsg(err) });
+    useApp.getState().toast("error", `${r.title}: ${errMsg(err)}`);
+  } finally {
+    catRunning = false;
+    void catNext();
+  }
+}
+
+/** Pone en la cola un enlace directo de un catálogo. */
+export function downloadFromCatalog(req: CatalogInstallRequest) {
+  if (!catListening) {
+    catListening = true;
+    void on("catalog:progress", (p) => {
+      if (p.phase === "download" || p.phase === "extract" || p.phase === "organize")
+        setCatJob(p.id, { phase: p.phase, received: p.received, total: p.total || useApp.getState().catalogJobs[p.id]?.total || 0 });
+    });
+  }
+  const id = catKey(req);
+  const job = useApp.getState().catalogJobs[id];
+  if (job && job.phase !== "error" && job.phase !== "done") return;
+  setCatJob(id, { name: req.title, phase: "queued", received: 0, total: 0, message: null, gameId: null });
+  catQueue.push(req);
+  void catNext();
+}
+
+/** Cancela una descarga de catálogo (en cola o bajándose). */
+export function cancelCatalogJob(id: string) {
+  const i = catQueue.findIndex((r) => catKey(r) === id);
+  if (i >= 0) {
+    catQueue.splice(i, 1);
+    setCatJob(id, null);
+    return;
+  }
+  void api.catalogCancel(id);
+}
+
+/** Quita de la lista una descarga de catálogo terminada o fallida. */
+export function dismissCatalogJob(id: string) {
+  setCatJob(id, null);
 }

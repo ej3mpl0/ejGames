@@ -32,6 +32,7 @@ import { StatsOverlay } from "./overlays/Stats";
 import { YearReviewOverlay } from "./overlays/YearReview";
 import { SoftwareStore } from "./overlays/SoftwareStore";
 import { HomebrewStore } from "./overlays/HomebrewStore";
+import { Catalogs } from "./overlays/Catalogs";
 import { RomImport } from "./overlays/RomImport";
 import { activeTheme, useApp } from "./store/app";
 import { useHostSeason } from "./host/season";
@@ -262,6 +263,8 @@ export default function App() {
             return <HomebrewStore key={key} args={o.args} onClose={onClose} />;
           case "rom-import":
             return <RomImport key={key} onClose={onClose} />;
+          case "catalogs":
+            return <Catalogs key={key} args={o.args} onClose={onClose} />;
           case "year-review":
             return <YearReviewOverlay key={key} year={o.args?.year == null ? undefined : Number(o.args.year)} onClose={onClose} />;
           case "stats":

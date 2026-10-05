@@ -13,3 +13,9 @@ compatibility_date = "2026-09-01"
 name = "LIMITER"
 namespace_id = "1001"
 simple = { limit = 40, period = 60 }
+
+# Catálogos: las fuentes que este relay reenvía, { "<id>": "<baseUrl>" } (las de
+# catalog-sources.json). Vacío = ninguna. También se puede poner como secreto:
+#   npx wrangler secret put CATALOG_SOURCES -c relay/wrangler.toml
+[vars]
+CATALOG_SOURCES = "{}"

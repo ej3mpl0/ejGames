@@ -1,0 +1,202 @@
+{
+  "_ayuda": [
+    "Copia este archivo como %APPDATA%\\ejGames\\config\\emulators.json (o pulsa «Editar emuladores» en Explorar → Catálogos). Estos emuladores se suman a los que ejGames ya conoce (Tienda → Homebrew y Ajustes → Biblioteca → Emuladores).",
+    "installPath: carpeta o .exe; si se deja en null, se busca executableName en la carpeta de emuladores de ejGames y en los sitios habituales (Archivos de programa, C:\\Emulators…).",
+    "launchArgs: {romPath} (ruta de la ROM), {romDir} (su carpeta), {romName} (su nombre sin extensión), {core} (núcleo de RetroArch de «core») y {fullscreen} (lo que diga fullscreenArgs).",
+    "romFolder: dónde dejar las ROMs descargadas de sus sistemas ({platform} = el sistema); null = %APPDATA%\\ejGames\\roms\\<sistema>.",
+    "preferred: el emulador que se usa para cada sistema si está instalado (de esta lista o uno de ejGames: eden, ryujinx, pcsx2, duckstation, dolphin, ppsspp, vita3k, azahar, cemu, rpcs3, xemu, xenia, retroarch)."
+  ],
+  "emulators": [
+    {
+      "id": "ryujinx",
+      "name": "Ryujinx",
+      "platforms": ["switch"],
+      "executableName": "Ryujinx.exe",
+      "installPath": null,
+      "romExtensions": [".nsp", ".xci", ".nca", ".nro"],
+      "romFolder": null,
+      "launchArgs": ["{fullscreen}", "\"{romPath}\""],
+      "fullscreenArgs": ["--fullscreen"],
+      "coverExtensions": [".png", ".jpg"]
+    },
+    {
+      "id": "eden",
+      "name": "Eden",
+      "platforms": ["switch"],
+      "executableName": "eden.exe",
+      "installPath": null,
+      "romExtensions": [".nsp", ".xci", ".nca", ".nro"],
+      "launchArgs": ["{fullscreen}", "-g", "\"{romPath}\""],
+      "fullscreenArgs": ["-f"],
+      "coverExtensions": [".png", ".jpg"]
+    },
+    {
+      "id": "pcsx2",
+      "name": "PCSX2",
+      "platforms": ["ps2"],
+      "executableName": "pcsx2-qt.exe",
+      "installPath": null,
+      "romExtensions": [".iso", ".chd", ".cso", ".gz"],
+      "launchArgs": ["-batch", "{fullscreen}", "--", "\"{romPath}\""],
+      "fullscreenArgs": ["-fullscreen"],
+      "coverExtensions": [".png", ".jpg"]
+    },
+    {
+      "id": "duckstation",
+      "name": "DuckStation",
+      "platforms": ["ps1"],
+      "executableName": "duckstation-qt-x64-ReleaseLTCG.exe",
+      "installPath": null,
+      "romExtensions": [".cue", ".chd", ".pbp", ".m3u", ".iso"],
+      "launchArgs": ["-batch", "{fullscreen}", "--", "\"{romPath}\""],
+      "fullscreenArgs": ["-fullscreen"],
+      "coverExtensions": [".png", ".jpg"]
+    },
+    {
+      "id": "retroarch-psx",
+      "name": "RetroArch (Beetle PSX)",
+      "platforms": ["ps1"],
+      "executableName": "retroarch.exe",
+      "installPath": null,
+      "core": "mednafen_psx_hw_libretro",
+      "romExtensions": [".cue", ".chd", ".pbp", ".m3u"],
+      "launchArgs": ["{fullscreen}", "-L", "\"{core}\"", "\"{romPath}\""],
+      "fullscreenArgs": ["-f"]
+    },
+    {
+      "id": "vita3k",
+      "name": "Vita3K",
+      "platforms": ["ps-vita"],
+      "executableName": "Vita3K.exe",
+      "installPath": null,
+      "romExtensions": [".vpk"],
+      "launchArgs": ["{fullscreen}", "\"{romPath}\""],
+      "fullscreenArgs": ["-F"]
+    },
+    {
+      "id": "ppsspp",
+      "name": "PPSSPP",
+      "platforms": ["psp"],
+      "executableName": "PPSSPPWindows64.exe",
+      "installPath": null,
+      "romExtensions": [".iso", ".cso", ".pbp"],
+      "launchArgs": ["{fullscreen}", "\"{romPath}\""],
+      "fullscreenArgs": ["--fullscreen"]
+    },
+    {
+      "id": "dolphin",
+      "name": "Dolphin",
+      "platforms": ["wii", "gamecube"],
+      "executableName": "Dolphin.exe",
+      "installPath": null,
+      "romExtensions": [".iso", ".rvz", ".wbfs", ".gcz", ".ciso", ".wad"],
+      "launchArgs": ["-b", "-e", "\"{romPath}\""],
+      "fullscreenArgs": []
+    },
+    {
+      "id": "cemu",
+      "name": "Cemu",
+      "platforms": ["wii-u"],
+      "executableName": "Cemu.exe",
+      "installPath": null,
+      "romExtensions": [".wua", ".wud", ".wux", ".rpx"],
+      "launchArgs": ["-g", "\"{romPath}\"", "{fullscreen}"],
+      "fullscreenArgs": ["-f"]
+    },
+    {
+      "id": "retroarch-n64",
+      "name": "RetroArch (Mupen64Plus)",
+      "platforms": ["n64"],
+      "executableName": "retroarch.exe",
+      "core": "mupen64plus_next_libretro",
+      "romExtensions": [".z64", ".n64", ".v64"],
+      "launchArgs": ["{fullscreen}", "-L", "\"{core}\"", "\"{romPath}\""],
+      "fullscreenArgs": ["-f"]
+    },
+    {
+      "id": "retroarch-snes",
+      "name": "RetroArch (Snes9x)",
+      "platforms": ["snes"],
+      "executableName": "retroarch.exe",
+      "core": "snes9x_libretro",
+      "romExtensions": [".sfc", ".smc"],
+      "launchArgs": ["{fullscreen}", "-L", "\"{core}\"", "\"{romPath}\""],
+      "fullscreenArgs": ["-f"]
+    },
+    {
+      "id": "retroarch-nes",
+      "name": "RetroArch (Nestopia)",
+      "platforms": ["nes"],
+      "executableName": "retroarch.exe",
+      "core": "nestopia_libretro",
+      "romExtensions": [".nes", ".fds"],
+      "launchArgs": ["{fullscreen}", "-L", "\"{core}\"", "\"{romPath}\""],
+      "fullscreenArgs": ["-f"]
+    },
+    {
+      "id": "retroarch-genesis",
+      "name": "RetroArch (Genesis Plus GX)",
+      "platforms": ["genesis", "master-system", "game-gear"],
+      "executableName": "retroarch.exe",
+      "core": "genesis_plus_gx_libretro",
+      "romExtensions": [".md", ".gen", ".smd", ".sms", ".gg"],
+      "launchArgs": ["{fullscreen}", "-L", "\"{core}\"", "\"{romPath}\""],
+      "fullscreenArgs": ["-f"]
+    },
+    {
+      "id": "retroarch-saturn",
+      "name": "RetroArch (Yabause)",
+      "platforms": ["saturn"],
+      "executableName": "retroarch.exe",
+      "core": "yabause_libretro",
+      "romExtensions": [".cue", ".chd"],
+      "launchArgs": ["{fullscreen}", "-L", "\"{core}\"", "\"{romPath}\""],
+      "fullscreenArgs": ["-f"]
+    },
+    {
+      "id": "redream",
+      "name": "Redream",
+      "platforms": ["dreamcast"],
+      "executableName": "redream.exe",
+      "romExtensions": [".gdi", ".cdi", ".chd"],
+      "launchArgs": ["\"{romPath}\""]
+    },
+    {
+      "id": "flycast",
+      "name": "Flycast",
+      "platforms": ["dreamcast"],
+      "executableName": "flycast.exe",
+      "romExtensions": [".gdi", ".cdi", ".chd"],
+      "launchArgs": ["\"{romPath}\""]
+    },
+    {
+      "id": "mame",
+      "name": "MAME",
+      "platforms": ["arcade", "mame", "neo-geo"],
+      "executableName": "mame.exe",
+      "romExtensions": [".zip", ".7z"],
+      "launchArgs": ["-rompath", "\"{romDir}\"", "{romName}"]
+    },
+    {
+      "id": "mgba",
+      "name": "mGBA",
+      "platforms": ["gba", "gb", "gbc"],
+      "executableName": "mGBA.exe",
+      "romExtensions": [".gba", ".gb", ".gbc"],
+      "launchArgs": ["{fullscreen}", "\"{romPath}\""],
+      "fullscreenArgs": ["-f"]
+    },
+    {
+      "id": "melonds",
+      "name": "melonDS",
+      "platforms": ["ds"],
+      "executableName": "melonDS.exe",
+      "romExtensions": [".nds"],
+      "launchArgs": ["\"{romPath}\""]
+    }
+  ],
+  "preferred": {
+    "ps1": "duckstation",
+    "switch": "eden"
+  }
+}

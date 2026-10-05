@@ -1138,7 +1138,7 @@ export interface RomImportReport {
 }
 
 /** Emulador con que se abre un sistema ahora mismo. */
-export interface EmulatorConfig {
+export interface SystemEmulator {
   platform: string;
   name: string;
   exe: string;
@@ -1192,4 +1192,214 @@ export interface HomebrewJob {
   received: number;
   total: number;
   message?: string | null;
+}
+
+// ───────────────────────────── catálogos ─────────────────────────────
+
+/** Plataformas de los catálogos (ampliable: el núcleo reconoce las de `catalogs/platforms.rs`). */
+export type Platform =
+  | "switch" | "wii" | "wii-u" | "gamecube" | "n64" | "snes" | "nes" | "gba" | "gb" | "gbc" | "ds" | "3ds"
+  | "ps1" | "ps2" | "ps3" | "ps4" | "psp" | "ps-vita"
+  | "xbox" | "xbox-360" | "xbox-one"
+  | "genesis" | "saturn" | "dreamcast" | "master-system" | "game-gear"
+  | "neo-geo" | "arcade" | "mame"
+  | "pc-engine" | "turbografx" | "wonderswan"
+  | "pc" | "dos" | "windows";
+
+export type CatalogCategory = "game" | "dlc" | "update" | "homebrew" | "emulator";
+
+/** Direcciones de una fuente: `{query}`, `{page}`, `{platform}`, `{platformPath}`, `{id}`. */
+export interface CatalogEndpoints {
+  search?: string;
+  popular?: string;
+  newest?: string;
+  byPlatform?: string;
+  detail?: string;
+}
+
+/** Una fuente de `config/catalog-sources.json` (la edita el usuario). */
+export interface CatalogSource {
+  id: string;
+  name: string;
+  baseUrl: string;
+  type: "api" | "scrape";
+  enabled?: boolean;
+  platforms: Platform[];
+  apiEndpoints?: CatalogEndpoints;
+  apiFields?: Record<string, string>;
+  selectors?: {
+    gameList: string;
+    title: string;
+    description?: string;
+    coverImage?: string;
+    downloadLink?: string;
+    platform?: string;
+    region?: string;
+    language?: string;
+    size?: string;
+    version?: string;
+    nextPage?: string;
+    detailLink?: string;
+    category?: string;
+    breadcrumbs?: string;
+    screenshots?: string;
+  };
+  platformMapping?: Record<string, Platform>;
+  platformPaths?: Partial<Record<Platform, string>>;
+  headers?: Record<string, string>;
+  rateLimitPerMinute: number;
+  cacheMinutes?: number;
+  extractPasswords?: string[];
+  imageHosts?: string[];
+  relay?: "auto" | "always" | "never";
+  icon?: string | null;
+}
+
+export interface CatalogDownloadSettings {
+  defaultRomPath: string;
+  extractPasswords: string[];
+  autoExtract: boolean;
+  organizeByPlatform: boolean;
+}
+
+export interface CatalogEntry {
+  id: string;
+  sourceId: string;
+  title: string;
+  /** null si la web no lo dice y no se pudo deducir. */
+  platform: Platform | null;
+  /** Servida por ejGames ("" si no hay). */
+  coverUrl: string;
+  coverOriginal?: string | null;
+  description?: string | null;
+  region?: string | null;
+  language?: string | null;
+  size?: string | null;
+  sizeBytes?: number | null;
+  version?: string | null;
+  category: CatalogCategory;
+  originalUrl: string;
+  /** Ya bajado desde este catálogo: su juego en la biblioteca. */
+  installedGameId?: number | null;
+  /** Emulador con que se jugaría ("" ninguno; null si no es de consola). */
+  emulator?: string | null;
+}
+
+export interface DownloadLink {
+  url: string;
+  label: string;
+  /** direct (un archivo) | page (web de descargas: navegador) | magnet | torrent */
+  kind: "direct" | "page" | "magnet" | "torrent";
+  host: string;
+  size?: string | null;
+}
+
+export interface CatalogDetail extends CatalogEntry {
+  links: DownloadLink[];
+  screenshots: string[];
+}
+
+export interface CatalogPage {
+  sourceId: string;
+  entries: CatalogEntry[];
+  page: number;
+  hasMore: boolean;
+  error?: string | null;
+}
+
+export interface CatalogPlatformInfo {
+  id: Platform;
+  name: string;
+  /** Id de ejGames («psx»); null si no se emula. */
+  system: string | null;
+  emulator: string;
+}
+
+export interface CatalogSourceInfo {
+  id: string;
+  name: string;
+  kind: "api" | "scrape";
+  baseUrl: string;
+  icon?: string | null;
+  enabled: boolean;
+  platforms: CatalogPlatformInfo[];
+  /** Lo que falta en el JSON para poder usarla. */
+  problems: string[];
+  hasSearch: boolean;
+  /** Viene con ejGames (si no, es del archivo del usuario). */
+  builtin: boolean;
+}
+
+export interface CatalogState {
+  sources: CatalogSourceInfo[];
+  error?: string | null;
+  emulatorsError?: string | null;
+  path: string;
+  emulatorsPath: string;
+  exists: boolean;
+  downloadSettings: CatalogDownloadSettings;
+  allPlatforms: CatalogPlatformInfo[];
+}
+
+/** Lo que se manda al núcleo para bajar e instalar una entrada. */
+export interface CatalogInstallRequest {
+  sourceId: string;
+  gameId: string;
+  title: string;
+  platform?: Platform | null;
+  category: CatalogCategory;
+  cover?: string | null;
+  description?: string | null;
+  region?: string | null;
+  version?: string | null;
+  baseGameId?: string | null;
+  url: string;
+}
+
+export interface CatalogInstallOutcome {
+  gameIds: number[];
+  extras: number;
+  dir: string;
+  notEmulated: boolean;
+}
+
+/** Una descarga de catálogo por HTTP (la cola vive en `host/downloads.ts`). */
+export interface CatalogJob {
+  /** `<fuente>|<id>` */
+  id: string;
+  name: string;
+  phase: "queued" | "download" | "extract" | "organize" | "done" | "error";
+  received: number;
+  total: number;
+  message?: string | null;
+  gameId?: number | null;
+}
+
+/** Emulador de `config/emulators.json` (lo edita el usuario). */
+export interface EmulatorConfig {
+  id: string;
+  name: string;
+  platforms: Platform[];
+  executableName: string;
+  /** Carpeta o .exe; sin él se busca solo. */
+  installPath?: string | null;
+  romExtensions: string[];
+  /** `%APPDATA%\ejGames\roms\{platform}\` */
+  romFolder?: string | null;
+  /** Argumentos con `{romPath}`, `{romDir}`, `{romName}`, `{core}` y `{fullscreen}`. */
+  launchArgs: string[];
+  fullscreenArgs?: string[];
+  /** RetroArch: núcleo para `{core}`. */
+  core?: string | null;
+  coverExtensions?: string[];
+}
+
+/** Un emulador posible para un sistema (para elegir el preferido). */
+export interface EmulatorOption {
+  key: string;
+  name: string;
+  origin: "settings" | "json" | "software" | "detected";
+  exe: string;
+  cfg: EmulatorCfg;
+  active: boolean;
 }

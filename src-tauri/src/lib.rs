@@ -1,6 +1,7 @@
 mod achievements;
 mod activity;
 mod backup;
+mod catalogs;
 mod commands;
 mod db;
 mod discord;
@@ -234,6 +235,17 @@ pub fn run() {
             commands::homebrew_catalog,
             commands::homebrew_install,
             commands::homebrew_uninstall,
+            commands::catalogs_state,
+            commands::catalogs_reload,
+            commands::catalogs_open_config,
+            commands::catalog_browse,
+            commands::catalog_search_all,
+            commands::catalog_detail,
+            commands::catalog_install,
+            commands::catalog_cancel,
+            commands::catalog_prepare_torrent,
+            commands::emulator_options,
+            commands::rom_launch_file,
             commands::get_year_review,
             commands::community_themes,
             commands::community_theme_install,
@@ -351,6 +363,8 @@ pub fn run() {
                 trainers: Default::default(),
             });
             app.manage(st.clone());
+            // Fuentes de catálogos y emuladores del usuario (dos JSON pequeños).
+            catalogs::load(&st);
             launcher::gamemode::recover(&st);
             // 0.10 guardaba el modo juego en los ajustes globales; ahora es de cada perfil.
             {

@@ -294,18 +294,34 @@ pub async fn prepare(st: &Arc<AppState>, slug: &str) -> anyhow::Result<PreparedD
 #[cfg(debug_assertions)]
 pub async fn prepare_magnet(st: &Arc<AppState>, magnet: &str, title: &str) -> anyhow::Result<PreparedDownload> {
     let (_, hash) = hex_of(magnet)?;
-    let details = explore::RepackDetails {
+    let details = bare_details("test", format!("test-{}", &hash[..8]), &hash, magnet, title, None);
+    let slug = details.repack.slug.clone();
+    prepare_details(st, &slug, details).await
+}
+
+/// Catálogos: el torrent de una entrada (magnet) entra en la cola como cualquier otro;
+/// al pulsar Instalar, `install` lo pasa a la cadena de los catálogos.
+pub async fn prepare_catalog(st: &Arc<AppState>, magnet: &str, title: &str, cover: Option<String>) -> anyhow::Result<PreparedDownload> {
+    let (_, hash) = hex_of(magnet)?;
+    let details = bare_details("catalog", format!("cat-{}", &hash[..12]), &hash, magnet, title, cover);
+    let slug = details.repack.slug.clone();
+    prepare_details(st, &slug, details).await
+}
+
+/// Una ficha mínima alrededor de un magnet (sin pasar por la tienda).
+fn bare_details(source: &str, slug: String, hash: &str, magnet: &str, title: &str, cover: Option<String>) -> explore::RepackDetails {
+    explore::RepackDetails {
         repack: explore::Repack {
-            source: "test".into(),
+            source: source.into(),
             id: i64::from_str_radix(&hash[..12], 16).unwrap_or(0),
-            slug: format!("test-{}", &hash[..8]),
+            slug,
             title: title.into(),
             version: None,
             full_title: title.into(),
             url: String::new(),
             date: String::new(),
             number: None,
-            cover: None,
+            cover,
             cover_full: None,
             hero: None,
             genres: vec![],
@@ -328,9 +344,7 @@ pub async fn prepare_magnet(st: &Arc<AppState>, magnet: &str, title: &str) -> an
         install_size: None,
         description: None,
         magnet: Some(magnet.into()),
-    };
-    let slug = details.repack.slug.clone();
-    prepare_details(st, &slug, details).await
+    }
 }
 
 async fn prepare_details(st: &Arc<AppState>, slug: &str, details: explore::RepackDetails) -> anyhow::Result<PreparedDownload> {

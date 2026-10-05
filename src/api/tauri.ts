@@ -12,7 +12,13 @@ import type {
   SoftwareItem,
   RomEntry,
   RomImportReport,
-  EmulatorConfig,
+  SystemEmulator,
+  CatalogState,
+  CatalogPage,
+  CatalogDetail,
+  CatalogInstallRequest,
+  CatalogInstallOutcome,
+  EmulatorOption,
   HomebrewSystem,
   HomebrewPage,
   SavesInfo,
@@ -96,7 +102,19 @@ export const api = {
   romScanFolder: (path: string) => invoke<RomEntry[]>("rom_scan_folder", { path }),
   romImport: (items: { path: string; inner?: string; platform: string }[], copy: boolean) => invoke<RomImportReport>("rom_import", { items, copy }),
   romLaunch: (id: number) => invoke<void>("rom_launch", { id }),
-  emulatorForSystem: (system: string) => invoke<EmulatorConfig>("emulator_for_system", { system }),
+  emulatorForSystem: (system: string) => invoke<SystemEmulator>("emulator_for_system", { system }),
+  catalogsState: () => invoke<CatalogState>("catalogs_state"),
+  catalogsReload: () => invoke<CatalogState>("catalogs_reload"),
+  catalogsOpenConfig: (which: "sources" | "emulators") => invoke<string>("catalogs_open_config", { which }),
+  catalogBrowse: (q: { sourceId: string; mode: "popular" | "newest" | "search" | "platform"; query?: string; platform?: string | null; page?: number; force?: boolean }) =>
+    invoke<CatalogPage>("catalog_browse", q),
+  catalogSearchAll: (query: string, platforms?: string[], page?: number) => invoke<CatalogPage[]>("catalog_search_all", { query, platforms, page }),
+  catalogDetail: (sourceId: string, id: string, force?: boolean) => invoke<CatalogDetail>("catalog_detail", { sourceId, id, force }),
+  catalogInstall: (req: CatalogInstallRequest) => invoke<CatalogInstallOutcome>("catalog_install", { req }),
+  catalogCancel: (job: string) => invoke<void>("catalog_cancel", { job }),
+  catalogPrepareTorrent: (req: CatalogInstallRequest) => invoke<PreparedDownload>("catalog_prepare_torrent", { req }),
+  emulatorOptions: (platform: string) => invoke<EmulatorOption[]>("emulator_options", { platform }),
+  romLaunchFile: (path: string, platform: string) => invoke<number>("rom_launch_file", { path, platform }),
   homebrewCatalog: (q: { system: HomebrewSystem; query?: string; category?: string; sort?: string; page?: number; force?: boolean }) =>
     invoke<HomebrewPage>("homebrew_catalog", q),
   homebrewInstall: (id: string) => invoke<number>("homebrew_install", { id }),
@@ -280,6 +298,7 @@ export type Events = {
   "emu:progress": { id: string; phase: string; received: number; total: number };
   "hb:progress": { id: string; phase: "download" | "extract" | "done" | "error"; received: number; total: number; message?: string | null };
   "rom:import": { done: number; total: number; name: string };
+  "catalog:progress": { id: string; phase: "download" | "extract" | "organize" | "done" | "error"; received: number; total: number; message?: string | null };
   "downloads:install": { id: number; phase: "running" | "done" | "cancelled" | "error" | "needs-folder"; message?: string | null; gameId?: number | null };
 };
 

@@ -169,7 +169,7 @@ export function HomebrewStore({ args, onClose }: { args?: Record<string, unknown
       headerExtra={
         <>
           <Button size="sm" variant="ghost" icon={<Cpu size={14} />} onClick={() => useApp.getState().open("software")}>
-            {t("Software")}
+            {t("Homebrew")}
           </Button>
           <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} onClick={() => void load(true)}>
             {t("Actualizar catálogo")}
@@ -244,7 +244,7 @@ export function HomebrewStore({ args, onClose }: { args?: Record<string, unknown
             <span>{t("Emulador: {emu}", { emu: data.emulator })}</span>
           ) : (
             <span className="text-amber-300/90">
-              {t("Sin emulador para {system}: instálalo en Software ({emu})", { system: sys.label, emu: sys.emulators })}
+              {t("Sin emulador para {system}: instálalo en Homebrew ({emu})", { system: sys.label, emu: sys.emulators })}
             </span>
           )}
           {data?.error && <span className="text-red-300">· {t("Sin conexión con el catálogo; se muestra el último guardado.")}</span>}

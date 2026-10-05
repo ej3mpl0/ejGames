@@ -148,7 +148,7 @@ export function RomImport({ onClose }: { onClose: () => void }) {
                 <h3 className="mb-1 flex items-baseline gap-2 text-sm font-semibold">
                   {sys === "?" ? t("¿De qué sistema?") : sysName(sys)}
                   <span className="text-xs font-normal text-muted">
-                    {sys !== "?" && (emus[sys] ? t("Requiere emulador: {emu}", { emu: emus[sys] }) : t("Sin emulador todavía (instálalo en Software)"))}
+                    {sys !== "?" && (emus[sys] ? t("Requiere emulador: {emu}", { emu: emus[sys] }) : t("Sin emulador todavía (instálalo en Homebrew)"))}
                   </span>
                 </h3>
                 {list.map((r) => (

@@ -603,9 +603,27 @@ fn nds_info(f: &mut File) -> RomInfo {
 
 /// Sistema de un archivo cuya extensión vale para varios, mirando su contenido
 /// (None si no se sabe: lo decide el usuario).
+/// Discos de Xbox: la marca de XDVDFS al principio de la partición del juego (Xbox,
+/// o los discos de Xbox 360 con su partición de vídeo delante, XGD2 y XGD3).
+fn xbox_system(path: &Path) -> Option<&'static str> {
+    const MAGIC: &[u8] = b"MICROSOFT*XBOX*MEDIA";
+    let mut f = File::open(path).ok()?;
+    for (off, sys) in [(0x10000u64, "xbox"), (0xFDA0000, "xbox360"), (0x2090000, "xbox360")] {
+        if read_at(&mut f, off, MAGIC.len()) == MAGIC {
+            // Una .iso que empieza por XDVDFS puede ser de 360 (sacada sin la partición de vídeo):
+            // los de 360 traen default.xex; eso ya lo decide quien la importa.
+            return Some(sys);
+        }
+    }
+    None
+}
+
 pub fn sniff(path: &Path) -> Option<&'static str> {
     match ext_of(path).as_str() {
-        "iso" | "cso" => disc_info(path).map(|(s, _)| s),
+        "xiso" => Some("xbox"),
+        "xex" => Some("xbox360"),
+        "iso" => xbox_system(path).or_else(|| disc_info(path).map(|(s, _)| s)),
+        "cso" => disc_info(path).map(|(s, _)| s),
         "cue" => cue_system(path),
         "chd" => None,
         _ => None,

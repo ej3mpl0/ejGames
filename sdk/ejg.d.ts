@@ -576,7 +576,7 @@ export interface Ejg {
       name:
         | "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads"
         | "guides" | "trainer" | "map" | "profile" | "badges" | "profile-editor" | "year-review" | "software"
-        | "homebrew" | "rom-import",
+        | "homebrew" | "rom-import" | "catalogs",
       args?: any,
     ): Promise<void>;
     toast(message: string, kind?: "info" | "ok" | "error"): Promise<void>;

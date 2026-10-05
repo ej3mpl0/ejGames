@@ -7,7 +7,19 @@ biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
 ## 1.3.1
 
-- **Homebrew** sale de Explorar y de la tienda de los seis temas: se abre desde **Tienda → Software**.
+- **Homebrew** sale de Explorar y de la tienda de los seis temas. **Tienda → Software** pasa a llamarse **Tienda → Homebrew**.
+
+**Catálogos** (Explorar → Catálogos, y en la tienda de los seis temas)
+- Fuentes de juegos configurables: las de serie y las del usuario en `config\catalog-sources.json` (webs con selectores
+  CSS o APIs JSON, con su límite por minuto, caché y relay opcional). Ejemplo comentado en `config/catalog-sources.example.json`.
+- Por fuente, sus plataformas (de NES a Switch, PS Vita, Xbox 360…) con el emulador que se usará; catálogo por plataforma
+  con filtros de región, idioma y tipo (juego, DLC, actualización), búsqueda en todas las fuentes y **Mis ROMs** por plataforma.
+- Descarga directa o por torrent: se descomprime (`.zip` y `.7z`, con contraseñas por fuente), se ordena en
+  `roms\<plataforma>\<juego>\` (con `dlc\` y `updates\`), se busca carátula y queda en la biblioteca. El DLC y las
+  actualizaciones se enganchan a su juego.
+- Emuladores propios en `config\emulators.json` (`config/emulators.example.json`): ejecutable, argumentos con
+  `{romPath}`, `{core}`, `{fullscreen}`…, extensiones, carpeta de ROMs y preferido por sistema. En cada ficha se elige el emulador.
+- Nuevos sistemas: WonderSwan, Xbox (xemu) y Xbox 360 (Xenia).
 
 ## 1.3.0
 

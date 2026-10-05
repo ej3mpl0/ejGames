@@ -60,7 +60,7 @@ export function visible(games, { hidden = false, missing = false, installed = "a
 
 export const isInstalled = (g) => g.installed !== false;
 
-/** Programas de la biblioteca (emuladores instalados desde Tienda → Software): no son juegos y van en su apartado. */
+/** Programas de la biblioteca (emuladores instalados desde Tienda → Homebrew): no son juegos y van en su apartado. */
 export const isSoftware = (g) => g.source === "emulator";
 /** Los programas de la biblioteca, por nombre. */
 export const software = (games) => games.filter((g) => isSoftware(g) && !g.missing).sort((a, b) => a.title.localeCompare(b.title));
@@ -71,7 +71,7 @@ export const SYSTEMS = {
   nds: "Nintendo DS", "3ds": "Nintendo 3DS", n64: "Nintendo 64", gc: "GameCube", wii: "Wii", wiiu: "Wii U",
   switch: "Nintendo Switch", sms: "Master System", genesis: "Mega Drive / Genesis", gg: "Game Gear",
   saturn: "Sega Saturn", dreamcast: "Dreamcast", pce: "PC Engine", psx: "PlayStation", ps2: "PlayStation 2",
-  psp: "PSP", vita: "PS Vita", ps3: "PlayStation 3", arcade: "Arcade",
+  psp: "PSP", vita: "PS Vita", ps3: "PlayStation 3", arcade: "Arcade", wonderswan: "WonderSwan", xbox: "Xbox", xbox360: "Xbox 360",
 };
 export const systemName = (id) => SYSTEMS[id] || id || "";
 
@@ -91,7 +91,7 @@ export function romsBySystem(games) {
 /** «Requiere emulador: Eden» (o que falta uno) en texto; "" en los de PC. Para la ficha, `emulatorNote` de kit/emulator.js. */
 export function emulatorLabel(g) {
   if (!isRom(g)) return "";
-  return g.emulator ? `Requiere emulador: ${g.emulator}` : `Requiere emulador (instálalo en Tienda → Software) · ${systemName(g.platform)}`;
+  return g.emulator ? `Requiere emulador: ${g.emulator}` : `Requiere emulador (instálalo en Tienda → Homebrew) · ${systemName(g.platform)}`;
 }
 /** Lo leído de la ROM, por partes (cada una en su elemento, para que se traduzca):
  *  ["ID 0100…", "v1.2", "Europa", "2 DLC"]. */

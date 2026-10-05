@@ -31,6 +31,10 @@ pub async fn install(st: &Arc<AppState>, id: i64) -> anyhow::Result<()> {
     if row.files_deleted {
         anyhow::bail!("Los archivos de este repack ya se borraron");
     }
+    // Descargas de los catálogos: ROMs que se ordenan y se meten en la biblioteca.
+    if row.source == "catalog" {
+        return install_catalog(st, row).await;
+    }
     let setup = Path::new(&row.output_dir).join("setup.exe");
     if !setup.is_file() {
         anyhow::bail!("No encuentro setup.exe en {}", row.output_dir);
@@ -58,6 +62,56 @@ pub async fn install(st: &Arc<AppState>, id: i64) -> anyhow::Result<()> {
 
     let st2 = st.clone();
     std::thread::Builder::new().name("ejg-install".into()).spawn(move || run(st2, row, setup, dest))?;
+    Ok(())
+}
+
+async fn install_catalog(st: &Arc<AppState>, row: DownloadRow) -> anyhow::Result<()> {
+    let id = row.id;
+    {
+        let mut g = st.downloads.installing.lock();
+        if g.is_some() {
+            anyhow::bail!("Ya hay una instalación en curso");
+        }
+        *g = Some(id);
+    }
+    // Los archivos se mueven: el motor tiene que soltarlos antes.
+    forget(st, &row.info_hash).await;
+    st.db.with(|c| repo::set_download_state(c, id, "installing", None, None))?;
+    queue::reconcile(st).await;
+    emit_changed(st);
+    emit(st, id, "running", None, None);
+    let st2 = st.clone();
+    tauri::async_runtime::spawn(async move {
+        let st = st2;
+        match crate::catalogs::pipeline::from_torrent(&st, &row).await {
+            Ok(o) => {
+                let gid = o.game_ids.first().copied();
+                let _ = st.db.with(|c| repo::set_download_installed(c, id, &o.dir, gid));
+                if st.settings.get().delete_repack_after_install {
+                    let r = row.clone();
+                    if let Ok(Ok(())) = tauri::async_runtime::spawn_blocking(move || super::delete_files(&r)).await {
+                        let _ = st.db.with(|c| repo::set_download_files_deleted(c, id));
+                    }
+                }
+                let msg = if o.not_emulated {
+                    format!("«{}»: {} {}", row.title, crate::i18n::t("sin emulador en ejGames; los archivos están en"), o.dir)
+                } else {
+                    format!("«{}» {}", row.title, crate::i18n::t("ya está en tu biblioteca."))
+                };
+                events::toast(&st, "ok", msg);
+                emit(&st, id, "done", None, gid);
+            }
+            Err(e) => {
+                let msg = format!("{e:#}");
+                let _ = st.db.with(|c| repo::set_download_state(c, id, "completed", None, Some(&msg)));
+                emit(&st, id, "error", Some(msg.clone()), None);
+                events::toast(&st, "error", msg);
+            }
+        }
+        *st.downloads.installing.lock() = None;
+        queue::reconcile(&st).await;
+        emit_changed(&st);
+    });
     Ok(())
 }
 

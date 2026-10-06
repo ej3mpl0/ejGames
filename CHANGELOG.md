@@ -5,6 +5,10 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.3.3
+
+- **Catálogos**: el relay ya trae las direcciones de las fuentes de serie, así que funcionan sin configurar nada.
+
 ## 1.3.2
 
 - **Catálogos**: las fuentes de serie pasan por el relay de ejGames cuando la web no deja entrar directamente (por

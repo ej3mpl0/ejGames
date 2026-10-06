@@ -1,6 +1,6 @@
 [package]
 name = "ejgames"
-version = "1.3.2"
+version = "1.3.3"
 description = "ejGames — launcher de juegos personalizable"
 authors = ["ej"]
 license = "MIT"

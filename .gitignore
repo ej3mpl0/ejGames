@@ -10,5 +10,5 @@ themes/switch/fonts
 installer/
 installer-app/src-tauri/target
 installer-app/src-tauri/gen
-relay/.dev.vars
-relay/.wrangler/
+**/.dev.vars
+**/.wrangler/

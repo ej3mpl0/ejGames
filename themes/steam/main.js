@@ -80,7 +80,7 @@ bindNav(focus, {
     return !!id;
   },
   x: () => {
-    if (gv("x")) return true;
+    if (gv("x") || hv("x")) return true;
     if (isShop()) return false;
     const id = focusedGameId() ?? (state.view === "game" ? state.gameId : null);
     if (id) ejg.game.edit(id);
@@ -853,7 +853,7 @@ function renderHomebrew() {
   hbRoot = h("div", { class: "hb-page" });
   main.replaceChildren(hbRoot);
   main.scrollTop = 0;
-  hbView = createHomebrewView({ ejg, root: hbRoot, focus, layout: "steam", onExit: () => back(), onChange: () => updateHints(), onGame: (g) => openGame(g.id) });
+  hbView = createHomebrewView({ ejg, root: hbRoot, focus, layout: "steam", onExit: () => false, onChange: () => updateHints(), onGame: (g) => openGame(g.id) });
 }
 
 function dropHomebrew() {
@@ -1067,6 +1067,8 @@ function goLibrary(view) {
 function back() {
   if (!lightbox.hidden) return closeLightbox(), true;
   if (closeMenu()) return true;
+  // Homebrew: su ficha, la consola elegida o la búsqueda.
+  if (inHomebrew() && hbView.nav("back")) return true;
   // En una guía: vuelve a la lista (o a la ficha, si se abrió desde ella).
   if (inGuides() && guideView.mode === "reader") return guideView.nav("back");
   if (shop.back()) return true;

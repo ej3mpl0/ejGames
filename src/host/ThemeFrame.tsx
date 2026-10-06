@@ -165,6 +165,7 @@ export function ThemeFrame() {
         eventMode: st.settings?.eventMode ?? "auto",
         season: currentSeason(),
         page: cardOf(st.profile),
+        catalogJobs: st.catalogJobs,
       },
     });
   }
@@ -263,6 +264,21 @@ export function ThemeFrame() {
     else if (dlTimer.current.t == null) dlTimer.current.t = window.setTimeout(send, wait);
   }, [downloads]);
   useEffect(() => () => void (dlTimer.current.t != null && clearTimeout(dlTimer.current.t)), []);
+  // Descargas de los catálogos (Homebrew) → tema, también como mucho una vez por segundo.
+  const catJobs = useApp((s) => s.catalogJobs);
+  const catTimer = useRef<{ t: number | null; last: number }>({ t: null, last: 0 });
+  useEffect(() => {
+    if (!beats.current.ready) return;
+    const send = () => {
+      catTimer.current.t = null;
+      catTimer.current.last = Date.now();
+      event("catalog-jobs", useApp.getState().catalogJobs);
+    };
+    const wait = 1000 - (Date.now() - catTimer.current.last);
+    if (wait <= 0) send();
+    else if (catTimer.current.t == null) catTimer.current.t = window.setTimeout(send, wait);
+  }, [catJobs]);
+  useEffect(() => () => void (catTimer.current.t != null && clearTimeout(catTimer.current.t)), []);
   // Lista de deseados → tema.
   const wishlist = useApp((s) => s.wishlist);
   useEffect(() => void (beats.current.ready && event("wishlist", wishlist)), [wishlist]);

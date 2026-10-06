@@ -32,7 +32,7 @@ export interface Game {
   };
   sortTitle: string;
   /** folder: carpeta de la biblioteca · manual: .exe añadido a mano · repack: instalado desde Descargas ·
-   *  rom: juego de consola · homebrew: instalado desde Explorar → Homebrew (también de consola) ·
+   *  rom: juego de consola · homebrew: de la antigua tienda de homebrew (también de consola) ·
    *  emulator: programa instalado desde Tienda → Software (no es un juego: `isSoftware` del kit). */
   source: "folder" | "manual" | "repack" | "rom" | "homebrew" | "emulator";
   engine?: string;
@@ -393,6 +393,45 @@ export interface ProfileCard {
   color: string;
 }
 
+/** Una entrada de un catálogo de juegos de consola (`ejg.catalogs`). */
+export interface CatalogItem {
+  id: string;
+  sourceId: string;
+  title: string;
+  /** Plataforma del catálogo («switch», «ps1», «ps-vita»…). */
+  platform: string | null;
+  /** La misma, como `game.platform` («psx», «vita»…); null si ejGames no la emula. */
+  system: string | null;
+  /** Portada servida por ejGames ("" si no hay). */
+  coverUrl: string;
+  description: string | null;
+  region: string | null;
+  language: string | null;
+  size: string | null;
+  version: string | null;
+  category: "game" | "dlc" | "update" | "homebrew" | "emulator";
+  /** Ya bajado: su juego en la biblioteca. */
+  installedGameId: number | null;
+  /** Emulador con que se jugaría. */
+  emulator: string | null;
+}
+
+export interface CatalogItemDetail extends CatalogItem {
+  /** direct: un archivo (a la cola) · page: una web de descargas · magnet / torrent */
+  links: { url: string; label: string; kind: "direct" | "page" | "magnet" | "torrent"; host: string; size: string | null }[];
+  screenshots: string[];
+}
+
+/** Una descarga de catálogo en marcha (`ejg.catalogs.jobs`). */
+export interface CatalogJob {
+  name: string;
+  phase: "queued" | "download" | "extract" | "organize" | "done" | "error";
+  received: number;
+  total: number;
+  message?: string | null;
+  gameId?: number | null;
+}
+
 /** Un emulador de la tienda (`ejg.emulators.list()`). */
 export interface EmulatorInfo {
   id: string;
@@ -540,6 +579,16 @@ export interface Ejg {
     /** Ajustes → Perfil del host (nombre, avatar, PIN…). */
     edit(): Promise<void>;
   };
+  catalogs: {
+    state(): Promise<{ sources: { id: string; name: string; hasSearch: boolean; platforms: { id: string; system: string | null; name: string }[] }[] }>;
+    browse(q: { source: string; mode?: "popular" | "newest" | "platform" | "search"; platform?: string | null; query?: string; page?: number }): Promise<{ sourceId: string; entries: CatalogItem[]; page: number; hasMore: boolean; error: string | null }>;
+    search(query: string, opts?: { platforms?: string[]; page?: number }): Promise<{ entries: CatalogItem[]; hasMore: boolean; errors: { sourceId: string; error: string }[] }>;
+    detail(source: string, id: string): Promise<CatalogItemDetail>;
+    download(source: string, id: string, url: string): Promise<"queued" | "opened" | "catalogs">;
+    cancel(key: string): Promise<void>;
+    readonly jobs: Record<string, CatalogJob>;
+    onJobs(fn: (jobs: Record<string, CatalogJob>) => void): () => void;
+  };
   emulators: {
     /** Los emuladores de la tienda, instalados o no. */
     list(): Promise<EmulatorInfo[]>;
@@ -556,7 +605,7 @@ export interface Ejg {
       name:
         | "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads"
         | "guides" | "trainer" | "map" | "profile-editor" | "year-review" | "software"
-        | "homebrew" | "rom-import" | "catalogs",
+        | "rom-import" | "catalogs",
       args?: any,
     ): Promise<void>;
     toast(message: string, kind?: "info" | "ok" | "error"): Promise<void>;

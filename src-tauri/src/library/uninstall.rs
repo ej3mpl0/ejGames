@@ -3,7 +3,9 @@
 //! 1. su desinstalador: el de su entrada en Windows o un `unins000.exe`
 //!    (`uninstall.exe`…) en su carpeta;
 //! 2. si no tiene, su carpeta a la papelera de reciclaje.
-//! Cuando el juego desaparece del disco, se quita de la biblioteca.
+//!
+//! Cuando el juego desaparece del disco, se quita de la biblioteca. Los juegos de
+//! consola se borran: sus archivos (con su DLC y actualizaciones) a la papelera.
 
 use crate::db::{models::Game, repo};
 use crate::state::AppState;
@@ -29,6 +31,9 @@ pub struct Plan {
 enum Action {
     Run { file: String, args: String },
     Recycle(PathBuf),
+    /// Juego de consola: sus archivos a la papelera y fuera de la biblioteca (con los
+    /// juegos que vinieron en la misma descarga).
+    Console { files: Vec<PathBuf>, ids: Vec<i64> },
 }
 
 fn norm(p: &str) -> String {
@@ -207,29 +212,77 @@ fn protected(st: &AppState) -> Vec<String> {
     out
 }
 
-/// Carpetas del resto de juegos de la biblioteca.
-fn other_dirs(st: &AppState, id: i64) -> Vec<String> {
+/// Carpetas del resto de juegos de la biblioteca (sin los de `ids`).
+fn other_dirs(st: &AppState, ids: &[i64]) -> Vec<String> {
     st.db
         .with(|c| {
-            let mut q = c.prepare("SELECT install_dir, exe_path FROM games WHERE id <> ?1")?;
-            let rows = q.query_map([id], |r| Ok((r.get::<_, Option<String>>(0)?, r.get::<_, Option<String>>(1)?)))?;
+            let mut q = c.prepare("SELECT id, install_dir, exe_path FROM games")?;
+            let rows = q.query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, Option<String>>(1)?, r.get::<_, Option<String>>(2)?)))?;
             Ok(rows
                 .flatten()
-                .filter_map(|(d, e)| d.filter(|d| !d.trim().is_empty()).or_else(|| e.and_then(|e| Path::new(&e).parent().map(|p| p.to_string_lossy().into_owned()))))
+                .filter(|(id, _, _)| !ids.contains(id))
+                .filter_map(|(_, d, e)| d.filter(|d| !d.trim().is_empty()).or_else(|| e.and_then(|e| Path::new(&e).parent().map(|p| p.to_string_lossy().into_owned()))))
                 .collect())
         })
         .unwrap_or_default()
 }
 
+fn file_size(p: &Path) -> u64 {
+    std::fs::metadata(p).map(|m| m.len()).unwrap_or(0)
+}
+
+/// Lo que se borra de un juego de consola: si se bajó de un catálogo, la carpeta que
+/// hizo ejGames (`roms\<sistema>\<juego>`, con su DLC y actualizaciones, y los juegos que
+/// vinieron en ella); si no, su ROM con las actualizaciones y DLC enganchados a ella.
+fn console_files(st: &AppState, g: &Game) -> anyhow::Result<(Vec<PathBuf>, Vec<i64>)> {
+    let rec = crate::catalogs::index(st).into_values().find(|r| r.game_ids.contains(&g.id) && Path::new(&r.dir).is_dir());
+    let others = rec.as_ref().map(|r| other_dirs(st, &r.game_ids)).unwrap_or_default();
+    let base = g.rom_meta.as_deref().and_then(|m| serde_json::from_str::<serde_json::Value>(m).ok()).and_then(|v| v["titleId"].as_str().map(str::to_string));
+    let extras: Vec<String> = match (&rec, g.platform.as_deref(), base) {
+        (None, Some(pf), Some(base)) => st
+            .db
+            .with(|c| {
+                let mut q = c.prepare("SELECT path FROM rom_extras WHERE platform = ?1 AND base_title_id = ?2")?;
+                let rows = q.query_map([pf, base.as_str()], |r| r.get::<_, String>(0))?;
+                rows.collect::<rusqlite::Result<Vec<_>>>()
+            })
+            .unwrap_or_default(),
+        _ => vec![],
+    };
+    console_targets(g, rec, extras, &protected(st), &others)
+}
+
+/// La decisión de `console_files`, sin tocar la base de datos.
+fn console_targets(g: &Game, rec: Option<crate::catalogs::InstalledRec>, extras: Vec<String>, protected: &[String], others: &[String]) -> anyhow::Result<(Vec<PathBuf>, Vec<i64>)> {
+    if let Some(rec) = rec {
+        check_folder(&rec.dir, protected, others).map_err(anyhow::Error::msg)?;
+        return Ok((vec![PathBuf::from(&rec.dir)], rec.game_ids));
+    }
+    let rom = g
+        .rom_path
+        .as_deref()
+        .or(g.exe_path.as_deref())
+        .map(PathBuf::from)
+        .filter(|p| p.is_absolute() && p.is_file())
+        .context("El archivo de este juego ya no está. Puedes quitarlo de la biblioteca en Editar.")?;
+    let mut files = vec![rom];
+    files.extend(extras.into_iter().map(PathBuf::from).filter(|p| p.is_absolute() && p.is_file()));
+    Ok((files, vec![g.id]))
+}
+
 fn resolve(st: &AppState, id: i64) -> anyhow::Result<(Game, Plan, Action)> {
     let g = st.db.with(|c| repo::get_game(c, id)).map_err(|_| anyhow::anyhow!("Ese juego ya no está en la biblioteca"))?;
-    if g.platform.is_some() {
-        bail!("{}", crate::i18n::t("Una ROM no se desinstala: quítala de la biblioteca o borra su archivo."));
-    }
     if st.sessions.is_running(id) {
         bail!("Cierra el juego antes de desinstalarlo.");
     }
     let mut plan = Plan { game_id: id, title: g.title.clone(), method: String::new(), dir: None, program: None, size_bytes: None };
+    if g.platform.is_some() {
+        let (files, ids) = console_files(st, &g)?;
+        plan.method = "console".into();
+        plan.dir = files.first().map(|p| p.to_string_lossy().into_owned());
+        plan.size_bytes = Some(files.iter().map(|p| if p.is_dir() { dir_size(p) } else { file_size(p) }).sum());
+        return Ok((g, plan, Action::Console { files, ids }));
+    }
     let dir = game_dir(&g).context("No se sabe en qué carpeta está este juego")?;
     if !dir.is_dir() {
         bail!("La carpeta del juego ya no existe. Puedes quitarlo de la biblioteca en Editar.");
@@ -247,7 +300,7 @@ fn resolve(st: &AppState, id: i64) -> anyhow::Result<(Game, Plan, Action)> {
         plan.program = u.file_name().map(|n| n.to_string_lossy().into_owned());
         return Ok((g, plan, Action::Run { file: u.to_string_lossy().into_owned(), args: String::new() }));
     }
-    check_folder(&dir_s, &protected(st), &other_dirs(st, id)).map_err(anyhow::Error::msg)?;
+    check_folder(&dir_s, &protected(st), &other_dirs(st, &[id])).map_err(anyhow::Error::msg)?;
     plan.method = "folder".into();
     Ok((g, plan, Action::Recycle(dir)))
 }
@@ -285,6 +338,31 @@ pub fn run(st: Arc<AppState>, id: i64) -> anyhow::Result<&'static str> {
                 bail!("No se pudo mandar la carpeta a la papelera.");
             }
             forget(&st, &g);
+            Ok("removed")
+        }
+        Action::Console { files, ids } => {
+            for f in &files {
+                recycle(f)?;
+                if f.exists() {
+                    bail!("No se pudo mandar a la papelera: {}", f.display());
+                }
+            }
+            let paths: Vec<String> = files.iter().map(|p| p.to_string_lossy().into_owned()).collect();
+            let _ = st.db.with(|c| {
+                for p in &paths {
+                    c.execute("DELETE FROM rom_extras WHERE path = ?1", [p])?;
+                }
+                for id in ids.iter().filter(|i| **i != g.id) {
+                    repo::delete_game(c, *id)?;
+                }
+                Ok(())
+            });
+            crate::catalogs::forget_installed(&st, &ids);
+            if st.db.with(|c| repo::delete_game(c, g.id)).is_ok() {
+                crate::events::library_reset(&st);
+                crate::events::toast(&st, "ok", format!("«{}» borrado", g.title));
+                tracing::info!("juego de consola borrado: {} ({})", g.title, g.id);
+            }
             Ok("removed")
         }
     }
@@ -371,6 +449,32 @@ mod tests {
         assert!(registered(r"E:\Games\Other", &entries).is_none());
         // Ni una carpeta que empieza igual.
         assert!(registered(r"E:\Games\Hollow Knight", &entries).is_none());
+    }
+
+    #[test]
+    fn console_games_take_their_files() {
+        let d = tempfile::tempdir().unwrap();
+        let rom = d.path().join("Juego.nsp");
+        let upd = d.path().join("Juego [UPD].nsp");
+        std::fs::write(&rom, b"rom").unwrap();
+        std::fs::write(&upd, b"upd").unwrap();
+        let g = Game { id: 7, platform: Some("switch".into()), rom_path: Some(rom.to_string_lossy().into()), ..Default::default() };
+        // Suelta: su ROM y sus extras que sigan ahí.
+        let gone = d.path().join("borrado.nsp").to_string_lossy().into_owned();
+        let (files, ids) = console_targets(&g, None, vec![upd.to_string_lossy().into(), gone], &[], &[]).unwrap();
+        assert_eq!((files, ids), (vec![rom.clone(), upd.clone()], vec![7]));
+        // Bajada de un catálogo: su carpeta entera y los juegos que vinieron con ella.
+        let dir = d.path().join("roms").join("switch").join("Juego");
+        std::fs::create_dir_all(&dir).unwrap();
+        let rec = crate::catalogs::InstalledRec { game_ids: vec![7, 8], dir: dir.to_string_lossy().into(), ..Default::default() };
+        let (files, ids) = console_targets(&g, Some(rec.clone()), vec![], &[], &[]).unwrap();
+        assert_eq!((files, ids), (vec![dir.clone()], vec![7, 8]));
+        // Nunca si dentro hay otro juego de la biblioteca.
+        let other = dir.join("otro").to_string_lossy().into_owned();
+        assert!(console_targets(&g, Some(rec), vec![], &[], &[other]).is_err());
+        // Ni si el archivo ya no está.
+        let lost = Game { id: 9, platform: Some("snes".into()), rom_path: Some(d.path().join("no.sfc").to_string_lossy().into()), ..Default::default() };
+        assert!(console_targets(&lost, None, vec![], &[], &[]).is_err());
     }
 
     #[test]

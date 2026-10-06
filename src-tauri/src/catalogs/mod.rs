@@ -423,6 +423,16 @@ pub fn remember(st: &AppState, source_id: &str, id: &str, rec: InstalledRec) {
     let _ = std::fs::write(p, serde_json::to_vec_pretty(&m).unwrap_or_default());
 }
 
+/// Olvida las descargas de catálogo de estos juegos (al borrarlos).
+pub fn forget_installed(st: &AppState, game_ids: &[i64]) {
+    let mut m = index(st);
+    let before = m.len();
+    m.retain(|_, r| !r.game_ids.iter().any(|id| game_ids.contains(id)));
+    if m.len() != before {
+        let _ = std::fs::write(index_path(st), serde_json::to_vec_pretty(&m).unwrap_or_default());
+    }
+}
+
 fn decorate(st: &AppState, entries: &mut [CatalogEntry]) {
     if entries.is_empty() {
         return;

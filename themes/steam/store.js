@@ -178,8 +178,6 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
           link("catalog", "Explorar", () => openCatalog()),
           link("week", "Populares", () => openList("week")),
           link("month", "Top del mes", () => openList("month")),
-          link("catalogs", "Catálogos", () => ejg.ui.open("catalogs")),
-          link("software", "Homebrew", () => ejg.ui.open("software")),
         ),
         h("label", { class: "sn-search" }, navInput, h("span", { class: "sn-go", html: I.search, onclick: () => openCatalog({ ...store.state.catalog.filters, query: navInput.value }) })),
       );

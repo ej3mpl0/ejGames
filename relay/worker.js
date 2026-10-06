@@ -8,12 +8,6 @@ const ALLOWED = ["/wp-json/wp/v2/posts", "/popular-repacks/"];
 const PASS2 = ["content-type", "x-wp-total", "x-wp-totalpages"];
 const CACHE_SECONDS2 = 300;
 const MAX_SKEW = 300;
-const HB = {
-  switch: "https://switch.cdn.fortheusers.org/repo.json",
-  vita: "https://www.rinnegatamante.eu/vitadb/list_hbs_json.php",
-  "3ds": "https://db.universal-team.net/data/full.json"
-};
-const HB_CACHE_SECONDS = 3600;
 const enc = new TextEncoder();
 let hmacKey;
 
@@ -32,62 +26,9 @@ async function signed(request, url, env) {
   return crypto.subtle.verify("HMAC", await hmacKey, sig, enc.encode(`${time}\n${url.pathname}${url.search}`));
 }
 
-async function hbCatalog(system) {
-  const r = await fetch(HB[system], {
-    headers: { "User-Agent": UA2, Accept: "application/json" },
-    cf: { cacheEverything: true, cacheTtlByStatus: { "200-299": HB_CACHE_SECONDS, "300-599": 0 } }
-  });
-  if (!r.ok) throw new Error(`catálogo ${system}: ${r.status}`);
-  return r;
-}
-
-function hbUrl(system, id, data) {
-  if (system === "switch") {
-    const p = (data.packages || []).find((x) => x.name === id);
-    return p ? `https://switch.cdn.fortheusers.org/zips/${encodeURIComponent(p.name)}.zip` : null;
-  }
-  if (system === "vita") {
-    const p = (Array.isArray(data) ? data : []).find((x) => String(x.id) === id);
-    return p && /^https:\/\//.test(p.url) ? p.url : null;
-  }
-  const p = (Array.isArray(data) ? data : []).find((x) => x.slug === id);
-  if (!p || !p.downloads) return null;
-  const rank = (n) => /\.3dsx$/i.test(n) ? 3 : /\.(zip|7z)$/i.test(n) ? 2 : /\.cia$/i.test(n) ? 1 : 0;
-  let best = null;
-  for (const [name, d] of Object.entries(p.downloads)) {
-    if (!d || !/^https:\/\//.test(d.url) || !rank(name)) continue;
-    if (!best || rank(name) > best.r) best = { r: rank(name), url: d.url };
-  }
-  return best ? best.url : null;
-}
-
-async function homebrew(url) {
-  const sys = url.pathname.slice(4);
-  if (HB[sys]) {
-    const r = await hbCatalog(sys);
-    return new Response(r.body, { status: 200, headers: { "content-type": "application/json" } });
-  }
-  if (sys === "file") {
-    const system = url.searchParams.get("system") || "";
-    const id = url.searchParams.get("id") || "";
-    if (!HB[system] || !id) return new Response("Bad Request", { status: 400 });
-    const target = hbUrl(system, id, await (await hbCatalog(system)).json());
-    if (!target) return new Response("Not Found", { status: 404 });
-    const r = await fetch(target, { headers: { "User-Agent": UA2 }, redirect: "follow" });
-    const headers = new Headers();
-    for (const name of ["content-type", "content-length"]) {
-      const v = r.headers.get(name);
-      if (v) headers.set(name, v);
-    }
-    return new Response(r.body, { status: r.status, headers });
-  }
-  return new Response("Not Found", { status: 404 });
-}
-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const isHb = url.pathname.startsWith("/hb/");
     const isCat = isCatalog(url);
 
     // CORS preflight para catálogos
@@ -99,7 +40,7 @@ export default {
       return new Response("Method Not Allowed", { status: 405, headers: { Allow: "GET" } });
     }
 
-    if (!isHb && !isCat && !ALLOWED.includes(url.pathname)) {
+    if (!isCat && !ALLOWED.includes(url.pathname)) {
       return new Response("Not Found", { status: 404 });
     }
 
@@ -113,14 +54,6 @@ export default {
     }
 
     if (isCat) return catalog(url, env, request);
-
-    if (isHb) {
-      try {
-        return await homebrew(url);
-      } catch (e) {
-        return new Response(`No se pudo llegar al catálogo: ${e}`, { status: 502 });
-      }
-    }
 
     let upstream;
     try {

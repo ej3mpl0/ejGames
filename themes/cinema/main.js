@@ -450,6 +450,7 @@ bindNav(focus, {
     if (gv("back")) return true;
     if (shop.back()) return true;
     if (!modal.hidden) return closeModal(), true;
+    if (hv("back")) return true;
     if (state.view !== "home") return setView(state.view === "downloads" && state.prevView === "explore" ? "explore" : "home"), true;
     if (main.scrollTop > 50) {
       main.scrollTo({ top: 0, behavior: "smooth" });
@@ -471,7 +472,7 @@ bindNav(focus, {
     return true;
   },
   x: () => {
-    if (gv("x")) return true;
+    if (gv("x") || hv("x")) return true;
     if (state.view !== "home") return false;
     const id = state.modalId || Number(focus.current?.dataset.gameId);
     if (id) ejg.game.edit(id);

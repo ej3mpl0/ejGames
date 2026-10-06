@@ -578,8 +578,9 @@ bindNav(focus, {
     if (gv("back")) return true;
     if (!player.hidden) return closePlayer(), true;
     if (!viewer.hidden) return (viewer.hidden = true), true;
+    if (hv("back")) return true;
     if (shop.back()) return true;
-    if (state.tab === "library" || state.tab === "store" || state.tab === "homebrew") return setTab("home"), true;
+    if (state.tab === "library" || state.tab === "store") return setTab("home"), true;
     // Un juego abierto desde Homebrew: vuelve allí.
     if (state.backTo) return setTab(state.backTo), true;
     const t = row.querySelector(".tile.sel");
@@ -609,7 +610,7 @@ bindNav(focus, {
     if (state.tab === "store") return shop.search(), true;
     return (state.selected && ejg.game.favorite(state.selected), true);
   },
-  x: () => (gv("x") || mediaOpen() || shop.hasDialog() || (state.tab === "store" ? shop.filters() : state.selected && ejg.game.edit(state.selected)), true),
+  x: () => (gv("x") || hv("x") || mediaOpen() || shop.hasDialog() || (state.tab === "store" ? shop.filters() : state.selected && ejg.game.edit(state.selected)), true),
   menu: () => (ejg.ui.open("menu"), true),
   view: () => gv("view") || (ejg.ui.open("search"), true),
   lb: () => gv("lb") || guideView || hv("lb") || (mediaOpen() || shop.hasDialog() || cycleTab(-1), true),

@@ -160,6 +160,9 @@ img { display: block; }
   --hb-warn: #d98a00;
   --hb-ok: #1fa851;
   --hb-font: var(--font);
+  --hb-input: var(--card);
+  --hb-input-on: var(--card);
+  --hb-sheet: var(--bg);
   max-width: none;
   padding: 6px 60px 40px;
   font-weight: 600;

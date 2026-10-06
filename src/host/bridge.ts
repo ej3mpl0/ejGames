@@ -3,7 +3,10 @@
 
 import { api } from "../api/tauri";
 import { useApp, activeTheme, type OverlayName } from "../store/app";
-import { installDownload, locateInstall, openExplore, openKeyboard, pickFolder } from "./downloads";
+import { cancelCatalogJob, dismissCatalogJob, downloadFromCatalog, installDownload, locateInstall, openExplore, openKeyboard, pickFolder } from "./downloads";
+import type { CatalogEntry } from "../api/types";
+import { requestFor, usable } from "../lib/catalog/sources";
+import { platformName, toSystem } from "../lib/catalog/platforms";
 import { getGuide, openGuideInBrowser, openGuideLink, validGuideId } from "./guides";
 import { playSound } from "./sounds";
 import { toggleBigPicture } from "./window";
@@ -23,7 +26,6 @@ const UI_NAMES: Record<string, OverlayName> = {
   stats: "stats",
   "year-review": "year-review",
   software: "software",
-  homebrew: "homebrew",
   "rom-import": "rom-import",
   catalogs: "catalogs",
   theme: "theme",
@@ -39,6 +41,25 @@ const UI_NAMES: Record<string, OverlayName> = {
 };
 
 const GUIDE_SORTS = ["toprated", "trend", "mostrecent"];
+
+/** Una entrada de catálogo para un tema: con el sistema de la biblioteca («ps1» → «psx»). */
+const catEntry = (e: CatalogEntry) => ({
+  id: e.id,
+  sourceId: e.sourceId,
+  title: e.title,
+  platform: e.platform,
+  system: toSystem(e.platform),
+  coverUrl: e.coverUrl,
+  description: e.description ?? null,
+  region: e.region ?? null,
+  language: e.language ?? null,
+  size: e.size ?? null,
+  version: e.version ?? null,
+  category: e.category,
+  installedGameId: e.installedGameId ?? null,
+  emulator: e.emulator ?? null,
+});
+const CAT_MODES = ["popular", "newest", "platform", "search"] as const;
 
 /** Juego de la biblioteca (un tema solo puede pedir guías de los suyos). */
 const libGame = (v: unknown): number => {
@@ -243,6 +264,67 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
         present: t.present,
         anticheat: t.anticheat ?? null,
       };
+    }
+    case "catalogs.state": {
+      const cs = st.catalogState ?? (await api.catalogsState());
+      if (!st.catalogState) useApp.getState().set({ catalogState: cs });
+      return {
+        sources: cs.sources.filter(usable).map((x) => ({
+          id: x.id,
+          name: x.name,
+          hasSearch: x.hasSearch,
+          platforms: x.platforms.map((p) => ({ id: p.id, system: p.system, name: platformName(p.id) })),
+        })),
+      };
+    }
+    case "catalogs.browse": {
+      const mode = CAT_MODES.find((m) => m === params?.mode) ?? "popular";
+      const p = await api.catalogBrowse({
+        sourceId: str(params?.source, 64),
+        mode,
+        query: mode === "search" ? str(params?.query ?? "", 100) : undefined,
+        platform: params?.platform == null ? null : str(params.platform, 32),
+        page: params?.page == null ? 1 : Math.max(1, Math.min(500, num(params.page))),
+      });
+      return { sourceId: p.sourceId, entries: p.entries.map(catEntry), page: p.page, hasMore: p.hasMore, error: p.error ?? null };
+    }
+    case "catalogs.search": {
+      const platforms = Array.isArray(params?.platforms) ? params.platforms.slice(0, 40).map((x: unknown) => str(x, 32)) : [];
+      const pages = await api.catalogSearchAll(str(params?.query ?? "", 100), platforms, params?.page == null ? 1 : Math.max(1, Math.min(500, num(params.page))));
+      // Intercaladas, para que no tape una fuente a las demás.
+      const entries: ReturnType<typeof catEntry>[] = [];
+      for (let i = 0; pages.some((p) => i < p.entries.length); i++) for (const p of pages) if (p.entries[i]) entries.push(catEntry(p.entries[i]));
+      return { entries, hasMore: pages.some((p) => p.hasMore), errors: pages.filter((p) => p.error).map((p) => ({ sourceId: p.sourceId, error: p.error })) };
+    }
+    case "catalogs.detail": {
+      const d = await api.catalogDetail(str(params?.source, 64), str(params?.id, 400));
+      return { ...catEntry(d), links: d.links.map((l) => ({ url: l.url, label: l.label, kind: l.kind, host: l.host, size: l.size ?? null })), screenshots: d.screenshots };
+    }
+    case "catalogs.download": {
+      // Solo uno de los enlaces de la ficha: el tema no puede pedir bajar cualquier cosa.
+      const source = str(params?.source, 64);
+      const d = await api.catalogDetail(source, str(params?.id, 400));
+      const l = d.links.find((x) => x.url === params?.url);
+      if (!l) throw new Error("ese enlace no es de la ficha");
+      if (l.kind === "page") {
+        await api.openExternal(l.url);
+        return "opened";
+      }
+      if (l.kind === "magnet" || l.kind === "torrent") {
+        // Los torrents se eligen en la ventana de catálogos (con su diálogo de descarga).
+        st.open("catalogs");
+        return "catalogs";
+      }
+      downloadFromCatalog(requestFor(d, l.url, d));
+      return "queued";
+    }
+    case "catalogs.cancel": {
+      const key = str(params?.key, 500);
+      const job = st.catalogJobs[key];
+      if (!job) return;
+      if (job.phase === "done" || job.phase === "error") dismissCatalogJob(key);
+      else cancelCatalogJob(key);
+      return;
     }
     case "emulators.list": {
       // Lo de la tienda de emuladores, sin rutas del disco; gameId: su entrada en la biblioteca.

@@ -1763,33 +1763,6 @@ pub async fn emulator_for_system(st: St<'_>, system: String) -> CmdResult<Emulat
     .await
 }
 
-/// Catálogo de homebrew de un sistema (switch | vita | 3ds), filtrado y paginado.
-#[tauri::command]
-pub async fn homebrew_catalog(st: St<'_>, system: String, query: Option<String>, category: Option<String>, sort: Option<String>, page: Option<usize>, force: Option<bool>) -> CmdResult<crate::explore::homebrew::HbPage> {
-    Ok(crate::explore::homebrew::page(
-        st.inner(),
-        &system,
-        query.as_deref().unwrap_or(""),
-        category.as_deref().unwrap_or(""),
-        sort.as_deref().unwrap_or("popular"),
-        page.unwrap_or(1),
-        force.unwrap_or(false),
-    )
-    .await)
-}
-
-/// Baja el homebrew, lo descomprime y lo deja en la biblioteca. Devuelve el id del juego.
-#[tauri::command]
-pub async fn homebrew_install(st: St<'_>, id: String) -> CmdResult<i64> {
-    Ok(crate::explore::homebrew::install(st.inner(), &id).await?)
-}
-
-#[tauri::command]
-pub async fn homebrew_uninstall(st: St<'_>, id: String) -> CmdResult<()> {
-    let s = st.inner().clone();
-    blocking(move || crate::explore::homebrew::uninstall(&s, &id)).await
-}
-
 // ───────────────────────────── catálogos ─────────────────────────────
 
 /// Fuentes configuradas, sus plataformas y con qué emulador se jugaría cada una.

@@ -103,8 +103,6 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     ["popular", "Populares", "trend"],
     ["wishlist", "Lista de deseos", "heart"],
     ["downloads", "Descargas", "down"],
-    ["catalogs", "Catálogos", "grid"],
-    ["software", "Homebrew", "grid"],
   ];
   const userEl = h("div", { class: "es-user" });
   const sideCount = h("b", { class: "es-count", hidden: true });
@@ -202,8 +200,6 @@ export function createShop({ ejg, focus, shopEl, dlsEl, show, where, openGame, o
     if (id === "search") return startSearch();
     if (id === "catalog") return openCatalog();
     if (id === "wishlist") return openWishlist();
-    if (id === "software") return ejg.ui.open("software");
-    if (id === "catalogs") return ejg.ui.open("catalogs");
     view.name = id;
     paint();
     if (!focus.first(mainEl)) view.auto = true;

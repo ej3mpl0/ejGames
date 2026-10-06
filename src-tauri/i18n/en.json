@@ -9,7 +9,6 @@
  "Aventura de plataformas": "Platform adventure",
  "Añadido. Abre Steam: lo encontrarás en tu biblioteca.": "Added. Open Steam: you'll find it in your library.",
  "Aún no hay versiones publicadas": "No versions published yet",
- "catálogo vacío": "empty catalog",
  "Cierra el juego antes de desinstalarlo.": "Close the game before uninstalling it.",
  "Cierra el juego antes de restaurar sus partidas": "Close the game before restoring its saved games",
  "Cierra el juego antes de restaurar una copia": "Close the game before restoring a backup",
@@ -78,7 +77,6 @@
  "Espera a que termine la instalación del juego": "Wait for the game's installation to finish",
  "Esta ficha no tiene torrent": "This page has no torrent",
  "Esta versión no trae instalador": "This version has no installer",
- "Este homebrew es para la consola real: no se puede jugar con emulador": "This homebrew is for real hardware: it can't be played with an emulator",
  "Este juego no tiene trainer": "This game has no trainer",
  "Este juego se abre como administrador y Windows no deja que ejGames lea el teclado: {how}{fix}": "This game opens as administrator and Windows won't let ejGames read the keyboard: {how}{fix}",
  "Este se baja de su web": "This one is downloaded from its website",
@@ -144,7 +142,6 @@
  "No es un programa ni un juego de consola que ejGames conozca": "It isn't a program or a console game that ejGames knows",
  "No es una copia de ejGames": "That's not an ejGames backup",
  "No está dentro del comprimido:": "It's not inside the archive:",
- "No está en el catálogo": "It's not in the catalog",
  "No está instalado": "It isn't installed",
  "No existe el ejecutable: {exe}": "The executable doesn't exist: {exe}",
  "No existe el emulador:": "The emulator doesn't exist:",
@@ -164,7 +161,6 @@
  "No se encontró el escritorio": "The desktop wasn't found",
  "no se encontró el monitor del juego": "the game's monitor wasn't found",
  "No se encontró el programa dentro de lo descargado": "The program wasn't found in the download",
- "No se encontró nada que jugar dentro de lo descargado": "Nothing playable was found in the download",
  "No se encontró Steam en este PC": "Steam wasn't found on this PC",
  "No se encuentra el trainer. Windows Defender puede haberlo puesto en cuarentena: restáuralo desde Seguridad de Windows o vuelve a instalarlo.": "The trainer can't be found. Windows Defender may have quarantined it: restore it from Windows Security or install it again.",
  "No se encuentra la ventana del juego.": "The game window can't be found.",
@@ -240,7 +236,6 @@
  "Un antivirus o un proxy está interceptando la conexión segura con la web de FitGirl y la app no se fía de él.": "An antivirus or proxy is intercepting the secure connection to the FitGirl site and the app doesn't trust it.",
  "Un juego": "A game",
  "Un solo programa para NES, SNES, Game Boy, GBA, N64, Mega Drive, PlayStation, arcade y más, con un núcleo por sistema.": "A single program for NES, SNES, Game Boy, GBA, N64, Mega Drive, PlayStation, arcade and more, with one core per system.",
- "Una ROM no se desinstala: quítala de la biblioteca o borra su archivo.": "A ROM isn't uninstalled: remove it from the library or delete its file.",
  "URL no permitida": "URL not allowed",
  "URL no válida": "Invalid URL",
  "usa el botón Guía del mando (o Select + Start).": "use the controller's Guide button (or Select + Start).",
@@ -290,5 +285,7 @@
  "ya está en tu biblioteca.": "is now in your library.",
  "No hay emulador para este sistema. Instálalo en Tienda → Homebrew o elígelo en Ajustes → Biblioteca → Emuladores:": "There's no emulator for this system. Install it in Store → Homebrew or choose it in Settings → Library → Emulators:",
  "Sistema desconocido": "Unknown system",
- "El .torrent no es válido:": "The .torrent isn't valid:"
+ "El .torrent no es válido:": "The .torrent isn't valid:",
+ "El archivo de este juego ya no está. Puedes quitarlo de la biblioteca en Editar.": "This game's file is gone. You can remove it from the library in Edit.",
+ "No se pudo mandar a la papelera: {0}": "Couldn't send it to the recycle bin: {0}"
 }

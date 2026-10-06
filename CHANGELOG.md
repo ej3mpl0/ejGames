@@ -5,6 +5,19 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.5.0
+
+- **Homebrew, como una tienda**: los catálogos de juegos de consola se ven directamente, sin entrar en «Catálogos» a
+  buscar. Filas de populares, novedades y una por consola con sus portadas, un buscador y una pestaña por consola
+  (LB/RB con mando). La ficha de cada juego tiene **Descargar** (y otros servidores) con su progreso; lo bajado se
+  descomprime y queda en tu biblioteca, y la ficha pasa a **Jugar**.
+- **Borrar juegos de consola**: con **X** en Homebrew, desde su ficha o con «Desinstalar». Sus archivos (la carpeta que
+  hizo ejGames al bajarlo, o la ROM con su DLC y sus actualizaciones) van a la papelera de reciclaje.
+- Fuera la **tienda de homebrew** (Switch, Vita y 3DS). Las tiendas de los temas ya no enlazan a Catálogos ni a la
+  tienda de emuladores: están en Homebrew.
+- Para temas: `ejg.catalogs` (fuentes, listas, búsqueda, ficha, descarga y su progreso) y `canUninstall()` del kit
+  incluye los juegos de consola. Se quita `ejg.ui.open("homebrew")`.
+
 ## 1.4.0
 
 - **Homebrew**, pestaña nueva junto a Biblioteca en los seis temas (en Switch, su botón redondo; en Retro, HOMEBREW):

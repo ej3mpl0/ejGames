@@ -318,8 +318,6 @@ export function createStore({ ejg, main, root, focus, searchBox, searchInput, go
         h("span", null, "Deseados"),
         h("span", { class: "nbadge", hidden: !wl.items.length }, String(wl.items.length)),
       ),
-      h("button", { class: "nf-wish", "data-focus": "", "data-k": "catalogs", onclick: () => ejg.ui.open("catalogs") }, h("span", null, "Catálogos")),
-      h("button", { class: "nf-wish", "data-focus": "", "data-k": "software", onclick: () => ejg.ui.open("software") }, h("span", null, "Homebrew")),
     );
   }
 

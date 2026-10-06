@@ -1,6 +1,6 @@
 ---
 title: "Homebrew"
-description: "Los emuladores y los juegos de consola, en su propia vista: createHomebrewView del kit y ejg.emulators.list()."
+description: "Los juegos de consola como una tienda: createHomebrewView del kit, ejg.catalogs y ejg.emulators."
 icon: "gamepad"
 ---
 
@@ -20,10 +20,11 @@ software(ejg.library.all);                 // los emuladores
 
 ## La forma rápida: la vista del kit
 
-`/_sdk/kit/homebrew.js` trae la vista entera, con mando: una cabecera con cifras y accesos (tienda de emuladores,
-catálogos de ROMs, tienda de homebrew e Importar ROMs), los emuladores (instalados, configurados a mano y los que
-faltan para los sistemas que tienen juegos) y los juegos de consola por sistema, con «Seguir jugando». Se repinta sola
-cuando cambia la biblioteca o empieza una partida.
+`/_sdk/kit/homebrew.js` trae la vista entera, con mando, como una tienda: buscador y una pestaña por consola arriba;
+lo que se está bajando; tus juegos de consola; filas de populares, novedades y una por consola de los catálogos (las
+de cada consola se piden al acercarse); la ficha de cada juego con **Descargar**, su progreso, **Jugar** y **Borrar**;
+y tus emuladores (instalados, configurados a mano y los que faltan). Se repinta sola cuando cambia la biblioteca, empieza
+una partida o avanza una descarga.
 
 ```html
 <link rel="stylesheet" href="/_sdk/kit/homebrew.css" />
@@ -44,17 +45,18 @@ const hb = createHomebrewView({
 
 // Antes que tu propia navegación:
 bindNav(focus, {
-  back: () => hb.nav("back") || miAtras(),
-  lb: () => hb.nav("lb"),   // sistema anterior / siguiente
+  back: () => hb.nav("back") || miAtras(), // cierra la ficha, vuelve al inicio de Homebrew o llama a onExit
+  lb: () => hb.nav("lb"),   // consola anterior / siguiente
   rb: () => hb.nav("rb"),
+  x: () => hb.nav("x"),     // borrar el juego enfocado (el diálogo del host lo confirma)
   y: () => hb.nav("y"),     // la tienda de emuladores
 });
 
 hb.destroy(); // al salir
 ```
 
-Las tarjetas de juego llevan `data-game-id`, así que tus atajos de siempre (favorito, propiedades…) siguen
-funcionando sobre ellas.
+`onExit` se llama con **Atrás** en el inicio de la vista: devuelve `false` si ahí no hay nada que hacer. Las tarjetas de
+tus juegos llevan `data-game-id`, así que tus atajos de siempre (favorito, propiedades…) siguen funcionando sobre ellas.
 
 ### El aspecto
 
@@ -70,8 +72,32 @@ La maqueta (`layout`) cambia las formas: carátulas cuadradas en `ps5`, `xbox` y
 | `--hb-radius`, `--hb-focus` | esquinas y anillo de foco (`box-shadow`) |
 | `--hb-hero` | fondo de la cabecera |
 | `--hb-font`, `--hb-title-font` | fuentes del texto y de los títulos |
-| `--hb-cover`, `--hb-card` | proporción de las carátulas y ancho mínimo de cada juego |
+| `--hb-cover`, `--hb-card` | proporción y ancho de las carátulas de tus juegos |
+| `--hb-item` | ancho de las tarjetas de los catálogos (16:9) |
+| `--hb-sheet`, `--hb-input`, `--hb-input-on` | fondo de la ficha y del buscador (normal y enfocado) |
 | `--hb-warn`, `--hb-ok` | avisos (falta emulador) y actualizaciones / en juego |
+
+## Los catálogos
+
+```js
+const { sources } = await ejg.catalogs.state();
+// [{ id, name, hasSearch, platforms: [{ id: "ps1", system: "psx", name: "PlayStation" }] }]
+await ejg.catalogs.browse({ source: "romshq", mode: "popular" });          // también "newest", "platform" y "search"
+await ejg.catalogs.browse({ source: "romshq", mode: "platform", platform: "ps2", page: 2 });
+await ejg.catalogs.search("zelda", { platforms: ["switch"] });          // en todas las fuentes a la vez
+const ficha = await ejg.catalogs.detail(entry.sourceId, entry.id);      // + links y screenshots
+await ejg.catalogs.download(entry.sourceId, entry.id, ficha.links[0].url);
+ejg.catalogs.jobs;                                // { "<fuente>|<id>": { name, phase, received, total, gameId } }
+ejg.catalogs.onJobs((jobs) => …);                 // como mucho una vez por segundo
+ejg.catalogs.cancel("romshq|/game/…");
+```
+
+Cada entrada trae `title`, `coverUrl` (servida por ejGames), `platform` (la del catálogo) y `system` (la de
+`game.platform`), `size`, `region`, `installedGameId` si ya está en la biblioteca y `emulator` (con qué se
+jugaría). `download` solo acepta un enlace de la ficha: los directos van a la cola (se bajan, se descomprimen y quedan
+en la biblioteca: `"queued"`), una web de descargas se abre en el navegador (`"opened"`) y un torrent abre la ventana
+de catálogos (`"catalogs"`). Para borrar un juego de consola, `ejg.game.uninstall(id)`: el host lo confirma y manda
+sus archivos a la papelera.
 
 ## Los emuladores de la tienda
 
@@ -83,5 +109,4 @@ const list = await ejg.emulators.list();
 `platforms` son los mismos ids que `game.platform` (`switch`, `ps2`, `psx`…) y `systems` sus nombres; `gameId` es su
 entrada en la biblioteca (para `ejg.game.launch`) si está instalado, y `update` dice si hay una versión nueva. La
 primera llamada de la sesión pregunta las versiones a sus webs. Para instalarlos o actualizarlos, la tienda del host:
-`ejg.ui.open("software")`. Los demás accesos: `"catalogs"` (catálogos de ROMs), `"homebrew"` (tienda de homebrew) y
-`"rom-import"` (Importar ROMs).
+`ejg.ui.open("software")`. Importar ROMs: `ejg.ui.open("rom-import")`.

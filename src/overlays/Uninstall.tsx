@@ -37,11 +37,14 @@ export function UninstallDialog({ id, onClose }: { id: number; onClose: () => vo
   };
 
   const size = plan?.sizeBytes ? ` (${bytes(plan.sizeBytes)})` : "";
+  const isConsole = plan?.method === "console";
   const text = !plan
     ? ""
     : plan.method === "uninstaller"
         ? `Se abrirá su desinstalador (${plan.program}). Cuando termine, ejGames lo quitará de tu biblioteca junto con sus horas.`
-        : `Este juego no trae desinstalador: su carpeta${size} irá a la papelera de reciclaje y el juego saldrá de tu biblioteca junto con sus horas.`;
+        : isConsole
+          ? `Sus archivos${size}, con su DLC y sus actualizaciones, irán a la papelera de reciclaje y el juego saldrá de tu biblioteca junto con sus horas.`
+          : `Este juego no trae desinstalador: su carpeta${size} irá a la papelera de reciclaje y el juego saldrá de tu biblioteca junto con sus horas.`;
 
   return (
     <div className="overlay-enter absolute inset-0 z-[45] grid place-items-center bg-black/60 backdrop-blur-sm" onMouseDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
@@ -51,7 +54,9 @@ export function UninstallDialog({ id, onClose }: { id: number; onClose: () => vo
             {plan?.method === "folder" ? <FolderX size={28} /> : <Trash2 size={28} />}
           </span>
         </div>
-        <h2 className="text-center text-[20px] font-semibold">Desinstalar {plan ? `«${plan.title}»` : ""}</h2>
+        <h2 className="text-center text-[20px] font-semibold">
+          {isConsole ? "Borrar" : "Desinstalar"} {plan ? `«${plan.title}»` : ""}
+        </h2>
         {!plan && !error && (
           <p className="mt-4 flex items-center justify-center gap-2 text-sm text-muted">
             <Loader2 size={15} className="animate-spin" /> Buscando cómo desinstalarlo…
@@ -83,7 +88,7 @@ export function UninstallDialog({ id, onClose }: { id: number; onClose: () => vo
               className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[calc(var(--h-radius)*0.7)] bg-red-600 text-sm font-semibold text-white hover:bg-red-500 disabled:cursor-progress disabled:opacity-70 cursor-pointer"
             >
               {busy ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
-              Desinstalar
+              {isConsole ? "Borrar" : "Desinstalar"}
             </button>
           )}
         </div>

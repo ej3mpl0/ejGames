@@ -114,8 +114,9 @@ export function romParts(g) {
 /** Lo mismo en una línea: «ID 0100… · v1.2 · Europa · 2 DLC». */
 export const romNote = (g) => romParts(g).join(" · ");
 
-/** Si `ejg.game.uninstall(id)` sirve para este juego: todos los que siguen en su sitio. */
-export const canUninstall = (g) => !g.missing && !g.platform && !isSoftware(g);
+/** Si `ejg.game.uninstall(id)` sirve para este juego: todos los que siguen en su sitio (los de consola
+ *  se borran: sus archivos a la papelera). Los emuladores, desde su tienda. */
+export const canUninstall = (g) => !g.missing && !isSoftware(g);
 
 export const SORTS = {
   title: { label: "Nombre", fn: (a, b) => (a.sortTitle < b.sortTitle ? -1 : a.sortTitle > b.sortTitle ? 1 : 0) },

@@ -3,7 +3,7 @@
 // todas las fuentes. Las fuentes se editan en el JSON, no aquí.
 
 import { api } from "../../api/tauri";
-import type { CatalogCategory, CatalogEntry, CatalogPage, CatalogSourceInfo, CatalogState, Platform } from "../../api/types";
+import type { CatalogCategory, CatalogDetail, CatalogEntry, CatalogInstallRequest, CatalogPage, CatalogSourceInfo, CatalogState, Platform } from "../../api/types";
 
 export type CatalogSort = "popular" | "newest" | "name" | "size";
 
@@ -74,3 +74,20 @@ export async function searchAll(query: string, platforms: Platform[] = [], page 
 
 /** Clave de una entrada (la misma que usa el núcleo para sus descargas). */
 export const entryKey = (e: Pick<CatalogEntry, "sourceId" | "id">) => `${e.sourceId}|${e.id}`;
+
+/** Lo que se manda al núcleo para bajar e instalar una entrada con uno de sus enlaces. */
+export function requestFor(e: CatalogEntry, url: string, d?: CatalogDetail | null): CatalogInstallRequest {
+  const x = d ?? e;
+  return {
+    sourceId: e.sourceId,
+    gameId: e.id,
+    title: x.title,
+    platform: x.platform ?? e.platform,
+    category: x.category,
+    cover: x.coverOriginal ?? e.coverOriginal ?? null,
+    description: x.description ?? null,
+    region: x.region ?? null,
+    version: x.version ?? null,
+    url,
+  };
+}

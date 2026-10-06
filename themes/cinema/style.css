@@ -167,6 +167,7 @@ body.playing-hero .hero-desc { opacity: 0; }
   --hb-surface-2: #2c2c2c;
   --hb-line: rgba(255, 255, 255, 0.1);
   --hb-focus: 0 0 0 2px #fff, 0 16px 40px rgba(0, 0, 0, 0.8);
+  --hb-sheet: #181818;
   --hb-hero: radial-gradient(120% 160% at 100% 0%, rgba(229, 9, 20, 0.35), transparent 55%), linear-gradient(90deg, #141414 0%, #1b1b1b 100%);
   max-width: none;
   padding: 18px var(--pad) 70px;

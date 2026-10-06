@@ -98,7 +98,7 @@ function goTab(t) {
     if (g) showCard(g);
     else updateHints();
   } else if (state.view === "homebrew") {
-    // A: START, como en la lista; X: INFO.
+    // A: START, como en la lista; X: borrar.
     hbView ||= createHomebrewView({ ejg, root: $("#homebrew"), focus, layout: "retro", onExit: () => goTab(0), onChange: () => updateHints(), onGame: (g) => start(g.id) });
     updateHints();
   } else shop.render();
@@ -111,7 +111,7 @@ function dropHomebrew() {
   hbView = null;
 }
 const hv = (a) => !!(state.view === "homebrew" && detail.hidden && hbView && hbView.nav(a));
-const HB_HINTS = { Abrir: "START", Sistema: "SYSTEM", Emuladores: "EMULATORS", "Atrás": "BACK" };
+const HB_HINTS = { Abrir: "START", Borrar: "DELETE", Consola: "CONSOLE", Emuladores: "EMULATORS", "Atrás": "BACK", Elegir: "SELECT", Cerrar: "CLOSE" };
 function switchTab(d) {
   const tabs = tabList().filter((t) => t !== "options"); // LB/RB no abren los ajustes
   goTab(tabs[(tabs.indexOf(curTab()) + d + tabs.length) % tabs.length]);
@@ -350,7 +350,7 @@ bindNav(focus, {
     if (gv("back")) return true;
     if (!detail.hidden) return closeDetail(), true;
     if (inLib()) return false;
-    if (state.view === "homebrew") return goTab(0), true;
+    if (hv("back")) return true;
     if (shop.back()) return true;
     goTab(0); // a la pantalla principal
     return true;
@@ -362,11 +362,7 @@ bindNav(focus, {
   right: () => (guideView ? false : inLib() ? (detail.hidden && list.contains(focus.current) ? (jump(10), true) : false) : shop.nav("right")),
   x: () => {
     if (gv("x")) return true;
-    if (state.view === "homebrew") {
-      const id = Number(focus.current?.dataset.gameId);
-      if (id && detail.hidden) openDetail(id);
-      return true;
-    }
+    if (hv("x")) return true;
     if (!inLib()) return shop.key("x");
     const id = Number(focus.current?.dataset.gameId);
     if (id && detail.hidden) openDetail(id);
@@ -496,8 +492,7 @@ ejg.season.onChange(seasonBg);
 function updateHints(g) {
   if (guideView) return hintBar.set(guideView.hints().map(([a, l]) => [a, GUIDE_HINTS[l] || l.toUpperCase()]));
   if (state.view === "homebrew" && hbView) {
-    const [first, ...rest] = hbView.hints().map(([a, l]) => [a, HB_HINTS[l] || l.toUpperCase()]);
-    return hintBar.set([first, ["x", "INFO"], ...rest]);
+    return hintBar.set(hbView.hints().map(([a, l]) => [a, HB_HINTS[l] || l.toUpperCase()]));
   }
   if (!inLib()) return;
   hintBar.set([

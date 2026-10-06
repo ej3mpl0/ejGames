@@ -3,7 +3,7 @@
 
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { api, errMsg, on } from "../api/tauri";
-import type { CatalogInstallRequest, CatalogJob, DownloadItem, HomebrewEntry, HomebrewJob } from "../api/types";
+import type { CatalogInstallRequest, CatalogJob, DownloadItem } from "../api/types";
 import { t } from "../lib/i18n";
 import { activeTheme, useApp } from "../store/app";
 
@@ -93,63 +93,6 @@ export function resolveKeyboard(v: string | null) {
   const r = resolver;
   resolver = null;
   r?.(v);
-}
-
-// ───────────────────────────── homebrew ─────────────────────────────
-// Explorar → Homebrew: las descargas van por HTTP (no por torrent) y de una en una,
-// en su propia cola; el progreso se ve en la tienda y en Descargas.
-
-const hbQueue: HomebrewEntry[] = [];
-let hbRunning = false;
-let hbListening = false;
-
-function setJob(id: string, patch: Partial<HomebrewJob> | null) {
-  const jobs = { ...useApp.getState().homebrewJobs };
-  if (patch === null) delete jobs[id];
-  else jobs[id] = { ...(jobs[id] ?? { id, name: id, phase: "queued", received: 0, total: 0 }), ...patch };
-  useApp.getState().set({ homebrewJobs: jobs });
-}
-
-async function hbNext() {
-  if (hbRunning) return;
-  const e = hbQueue.shift();
-  if (!e) return;
-  hbRunning = true;
-  setJob(e.id, { phase: "download", total: e.size ?? 0 });
-  try {
-    const gameId = await api.homebrewInstall(e.id);
-    setJob(e.id, null);
-    useApp.getState().toast("ok", t("«{name}» instalado: ya está en tu biblioteca", { name: e.name }), {
-      label: t("Jugar"),
-      run: () => void api.romLaunch(gameId).catch((err) => useApp.getState().toast("error", errMsg(err))),
-    });
-  } catch (err) {
-    setJob(e.id, { phase: "error", message: errMsg(err) });
-    useApp.getState().toast("error", `${e.name}: ${errMsg(err)}`);
-  } finally {
-    hbRunning = false;
-    void hbNext();
-  }
-}
-
-/** Pone un homebrew en la cola: se baja, se descomprime y queda en la biblioteca. */
-export function installHomebrew(e: HomebrewEntry) {
-  if (!hbListening) {
-    hbListening = true;
-    void on("hb:progress", (p) => {
-      if (p.phase === "download" || p.phase === "extract") setJob(p.id, { phase: p.phase, received: p.received, total: p.total || useApp.getState().homebrewJobs[p.id]?.total || 0 });
-    });
-  }
-  const job = useApp.getState().homebrewJobs[e.id];
-  if (job && job.phase !== "error") return;
-  setJob(e.id, { name: e.name, phase: "queued", received: 0, total: e.size ?? 0, message: null });
-  hbQueue.push(e);
-  void hbNext();
-}
-
-/** Quita de la lista un homebrew que falló. */
-export function dismissHomebrewJob(id: string) {
-  setJob(id, null);
 }
 
 // ───────────────────────────── catálogos ─────────────────────────────

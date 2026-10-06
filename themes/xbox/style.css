@@ -177,6 +177,7 @@ img { display: block; }
   --hb-surface-2: rgba(64, 66, 72, 0.95);
   --hb-line: rgba(255, 255, 255, 0.08);
   --hb-radius: var(--r);
+  --hb-sheet: #1d1f24;
   --hb-focus: 0 0 0 3px #fff, 0 12px 30px rgba(0, 0, 0, 0.5);
   --hb-hero: linear-gradient(110deg, color-mix(in srgb, var(--accent) 38%, rgba(20, 22, 26, 0.9)) 0%, rgba(30, 32, 38, 0.86) 55%);
   max-width: none;

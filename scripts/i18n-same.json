@@ -308,5 +308,8 @@
  "API": 1,
  "HTML": 1,
  "SYSTEM": 1,
- "EMULATORS": 1
+ "EMULATORS": 1,
+ "CONSOLE": 1,
+ "DELETE": 1,
+ "SELECT": 1
 }

@@ -8,7 +8,7 @@ import { api, errMsg } from "../../api/tauri";
 import type { CatalogDetail, CatalogEntry, CatalogInstallRequest, DownloadLink } from "../../api/types";
 import { cancelCatalogJob, dismissCatalogJob, downloadFromCatalog } from "../../host/downloads";
 import { launchRom } from "../../host/emulator-launcher";
-import { CATEGORY_LABELS, entryKey } from "../../lib/catalog/sources";
+import { CATEGORY_LABELS, entryKey, requestFor } from "../../lib/catalog/sources";
 import { platformName } from "../../lib/catalog/platforms";
 import { t } from "../../lib/i18n";
 import { useApp } from "../../store/app";
@@ -17,22 +17,6 @@ import { Button, Spinner } from "../ui";
 import { JobBar } from "./CatalogCard";
 import { EmulatorSelector } from "./EmulatorSelector";
 import { PlatformIcon } from "./PlatformSelector";
-
-export function requestFor(e: CatalogEntry, url: string, d?: CatalogDetail | null): CatalogInstallRequest {
-  const x = d ?? e;
-  return {
-    sourceId: e.sourceId,
-    gameId: e.id,
-    title: x.title,
-    platform: x.platform ?? e.platform,
-    category: x.category,
-    cover: x.coverOriginal ?? e.coverOriginal ?? null,
-    description: x.description ?? null,
-    region: x.region ?? null,
-    version: x.version ?? null,
-    url,
-  };
-}
 
 const KIND_LABEL: Record<DownloadLink["kind"], string> = { direct: "Archivo", page: "Web de descarga", magnet: "Magnet", torrent: "Torrent" };
 

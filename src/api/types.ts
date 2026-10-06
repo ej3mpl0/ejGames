@@ -1006,7 +1006,8 @@ export interface GameMaps {
 export interface UninstallPlan {
   gameId: number;
   title: string;
-  method: "uninstaller" | "folder";
+  /** console: un juego de consola, cuyos archivos van a la papelera. */
+  method: "uninstaller" | "folder" | "console";
   dir: string | null;
   program: string | null;
   sizeBytes: number | null;
@@ -1082,53 +1083,6 @@ export interface SystemEmulator {
   kind: string;
   /** settings (Ajustes) | software (instalado desde ejGames) | detected (en el disco) | none */
   origin: "settings" | "software" | "detected" | "none";
-}
-
-export type HomebrewSystem = "switch" | "vita" | "3ds";
-
-export interface HomebrewEntry {
-  /** `<sistema>:<id del catálogo>` */
-  id: string;
-  system: HomebrewSystem;
-  name: string;
-  author: string;
-  version: string;
-  description: string;
-  details: string;
-  category: "game" | "emulator" | "tool" | "other";
-  icon?: string | null;
-  screens: string[];
-  size?: number | null;
-  url: string;
-  binary?: string | null;
-  site?: string | null;
-  license?: string | null;
-  updated?: string | null;
-  requirements?: string | null;
-  downloads: number;
-  /** Se juega con emulador desde ejGames (si no, es para la consola real). */
-  runnable: boolean;
-  installed?: { version: string; path: string; gameId?: number | null } | null;
-  update: boolean;
-}
-
-export interface HomebrewPage {
-  items: HomebrewEntry[];
-  total: number;
-  page: number;
-  pages: number;
-  categories: [string, number][];
-  emulator: string;
-  error?: string | null;
-}
-
-export interface HomebrewJob {
-  id: string;
-  name: string;
-  phase: "queued" | "download" | "extract" | "done" | "error";
-  received: number;
-  total: number;
-  message?: string | null;
 }
 
 // ───────────────────────────── catálogos ─────────────────────────────

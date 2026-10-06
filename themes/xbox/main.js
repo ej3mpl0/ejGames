@@ -427,6 +427,7 @@ bindNav(focus, {
     if (gv("back")) return true;
     if (!player.hidden) return closePlayer(), true;
     if (!hub.hidden) return closeHub(), true;
+    if (hv("back")) return true;
     if (shop.back()) return true;
     if (state.view === "queue") return setView(state.queueFrom && state.queueFrom !== "queue" ? state.queueFrom : "home"), true;
     if (state.view !== "home") return setView("home"), true;
@@ -445,7 +446,7 @@ bindNav(focus, {
     return true;
   },
   x: () => {
-    if (gv("x")) return true;
+    if (gv("x") || hv("x")) return true;
     if (isShop() && hub.hidden) return true;
     const id = state.hubId || Number(focus.current?.dataset.gameId);
     if (id) ejg.game.edit(id);

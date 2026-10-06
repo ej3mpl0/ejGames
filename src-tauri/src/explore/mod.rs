@@ -7,7 +7,6 @@
 
 pub mod fitgirl;
 pub mod genres;
-pub mod homebrew;
 pub mod images;
 pub mod parse;
 pub mod steamart;

@@ -9,11 +9,8 @@ import type {
   Settings,
   ThemeInfo,
   WishItem,
-  HomebrewJob,
   CatalogJob,
   CatalogState,
-  HomebrewPage,
-  HomebrewSystem,
   EmulatorCfg,
 } from "../api/types";
 
@@ -39,7 +36,6 @@ export type OverlayName =
   | "map"
   | "year-review"
   | "software"
-  | "homebrew"
   | "rom-import"
   | "catalogs"
   | "onboarding";
@@ -68,10 +64,6 @@ interface State {
   downloads: DownloadItem[];
   /** Lista de deseados de la tienda (del perfil activo). */
   wishlist: WishItem[];
-  /** Explorar → Homebrew: la última página vista de cada sistema (para volver sin esperar). */
-  homebrewCatalog: Partial<Record<HomebrewSystem, HomebrewPage>>;
-  /** Homebrew bajándose o en cola (por id). */
-  homebrewJobs: Record<string, HomebrewJob>;
   /** Explorar → Catálogos: fuentes configuradas (null = sin leer). */
   catalogState: CatalogState | null;
   /** Descargas directas de los catálogos (por `<fuente>|<id>`). */
@@ -114,8 +106,6 @@ export const useApp = create<State>((set, get) => ({
   running: [],
   downloads: [],
   wishlist: [],
-  homebrewCatalog: {},
-  homebrewJobs: {},
   catalogState: null,
   catalogJobs: {},
   overlays: [],

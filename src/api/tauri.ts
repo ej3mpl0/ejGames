@@ -19,8 +19,6 @@ import type {
   CatalogInstallRequest,
   CatalogInstallOutcome,
   EmulatorOption,
-  HomebrewSystem,
-  HomebrewPage,
   SavesInfo,
   SaveSnapshot,
   Bootstrap,
@@ -113,10 +111,6 @@ export const api = {
   catalogPrepareTorrent: (req: CatalogInstallRequest) => invoke<PreparedDownload>("catalog_prepare_torrent", { req }),
   emulatorOptions: (platform: string) => invoke<EmulatorOption[]>("emulator_options", { platform }),
   romLaunchFile: (path: string, platform: string) => invoke<number>("rom_launch_file", { path, platform }),
-  homebrewCatalog: (q: { system: HomebrewSystem; query?: string; category?: string; sort?: string; page?: number; force?: boolean }) =>
-    invoke<HomebrewPage>("homebrew_catalog", q),
-  homebrewInstall: (id: string) => invoke<number>("homebrew_install", { id }),
-  homebrewUninstall: (id: string) => invoke<void>("homebrew_uninstall", { id }),
 
   inspectFolder: (path: string) => invoke<FolderInspection>("inspect_folder", { path }),
   listFolders: () => invoke<LibraryFolder[]>("list_folders"),
@@ -287,7 +281,6 @@ export type Events = {
   "wishlist:changed": WishItem[];
   "saves:changed": { gameId: number };
   "emu:progress": { id: string; phase: string; received: number; total: number };
-  "hb:progress": { id: string; phase: "download" | "extract" | "done" | "error"; received: number; total: number; message?: string | null };
   "rom:import": { done: number; total: number; name: string };
   "catalog:progress": { id: string; phase: "download" | "extract" | "organize" | "done" | "error"; received: number; total: number; message?: string | null };
   "downloads:install": { id: number; phase: "running" | "done" | "cancelled" | "error" | "needs-folder"; message?: string | null; gameId?: number | null };

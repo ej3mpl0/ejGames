@@ -303,7 +303,7 @@ function setView(v, target) {
   document.documentElement.dataset.view = v;
   for (const id of ["home", "all", "homebrew", "guides", "shop", "dls"]) $("#" + id).hidden = v !== id;
   if (v === "homebrew" && !hbView) {
-    // Como en el HOME: A inicia el juego; X abre sus opciones.
+    // Como en el HOME: A inicia el juego; X lo borra.
     hbView = createHomebrewView({ ejg, root: $("#homebrew"), focus, layout: "switch", onExit: () => setView("home", "#c-homebrew"), onChange: () => updateHints(), onGame: (g) => launch(g.id) });
   } else if (v === "all") {
     renderAll();
@@ -340,7 +340,7 @@ const actions = {
     if (!options.hidden) return closeOptions(), true;
     if (shop.back()) return true;
     if (state.view === "all") return setView("home"), true;
-    if (state.view === "homebrew") return setView("home", "#c-homebrew"), true;
+    if (hv("back")) return true;
     return false;
   },
   up: () => gv("up"),
@@ -348,7 +348,7 @@ const actions = {
   lt: () => gv("lt"),
   rt: () => gv("rt"),
   x: () => {
-    if (gv("x")) return true;
+    if (gv("x") || hv("x")) return true;
     if (!options.hidden) return true;
     if (shop.x(focus.current)) return true;
     const id = Number(focus.current?.dataset.gameId);
@@ -479,7 +479,7 @@ ejg.on("profile", renderUser);
 const hintBar = hints($("#bar"), []);
 function updateHints() {
   if (state.view === "guides" && guideView) return hintBar.set(guideView.hints());
-  if (state.view === "homebrew" && hbView && options.hidden) return hintBar.set([...hbView.hints().slice(0, 1), ["x", "Opciones"], ...hbView.hints().slice(1)]);
+  if (state.view === "homebrew" && hbView && options.hidden) return hintBar.set(hbView.hints());
   if (state.view === "shop" || state.view === "dls" || shop.hasDialog()) return hintBar.set(shop.hints());
   const el = focus.current;
   const d = el?.dataset?.dlId && ejg.downloads.byId(Number(el.dataset.dlId));

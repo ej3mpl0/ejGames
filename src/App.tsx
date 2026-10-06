@@ -28,7 +28,6 @@ import { SettingsOverlay } from "./overlays/settings/Settings";
 import { StatsOverlay } from "./overlays/Stats";
 import { YearReviewOverlay } from "./overlays/YearReview";
 import { SoftwareStore } from "./overlays/SoftwareStore";
-import { HomebrewStore } from "./overlays/HomebrewStore";
 import { Catalogs } from "./overlays/Catalogs";
 import { RomImport } from "./overlays/RomImport";
 import { activeTheme, useApp } from "./store/app";
@@ -251,8 +250,6 @@ export default function App() {
             return <SearchOverlay key={key} onClose={onClose} />;
           case "software":
             return <SoftwareStore key={key} onClose={onClose} />;
-          case "homebrew":
-            return <HomebrewStore key={key} args={o.args} onClose={onClose} />;
           case "rom-import":
             return <RomImport key={key} onClose={onClose} />;
           case "catalogs":

@@ -13,7 +13,7 @@
   var seq = 0;
   var pending = new Map();
   var listeners = new Map();
-  var state = { init: null, settings: {}, library: [], collections: [], profile: null, running: [], input: { source: "mouse", pad: "xbox" }, downloads: [], wishlist: [], explore: true, page: null, eventMode: "auto", season: null, rawSettings: {}, lang: "es", strings: {} };
+  var state = { init: null, settings: {}, library: [], collections: [], profile: null, running: [], input: { source: "mouse", pad: "xbox" }, downloads: [], wishlist: [], explore: true, page: null, catalogJobs: {}, eventMode: "auto", season: null, rawSettings: {}, lang: "es", strings: {} };
   var readyResolve;
   var readyPromise = new Promise(function (r) { readyResolve = r; });
   var initialized = false;
@@ -196,6 +196,7 @@
       state.wishlist = m.data.wishlist || [];
       state.explore = m.data.explore !== false;
       state.page = m.data.page || null;
+      state.catalogJobs = m.data.catalogJobs || {};
       state.eventMode = m.data.eventMode || "auto";
       state.season = m.data.season || null;
       state.lang = m.data.lang === "en" ? "en" : "es";
@@ -259,6 +260,7 @@
           emit("settings", state.rawSettings);
           break;
         case "page": state.page = d || null; break;
+        case "catalog-jobs": state.catalogJobs = d || {}; break;
       }
       emit(m.name, d);
     }
@@ -411,6 +413,27 @@
       /** Ajustes → Perfil del host (nombre, avatar, PIN…). */
       edit: function () { return call("ui.open", { name: "profile-editor" }); },
     },
+    catalogs: {
+      /** Las fuentes de juegos de consola que se pueden usar: {sources: [{id, name, hasSearch, platforms: [{id, system, name}]}]}.
+       *  `platforms[].id` es el de los catálogos («ps1») y `system`, el de `game.platform` («psx»). */
+      state: function () { return call("catalogs.state"); },
+      /** Una página de una fuente: {source, mode: "popular"|"newest"|"platform"|"search", platform?, query?, page?}
+       *  → {entries, page, hasMore, error}. Cada entrada: {id, sourceId, title, platform, system, coverUrl, size,
+       *  region, language, version, category, installedGameId, emulator, description}. */
+      browse: function (q) { return call("catalogs.browse", q || {}); },
+      /** Busca en todas las fuentes a la vez: → {entries, hasMore, errors}. */
+      search: function (query, opts) { return call("catalogs.search", { query: query, platforms: (opts && opts.platforms) || [], page: (opts && opts.page) || 1 }); },
+      /** La ficha: lo de la entrada y además links [{url, label, kind, host, size}] y screenshots. */
+      detail: function (source, id) { return call("catalogs.detail", { source: source, id: id }); },
+      /** Baja con uno de los enlaces de la ficha: "queued" (a la cola; se descomprime y queda en la biblioteca),
+       *  "opened" (una web de descargas: el navegador) o "catalogs" (un torrent: la ventana de catálogos). */
+      download: function (source, id, url) { return call("catalogs.download", { source: source, id: id, url: url }); },
+      /** Cancela (o quita de la lista, si ya acabó) la descarga `<fuente>|<id>`. */
+      cancel: function (key) { return call("catalogs.cancel", { key: key }); },
+      /** Descargas en marcha por `<fuente>|<id>`: {name, phase, received, total, message, gameId}. */
+      get jobs() { return state.catalogJobs; },
+      onJobs: function (fn) { return on("catalog-jobs", fn); },
+    },
     emulators: {
       /** Los emuladores de la tienda (Tienda → Homebrew): {id, name, blurb, systems, platforms, installed, version,
        *  latest, update, gameId}. `platforms` son los mismos ids que `game.platform`; gameId, su entrada en la biblioteca. */
@@ -429,7 +452,7 @@
     },
     ui: {
       /** settings | game | profiles | search | add-folder | stats | theme | collections | menu | explore | downloads | software (emuladores)
-       *  | homebrew ({system?: "switch"|"vita"|"3ds"}) | rom-import (importar ROMs)
+       *  | rom-import (importar ROMs)
        *  | catalogs (catálogos de ROMs) | guides, trainer, map ({id: gameId}) | profile-editor (Ajustes → Perfil) */
       open: function (name, args) { return call("ui.open", { name: name, args: args || null }); },
       toast: function (message, kind) { return call("ui.toast", { message: message, kind: kind || "info" }); },

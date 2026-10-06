@@ -277,8 +277,11 @@
 }
 
 /* ─── filas ─── */
+/* minmax(0, 1fr): con una columna «auto» las filas crecían hasta el ancho de todas sus
+   tarjetas, las flechas se quedaban fuera de pantalla y el foco desplazaba la página entera. */
 .hb-body {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 30px;
   margin-top: 26px;
 }

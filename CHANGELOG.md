@@ -5,6 +5,12 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.5.1
+
+- **Homebrew**: las filas ya se deslizan bien. Antes eran tan anchas como todas sus tarjetas, así que las flechas se
+  quedaban fuera de la pantalla y, al avanzar con el teclado o el mando, se desplazaba la página entera (la cabecera y
+  los títulos se salían por la izquierda). En Retro la vista ya no se mueve unos píxeles al moverse por las filas.
+
 ## 1.5.0
 
 - **Homebrew, como una tienda**: los catálogos de juegos de consola se ven directamente, sin entrar en «Catálogos» a

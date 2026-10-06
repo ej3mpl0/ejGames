@@ -134,7 +134,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 #guides .g-end { color: var(--hi); font-family: "Press Start 2P", Consolas, monospace; font-size: calc(var(--fs) * 0.7); }
 
 /* ─── HOMEBREW (kit/homebrew.js): los títulos en píxel, el resto en monoespaciada ─── */
-#homebrew { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; margin-top: 14px; }
+#homebrew { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; margin: 14px -12px 0; }
 #homebrew[hidden] { display: none; }
 #homebrew .hb-view {
   --hb-fg: var(--fg);
@@ -154,7 +154,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   --hb-warn: var(--hi);
   --hb-ok: var(--hi2);
   max-width: none;
-  padding: 0 0 30px;
+  padding: 0 12px 30px; /* sitio para el margen negativo de las filas (anillo de foco) sin desbordar */
   text-shadow: none;
 }
 #homebrew .hb-title { font-size: calc(var(--fs) * 2); font-weight: 400; color: var(--hi); text-shadow: 3px 3px 0 color-mix(in srgb, var(--hi) 30%, transparent); }

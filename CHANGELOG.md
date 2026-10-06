@@ -5,6 +5,11 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.3.2
+
+- **Catálogos**: las fuentes de serie pasan por el relay de ejGames cuando la web no deja entrar directamente (por
+  ejemplo, con un error 403).
+
 ## 1.3.1
 
 - **Homebrew** sale de Explorar y de la tienda de los seis temas. **Tienda → Software** pasa a llamarse **Tienda → Homebrew**.

@@ -18,4 +18,4 @@ simple = { limit = 40, period = 60 }
 # catalog-sources.json). Vacío = ninguna. También se puede poner como secreto:
 #   npx wrangler secret put CATALOG_SOURCES -c relay/wrangler.toml
 [vars]
-CATALOG_SOURCES = "{}"
+CATALOG_SOURCES = '{"nxbrew":"https://nxbrew.net","axekin":"https://www.axekin.com"}'

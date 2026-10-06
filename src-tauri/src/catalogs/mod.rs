@@ -344,7 +344,13 @@ async fn browse_inner(st: &Arc<AppState>, source_id: &str, mode: Mode, query: &s
         }
         entries.retain(|e| e.platform.as_deref() == Some(p));
     }
+    entries.retain(|e| shown(&src, e));
     Ok((entries, more))
+}
+
+/// Ni lo que la fuente oculta (emuladores…) ni lo de plataformas que no declara (PC).
+fn shown(src: &CatalogSource, e: &CatalogEntry) -> bool {
+    !src.hide_categories.contains(&e.category) && (src.platforms.is_empty() || e.platform.as_ref().is_none_or(|p| src.platforms.contains(p)))
 }
 
 /// Busca en todas las fuentes activas a la vez (cada una con su límite).

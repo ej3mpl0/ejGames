@@ -5,6 +5,16 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.3.5
+
+- **Catálogos**: una sola fuente de serie, con Switch, PlayStation (de PS1 a PS5) y Xbox 360, que **descarga directamente**
+  el archivo (como su botón de descarga) en vez de mandarte a un servidor de archivos. Las dos fuentes de serie anteriores
+  se quitan.
+- Los **.rar** se descomprimen solos (también RAR5, por volúmenes y con contraseña), como los .zip y .7z.
+- No salen emuladores ni juegos de PC en los catálogos de consola. Nuevas opciones por fuente en `catalog-sources.json`:
+  `hideCategories` (lo que no se muestra) y `signedDownload` (webs cuyo botón pide antes la dirección del archivo).
+- PlayStation 5 como plataforma de catálogo (sin emulador, como PS4).
+
 ## 1.3.4
 
 - **Catálogos**: la fuente de Switch de serie vuelve a funcionar (decía «el relay no tiene dada de alta la fuente»): su

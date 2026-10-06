@@ -80,7 +80,7 @@ async fn direct(src: &CatalogSource, url: &str) -> anyhow::Result<String> {
 fn not_a_bot_wall(body: String) -> anyhow::Result<String> {
     let head = body.get(..4096).unwrap_or(&body);
     if ["Making sure you&#39;re not a bot", "/.within.website/", "<title>Just a moment...</title>", "cf-chl-"].iter().any(|m| head.contains(m)) {
-        anyhow::bail!("la web pide una comprobación anti-bots que la app no puede pasar");
+        anyhow::bail!("{}", crate::i18n::t("La web pide una comprobación anti-bots que la app no puede pasar"));
     }
     Ok(body)
 }
@@ -318,12 +318,13 @@ fn all(scope: ElementRef, spec: Option<&str>) -> Vec<(String, String)> {
 /// («<strong>1Fichier</strong><br><a>Download</a>» → «1Fichier»).
 fn label_of(el: ElementRef) -> String {
     let own = clean(&el.text().collect::<String>());
-    if !["", "download", "descargar", "link", "enlace", "here", "aquí", "click here"].contains(&own.to_lowercase().as_str()) {
+    let bare: String = own.chars().filter(|c| c.is_alphanumeric() || *c == ' ').collect::<String>().trim().to_lowercase();
+    if !["", "download", "descargar", "link", "enlace", "here", "aquí", "click here"].contains(&bare.as_str()) {
         return own;
     }
     el.parent()
         .and_then(ElementRef::wrap)
-        .map(|p| clean(&p.text().collect::<String>().replacen(&own, "", 1)))
+        .map(|p| clean(&p.text().collect::<String>()).replacen(&own, "", 1).trim().to_string())
         .filter(|t| !t.is_empty() && t.chars().count() <= 80)
         .unwrap_or(own)
 }
@@ -549,11 +550,19 @@ pub fn scrape_detail(src: &CatalogSource, html: &str, page_url: &str, id: &str) 
     let cover = first(root, s.cover_image.as_deref()).map(|c| absolute(page_url, &c));
     let size = first(root, s.size.as_deref());
     let (tag_region, tag_lang) = tags_of(&title);
+    // Con descarga firmada, el selector da el id que va en su dirección.
+    let signed = src.signed_download.as_ref().map(|d| d.url.trim()).filter(|u| !u.is_empty());
     let links: Vec<DownloadLink> = all(root, s.download_link.as_deref())
         .into_iter()
-        .map(|(href, text)| (absolute(page_url, &href), text))
+        .map(|(v, text)| match signed {
+            Some(t) => (absolute(&src.base_url, &t.replace("{id}", &enc(&v))), text),
+            None => (absolute(page_url, &v), text),
+        })
         .filter(|(u, _)| u.starts_with("http://") || u.starts_with("https://") || u.starts_with("magnet:"))
-        .map(|(u, text)| link(u, text, None))
+        .map(|(u, text)| {
+            let l = link(u, text, None);
+            if signed.is_some() { DownloadLink { kind: "direct".into(), ..l } } else { l }
+        })
         .collect();
     let screenshots = all(root, s.screenshots.as_deref()).into_iter().filter_map(|(u, _)| crate::explore::images::proxy(&absolute(page_url, &u))).take(12).collect();
     let entry = CatalogEntry {
@@ -768,32 +777,44 @@ mod tests {
     }
 
     #[test]
-    fn nxbrew_default_source() {
-        let s = super::super::config::defaults().into_iter().find(|s| s.id == "nxbrew").unwrap();
-        assert_eq!(expand(&s, s.endpoints.by_platform.as_deref().unwrap(), "", 1, Some("switch"), ""), "https://nxbrew.net/switch-games/");
-        let list = r#"<html><body><article class="post"><div class="post-thumbnail"><a href="https://nxbrew.net/juego-switch-nsp/"><img src="https://nxbrew.net/wp-content/uploads/j-120x195.png" class="wp-post-image"></a></div>
-          <div class="post-category"><a href="https://nxbrew.net/switch-games/">Switch Games</a></div><h2 class="post-title"><a href="https://nxbrew.net/juego-switch-nsp/">Juego Switch NSP (eShop)</a></h2></article>
-          <a class="nextpostslink" rel="next" href="https://nxbrew.net/switch-games/page/2/">»</a></body></html>"#;
-        let r = scrape_list(&s, list, "https://nxbrew.net/switch-games/", Some("switch"));
-        assert_eq!(r.entries.len(), 1);
+    fn romshq_default_source() {
+        let s = super::super::config::defaults().into_iter().find(|s| s.id == "romshq").unwrap();
+        assert_eq!(expand(&s, s.endpoints.by_platform.as_deref().unwrap(), "", 2, Some("ps5"), ""), "https://romshq.com/roms/playstation-5?page=2");
+        assert_eq!(expand(&s, s.endpoints.search.as_deref().unwrap(), "super mario", 1, None, ""), "https://romshq.com/search/super%20mario?page=1");
+        let card = |slug: &str, title: &str, platform: &str| {
+            format!(
+                r#"<div class="relative group/item" x-data="{{}}"><div class="overflow-hidden"><a href="https://romshq.com/game/{slug}" class="aspect-[16/9] relative block">
+                <picture><img src="data:image/gif;base64,R0lGOD" data-src="https://romshq.com/uploads/poster/{slug}.png" alt="{title}"></picture><h3 class="text-lg">{title}</h3></a></div>
+                <div x-ref="hoverWindow"><h4>{title}</h4><div><span class="text-sm font-medium text-emerald-400 truncate"> {platform} </span></div></div></div>"#
+            )
+        };
+        let list = format!(
+            r#"<html><body><div class="grid">{}{}{}{}</div><a href="https://romshq.com/trending?page=2" rel="next">›</a></body></html>"#,
+            card("juego-uno", "Juego Uno", "Switch"),
+            card("juego-dos", "Juego Dos", "PS5"),
+            card("ryujinx-emulator", "Ryujinx Emulator", "Switch"),
+            card("juego-pc", "Juego PC", "PC")
+        );
+        let r = scrape_list(&s, &list, "https://romshq.com/trending?page=1", None);
+        assert_eq!(r.next.as_deref(), Some("https://romshq.com/trending?page=2"));
         let e = &r.entries[0];
-        assert_eq!((e.id.as_str(), e.title.as_str(), e.platform.as_deref()), ("/juego-switch-nsp/", "Juego Switch NSP (eShop)", Some("switch")));
-        assert_eq!(e.cover_original.as_deref(), Some("https://nxbrew.net/wp-content/uploads/j-120x195.png"));
-        assert_eq!(r.next.as_deref(), Some("https://nxbrew.net/switch-games/page/2/"));
-        let detail = r#"<html><body><article><h1 class="post-title">Juego Switch NSP (eShop)</h1><div class="entry">
-          <div class="wp-block-media-text"><figure class="wp-block-media-text__media"><img src="https://nxbrew.net/wp-content/uploads/j.png"></figure></div>
-          <a href="javascript:void(0)"><button>Download Now</button></a><p class="has-background"><strong>Description:</strong> Un juego.</p>
-          <figure class="wp-block-gallery"><figure><img src="https://i6.imageban.ru/out/a.jpg"></figure></figure>
-          <div class="wp-block-columns"><div class="wp-block-column"><p><strong>Base Game NSP (6.7 GB)</strong></p></div>
-          <div class="wp-block-column"><p><strong>1Fichier</strong><br><a href="https://ouo.io/abc">Download</a></p></div></div></div></article>
-          <aside><h2 class="post-title"><a href="https://nxbrew.net/otro/">Otro juego</a></h2></aside></body></html>"#;
-        let d = scrape_detail(&s, detail, "https://nxbrew.net/juego-switch-nsp/", "/juego-switch-nsp/");
-        assert_eq!(d.entry.title, "Juego Switch NSP (eShop)");
-        assert_eq!(d.entry.cover_original.as_deref(), Some("https://nxbrew.net/wp-content/uploads/j.png"));
-        assert_eq!(d.entry.description.as_deref(), Some("Description: Un juego."));
-        let links: Vec<(&str, &str)> = d.links.iter().map(|l| (l.label.as_str(), l.url.as_str())).collect();
-        assert_eq!(links, vec![("1Fichier", "https://ouo.io/abc")]);
-        assert_eq!(d.screenshots.len(), 1);
+        assert_eq!((e.id.as_str(), e.title.as_str(), e.platform.as_deref()), ("/game/juego-uno", "Juego Uno", Some("switch")));
+        assert_eq!(e.cover_original.as_deref(), Some("https://romshq.com/uploads/poster/juego-uno.png"));
+        let shown: Vec<&str> = r.entries.iter().filter(|e| super::super::shown(&s, e)).map(|e| e.title.as_str()).collect();
+        assert_eq!(shown, vec!["Juego Uno", "Juego Dos"]);
+        let detail = r#"<html><head><meta name="csrf-token" content="t"></head><body><header><a href="https://romshq.com/roms/playstation-5">PlayStation 5</a></header>
+          <img src="https://romshq.com/uploads/poster/juego-uno-featured.webp" alt="Juego Uno cover"><h1 class="text-4xl"> Juego Uno </h1>
+          <div class="flex"><span class="flex items-center"> 09 Apr, 2025 </span><span class="flex items-center"> Switch </span></div>
+          <p class="text-gray-600 leading-relaxed">Un juego.</p>
+          <section id="download-section"><div><div class="flex flex-col"><div><h3>Download Here</h3></div>
+            <a href="https://datanodes.to/abc/JUEGO-UNO.nsp.rar" data-romshq-download data-video-id="14764"><span>↓</span><span data-romshq-download-label>Download</span></a></div>
+            <div class="flex flex-col"><div><h3>Update</h3></div><a href="https://buzzheavier.com/x" data-romshq-download data-video-id="14765"><span>↓</span><span>Download</span></a></div></div></section></body></html>"#;
+        let d = scrape_detail(&s, detail, "https://romshq.com/game/juego-uno", "/game/juego-uno");
+        assert_eq!((d.entry.title.as_str(), d.entry.platform.as_deref()), ("Juego Uno", Some("switch")));
+        assert_eq!(d.entry.cover_original.as_deref(), Some("https://romshq.com/uploads/poster/juego-uno-featured.webp"));
+        assert_eq!(d.entry.description.as_deref(), Some("Un juego."));
+        let links: Vec<(&str, &str, &str)> = d.links.iter().map(|l| (l.label.as_str(), l.kind.as_str(), l.url.as_str())).collect();
+        assert_eq!(links, vec![("Download Here", "direct", "https://romshq.com/api/download/sign/14764"), ("Update", "direct", "https://romshq.com/api/download/sign/14765")]);
         assert!(not_a_bot_wall(detail.into()).is_ok());
         assert!(not_a_bot_wall("<html><head><title>Making sure you&#39;re not a bot!</title>".into()).is_err());
     }

@@ -1199,7 +1199,7 @@ export interface HomebrewJob {
 /** Plataformas de los catálogos (ampliable: el núcleo reconoce las de `catalogs/platforms.rs`). */
 export type Platform =
   | "switch" | "wii" | "wii-u" | "gamecube" | "n64" | "snes" | "nes" | "gba" | "gb" | "gbc" | "ds" | "3ds"
-  | "ps1" | "ps2" | "ps3" | "ps4" | "psp" | "ps-vita"
+  | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "ps-vita"
   | "xbox" | "xbox-360" | "xbox-one"
   | "genesis" | "saturn" | "dreamcast" | "master-system" | "game-gear"
   | "neo-geo" | "arcade" | "mame"
@@ -1252,6 +1252,10 @@ export interface CatalogSource {
   extractPasswords?: string[];
   imageHosts?: string[];
   relay?: "auto" | "always" | "never";
+  /** Categorías que no se muestran («emulator»). */
+  hideCategories?: CatalogCategory[];
+  /** Botón de descarga que pide antes la dirección del archivo (POST con `{id}`). */
+  signedDownload?: { url: string; field: string };
   icon?: string | null;
 }
 

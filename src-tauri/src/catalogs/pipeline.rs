@@ -165,13 +165,45 @@ fn sevenz_extract(archive: &Path, dest: &Path, passwords: &[String]) -> anyhow::
     anyhow::bail!("7z: {last}")
 }
 
+/// RAR (también RAR5 y por volúmenes, desde el primero) con la biblioteca oficial de unrar.
+fn rar_extract(archive: &Path, dest: &Path, passwords: &[String]) -> anyhow::Result<()> {
+    use unrar::error::Code;
+    let mut last = String::new();
+    for pw in std::iter::once(None).chain(passwords.iter().map(|p| Some(p.as_str()))) {
+        let _ = std::fs::remove_dir_all(dest);
+        std::fs::create_dir_all(dest)?;
+        let opened = match pw {
+            None => unrar::Archive::new(archive),
+            Some(p) => unrar::Archive::with_password(archive, p),
+        };
+        let r = (|| -> Result<(), unrar::error::UnrarError> {
+            let mut a = opened.open_for_processing()?;
+            while let Some(h) = a.read_header()? {
+                a = if h.entry().is_file() { h.extract_with_base(dest)? } else { h.skip()? };
+            }
+            Ok(())
+        })();
+        match r {
+            Ok(()) => return Ok(()),
+            // Con la contraseña mala, RAR4 da error de CRC en vez de «contraseña».
+            Err(e) if matches!(e.code, Code::MissingPassword | Code::BadPassword | Code::BadData) => last = e.to_string(),
+            Err(e) => {
+                let _ = std::fs::remove_dir_all(dest);
+                anyhow::bail!("rar: {e}");
+            }
+        }
+    }
+    let _ = std::fs::remove_dir_all(dest);
+    anyhow::bail!("{} {} ({last})", crate::i18n::t("Comprimido con contraseña desconocida (añádela en extractPasswords):"), archive.display())
+}
+
 /// Saca un comprimido en `dest`, probando sin contraseña y con cada una de la lista.
 pub fn extract_with(archive: &Path, dest: &Path, passwords: &[String]) -> anyhow::Result<()> {
     std::fs::create_dir_all(dest)?;
     match ext(&archive.to_string_lossy()).as_str() {
         "zip" => zip_extract(archive, dest, passwords)?,
         "7z" => sevenz_extract(archive, dest, passwords)?,
-        "rar" => anyhow::bail!("{} {}", crate::i18n::t("Los .rar no se pueden abrir desde ejGames: descomprímelo con 7-Zip y usa Importar ROMs."), archive.display()),
+        "rar" => rar_extract(archive, dest, passwords)?,
         other => anyhow::bail!("Formato no admitido: {other}"),
     }
     // Nada fuera de la carpeta (por si una ruta traía «..»).
@@ -560,6 +592,39 @@ fn safe_file(name: &str) -> String {
     s.trim().trim_matches('.').to_string()
 }
 
+/// La dirección del archivo de una descarga firmada (`signedDownload`): como el botón de la
+/// web, con la sesión y el token CSRF de la ficha. Si la web pide además un captcha, no la da.
+async fn signed_url(http: &reqwest::Client, src: &CatalogSource, sd: &super::config::SignedDownload, req: &InstallRequest) -> anyhow::Result<String> {
+    let headers = |mut rq: reqwest::RequestBuilder| {
+        for (k, v) in &src.headers {
+            rq = rq.header(k.as_str(), v.as_str());
+        }
+        rq
+    };
+    let page = super::adapter::detail_url(src, &req.game_id);
+    let html = headers(http.get(&page)).header("Referer", src.base_url.as_str()).send().await?.error_for_status()?.text().await?;
+    let token = {
+        let doc = scraper::Html::parse_document(&html);
+        let sel = scraper::Selector::parse("meta[name='csrf-token']").expect("selector fijo");
+        doc.select(&sel).next().and_then(|m| m.value().attr("content")).map(str::to_string)
+    };
+    let mut rq = headers(http.post(&req.url)).header("Accept", "application/json").header("X-Requested-With", "XMLHttpRequest").header("Referer", page.as_str());
+    if let Some(t) = &token {
+        rq = rq.header("X-CSRF-TOKEN", t.as_str()).form(&[("_token", t.as_str())]);
+    }
+    let r = rq.send().await?;
+    let status = r.status();
+    let v: serde_json::Value = r.json().await.unwrap_or_default();
+    let field = Some(sd.field.trim()).filter(|f| !f.is_empty()).unwrap_or("download_url");
+    match v.get(field).and_then(|u| u.as_str()).filter(|u| u.starts_with("https://") || u.starts_with("http://")) {
+        Some(u) if status.is_success() => Ok(u.to_string()),
+        _ => {
+            let why = v.get("error").or_else(|| v.get("message")).and_then(|x| x.as_str()).unwrap_or("");
+            anyhow::bail!("{} (HTTP {status}) {why}", crate::i18n::t("La web no dio la dirección de la descarga"))
+        }
+    }
+}
+
 async fn download(st: &AppState, job: &str, req: &InstallRequest, src: Option<&CatalogSource>, dir: &Path) -> anyhow::Result<PathBuf> {
     let http = reqwest::Client::builder()
         .connect_timeout(Duration::from_secs(20))
@@ -567,9 +632,17 @@ async fn download(st: &AppState, job: &str, req: &InstallRequest, src: Option<&C
         .cookie_store(true)
         .user_agent(format!("ejGames/{} (+https://github.com/ej3mpl0/ejGames)", env!("CARGO_PKG_VERSION")))
         .build()?;
-    let mut rq = http.get(&req.url);
+    let signed = src.and_then(|s| s.signed_download.as_ref().map(|d| (s, d))).filter(|(s, d)| {
+        let prefix = d.url.split("{id}").next().unwrap_or("").trim();
+        !prefix.is_empty() && req.url.starts_with(&super::adapter::absolute(&s.base_url, prefix))
+    });
+    let url = match signed {
+        Some((s, d)) => signed_url(&http, s, d, req).await?,
+        None => req.url.clone(),
+    };
+    let mut rq = http.get(&url);
     // Las cabeceras de la fuente solo van a su propio sitio.
-    if let Some(s) = src.filter(|s| super::adapter::same_site(s, &req.url)) {
+    if let Some(s) = src.filter(|s| super::adapter::same_site(s, &url)) {
         for (k, v) in &s.headers {
             rq = rq.header(k.as_str(), v.as_str());
         }
@@ -758,6 +831,21 @@ pub async fn from_torrent(st: &Arc<AppState>, row: &DownloadRow) -> anyhow::Resu
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rar_with_password() {
+        // De los datos de prueba del crate unrar: «.gitignore» cifrado con «unrar».
+        let d = tempfile::tempdir().unwrap();
+        let rar = d.path().join("juego.rar");
+        std::fs::copy(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/crypted.rar"), &rar).unwrap();
+        let warn = expand_archives(d.path(), &[], false).unwrap();
+        assert_eq!(warn.len(), 1, "{warn:?}");
+        std::fs::rename(d.path().join("juego.rar.no"), &rar).unwrap();
+        let warn = expand_archives(d.path(), &["otra".into(), "unrar".into()], false).unwrap();
+        assert!(warn.is_empty(), "{warn:?}");
+        assert_eq!(std::fs::read_to_string(d.path().join("juego.rar.x").join(".gitignore")).unwrap(), "target\nCargo.lock\n");
+        assert!(!rar.exists());
+    }
 
     #[test]
     fn zip_with_password_and_nested_archives() {

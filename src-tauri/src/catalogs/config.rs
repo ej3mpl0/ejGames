@@ -101,6 +101,10 @@ pub struct CatalogSource {
     pub image_hosts: Vec<String>,
     /// auto (si falla la conexión directa) | always | never
     pub relay: String,
+    /// Categorías que no se muestran («emulator»: programas de PC, no juegos).
+    pub hide_categories: Vec<String>,
+    /// Webs cuyo botón de descarga pide antes la dirección del archivo con un POST.
+    pub signed_download: Option<SignedDownload>,
     /// Icono (URL https) o emoji para la tarjeta de la fuente.
     pub icon: Option<String>,
     /// De serie (viene con ejGames), no del archivo del usuario.
@@ -128,10 +132,22 @@ impl Default for CatalogSource {
             extract_passwords: vec![],
             image_hosts: vec![],
             relay: "auto".into(),
+            hide_categories: vec![],
+            signed_download: None,
             icon: None,
             builtin: false,
         }
     }
+}
+
+/// Descarga firmada: con el token CSRF de la ficha (`<meta name="csrf-token">`), un POST a
+/// `url` (con `{id}`, el valor que saca `selectors.downloadLink`) devuelve en `field` la
+/// dirección del archivo.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct SignedDownload {
+    pub url: String,
+    pub field: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -274,7 +290,7 @@ mod tests {
     #[test]
     fn default_slots_parse_and_user_sources_override_them() {
         let f: CatalogsFile = serde_json::from_str(DEFAULTS).unwrap();
-        assert_eq!(f.sources.len(), 2);
+        assert_eq!(f.sources.len(), 1);
         let d = tempfile::tempdir().unwrap();
         // Sin archivo del usuario: solo las de serie con dirección (los huecos vacíos no salen).
         let n = defaults().len();

@@ -4,8 +4,10 @@
     "type: «scrape» (web HTML, con selectores CSS) o «api» (JSON, con apiFields).",
     "apiEndpoints admite {query}, {page}, {page0} (página desde 0), {platform} (id de abajo), {platformPath} (platformPaths o la clave de platformMapping) e {id}.",
     "Selectores: varios separados por comas se prueban en orden; «@atributo» al final toma ese atributo («img.cover@src»).",
-    "Plataformas: switch, wii, wii-u, gamecube, n64, snes, nes, gba, gb, gbc, ds, 3ds, ps1, ps2, ps3, ps4, psp, ps-vita, xbox, xbox-360, xbox-one, genesis, saturn, dreamcast, master-system, game-gear, neo-geo, arcade, mame, pc-engine, turbografx, wonderswan, pc, dos, windows.",
-    "relay: «auto» (si la conexión directa falla, por el relay de ejGames si su dueño dio de alta esta fuente), «always» o «never»."
+    "Plataformas: switch, wii, wii-u, gamecube, n64, snes, nes, gba, gb, gbc, ds, 3ds, ps1, ps2, ps3, ps4, ps5, psp, ps-vita, xbox, xbox-360, xbox-one, genesis, saturn, dreamcast, master-system, game-gear, neo-geo, arcade, mame, pc-engine, turbografx, wonderswan, pc, dos, windows.",
+    "relay: «auto» (si la conexión directa falla, por el relay de ejGames si su dueño dio de alta esta fuente), «always» o «never».",
+    "hideCategories: lo que no se muestra (game, dlc, update, homebrew, emulator). Tampoco salen las entradas de plataformas que no estén en platforms.",
+    "signedDownload: si el botón de descarga de la web pide antes la dirección del archivo con un POST (con el token CSRF de la ficha): {\"url\": \"/api/download/sign/{id}\", \"field\": \"download_url\"}; selectors.downloadLink da entonces el id («a.boton@data-id»)."
   ],
   "sources": [
     {

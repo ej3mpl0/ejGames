@@ -33,6 +33,7 @@ export const PLATFORMS: PlatformDef[] = [
   { id: "ps2", name: "PlayStation 2", short: "PS2", family: "sony", system: "ps2", hue: 225 },
   { id: "ps3", name: "PlayStation 3", short: "PS3", family: "sony", system: "ps3", hue: 230 },
   { id: "ps4", name: "PlayStation 4", short: "PS4", family: "sony", system: null, hue: 235 },
+  { id: "ps5", name: "PlayStation 5", short: "PS5", family: "sony", system: null, hue: 240 },
   { id: "psp", name: "PSP", short: "PSP", family: "sony", system: "psp", hue: 215 },
   { id: "ps-vita", name: "PS Vita", short: "Vita", family: "sony", system: "vita", hue: 205 },
   { id: "xbox", name: "Xbox", short: "XB", family: "microsoft", system: "xbox", hue: 120 },

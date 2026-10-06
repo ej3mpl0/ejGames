@@ -66,6 +66,7 @@ librqbit-core = { version = "=9.0.1", default-features = false, features = ["sha
 reqwest013 = { package = "reqwest", version = "0.13", default-features = false, features = ["native-tls"] }
 # Emuladores de la tienda que vienen en .7z (PCSX2, RPCS3, RetroArch).
 sevenz-rust2 = { version = "0.20.2", default-features = false, features = ["util", "bzip2", "ppmd", "aes256"] }
+unrar = "0.5.8"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"

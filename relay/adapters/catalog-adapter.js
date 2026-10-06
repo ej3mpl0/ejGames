@@ -7,8 +7,8 @@ const PASS = ["content-type"];
 
 // Fuentes por defecto - se pueden sobreescribir con env.CATALOG_SOURCES
 const DEFAULT_SOURCES = {
-  nxbrew: "",
-  axekin: ""
+  nxbrew: "https://nxbrew.net",
+  axekin: "https://www.axekin.com"
 };
 
 function sources(env) {

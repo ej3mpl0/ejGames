@@ -1240,46 +1240,6 @@ pub async fn overlay_pin(st: St<'_>, url: Option<String>) -> CmdResult<()> {
     Ok(crate::overlay::pin_map(st.inner(), url)?)
 }
 
-// ───────────────────────────── perfil (página al estilo Steam) ─────────────────────────────
-
-use crate::profile_page;
-
-/// La página de perfil del perfil activo (nivel, insignias, vitrinas, juegos, actividad).
-#[tauri::command]
-pub async fn profile_page(st: St<'_>) -> CmdResult<Value> {
-    let pid = active(&st)?;
-    let s = st.inner().clone();
-    blocking(move || profile_page::view(&s, pid)).await
-}
-
-#[derive(Serialize)]
-pub struct PageSaved {
-    profile: Profile,
-    page: Value,
-}
-
-/// Guarda cambios del perfil (solo los campos que llegan). Devuelve el perfil
-/// local (nombre y avatar) y la página al día.
-#[tauri::command]
-pub async fn profile_page_update(st: St<'_>, patch: Value) -> CmdResult<PageSaved> {
-    let pid = active(&st)?;
-    let s = st.inner().clone();
-    blocking(move || {
-        profile_page::update(&s, pid, &patch)?;
-        let profile = s.db.with(|c| repo::get_profile(c, pid))?;
-        Ok(PageSaved { profile, page: profile_page::view(&s, pid)? })
-    })
-    .await
-}
-
-/// Guarda una imagen elegida por el usuario (avatar, fondo o captura para la
-/// vitrina) y devuelve su URL.
-#[tauri::command]
-pub async fn profile_image(st: St<'_>, kind: String, path: String) -> CmdResult<String> {
-    let s = st.inner().clone();
-    blocking(move || profile_page::image(&s, &kind, &path)).await
-}
-
 // ───────────────────────────── descargas ─────────────────────────────
 
 use crate::downloads;

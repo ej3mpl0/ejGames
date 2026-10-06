@@ -39,7 +39,6 @@
  "El juego va como administrador, así que el trainer también tiene que ir así: ábrelo desde aquí y Windows pedirá permiso.": "The game runs as administrator, so the trainer has to as well: open it from here and Windows will ask for permission.",
  "El juego ya está en marcha": "The game is already running",
  "El nombre no puede estar vacío": "The name can't be empty",
- "El nombre no puede estar vacío.": "The name can't be empty.",
  "El núcleo descargado no trae el .dll esperado": "The downloaded core doesn't contain the expected .dll",
  "El paquete no contiene theme.json": "The package doesn't contain theme.json",
  "El programa no lo permite": "The program doesn't allow it",

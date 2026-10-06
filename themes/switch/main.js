@@ -7,7 +7,7 @@ import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
-import { visible, sort, recent, software, romsBySystem } from "/_sdk/kit/library.js";
+import { visible, sort, recent, isRom, isSoftware } from "/_sdk/kit/library.js";
 import { emulatorNote } from "/_sdk/kit/emulator.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
@@ -15,7 +15,7 @@ import { clock } from "/_sdk/kit/clock.js";
 import { isActive } from "/_sdk/kit/store.js";
 import { createShop } from "./store.js";
 import { createGuideView } from "/_sdk/kit/guides.js";
-import { createProfilePages } from "/_sdk/kit/profile.js";
+import { createHomebrewView } from "/_sdk/kit/homebrew.js";
 
 const ejg = await window.ejg.ready();
 const $ = (s) => document.querySelector(s);
@@ -67,11 +67,11 @@ function renderRail() {
   if (!list.length && !dls.length) $("#sel-title").textContent = "Pulsa + para añadir tus juegos";
 }
 
-// Filtro de «Todos los programas»: all | software | hidden (sus pestañas, solo si hay alguno).
-const hiddenGames = () => ejg.library.all.filter((g) => g.hidden && !g.missing);
-const softwareList = () => software(ejg.library.all);
-const allTabs = () => ["all", ...(romsBySystem(ejg.library.all).length ? ["roms"] : []), ...(softwareList().length ? ["software"] : []), ...(hiddenGames().length ? ["hidden"] : [])];
-const TAB_LABEL = { all: "Todos", roms: "ROMs", software: "Software", hidden: "Ocultos" };
+// Filtro de «Todos los programas»: all | hidden (su pestaña, solo si hay alguno). Los emuladores y
+// los juegos de consola están en Homebrew.
+const hiddenGames = () => ejg.library.all.filter((g) => g.hidden && !g.missing && !isRom(g) && !isSoftware(g));
+const allTabs = () => ["all", ...(hiddenGames().length ? ["hidden"] : [])];
+const TAB_LABEL = { all: "Todos", hidden: "Ocultos" };
 function setAllFilter(f) {
   if (state.allFilter === f) return;
   state.allFilter = f;
@@ -112,18 +112,10 @@ function renderAll() {
   if (!allTabs().includes(state.allFilter)) state.allFilter = "all";
   renderTabs(nHidden);
   const onlyHidden = state.allFilter === "hidden";
-  const onlySoft = state.allFilter === "software";
-  const onlyRoms = state.allFilter === "roms";
-  // ROMs: por sistema, cada uno con su rótulo.
-  const list = onlyRoms
-    ? romsBySystem(ejg.library.all).flatMap((s) => [{ sys: s.id, title: s.name }, ...s.games])
-    : onlySoft
-      ? softwareList()
-      : sort(onlyHidden ? hiddenGames() : games(), "title");
-  const n = list.filter((g) => !g.sys).length;
+  const list = sort(onlyHidden ? hiddenGames() : games(), "title");
+  const n = list.length;
   $("#all-count").textContent = onlyHidden ? (n === 1 ? "1 oculto" : `${n} ocultos`) : `${n} programas`;
-  keyed($("#all-grid"), list, (g) => (g.sys ? `sys-${g.sys}` : g.id), (g, prev) => {
-    if (g.sys) return prev || h("h3", { class: "all-sys" }, g.title);
+  keyed($("#all-grid"), list, (g) => g.id, (g, prev) => {
     const sig = `${g.id}:${g.media.coverThumb}:${g.media.heroThumb}:${g.favorite}`;
     if (prev && prev.__sig === sig) return prev;
     const tile = stile(g);
@@ -248,22 +240,6 @@ options.addEventListener("click", (e) => e.target === options && closeOptions())
 // ─────────────── guías de la comunidad ───────────────
 let guideView = null;
 let guideFrom = null;
-// ─────────────── tu perfil e insignias (en la vista de las guías) ───────────────
-/** start: "profile" | "badges". */
-function openProfile(start = "profile") {
-  if (state.view !== "guides") guideFrom = { view: state.view, focus: focus.current };
-  dropGuides();
-  const root = $("#guides");
-  const box = h("div", { class: "gs-page" });
-  root.replaceChildren(h("header", { class: "gs-head" }, h("div", null, h("small", null, "Tu perfil de ejGames"), h("b", null, start === "badges" ? "Insignias" : "Perfil"))), box);
-  setView("guides");
-  guideView = createProfilePages({ ejg, root: box, focus, start, layout: "switch", onExit: closeGuides, onChange: () => updateHints() });
-  updateHints();
-  ejg.sound.play("open");
-}
-
-$("#c-profile").addEventListener("click", () => openProfile("profile"));
-
 function openGuides(gameId, guideId = null) {
   const g = ejg.library.byId(gameId);
   if (!g) return;
@@ -305,14 +281,31 @@ function closeGuides() {
   return true;
 }
 
+// ─────────────── Homebrew: emuladores y juegos de consola (kit/homebrew.js) ───────────────
+let hbView = null;
+function openHomebrew() {
+  setView("homebrew");
+  ejg.sound.play("open");
+}
+function dropHomebrew() {
+  hbView?.destroy();
+  hbView = null;
+}
+$("#c-homebrew").addEventListener("click", openHomebrew);
+const hv = (a) => !!(state.view === "homebrew" && options.hidden && hbView && hbView.nav(a));
+
 // ─────────────── vistas y navegación ───────────────
-// home | all | shop (eShop) | dls (Gestión de descargas). `target`: qué enfocar al volver al HOME.
+// home | all | homebrew | shop (eShop) | dls (Gestión de descargas). `target`: qué enfocar al volver al HOME.
 function setView(v, target) {
   if (v !== "guides") dropGuides();
+  if (v !== "homebrew") dropHomebrew();
   state.view = v;
   document.documentElement.dataset.view = v;
-  for (const id of ["home", "all", "guides", "shop", "dls"]) $("#" + id).hidden = v !== id;
-  if (v === "all") {
+  for (const id of ["home", "all", "homebrew", "guides", "shop", "dls"]) $("#" + id).hidden = v !== id;
+  if (v === "homebrew" && !hbView) {
+    // Como en el HOME: A inicia el juego; X abre sus opciones.
+    hbView = createHomebrewView({ ejg, root: $("#homebrew"), focus, layout: "switch", onExit: () => setView("home", "#c-homebrew"), onChange: () => updateHints(), onGame: (g) => launch(g.id) });
+  } else if (v === "all") {
     renderAll();
     focus.first($("#all-grid"));
   } else if (v === "home") {
@@ -347,6 +340,7 @@ const actions = {
     if (!options.hidden) return closeOptions(), true;
     if (shop.back()) return true;
     if (state.view === "all") return setView("home"), true;
+    if (state.view === "homebrew") return setView("home", "#c-homebrew"), true;
     return false;
   },
   up: () => gv("up"),
@@ -362,14 +356,14 @@ const actions = {
     return true;
   },
   y: () => {
-    if (gv("y")) return true;
+    if (gv("y") || hv("y")) return true;
     if (options.hidden && shop.y()) return true;
     const id = Number(focus.current?.dataset.gameId) || state.optionsFor;
     if (id) ejg.game.favorite(id);
     return true;
   },
-  lb: () => gv("lb") || shop.cycle(-1) || tabCycle(-1),
-  rb: () => gv("rb") || shop.cycle(1) || tabCycle(),
+  lb: () => gv("lb") || hv("lb") || shop.cycle(-1) || tabCycle(-1),
+  rb: () => gv("rb") || hv("rb") || shop.cycle(1) || tabCycle(),
   menu: () => (ejg.ui.open("menu"), true),
   view: () => gv("view") || (ejg.ui.open("search"), true),
 };
@@ -441,7 +435,6 @@ ejg.explore.onEnabled(() => {
 ejg.ui.onView(({ view, slug, gameId, guideId }) => {
   if (!options.hidden) closeOptions();
   if (view === "guides" && gameId) return openGuides(gameId, guideId);
-  if (view === "profile" || view === "badges") return openProfile(view);
   if (view === "downloads") return shop.open("downloads");
   if (!ejg.explore.enabled) return;
   shop.open(view === "repack" ? "repack" : "explore", slug);
@@ -460,7 +453,8 @@ function applyWall() {
 }
 
 const refresh = debounce(() => {
-  if (state.view === "guides") return;
+  // Homebrew se repinta sola.
+  if (state.view === "guides" || state.view === "homebrew") return;
   if (state.view === "all") renderAll();
   else renderRail();
   const og = !options.hidden && state.optionsFor && ejg.library.byId(state.optionsFor);
@@ -485,6 +479,7 @@ ejg.on("profile", renderUser);
 const hintBar = hints($("#bar"), []);
 function updateHints() {
   if (state.view === "guides" && guideView) return hintBar.set(guideView.hints());
+  if (state.view === "homebrew" && hbView && options.hidden) return hintBar.set([...hbView.hints().slice(0, 1), ["x", "Opciones"], ...hbView.hints().slice(1)]);
   if (state.view === "shop" || state.view === "dls" || shop.hasDialog()) return hintBar.set(shop.hints());
   const el = focus.current;
   const d = el?.dataset?.dlId && ejg.downloads.byId(Number(el.dataset.dlId));

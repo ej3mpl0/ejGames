@@ -133,25 +133,31 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 #guides .g-toc-item.is-on, #guides .g-toc-item.is-focused { background: var(--hi2); color: var(--bg); box-shadow: none; }
 #guides .g-end { color: var(--hi); font-family: "Press Start 2P", Consolas, monospace; font-size: calc(var(--fs) * 0.7); }
 
-/* ─── tu perfil (kit profile, en la pantalla de guías) ─── */
-#guides .s-view {
-  --s-fg: var(--fg);
-  --s-muted: var(--dim);
-  --s-accent: var(--hi2);
-  --s-bg: var(--bg);
-  --s-surface: color-mix(in srgb, var(--fg) 6%, var(--bg));
-  --s-surface-2: color-mix(in srgb, var(--fg) 14%, var(--bg));
-  --s-line: color-mix(in srgb, var(--dim) 60%, transparent);
-  --s-radius: 0;
-  --s-focus: 0 0 0 2px var(--hi);
-  --s-font: Consolas, "Cascadia Mono", monospace;
-  height: 100%;
-  overflow-y: auto;
-  scrollbar-width: none;
+/* ─── HOMEBREW (kit/homebrew.js): los títulos en píxel, el resto en monoespaciada ─── */
+#homebrew { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; margin-top: 14px; }
+#homebrew[hidden] { display: none; }
+#homebrew .hb-view {
+  --hb-fg: var(--fg);
+  --hb-muted: var(--dim);
+  --hb-accent: var(--hi2);
+  --hb-accent-fg: var(--bg);
+  --hb-surface: color-mix(in srgb, var(--fg) 6%, var(--bg));
+  --hb-surface-2: color-mix(in srgb, var(--fg) 14%, var(--bg));
+  --hb-line: color-mix(in srgb, var(--dim) 60%, transparent);
+  --hb-focus: 0 0 0 3px var(--hi);
+  --hb-hero: linear-gradient(180deg, color-mix(in srgb, var(--hi) 14%, var(--bg)) 0%, var(--bg) 100%);
+  --hb-font: Consolas, "Cascadia Mono", monospace;
+  --hb-title-font: "Press Start 2P", Consolas, monospace;
+  --hb-warn: var(--hi);
+  --hb-ok: var(--hi2);
+  max-width: none;
+  padding: 0 0 30px;
   text-shadow: none;
 }
-#guides .s-avatar, #guides .s-avatar img, #guides .s-avatar-ph { border-radius: 0; image-rendering: pixelated; }
-.foot .profile { margin-left: 8px; }
+#homebrew .hb-title { font-size: calc(var(--fs) * 2); font-weight: 400; color: var(--hi); text-shadow: 3px 3px 0 color-mix(in srgb, var(--hi) 30%, transparent); }
+#homebrew .hb-sec-head h2 { font-size: calc(var(--fs) * 0.95); font-weight: 400; color: var(--hi2); }
+#homebrew .hb-stat b { font-family: "Press Start 2P", Consolas, monospace; font-weight: 400; font-size: calc(var(--fs) * 1.5); color: var(--hi2); }
+#homebrew .hb-cover img { image-rendering: pixelated; }
 
 /* ─── evento de temporada: Halloween (paleta CRT de calabaza, sea cual sea la elegida) ─── */
 :root[data-season="halloween"] {
@@ -190,4 +196,3 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 #detail .unhide.is-focused, #detail .unhide:hover { background: var(--hi); color: var(--bg); text-shadow: none; }
 
 /* ROMS: rótulo de cada sistema en la lista */
-#list li.sys { padding: 10px 6px 2px; color: var(--accent, #ffd23f); font-size: 0.8em; letter-spacing: 0.08em; opacity: 0.85; }

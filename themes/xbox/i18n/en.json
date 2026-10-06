@@ -60,5 +60,8 @@
  "Zombis": "Zombies",
  "«{0}» se ha añadido a la cola": "“{0}” was added to the queue",
  "¿Cancelar la descarga?": "Cancel the download?",
- "¿Quitar de la cola?": "Remove from the queue?"
+ "¿Quitar de la cola?": "Remove from the queue?",
+ "Emuladores y ROMs": "Emulators and ROMs",
+ "1 juego de consola": "1 console game",
+ "{0} juegos de consola": "{0} console games"
 }

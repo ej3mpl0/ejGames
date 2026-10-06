@@ -11,7 +11,7 @@
   "host": { "accent": "#ff3df2", "surface": "#10102a", "radius": "2px", "font": "Consolas, \"Cascadia Mono\", monospace" },
   "sounds": { "preset": "retro" },
   "overlay": { "style": "retro" },
-  "features": { "explore": true, "guides": true, "profile": true },
+  "features": { "explore": true, "guides": true },
   "windowControls": "host",
   "settings": [
     { "key": "palette", "type": "select", "label": "Paleta", "default": "arcade", "options": [

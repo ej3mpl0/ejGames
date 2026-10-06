@@ -1,5 +1,4 @@
 mod achievements;
-mod activity;
 mod backup;
 mod catalogs;
 mod commands;
@@ -19,7 +18,6 @@ mod media;
 mod metadata;
 mod overlay;
 mod paths;
-mod profile_page;
 mod protocols;
 mod saves;
 mod services;
@@ -301,9 +299,6 @@ pub fn run() {
             commands::maps_choose,
             commands::maps_last,
             commands::overlay_pin,
-            commands::profile_page,
-            commands::profile_page_update,
-            commands::profile_image,
             commands::downloads_list,
             commands::downloads_defaults,
             commands::downloads_prepare,

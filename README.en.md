@@ -19,13 +19,13 @@
 ejGames is available in **English and Spanish** (Settings → System → Language; it follows Windows by default).
 
 * **Your local games**: detects the games in your folders (and their right `.exe`), the `.exe` files you add by hand and
-  what you install from Downloads. Console ROMs too, with RetroArch, PCSX2, Dolphin, PPSSPP, DuckStation, Cemu, RPCS3
-  or your own emulator.
+  what you install from Downloads.
 * **Explore and Downloads**: a repack store with a built-in torrent client and an **Install** button that puts the game
   in your library. A notice appears when a newer repack version is out.
-* **Achievements** from Steam and from standalone games, with **in-game notices** styled like each platform.
-* **Your Steam-style profile**: frames, animated backgrounds, showcases, level and badges earned by playing. No
-  accounts: everything stays on your PC. A yearly recap, **Your year in ejGames**.
+* **Achievements** from Steam and from standalone games, with **in-game notices** styled like each platform. A yearly recap,
+  **Your year in ejGames**.
+* **Homebrew**: your emulators and console games in their own tab, with ROM catalogs that download and extract on
+  their own (`.rar` too), RetroArch, PCSX2, Dolphin, PPSSPP, DuckStation, Cemu, RPCS3, Eden or your own emulator.
 * **In-game overlay** with community guides, **cheats** (FLiNG trainers you choose to install), interactive **maps**,
   notes, screenshots, music, volume, performance and optional **FPS**, with no injection into the game.
 * **Saved-game backups** after every session, **library backups** you can carry to another PC through OneDrive or Drive,

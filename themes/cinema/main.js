@@ -7,12 +7,12 @@ import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { attachStream } from "/_sdk/kit/media.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
-import { visible, sort, recent, favorites, byGenre, software, romsBySystem } from "/_sdk/kit/library.js";
+import { visible, sort, recent, favorites, byGenre } from "/_sdk/kit/library.js";
 import { emulatorNote } from "/_sdk/kit/emulator.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { createGuideView, starsText } from "/_sdk/kit/guides.js";
-import { createProfilePages } from "/_sdk/kit/profile.js";
+import { createHomebrewView } from "/_sdk/kit/homebrew.js";
 import { percent, speed } from "/_sdk/kit/store.js";
 import { createStore } from "./store.js";
 
@@ -173,13 +173,10 @@ function row(id, title, list, opts) {
 function renderRows() {
   const all = games();
   const hid = sort(hiddenGames(), "title");
-  const sw = software(ejg.library.all);
   renderHiddenNav(hid.length);
   if (!all.length) {
-    // Sin juegos visibles: bajo el aviso de biblioteca vacía, los programas y los ocultos.
-    rowsEl.querySelector("#row-sw")?.remove();
+    // Sin juegos visibles: bajo el aviso de biblioteca vacía, los ocultos.
     rowsEl.querySelector("#row-hidden")?.remove();
-    if (sw.length) rowsEl.append(row("row-sw", "Software", sw));
     if (hid.length) rowsEl.append(hiddenRow(hid));
     return;
   }
@@ -192,11 +189,7 @@ function renderRows() {
     row("row-top", "Mejor valorados", sort(all.filter((g) => g.rating), "rating").slice(0, 20)),
   ];
   if (ejg.settings.genreRows !== false) byGenre(all, 3).slice(0, 6).forEach((grp) => rows.push(row(`row-g-${grp.name}`, grp.name, grp.games)));
-  // Juegos de consola (ROMs y homebrew): una fila por sistema.
-  romsBySystem(ejg.library.all).forEach((s) => rows.push(row(`row-sys-${s.id}`, s.name, s.games)));
   rows.push(row("row-all", "Toda tu biblioteca", sort(all, "title")));
-  // Programas (emuladores): su propia fila, aparte de los juegos.
-  if (sw.length) rows.push(row("row-sw", "Software", sw));
   // Los ocultos, al final y solo si hay: así se pueden volver a encontrar.
   if (hid.length) rows.push(hiddenRow(hid));
   rowsEl.replaceChildren(...rows.filter(Boolean));
@@ -348,21 +341,19 @@ let guideView = null;
 let guideReturn = null;
 const guidesEl = $("#guides");
 
-// ─────────────── tu perfil e insignias (en la capa de las guías) ───────────────
-/** start: "profile" | "badges". */
-function openProfile(start = "profile") {
-  heroRelease();
-  modalRelease();
-  if (!guideView) guideReturn = focus.current;
-  guideView?.destroy();
-  $("#cg-bg").style.backgroundImage = "";
-  guidesEl.hidden = false;
-  guideView = createProfilePages({ ejg, root: $("#cg-inner"), focus, start, layout: "cinema", onExit: closeGuides, onChange: () => updateHints() });
-  updateHints();
-  ejg.sound.play("open");
+// ─────────────── Homebrew: emuladores y juegos de consola (kit/homebrew.js) ───────────────
+// Una vista más, como Explorar: la barra sigue arriba y la ficha de un juego se abre en su modal.
+let hbView = null;
+function mountHomebrew() {
+  hbView?.destroy();
+  hbView = createHomebrewView({ ejg, root: $("#homebrew"), focus, layout: "cinema", onExit: () => setView("home"), onChange: () => updateHints(), onGame: (g) => openModal(g.id) });
 }
-
-$("#nav-profile").addEventListener("click", () => openProfile("profile"));
+function dropHomebrew() {
+  hbView?.destroy();
+  hbView = null;
+}
+const hv = (a) => !!(state.view === "homebrew" && modal.hidden && hbView && hbView.nav(a));
+$("#nav-homebrew").addEventListener("click", () => setView("homebrew"));
 
 function openGuides(gameId, guideId = null) {
   const g = ejg.library.byId(gameId);
@@ -473,7 +464,7 @@ bindNav(focus, {
   lt: () => gv("lt"),
   rt: () => gv("rt"),
   y: () => {
-    if (gv("y")) return true;
+    if (gv("y") || hv("y")) return true;
     if (state.view !== "home") return state.view === "explore" && !shop.layer() && shop.search(), true;
     const id = state.modalId || Number(focus.current?.dataset.gameId);
     if (id) ejg.game.favorite(id);
@@ -495,8 +486,8 @@ bindNav(focus, {
     const items = t ? t.querySelectorAll("[data-focus]") : [];
     return !!t && items[items.length - 1] === focus.current;
   },
-  lb: () => gv("lb") || guideView || (shop.layer() || !modal.hidden || stepView(-1), true),
-  rb: () => gv("rb") || guideView || (shop.layer() || !modal.hidden || stepView(1), true),
+  lb: () => gv("lb") || guideView || hv("lb") || (shop.layer() || !modal.hidden || stepView(-1), true),
+  rb: () => gv("rb") || guideView || hv("rb") || (shop.layer() || !modal.hidden || stepView(1), true),
 });
 ejg.on("focus-return", () => focus.restore());
 
@@ -513,7 +504,7 @@ const shop = createStore({
   onQueue: () => updateDownloadsUi(),
 });
 
-const views = () => ["home", ...(ejg.explore.enabled ? ["explore"] : []), "downloads"];
+const views = () => ["home", "homebrew", ...(ejg.explore.enabled ? ["explore"] : []), "downloads"];
 function setView(v) {
   if (v === "explore" && !ejg.explore.enabled) v = "home";
   if (v === state.view) return;
@@ -526,14 +517,18 @@ function setView(v) {
   state.prevView = state.view;
   state.view = v;
   document.documentElement.dataset.view = v;
-  shop.show(v);
+  // Homebrew no es de la tienda: para ella, la tienda se queda como en Inicio (vacía).
+  shop.show(v === "homebrew" ? "home" : v);
+  if (v === "homebrew") mountHomebrew();
+  else dropHomebrew();
   main.scrollTo({ top: v === "home" ? state.homeScroll : 0, behavior: "instant" });
   document.body.classList.toggle("scrolled", main.scrollTop > 40);
   if (v === "home") {
     const g = ejg.library.byId(state.featured);
     if (g && main.scrollTop < 200 && ejg.settings.heroTrailer !== false) heroTimer = setTimeout(() => startHeroTrailer(g), 1500);
     focus.focus($("#hero-play") || rowsEl.querySelector("[data-focus]") || $("#nav-home"), { instant: true, silent: true });
-  } else if (!focus.first($("#shop"))) focus.focus($(v === "explore" ? "#nav-explore" : "#nav-dl"), { silent: true, noScroll: true });
+  } else if (v === "homebrew") focus.first($("#homebrew"));
+  else if (!focus.first($("#shop"))) focus.focus($(v === "explore" ? "#nav-explore" : "#nav-dl"), { silent: true, noScroll: true });
   renderNav();
   updateHints();
 }
@@ -544,6 +539,7 @@ function stepView(d) {
 function renderNav() {
   $("#nav-home").classList.toggle("on", state.view === "home");
   $("#nav-explore").classList.toggle("on", state.view === "explore");
+  $("#nav-homebrew").classList.toggle("on", state.view === "homebrew");
   $("#nav-dl").classList.toggle("on", state.view === "downloads");
 }
 
@@ -582,7 +578,6 @@ ejg.explore.onEnabled(() => {
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
 ejg.ui.onView(({ view, slug, gameId, guideId }) => {
   if (view === "guides" && gameId) return openGuides(gameId, guideId);
-  if (view === "profile" || view === "badges") return openProfile(view);
   closeGuides();
   if (view === "downloads") return setView("downloads");
   if (!ejg.explore.enabled) return;
@@ -661,6 +656,7 @@ ejg.on("profile", renderProfile);
 const hintBar = hints($("#hints"), []);
 function updateHints() {
   if (guideView) return hintBar.set(guideView.hints());
+  if (state.view === "homebrew" && hbView && modal.hidden) return hintBar.set(hbView.hints());
   const layer = shop.layer();
   hintBar.set(
     layer === "ask" || layer === "dialog"

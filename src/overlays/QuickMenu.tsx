@@ -1,7 +1,6 @@
 // Menú rápido (botón Guía / Ctrl+K): lo esencial a un botón de distancia.
 
-import { BarChart3, Compass, Download, FolderPlus, Gamepad2, Library, LogOut, Minimize2, MonitorPlay, Power, Search, Settings, StopCircle, UserRound } from "lucide-react";
-import { openProfile } from "../host/profile";
+import { BarChart3, Compass, Download, FolderPlus, Gamepad2, Library, LogOut, Minimize2, MonitorPlay, Power, Search, Settings, StopCircle } from "lucide-react";
 import { openExplore } from "../host/downloads";
 import { api } from "../api/tauri";
 import { setBigPicture } from "../host/window";
@@ -61,7 +60,6 @@ export function QuickMenu({ onClose }: { onClose: () => void }) {
         {item(<Search size={19} />, "Buscar", () => open("search"))}
         {exploreOn && item(<Compass size={19} />, "Explorar", () => openExplore("explore"))}
         {(exploreOn || downloads.length > 0) && item(<Download size={19} />, pending ? `Descargas (${pending})` : "Descargas", () => openExplore("downloads"))}
-        {item(<UserRound size={19} />, "Mi perfil", () => openProfile("profile"))}
         {item(<BarChart3 size={19} />, "Estadísticas", () => open("stats"))}
         {item(<FolderPlus size={19} />, "Añadir juegos", () => open("settings", { tab: "library", addFolder: true }))}
         {item(<Settings size={19} />, "Ajustes", () => open("settings"))}

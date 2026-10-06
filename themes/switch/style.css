@@ -38,7 +38,7 @@ img { display: block; }
 :root[data-show-clock="off"] .clock { display: none; }
 
 #home { height: calc(100% - 96px - 62px); display: flex; flex-direction: column; justify-content: center; }
-#home[hidden], #all[hidden] { display: none; }
+#home[hidden], #all[hidden], #homebrew[hidden] { display: none; }
 .title-bar { height: 40px; padding: 0 60px; font-weight: 700; font-size: 22px; color: var(--title); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rail { display: flex; gap: 14px; padding: 12px 60px 26px; overflow-x: auto; scrollbar-width: none; scroll-padding: 0 60px; scroll-behavior: smooth; }
 .stile { position: relative; flex: none; width: var(--tile); height: var(--tile); border-radius: var(--round); background: var(--card); transition: transform 0.12s ease; }
@@ -74,8 +74,6 @@ img { display: block; }
 .all-grid .stile { width: 100%; height: auto; aspect-ratio: 1; content-visibility: auto; contain-intrinsic-size: auto 160px; }
 .all-grid .name { position: absolute; left: 0; right: 0; bottom: 0; font-size: 13px; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .all-grid .item { position: relative; padding-bottom: 24px; }
-.all-sys { grid-column: 1 / -1; margin: 10px 0 -6px; font-size: 16px; font-weight: 700; opacity: 0.8; }
-.all-sys:first-child { margin-top: 0; }
 
 #options { position: fixed; inset: 0; z-index: 5; background: rgba(0, 0, 0, 0.35); display: flex; justify-content: flex-end; animation: fade 0.18s ease; }
 #options[hidden] { display: none; }
@@ -146,21 +144,31 @@ img { display: block; }
 .gs-page .g-toc-box { background: var(--card); }
 .gs-page .g-zoom-close { color: #fff !important; }
 
-/* ─── tu perfil (kit profile, en la vista de guías) ─── */
-.gs-page .s-view {
-  --s-fg: var(--fg);
-  --s-muted: var(--muted);
-  --s-accent: var(--title);
-  --s-bg: var(--bg);
-  --s-surface: var(--card);
-  --s-surface-2: color-mix(in srgb, var(--fg) 7%, var(--card));
-  --s-line: var(--line);
-  --s-radius: var(--round);
-  --s-focus: 0 0 0 4px var(--accent), 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent);
-  height: 100%;
-  overflow-y: auto;
-  scrollbar-width: none;
+/* ─── Homebrew (kit/homebrew.js): tarjetas blancas, foco con el contorno del HOME ─── */
+#homebrew { height: calc(100% - 96px - 62px); overflow-y: auto; scrollbar-width: none; }
+#homebrew .hb-view {
+  --hb-fg: var(--fg);
+  --hb-muted: var(--muted);
+  --hb-accent: var(--title);
+  --hb-accent-fg: #fff;
+  --hb-surface: var(--card);
+  --hb-surface-2: color-mix(in srgb, var(--accent) 10%, var(--card));
+  --hb-line: color-mix(in srgb, var(--line) 70%, transparent);
+  --hb-radius: max(var(--round), 10px);
+  --hb-focus: 0 0 0 4px var(--accent), 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent);
+  --hb-hero: linear-gradient(120deg, var(--card) 0%, color-mix(in srgb, var(--accent) 16%, var(--card)) 100%);
+  --hb-warn: #d98a00;
+  --hb-ok: #1fa851;
+  --hb-font: var(--font);
+  max-width: none;
+  padding: 6px 60px 40px;
+  font-weight: 600;
 }
+#homebrew .hb-hero, #homebrew .hb-emu, #homebrew .hb-action, #homebrew .hb-chip { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+#homebrew .hb-title, #homebrew .hb-sec-head h2 { font-weight: 800; }
+#homebrew .hb-cover { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); }
+:root[data-pulse="on"] #homebrew :is(.hb-action, .hb-emu, .hb-chip, .hb-btn).is-focused,
+:root[data-pulse="on"] #homebrew .hb-game.is-focused .hb-cover { animation: gs-pulse 1.6s ease-in-out infinite; }
 
 /* ─── ejGames Scream (Halloween): noche violeta, calabaza y verde neón ─── */
 /* El SDK ya pone el acento, el modo oscuro y el fondo; aquí, los colores fijos del tema. */

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, errMsg, on } from "../api/tauri";
-import type { LibGame, ThemeInfo } from "../api/types";
+import type { LibGame, Profile, ProfileCard, ThemeInfo } from "../api/types";
 import { setThemeSink } from "../input/nav";
 import { currentSeason, useSeason } from "./season";
 import { activeTheme, useApp } from "../store/app";
@@ -13,6 +13,11 @@ import { getLang } from "../lib/i18n";
 
 const ORIGIN = "http://ejg-theme.localhost";
 const SAFE_ORIGIN = "http://ejg-safe.localhost";
+
+/** Tu perfil en corto para los temas (`ejg.profiles.me`): el nombre y el avatar del perfil local. */
+function cardOf(p: Profile | null): ProfileCard | null {
+  return p && { id: p.id, name: p.name, avatarUrl: p.avatar ?? null, color: p.color };
+}
 
 export function mergedSettings(theme: ThemeInfo | undefined, saved: Record<string, unknown> | undefined) {
   const out: Record<string, unknown> = {};
@@ -159,7 +164,7 @@ export function ThemeFrame() {
         explore: st.settings?.exploreEnabled !== false,
         eventMode: st.settings?.eventMode ?? "auto",
         season: currentSeason(),
-        page: st.page,
+        page: cardOf(st.profile),
       },
     });
   }
@@ -232,6 +237,7 @@ export function ThemeFrame() {
   useEffect(() => {
     if (!beats.current.ready || !profile) return;
     event("profile", { id: profile.id, name: profile.name, avatar: profile.avatar, color: profile.color, themeId: profile.themeId });
+    event("page", cardOf(profile));
   }, [profile?.name, profile?.avatar, profile?.color]);
 
   // Al cerrar el último overlay, el foco vuelve al tema.
@@ -260,9 +266,6 @@ export function ThemeFrame() {
   // Lista de deseados → tema.
   const wishlist = useApp((s) => s.wishlist);
   useEffect(() => void (beats.current.ready && event("wishlist", wishlist)), [wishlist]);
-  // Tu perfil (nivel, avatar, marco…) → tema.
-  const page = useApp((s) => s.page);
-  useEffect(() => void (beats.current.ready && event("page", page)), [page]);
   const exploreOn = useApp((s) => s.settings?.exploreEnabled !== false);
   useEffect(() => void (beats.current.ready && event("explore", { enabled: exploreOn })), [exploreOn]);
   // Evento de temporada (Halloween…) → tema: paleta, fondo y ambiente del SDK.

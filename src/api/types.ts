@@ -398,7 +398,7 @@ export interface ThemeInfo {
   overlay?: { style?: NoticeStyle } | null;
   /** Vistas propias del tema (sin ellas, el host abre las suyas). */
   /** `social` es el nombre de antes de `profile` (0.7). */
-  features?: { explore?: boolean; guides?: boolean; profile?: boolean; social?: boolean } | null;
+  features?: { explore?: boolean; guides?: boolean } | null;
   builtin: boolean;
   dir: string;
   previewUrl?: string | null;
@@ -970,77 +970,14 @@ export interface TrainerLive {
   elevated: boolean;
 }
 
-// ───────────────────────────── perfil (página al estilo Steam) ─────────────────────────────
+// ───────────────────────────── perfil ─────────────────────────────
 
-export interface ProfileShowcase {
-  type: "featured" | "favorite" | "stats" | "recent" | "achievements" | "badges" | "screenshots" | "text";
-  game?: string;
-  title?: string;
-  text?: string;
-  /** Capturas: URL ejg-media. */
-  items?: string[];
-}
-
-/** Lo que se edita del perfil (el nombre y el avatar son los del perfil local). */
-export interface ProfileFields {
-  name: string;
-  avatarUrl?: string | null;
-  realName: string;
-  country: string;
-  bio: string;
-  backgroundImageUrl?: string | null;
-  frame: string;
-  background: string;
-  color: string;
-  showcases: ProfileShowcase[];
-  featuredBadge: string;
-}
-
-export interface ProfileBadge {
-  id: string;
-  tier: number;
-}
-
-export interface ProfileGame {
-  id: number;
-  title: string;
-  minutes: number;
-  last?: number | null;
-  ach?: [number, number] | null;
-  coverUrl?: string;
-  headerUrl?: string;
-}
-
-/** La página de perfil entera (`profile_page`). */
-export interface ProfilePage {
-  id: number;
-  name: string;
-  memberSince: number;
-  level: number;
-  xp: number;
-  badges: ProfileBadge[];
-  profile: ProfileFields;
-  summary: {
-    games: ProfileGame[];
-    stats: { minutes: number; achievements: number; perfect: number; library: number; played: number; recent: number; shots: number };
-  };
-  activity: { id: number; kind: "played" | "achievement" | "completed"; at: number; data: Record<string, unknown> }[];
-  presence: { status: "online"; game: string; since?: number | null } | null;
-}
-
-/** Lo corto del perfil, lo que reciben los temas (`ejg.profiles.me`). */
+/** Lo corto del perfil, lo que reciben los temas (`ejg.profiles.me`): nombre y avatar del perfil local. */
 export interface ProfileCard {
   id: number;
   name: string;
   avatarUrl?: string | null;
-  frame: string;
-  background: string;
-  backgroundImageUrl?: string | null;
   color: string;
-  level: number;
-  xp: number;
-  badges: ProfileBadge[];
-  featuredBadge: string;
 }
 
 // ───────────────────────────── mapas (Map Genie) ─────────────────────────────

@@ -384,53 +384,31 @@ export interface GuideShelfItem {
   progress?: GuideProgress | null;
 }
 
-/** Tu perfil en corto (`ejg.profiles.me`). Todo es local: se guarda en el PC. */
+/** Tu perfil en corto (`ejg.profiles.me`): el nombre y el avatar del perfil local. */
 export interface ProfileCard {
   id: number;
   name: string;
   avatarUrl?: string | null;
-  /** Marco del avatar (id del kit: "", "gold", "neon"…). */
-  frame: string;
-  /** Fondo animado (id del kit) o "". */
-  background: string;
-  backgroundImageUrl?: string | null;
-  /** Tema del perfil (id del kit) o "". */
+  /** Color del perfil (el del avatar sin imagen). */
   color: string;
-  level: number;
-  xp: number;
-  badges: { id: string; tier: number }[];
-  featuredBadge: string;
 }
 
-/** Tu perfil entero (`ejg.profiles.view()`), como lo pinta el kit (profile.js). */
-export interface ProfilePage {
-  id: number;
+/** Un emulador de la tienda (`ejg.emulators.list()`). */
+export interface EmulatorInfo {
+  id: string;
   name: string;
-  memberSince: number;
-  level: number;
-  xp: number;
-  badges: { id: string; tier: number }[];
-  profile: {
-    name: string;
-    avatarUrl?: string | null;
-    realName: string;
-    country: string;
-    bio: string;
-    backgroundImageUrl?: string | null;
-    frame: string;
-    background: string;
-    color: string;
-    showcases: { type: string; game?: string; title?: string; text?: string; items?: string[] }[];
-    featuredBadge: string;
-  };
-  summary: {
-    games: { id: number; title: string; minutes: number; last?: number | null; ach?: [number, number] | null; coverUrl?: string; headerUrl?: string }[];
-    stats: { minutes: number; achievements: number; perfect: number; library: number; played: number; recent: number; shots: number };
-  };
-  /** Lo último: partidas de 5 minutos o más, logros y juegos completados. */
-  activity: { id: number; kind: "played" | "achievement" | "completed"; at: number; data: { game: string; minutes?: number; name?: string; rarity?: number | null; iconUrl?: string | null } }[];
-  /** A qué juegas ahora (o null). */
-  presence: { status: "online"; game: string; since?: number | null } | null;
+  blurb: string;
+  /** Nombres de los sistemas que abre, en el orden de `platforms`. */
+  systems: string[];
+  /** Ids de esos sistemas (los de `game.platform`). */
+  platforms: string[];
+  installed: boolean;
+  version: string | null;
+  latest: string | null;
+  /** Hay una versión más nueva. */
+  update: boolean;
+  /** Su entrada en la biblioteca (para `game.launch`), si está instalado. */
+  gameId: number | null;
 }
 
 /** Trainer instalado para un juego (resumen). */
@@ -559,10 +537,12 @@ export interface Ejg {
     switch(): Promise<void>;
     readonly me: ProfileCard | null;
     onChange(fn: (me: ProfileCard | null) => void): () => void;
-    view(): Promise<ProfilePage>;
-    open(): Promise<void>;
-    badges(): Promise<void>;
+    /** Ajustes → Perfil del host (nombre, avatar, PIN…). */
     edit(): Promise<void>;
+  };
+  emulators: {
+    /** Los emuladores de la tienda, instalados o no. */
+    list(): Promise<EmulatorInfo[]>;
   };
   stats: {
     get(days?: number): Promise<any>;
@@ -575,7 +555,7 @@ export interface Ejg {
     open(
       name:
         | "settings" | "game" | "profiles" | "search" | "add-folder" | "stats" | "theme" | "collections" | "menu" | "explore" | "downloads"
-        | "guides" | "trainer" | "map" | "profile" | "badges" | "profile-editor" | "year-review" | "software"
+        | "guides" | "trainer" | "map" | "profile-editor" | "year-review" | "software"
         | "homebrew" | "rom-import" | "catalogs",
       args?: any,
     ): Promise<void>;
@@ -583,7 +563,7 @@ export interface Ejg {
     /** El host pide abrir una vista del tema (menú rápido, Ctrl+E, Ctrl+J, el indicador de descargas…). */
     onView(
       fn: (e: {
-        view: "explore" | "downloads" | "repack" | "guides" | "profile" | "badges";
+        view: "explore" | "downloads" | "repack" | "guides";
         slug?: string;
         gameId?: number;
         guideId?: string | null;

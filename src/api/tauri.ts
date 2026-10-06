@@ -61,8 +61,6 @@ import type {
   TrainerInstalled,
   TrainerLive,
   TrainerPage,
-  ProfileFields,
-  ProfilePage,
   WishItem,
 } from "./types";
 
@@ -218,13 +216,6 @@ export const api = {
   mapsChoose: (gameId: number, slug: string | null) => invoke<GameMaps>("maps_choose", { gameId, slug }),
   mapsLast: (gameId: number, map: string) => invoke<void>("maps_last", { gameId, map }),
   overlayPin: (url: string | null) => invoke<void>("overlay_pin", { url }),
-  // Perfil (página al estilo Steam)
-  /** La página de perfil del perfil activo. */
-  profilePage: () => invoke<ProfilePage>("profile_page"),
-  /** Guarda los campos que lleguen; devuelve el perfil local y la página al día. */
-  profilePageUpdate: (patch: Partial<ProfileFields>) => invoke<{ profile: Profile; page: ProfilePage }>("profile_page_update", { patch }),
-  /** Guarda una imagen del disco para el perfil y devuelve su URL. */
-  profileImage: (kind: "avatar" | "background" | "shot", path: string) => invoke<string>("profile_image", { kind, path }),
   downloadsList: () => invoke<DownloadItem[]>("downloads_list"),
   downloadsDefaults: () => invoke<DownloadDefaults>("downloads_defaults"),
   downloadsPrepare: (slug: string) => invoke<PreparedDownload>("downloads_prepare", { slug }),

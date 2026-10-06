@@ -1,0 +1,673 @@
+/* Homebrew del kit (homebrew.js). Cada tema pone su piel con:
+   --hb-fg, --hb-muted, --hb-accent, --hb-accent-fg, --hb-surface, --hb-surface-2,
+   --hb-line, --hb-radius, --hb-focus, --hb-font, --hb-title-font, --hb-hero
+   (fondo de la cabecera), --hb-cover (proporción de las carátulas) y --hb-card
+   (ancho mínimo de cada juego). La maqueta (`layout`) cambia lo demás. */
+
+:where(.hb-view) {
+  --hb-fg: #e8edf3;
+  --hb-muted: color-mix(in srgb, var(--hb-fg) 62%, transparent);
+  --hb-accent: #4f9dff;
+  --hb-accent-fg: #fff;
+  --hb-surface: rgba(255, 255, 255, 0.05);
+  --hb-surface-2: rgba(255, 255, 255, 0.1);
+  --hb-line: rgba(255, 255, 255, 0.1);
+  --hb-radius: 10px;
+  --hb-focus: 0 0 0 2px var(--hb-accent), 0 10px 30px rgba(0, 0, 0, 0.35);
+  --hb-hero: radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--hb-accent) 34%, transparent), transparent 60%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  --hb-cover: 2 / 3;
+  --hb-card: 148px;
+  --hb-warn: #f0b429;
+  --hb-ok: #4ade80;
+  color: var(--hb-fg);
+  font-family: var(--hb-font, inherit);
+  box-sizing: border-box;
+}
+:where(.hb-view) *,
+:where(.hb-view) *::before,
+:where(.hb-view) *::after {
+  box-sizing: border-box;
+}
+:where(.hb-view) button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
+/* Con especificidad propia: los temas suelen dar tamaño a todos sus svg. */
+.hb-view svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hb-view {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 26px 32px 56px;
+}
+.hb-view .is-focused,
+.hb-view [data-focused] {
+  outline: none;
+}
+
+/* ─── cabecera ─── */
+.hb-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 520px);
+  gap: 28px;
+  align-items: center;
+  padding: 30px 32px;
+  border-radius: calc(var(--hb-radius) * 1.6);
+  background: var(--hb-hero);
+  border: 1px solid var(--hb-line);
+  overflow: hidden;
+  isolation: isolate;
+}
+.hb-hero-art {
+  position: absolute;
+  right: -40px;
+  bottom: -70px;
+  width: 300px;
+  height: 300px;
+  color: var(--hb-accent);
+  opacity: 0.09;
+  z-index: -1;
+  transform: rotate(-12deg);
+}
+.hb-hero-pad {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.hb-hero-pad svg {
+  stroke-width: 1.1;
+}
+.hb-title {
+  margin: 0;
+  font-family: var(--hb-title-font, inherit);
+  font-size: 40px;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.hb-sub {
+  margin: 8px 0 0;
+  color: var(--hb-muted);
+  font-size: 15px;
+  max-width: 60ch;
+}
+.hb-stats {
+  display: flex;
+  gap: 26px;
+  margin-top: 22px;
+}
+.hb-stat b {
+  display: block;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.hb-stat span {
+  display: block;
+  margin-top: 5px;
+  color: var(--hb-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hb-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.hb-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 11px 14px;
+  border-radius: var(--hb-radius);
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-line);
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.hb-action-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 8px;
+  border-radius: calc(var(--hb-radius) * 0.8);
+  background: color-mix(in srgb, var(--hb-accent) 20%, transparent);
+  color: var(--hb-accent);
+}
+.hb-action-text {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.hb-action-text b {
+  font-size: 14px;
+  font-weight: 700;
+}
+.hb-action-text small {
+  color: var(--hb-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hb-action:hover,
+.hb-action.is-focused {
+  background: var(--hb-surface-2);
+  transform: translateY(-2px);
+}
+.hb-action.is-focused {
+  box-shadow: var(--hb-focus);
+}
+
+/* ─── secciones ─── */
+.hb-body {
+  display: grid;
+  gap: 34px;
+  margin-top: 30px;
+}
+.hb-sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.hb-sec-head h2 {
+  margin: 0;
+  font-family: var(--hb-title-font, inherit);
+  font-size: 21px;
+  font-weight: 750;
+}
+.hb-count {
+  color: var(--hb-muted);
+  font-size: 13px;
+}
+
+/* ─── emuladores ─── */
+.hb-emus {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 12px;
+}
+.hb-emu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 84px;
+  padding: 14px 16px;
+  border-radius: var(--hb-radius);
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-line);
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.hb-emu:hover,
+.hb-emu.is-focused {
+  background: var(--hb-surface-2);
+  transform: translateY(-2px);
+}
+.hb-emu.is-focused {
+  box-shadow: var(--hb-focus);
+}
+.hb-emu-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: calc(var(--hb-radius) * 0.9);
+  background: linear-gradient(145deg, hsl(var(--hb-hue, 220) 45% 38%), hsl(calc(var(--hb-hue, 220) + 40) 50% 18%));
+  color: #fff;
+  font-weight: 800;
+  font-size: 17px;
+  overflow: hidden;
+}
+.hb-emu-icon img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  image-rendering: auto;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+}
+.hb-emu-body {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.hb-emu-name {
+  font-size: 15px;
+  font-weight: 750;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hb-emu-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  white-space: nowrap;
+  color: var(--hb-muted);
+  font-size: 12.5px;
+}
+.hb-emu-sys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.hb-emu.is-external .hb-emu-icon {
+  background: var(--hb-surface-2);
+  color: var(--hb-fg);
+}
+.hb-emu.is-missing {
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--hb-warn) 55%, transparent);
+}
+.hb-emu.is-missing .hb-emu-icon {
+  background: color-mix(in srgb, var(--hb-warn) 16%, transparent);
+  color: var(--hb-warn);
+}
+.hb-warn-ico {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.hb-pill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 19px;
+  padding: 0 8px;
+  border-radius: 99px;
+  background: var(--hb-surface-2);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.hb-pill-up {
+  background: color-mix(in srgb, var(--hb-ok) 18%, transparent);
+  color: var(--hb-ok);
+}
+.hb-pill-ico {
+  display: block;
+  width: 13px;
+  height: 13px;
+}
+.hb-pill-go {
+  background: var(--hb-warn);
+  color: #1d1600;
+}
+.hb-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--hb-ok);
+  font-weight: 650;
+}
+.hb-live::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 25%, transparent);
+}
+
+/* etiqueta del sistema */
+.hb-sys {
+  display: inline-flex;
+  align-items: center;
+  height: 19px;
+  padding: 0 7px;
+  border-radius: 5px;
+  background: hsl(var(--hb-hue, 220) 62% 44%);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* ─── juegos ─── */
+.hb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -2px 0 18px;
+}
+.hb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 99px;
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-line);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.hb-chip small {
+  color: var(--hb-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.hb-chip:hover {
+  background: var(--hb-surface-2);
+}
+.hb-chip.is-on {
+  background: var(--hb-accent);
+  border-color: transparent;
+  color: var(--hb-accent-fg);
+}
+.hb-chip.is-on small {
+  color: inherit;
+  opacity: 0.8;
+}
+.hb-chip.is-focused {
+  box-shadow: var(--hb-focus);
+}
+
+.hb-group + .hb-group {
+  margin-top: 28px;
+}
+.hb-group-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.hb-group-title small {
+  color: var(--hb-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.hb-group-emu {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--hb-surface);
+}
+.hb-group-emu.is-missing {
+  color: var(--hb-warn);
+  background: color-mix(in srgb, var(--hb-warn) 12%, transparent);
+}
+
+.hb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--hb-card), 1fr));
+  gap: 20px 16px;
+}
+.hb-game {
+  display: grid;
+  gap: 9px;
+  align-content: start;
+  min-width: 0;
+}
+.hb-cover {
+  position: relative;
+  display: block;
+  aspect-ratio: var(--hb-cover);
+  border-radius: var(--hb-radius);
+  overflow: hidden;
+  background: var(--hb-surface-2);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+.hb-cover > .hb-sys {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.hb-cover-warn {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 4px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  color: var(--hb-warn);
+}
+.hb-cover-warn .hb-warn-ico {
+  width: 15px;
+  height: 15px;
+}
+.hb-game:hover .hb-cover,
+.hb-game.is-focused .hb-cover {
+  transform: translateY(-3px) scale(1.03);
+}
+.hb-game.is-focused .hb-cover {
+  box-shadow: var(--hb-focus);
+}
+.hb-game.no-emu .hb-cover .ejg-art {
+  filter: saturate(0.55);
+}
+.hb-game-info {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 0 2px;
+}
+.hb-game-title {
+  font-size: 13.5px;
+  font-weight: 650;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.hb-game-sub {
+  color: var(--hb-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hb-game.is-running .hb-cover {
+  box-shadow: 0 0 0 2px var(--hb-ok), 0 6px 18px rgba(0, 0, 0, 0.32);
+}
+
+/* ─── vacío ─── */
+.hb-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 34px 20px;
+  border-radius: var(--hb-radius);
+  border: 1px dashed var(--hb-line);
+  background: var(--hb-surface);
+  text-align: center;
+}
+.hb-empty-ico {
+  display: block;
+  width: 40px;
+  height: 40px;
+  color: var(--hb-accent);
+  opacity: 0.9;
+}
+.hb-empty b {
+  font-size: 16px;
+}
+.hb-empty p {
+  margin: 0 0 6px;
+  color: var(--hb-muted);
+  font-size: 13.5px;
+}
+.hb-empty-actions {
+  display: flex;
+  gap: 10px;
+}
+.hb-btn {
+  padding: 9px 18px;
+  border-radius: 99px;
+  background: var(--hb-accent);
+  color: var(--hb-accent-fg);
+  font-weight: 700;
+  font-size: 13.5px;
+  text-align: center;
+}
+.hb-btn-ghost {
+  background: var(--hb-surface-2);
+  color: var(--hb-fg);
+}
+.hb-btn.is-focused {
+  box-shadow: var(--hb-focus);
+}
+
+@media (max-width: 1100px) {
+  .hb-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── maquetas ─── */
+
+/* PS5: limpia, mucho aire, esquinas grandes y carátulas cuadradas. */
+.hb-layout-ps5 {
+  --hb-radius: 16px;
+  --hb-cover: 1 / 1;
+  --hb-card: 168px;
+  --hb-hero: linear-gradient(120deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+}
+.hb-layout-ps5 .hb-title {
+  font-weight: 300;
+  font-size: 46px;
+  letter-spacing: 0;
+}
+.hb-layout-ps5 .hb-hero {
+  border-color: transparent;
+}
+.hb-layout-ps5 .hb-game.is-focused .hb-cover {
+  transform: scale(1.06);
+}
+
+/* Xbox: mosaico de baldosas cuadradas, esquinas casi rectas. */
+.hb-layout-xbox {
+  --hb-radius: 6px;
+  --hb-cover: 1 / 1;
+  --hb-card: 160px;
+}
+.hb-layout-xbox .hb-title {
+  font-weight: 650;
+}
+.hb-layout-xbox .hb-emu:not(.is-missing),
+.hb-layout-xbox .hb-action {
+  border-color: transparent;
+}
+
+/* Switch: redondeada, iconos cuadrados y una franja de color en cada grupo. */
+.hb-layout-switch {
+  --hb-radius: 14px;
+  --hb-cover: 1 / 1;
+  --hb-card: 150px;
+}
+.hb-layout-switch .hb-group {
+  padding-left: 14px;
+  border-left: 4px solid hsl(var(--hb-hue, 0) 70% 52%);
+}
+.hb-layout-switch .hb-group-recent {
+  border-left-color: var(--hb-accent);
+}
+
+/* Cinema: pósteres grandes y titulares de cartel. */
+.hb-layout-cinema {
+  --hb-radius: 6px;
+  --hb-card: 172px;
+}
+.hb-layout-cinema .hb-title {
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+.hb-layout-cinema .hb-hero {
+  border: 0;
+}
+.hb-layout-cinema .hb-game-info {
+  opacity: 0.82;
+}
+.hb-layout-cinema .hb-game.is-focused .hb-game-info {
+  opacity: 1;
+}
+
+/* Retro: píxel, bordes duros, mayúsculas y foco en negativo. */
+.hb-layout-retro {
+  --hb-radius: 0px;
+  --hb-cover: 3 / 4;
+  --hb-card: 140px;
+  --hb-focus: 0 0 0 3px var(--hb-accent);
+}
+.hb-layout-retro .hb-hero,
+.hb-layout-retro .hb-emu,
+.hb-layout-retro .hb-action,
+.hb-layout-retro .hb-chip,
+.hb-layout-retro .hb-empty {
+  border: 2px solid var(--hb-line);
+  border-radius: 0;
+}
+.hb-layout-retro .hb-title,
+.hb-layout-retro .hb-sec-head h2,
+.hb-layout-retro .hb-stat span,
+.hb-layout-retro .hb-group-title {
+  text-transform: uppercase;
+}
+.hb-layout-retro .hb-action.is-focused,
+.hb-layout-retro .hb-emu.is-focused,
+.hb-layout-retro .hb-chip.is-focused {
+  background: var(--hb-accent);
+  color: var(--hb-accent-fg);
+  transform: none;
+}
+.hb-layout-retro .hb-action.is-focused .hb-action-text small,
+.hb-layout-retro .hb-emu.is-focused .hb-emu-meta {
+  color: inherit;
+}
+.hb-layout-retro .hb-game:hover .hb-cover,
+.hb-layout-retro .hb-game.is-focused .hb-cover {
+  transform: none;
+}
+.hb-layout-retro .hb-cover,
+.hb-layout-retro .hb-emu-icon,
+.hb-layout-retro .hb-sys,
+.hb-layout-retro .hb-pill,
+.hb-layout-retro .hb-btn,
+.hb-layout-retro .hb-chip {
+  border-radius: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hb-view * {
+    transition: none !important;
+  }
+}

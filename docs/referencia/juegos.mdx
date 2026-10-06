@@ -38,8 +38,9 @@ explica qué va a pasar y pide confirmación.
 Sirve para cualquier juego que siga en su sitio. Para saber si enseñar la opción, usa
 `canUninstall(juego)` del kit (`/_sdk/kit/library.js`).
 
-Los emuladores instalados desde **Tienda → Software** están en `library.all` con `source: "emulator"`: no son juegos.
-`isSoftware(juego)` los distingue, `visible()` los deja fuera y `software(library.all)` los da para su apartado.
+Los emuladores instalados desde ejGames están en `library.all` con `source: "emulator"`: no son juegos.
+`isSoftware(juego)` los distingue, `visible()` los deja fuera (como a los de consola) y `software(library.all)` los
+da para [Homebrew](/referencia/homebrew).
 
 Los juegos de consola (`source: "rom"` o `"homebrew"`) llevan `platform` (`"switch"`, `"vita"`, `"3ds"`, `"ps2"`…),
 `emulator` (con qué se abren; `""` si no hay ninguno) y `rom` (lo leído del archivo: `titleId`, `version`, `region`,

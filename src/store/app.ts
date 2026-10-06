@@ -8,7 +8,6 @@ import type {
   RunningGame,
   Settings,
   ThemeInfo,
-  ProfileCard,
   WishItem,
   HomebrewJob,
   CatalogJob,
@@ -38,8 +37,6 @@ export type OverlayName =
   | "guides"
   | "trainer"
   | "map"
-  | "profile"
-  | "profile-editor"
   | "year-review"
   | "software"
   | "homebrew"
@@ -79,8 +76,6 @@ interface State {
   catalogState: CatalogState | null;
   /** Descargas directas de los catálogos (por `<fuente>|<id>`). */
   catalogJobs: Record<string, CatalogJob>;
-  /** Tu perfil en corto (nivel, avatar, marco…), el que reciben los temas. */
-  page: ProfileCard | null;
   overlays: Overlay[];
   toasts: Toast[];
   meta: { done: number; total: number };
@@ -123,7 +118,6 @@ export const useApp = create<State>((set, get) => ({
   homebrewJobs: {},
   catalogState: null,
   catalogJobs: {},
-  page: null,
   overlays: [],
   toasts: [],
   meta: { done: 0, total: 0 },

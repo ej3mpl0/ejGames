@@ -6,14 +6,14 @@ import { h, img, initials, hueOf, keyed, debounce } from "/_sdk/kit/dom.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { attachStream, trailerPlayer } from "/_sdk/kit/media.js";
 import { playtime, relative, date, description, SOURCE_LABEL } from "/_sdk/kit/format.js";
-import { visible, sort, search, inCollection, canUninstall, software, roms, romsBySystem, SORTS } from "/_sdk/kit/library.js";
+import { visible, sort, search, inCollection, canUninstall, isRom, isSoftware, SORTS } from "/_sdk/kit/library.js";
 import { emulatorNote } from "/_sdk/kit/emulator.js";
 import { artFor } from "/_sdk/kit/art.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { repackUpdateNote } from "/_sdk/kit/updates.js";
 import { howLongNote } from "/_sdk/kit/hltb.js";
 import { downloadLabel, percent, speed } from "/_sdk/kit/store.js";
-import { createProfilePages, avatar as kitAvatar, levelBadge } from "/_sdk/kit/profile.js";
+import { createHomebrewView } from "/_sdk/kit/homebrew.js";
 import { createGuideView, starsText } from "/_sdk/kit/guides.js";
 import { createStore } from "./store.js";
 
@@ -27,7 +27,7 @@ const lightbox = $("#lightbox");
 const saved = (await ejg.storage.getAll().catch(() => null)) || {};
 const state = {
   tab: "library", // library | store | downloads
-  view: "home", // (biblioteca) home | collections | collection | game
+  view: "home", // (biblioteca) home | collections | collection | game | guides | homebrew
   gameId: null,
   collection: null, // id de colección o "fav"
   prev: [], // vistas anteriores de la biblioteca, para «Atrás»
@@ -63,6 +63,9 @@ const isShop = () => state.tab === "store" || state.tab === "downloads";
 /** Guías abiertas: su vista usa primero el mando (leer, secciones, guardar…). */
 const inGuides = () => state.tab === "library" && state.view === "guides" && guideView;
 const gv = (action) => !!(inGuides() && guideView.nav(action));
+/** Homebrew: su vista usa LB/RB (sistemas) e Y (emuladores). */
+const inHomebrew = () => state.tab === "library" && state.view === "homebrew" && hbView;
+const hv = (action) => !!(inHomebrew() && hbView.nav(action));
 bindNav(focus, {
   back: () => back(),
   up: () => gv("up"),
@@ -70,7 +73,7 @@ bindNav(focus, {
   lt: () => gv("lt"),
   rt: () => gv("rt"),
   y: () => {
-    if (gv("y")) return true;
+    if (gv("y") || hv("y")) return true;
     if (state.tab === "store") return shop.search(), true;
     const id = focusedGameId() ?? (state.view === "game" ? state.gameId : null);
     if (id && !isShop()) ejg.game.favorite(id);
@@ -85,8 +88,8 @@ bindNav(focus, {
   },
   menu: () => (ejg.ui.open("menu"), true),
   view: () => gv("view") || (ejg.ui.open("search"), true),
-  lb: () => gv("lb") || (menu || shop.hasDialog() || switchTab(-1), true),
-  rb: () => gv("rb") || (menu || shop.hasDialog() || switchTab(1), true),
+  lb: () => gv("lb") || hv("lb") || (menu || shop.hasDialog() || switchTab(-1), true),
+  rb: () => gv("rb") || hv("rb") || (menu || shop.hasDialog() || switchTab(1), true),
   left: () => (!lightbox.hidden ? (stepLightbox(-1), true) : false),
   right: () => (!lightbox.hidden ? (stepLightbox(1), true) : false),
 });
@@ -168,13 +171,10 @@ window.addEventListener("resize", () => closeMenu(true));
 
 // ─────────────── datos ───────────────
 const games = () => visible(ejg.library.all);
-const CHIPS = { all: "Juegos", played: "Jugados", unplayed: "Sin jugar", fav: "Favoritos", roms: "ROMs", software: "Software", hidden: "Ocultos" };
-/** Los juegos de consola (ROMs y homebrew): en «ROMs», agrupados por sistema. */
-const romList = () => roms(ejg.library.all);
-/** Los programas (emuladores): solo en «Software». */
-const softwareList = () => software(ejg.library.all);
+// Los emuladores y los juegos de consola no son de la biblioteca: van en Homebrew.
+const CHIPS = { all: "Juegos", played: "Jugados", unplayed: "Sin jugar", fav: "Favoritos", hidden: "Ocultos" };
 /** Los ocultos: no salen en ningún otro filtro, solo en «Ocultos». */
-const hiddenGames = () => ejg.library.all.filter((g) => g.hidden && !g.missing);
+const hiddenGames = () => ejg.library.all.filter((g) => g.hidden && !g.missing && !isRom(g) && !isSoftware(g));
 function chipped(list) {
   if (state.chip === "fav") return list.filter((g) => g.favorite);
   if (state.chip === "played") return list.filter((g) => g.playtime > 0 || g.lastPlayed);
@@ -184,9 +184,7 @@ function chipped(list) {
 function filtered(sortKey = state.sort) {
   // Mostrado el último oculto, el filtro vuelve a «Juegos».
   if (state.chip === "hidden" && !hiddenGames().length) state.chip = "all";
-  if (state.chip === "software" && !softwareList().length) state.chip = "all";
-  if (state.chip === "roms" && !romList().length) state.chip = "all";
-  const list = state.chip === "hidden" ? hiddenGames() : state.chip === "software" ? softwareList() : state.chip === "roms" ? romList() : chipped(games());
+  const list = state.chip === "hidden" ? hiddenGames() : chipped(games());
   if (state.filter) return search(list, state.filter, 500);
   return sort(list, sortKey);
 }
@@ -326,7 +324,7 @@ sideDrop.addEventListener("click", () =>
   openMenu(
     sideDrop,
     Object.entries(CHIPS)
-      .filter(([k]) => (k !== "hidden" || hiddenGames().length) && (k !== "software" || softwareList().length) && (k !== "roms" || romList().length))
+      .filter(([k]) => k !== "hidden" || hiddenGames().length)
       .map(([k, label]) => ({
       label: k === "hidden" ? `${label} (${hiddenGames().length})` : label,
       on: state.chip === k,
@@ -380,15 +378,8 @@ function renderSidebar() {
   $("#side-cols").classList.toggle("on", state.view === "collections" || state.view === "collection");
   const favs = !state.filter && state.chip === "all" ? list.filter((g) => g.favorite) : [];
   const groups = [];
-  // ROMs: un grupo por sistema (Nintendo Switch, PS Vita…).
-  if (state.chip === "roms" && !state.filter) {
-    const order = new Map(list.map((g, i) => [g.id, i]));
-    for (const s of romsBySystem(ejg.library.all)) groups.push(sideGroup(`sys-${s.id}`, s.name, [...s.games].sort((a, b) => order.get(a.id) - order.get(b.id))));
-    if (sideList.children.length !== groups.length || [...sideList.children].some((c, i) => c !== groups[i])) sideList.replaceChildren(...groups);
-    return;
-  }
   if (favs.length) groups.push(sideGroup("fav", "Favoritos", favs));
-  groups.push(sideGroup("all", state.filter ? "Resultados" : state.chip === "hidden" ? "Ocultos" : state.chip === "software" ? "Software" : favs.length ? "Sin categoría" : "Todos", favs.length ? list.filter((g) => !g.favorite) : list));
+  groups.push(sideGroup("all", state.filter ? "Resultados" : state.chip === "hidden" ? "Ocultos" : favs.length ? "Sin categoría" : "Todos", favs.length ? list.filter((g) => !g.favorite) : list));
   if (sideList.children.length !== groups.length || [...sideList.children].some((c, i) => c !== groups[i])) sideList.replaceChildren(...groups);
 }
 
@@ -841,22 +832,34 @@ function openGuides(gameId, guideId = null) {
   render();
 }
 
-// ─────────────── tu perfil e insignias (en la misma página que las guías) ───────────────
-/** start: "profile" | "badges". */
-function openProfilePage(start = "profile") {
-  pushView("guides", { gameId: null, profilePage: { start } });
+// ─────────────── Homebrew: emuladores y juegos de consola, a página entera ───────────────
+let hbView = null;
+let hbRoot = null;
+/** Homebrew empieza un historial nuevo, como Inicio. */
+function openHomebrew() {
+  stopMedia();
+  state.prev = [];
+  state.tab = "library";
+  state.view = "homebrew";
+  state.gameId = null;
+  state.collection = null;
   render();
+  main.scrollTop = 0;
 }
 
-function renderProfilePage() {
-  const key = state.profilePage.start;
-  if (guideView && guideRoot?.isConnected && guideRoot.dataset.profile === key) return;
-  dropGuides();
-  guideRoot = h("div", { class: "guides-body profile-body", "data-profile": key });
-  main.replaceChildren(h("div", { class: "guides-page profile-page" }, guideRoot));
+function renderHomebrew() {
+  if (hbView && hbRoot?.isConnected) return;
+  dropHomebrew();
+  hbRoot = h("div", { class: "hb-page" });
+  main.replaceChildren(hbRoot);
   main.scrollTop = 0;
-  guideView = createProfilePages({ ejg, root: guideRoot, focus, start: key, onExit: () => back(), onChange: () => updateHints() });
-  updateHints();
+  hbView = createHomebrewView({ ejg, root: hbRoot, focus, layout: "steam", onExit: () => back(), onChange: () => updateHints(), onGame: (g) => openGame(g.id) });
+}
+
+function dropHomebrew() {
+  hbView?.destroy();
+  hbView = null;
+  hbRoot = null;
 }
 
 /** La página de guías: la del juego, con su arte difuminado detrás. */
@@ -1020,6 +1023,7 @@ lightbox.addEventListener("click", closeLightbox);
 // ─────────────── navegación ───────────────
 function stopMedia() {
   dropGuides();
+  dropHomebrew();
   heroRelease();
   heroRelease = () => {};
   trailer?.destroy();
@@ -1028,12 +1032,11 @@ function stopMedia() {
 
 /** Entra en una vista de la biblioteca recordando la actual para «Atrás». */
 function pushView(view, extra = {}) {
-  if (state.tab === "library") state.prev.push({ view: state.view, gameId: state.gameId, collection: state.collection, profilePage: state.profilePage, scroll: main.scrollTop });
+  if (state.tab === "library") state.prev.push({ view: state.view, gameId: state.gameId, collection: state.collection, scroll: main.scrollTop });
   if (state.prev.length > 30) state.prev.shift();
   stopMedia();
   state.tab = "library";
   state.view = view;
-  state.profilePage = null;
   Object.assign(state, extra);
 }
 
@@ -1056,7 +1059,6 @@ function goLibrary(view) {
   state.view = view;
   state.gameId = null;
   state.collection = null;
-  state.profilePage = null;
   render();
   main.scrollTop = 0;
   focus.first(main);
@@ -1065,22 +1067,19 @@ function goLibrary(view) {
 function back() {
   if (!lightbox.hidden) return closeLightbox(), true;
   if (closeMenu()) return true;
-  if (meMenu.contains(focus.current)) return focus.focus(meTab, { silent: true }), true;
   // En una guía: vuelve a la lista (o a la ficha, si se abrió desde ella).
   if (inGuides() && guideView.mode === "reader") return guideView.nav("back");
-  // En las insignias abiertas desde el perfil: vuelve al perfil.
-  if (inGuides() && state.profilePage && guideView.depth > 1) return guideView.nav("back");
   if (shop.back()) return true;
   if (state.tab !== "library") return false;
   const p = state.prev.pop();
   if (!p) {
-    if (state.view === "home") return false;
+    if (state.view === "home" || state.view === "homebrew") return false;
     goLibrary("home");
     return true;
   }
   const last = state.gameId;
   stopMedia();
-  Object.assign(state, { view: p.view, gameId: p.gameId, collection: p.collection, profilePage: p.profilePage || null });
+  Object.assign(state, { view: p.view, gameId: p.gameId, collection: p.collection });
   render();
   main.scrollTop = p.scroll || 0;
   const el = (last && (main.querySelector(`[data-game-id="${last}"]`) || sideList.querySelector(`[data-game-id="${last}"]`))) || null;
@@ -1092,9 +1091,19 @@ function back() {
 
 /** Pestañas de la barra superior, como en Steam. Descargas se abre desde la barra inferior. */
 function tabList() {
-  return [...(ejg.explore.enabled ? ["store"] : []), "library"];
+  return [...(ejg.explore.enabled ? ["store"] : []), "library", "homebrew"];
+}
+/** La pestaña encendida: Homebrew también en la ficha de un juego de consola o de un emulador. */
+function activeTab() {
+  if (state.tab === "downloads") return "library";
+  if (state.tab !== "library") return state.tab;
+  if (state.view === "homebrew") return "homebrew";
+  const g = state.view === "game" && ejg.library.byId(state.gameId);
+  return g && (isRom(g) || isSoftware(g)) ? "homebrew" : "library";
 }
 function goTab(t) {
+  if (t === "homebrew") return openHomebrew(), focus.first(main);
+  if (t === "library" && activeTab() === "homebrew") return goLibrary("home");
   stopMedia();
   closeMenu(true);
   state.tab = t;
@@ -1104,30 +1113,27 @@ function goTab(t) {
 }
 function switchTab(d) {
   const tabs = tabList();
-  const cur = tabs.indexOf(state.tab === "downloads" ? "library" : state.tab);
+  const cur = tabs.indexOf(activeTab());
   goTab(tabs[(cur + d + tabs.length) % tabs.length]);
 }
 
 const navBack = $("#nav-back");
 navBack.addEventListener("click", () => back());
 function updateHistory() {
-  const can = state.tab === "library" ? state.view !== "home" : state.tab === "store" && shop.canBack();
+  const can = state.tab === "library" ? state.view !== "home" && state.view !== "homebrew" : state.tab === "store" && shop.canBack();
   navBack.disabled = !can;
 }
 
 function renderTabs() {
-  // Las descargas son parte de la biblioteca (en Steam también). Tu perfil y
-  // tus insignias son de la pestaña con tu nombre.
-  const me = state.tab === "library" && state.view === "guides" && !!state.profilePage;
-  const on = me ? "me" : state.tab === "downloads" ? "library" : state.tab;
+  // Las descargas son parte de la biblioteca (en Steam también).
+  const on = activeTab();
   document.querySelectorAll(".tab[data-tab]").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === on)));
-  meTab.setAttribute("aria-selected", String(me));
 }
 
 function render() {
   renderTabs();
-  // Tu perfil y tus insignias van a página entera, sin la barra de la biblioteca.
-  document.documentElement.dataset.view = isShop() ? state.tab : state.view === "guides" && state.profilePage ? "profile" : "library";
+  // Homebrew (y la ficha de sus juegos) va a página entera, sin la barra de la biblioteca.
+  document.documentElement.dataset.view = isShop() ? state.tab : activeTab() === "homebrew" ? "homebrew" : "library";
   updateHints();
   updateDownloadsUi();
   if (isShop()) {
@@ -1136,7 +1142,8 @@ function render() {
   }
   renderSidebar();
   if (state.view === "game") renderGame(state.gameId);
-  else if (state.view === "guides") state.profilePage ? renderProfilePage() : renderGuides();
+  else if (state.view === "guides") renderGuides();
+  else if (state.view === "homebrew") renderHomebrew();
   else if (state.view === "collections") renderCollections();
   else if (state.view === "collection") renderCollection();
   else renderHome();
@@ -1154,6 +1161,7 @@ document.querySelectorAll(".tab[data-tab]").forEach((t) =>
   t.addEventListener("click", () => {
     // Otra vez en Biblioteca: vuelve a su inicio, como en Steam.
     if (t.dataset.tab === "library" && state.tab === "library") return goLibrary("home");
+    if (t.dataset.tab === "homebrew") return openHomebrew();
     // Tienda: siempre a su portada, vengas de donde vengas.
     if (t.dataset.tab === "store") shop.home();
     goTab(t.dataset.tab);
@@ -1218,7 +1226,6 @@ ejg.explore.onEnabled(() => {
 // El host pide una vista (menú rápido, Ctrl+E / Ctrl+J, avisos…).
 ejg.ui.onView(({ view, slug, gameId, guideId }) => {
   if (view === "guides" && gameId) return openGuides(gameId, guideId);
-  if (view === "profile" || view === "badges") return openProfilePage(view);
   if (view === "downloads") return goTab("downloads");
   if (!ejg.explore.enabled) return;
   goTab("store");
@@ -1235,60 +1242,37 @@ document.querySelector('[data-win="min"]').onclick = () => ejg.window.minimize()
 document.querySelector('[data-win="max"]').onclick = () => ejg.window.maximize();
 document.querySelector('[data-win="close"]').onclick = () => ejg.window.close();
 
-// ─────────────── tu perfil: el avatar de arriba y la pestaña con tu nombre ───────────────
-// Como en el cliente de Steam: tu foto abre el menú de tu perfil y, a la
-// derecha de Biblioteca, tu nombre lleva a tu perfil y al pasar por encima
-// enseña Perfil, Insignias y Editar perfil.
+// ─────────────── tu perfil: el avatar de arriba ───────────────
+// Como en el cliente de Steam: tu foto abre el menú de tu perfil (editarlo o cambiar de perfil).
 const acctBtn = $("#acct-btn");
-const meTab = $("#tab-me");
-const meWrap = $("#me-wrap");
-const meMenu = $("#me-menu");
 
 function me() {
+  const p = ejg.profile;
   const card = ejg.profiles.me;
-  return { card, name: card?.name || ejg.profile?.name || "" };
+  return { name: card?.name || p?.name || "", url: card?.avatarUrl || p?.avatar || "", color: p?.color || "" };
+}
+
+function avatarOf({ name, url, color }, cls) {
+  const el = h("span", { class: cls });
+  el.textContent = url ? "" : (name || "?")[0].toUpperCase();
+  el.style.backgroundImage = url ? `url("${url}")` : "";
+  el.style.backgroundColor = url ? "" : color;
+  return el;
 }
 
 function renderProfile() {
-  const p = ejg.profile;
-  const { card, name } = me();
-  const url = card?.avatarUrl || p?.avatar;
-  const av = $("#avatar");
-  av.textContent = url ? "" : (name || "?")[0].toUpperCase();
-  av.style.backgroundImage = url ? `url("${url}")` : "";
-  av.style.backgroundColor = url ? "" : p?.color || "";
-  $("#profile-name").textContent = name;
-  meTab.replaceChildren(name || "Perfil");
-  const item = (label, run) => h("button", { class: "tab-menu-item", "data-focus": "", onclick: run }, label);
-  meMenu.replaceChildren(item("Perfil", () => openProfilePage("profile")), item("Insignias", () => openProfilePage("badges")), item("Editar perfil", () => ejg.profiles.edit()));
-  renderTabs();
+  const m = me();
+  $("#avatar").replaceWith(Object.assign(avatarOf(m, "avatar"), { id: "avatar" }));
+  $("#profile-name").textContent = m.name;
 }
 
-meTab.addEventListener("click", () => openProfilePage("profile"));
-// Con ratón el submenú sale al pasar por encima (CSS); al elegir, se esconde.
-meMenu.addEventListener("click", () => meWrap.classList.add("is-done"));
-meWrap.addEventListener("mouseleave", () => meWrap.classList.remove("is-done"));
-
-/** El menú de tu foto: tú arriba (con tu nivel), tu perfil y cambiar de perfil. */
+/** El menú de tu foto: tú arriba, editar tu perfil y cambiar de perfil. */
 function openProfileMenu() {
-  const { card, name } = me();
-  const head = h(
-    "div",
-    { class: "acct-head" },
-    kitAvatar({ avatarUrl: card?.avatarUrl || ejg.profile?.avatar, frame: card?.frame || "", name }, { size: "l" }),
-    h("div", { class: "acct-who" }, h("b", { class: "acct-name" }, name), h("small", { class: "acct-lvl" }, "Nivel ", levelBadge(card?.level || 0))),
-  );
+  const m = me();
+  const head = h("div", { class: "acct-head" }, avatarOf(m, "acct-av"), h("div", { class: "acct-who" }, h("b", { class: "acct-name" }, m.name)));
   openMenu(
     acctBtn,
-    [
-      { node: head },
-      "-",
-      { label: "Ver mi perfil", run: () => openProfilePage("profile") },
-      { label: "Editar perfil", run: () => ejg.profiles.edit() },
-      { label: "Insignias", run: () => openProfilePage("badges") },
-      "-",
-      { label: "Cambiar de perfil…", run: () => ejg.ui.open("profiles") },
-    ],
+    [{ node: head }, "-", { label: "Editar perfil", run: () => ejg.profiles.edit() }, { label: "Cambiar de perfil…", run: () => ejg.ui.open("profiles") }],
     { cls: "acct-menu", first: true },
   );
 }
@@ -1378,7 +1362,9 @@ function updateHints() {
       ? [["accept", "Abrir"], ["y", "Buscar"], ["back", "Volver"], ["lb", "Pestañas"], ["menu", "Menú"]]
       : state.tab === "downloads"
         ? [["accept", "Elegir"], ["lb", "Pestañas"], ["menu", "Menú"]]
-        : state.view === "guides" && guideView
+        : state.view === "homebrew" && hbView
+          ? hbView.hints()
+          : state.view === "guides" && guideView
           ? guideView.hints()
           : state.view === "game"
           ? [["accept", "Elegir"], ["back", "Atrás"], ["y", "Favorito"], ["x", "Propiedades"]]

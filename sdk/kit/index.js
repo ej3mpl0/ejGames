@@ -13,7 +13,7 @@ export * from "./hints.js";
 export * from "./art.js";
 export * from "./store.js";
 export * from "./guides.js";
-export * from "./profile.js";
+export * from "./homebrew.js";
 export * from "./events.js";
 export * from "./updates.js";
 export * from "./hltb.js";

@@ -20,9 +20,8 @@ con rutas que empiezan por `/_sdk/…`; tus propios ficheros, con rutas relativa
   nodos que ya existían. `pintarUno(juego, anterior)` recibe el nodo anterior de
   ese juego (o nada) y devuelve el que toca. Con cientos de juegos va rápido y
   el foco no salta.
-- **`visible(juegos)`** quita los ocultos, los desaparecidos y los programas
-  (emuladores de Tienda → Software), que `library.all` sí incluye; `software(juegos)`
-  da los programas, para pintarlos en su apartado y **`sort(juegos, "title")`** ordena (`"title"`, `"recent"`,
+- **`visible(juegos)`** quita los ocultos, los desaparecidos, los emuladores y los juegos de
+  consola, que `library.all` sí incluye (esos van en [Homebrew](/referencia/homebrew)), y **`sort(juegos, "title")`** ordena (`"title"`, `"recent"`,
   `"playtime"`, `"added"`, `"release"` o `"rating"`).
 
 Sustituye `main.js` por esto:

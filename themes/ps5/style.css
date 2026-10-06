@@ -101,8 +101,6 @@ main { position: relative; z-index: 2; height: calc(100% - 76px); }
 .chip[aria-pressed="true"] { background: rgba(255, 255, 255, 0.9); color: #0b0d12; }
 .chip.is-focused { box-shadow: 0 0 0 3px #fff; }
 .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--tile) * 1.45), 1fr)); gap: 26px 22px; }
-.lib-sys { grid-column: 1 / -1; margin: 14px 0 -10px; font-size: 20px; font-weight: 500; opacity: 0.85; }
-.lib-sys:first-child { margin-top: 0; }
 .lcard { text-align: left; content-visibility: auto; contain-intrinsic-size: auto 220px; }
 .lcard .art { aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: #1b2130; position: relative; transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .lcard .art img { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; object-position: center 22%; }
@@ -177,23 +175,22 @@ main { position: relative; z-index: 2; height: calc(100% - 76px); }
 .gh-inner .g-section-title { font-size: 22px; font-weight: 400; background: rgba(28, 30, 38, 0.98); }
 .gh-inner .g-toc-box { border-radius: 18px 0 0 18px; }
 
-/* ─── tu perfil (kit profile, en la capa de ayuda) ─── */
-.gh-inner .s-view {
-  --s-fg: #fff;
-  --s-muted: rgba(255, 255, 255, 0.62);
-  --s-accent: #4aa3ff;
-  --s-bg: rgba(16, 18, 26, 0.98);
-  --s-surface: rgba(255, 255, 255, 0.07);
-  --s-surface-2: rgba(255, 255, 255, 0.14);
-  --s-line: rgba(255, 255, 255, 0.12);
-  --s-radius: 14px;
-  --s-focus: 0 0 0 3px #fff;
-  height: 100%;
-  max-width: 1280px;
-  overflow-y: auto;
-  scrollbar-width: none;
+/* ─── Homebrew (kit/homebrew.js): pestaña propia, con el fondo del tema ─── */
+#homebrew { height: 100%; overflow-y: auto; scrollbar-width: none; }
+#homebrew .hb-view {
+  --hb-fg: #fff;
+  --hb-muted: rgba(255, 255, 255, 0.64);
+  --hb-accent: #4aa3ff;
+  --hb-accent-fg: #fff;
+  --hb-surface: rgba(255, 255, 255, 0.08);
+  --hb-surface-2: rgba(255, 255, 255, 0.16);
+  --hb-line: rgba(255, 255, 255, 0.1);
+  --hb-focus: 0 0 0 3px #fff, 0 0 26px rgba(255, 255, 255, 0.28);
+  --hb-card: calc(var(--tile) * 1.45);
+  max-width: none;
+  padding: 20px var(--pad) 96px;
 }
-.gh-inner .s-view.s-profile { max-width: none; }
+:root[data-view="homebrew"] .scrim { background: linear-gradient(180deg, rgba(10, 14, 28, 0.72) 0%, rgba(10, 14, 28, 0.5) 40%, rgba(10, 14, 28, 0.8) 100%); }
 
 /* ─────────── evento de temporada: ejGames Scream (Halloween) ───────────
    El SDK pone el acento, el fondo y la niebla; aquí, el resto del tema:
@@ -259,7 +256,7 @@ main { position: relative; z-index: 2; height: calc(100% - 76px); }
 /* Ayuda del juego y perfil */
 :root[data-season="halloween"] .gh-layer { background: #110d1a; }
 :root[data-season="halloween"] .gh-inner .g-view { --g-accent: #ff9a4a; --g-bg: rgba(22, 16, 34, 0.98); --g-focus: 0 0 0 3px #fff, 0 0 22px rgba(255, 122, 26, 0.4); }
-:root[data-season="halloween"] .gh-inner .s-view { --s-accent: #ff9a4a; --s-bg: rgba(22, 16, 34, 0.98); --s-focus: 0 0 0 3px #fff, 0 0 22px rgba(255, 122, 26, 0.4); }
+:root[data-season="halloween"] #homebrew .hb-view { --hb-accent: #ff9a4a; --hb-focus: 0 0 0 3px #fff, 0 0 22px rgba(255, 122, 26, 0.4); }
 :root[data-season="halloween"] .gh-inner .g-readerview { background: rgba(32, 24, 46, 0.96); }
 :root[data-season="halloween"] .gh-inner .g-section-title { background: rgba(32, 24, 46, 0.98); }
 :root[data-season="halloween"] .hints .ejg-glyph { color: #ffd2ad; }

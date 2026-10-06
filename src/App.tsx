@@ -6,7 +6,6 @@ import { ThemeFrame } from "./host/ThemeFrame";
 import { playSound } from "./host/sounds";
 import { globalKey, reloadTheme, setBigPicture } from "./host/window";
 import { installDownload, locateInstall, mergeProgress, setDownloads } from "./host/downloads";
-import { refreshPage, setPage } from "./host/profile";
 import { padTypeOf, startGamepad } from "./input/gamepad";
 import { dispatchNav } from "./input/nav";
 import { playtime } from "./lib/format";
@@ -19,8 +18,6 @@ import { UninstallDialog } from "./overlays/Uninstall";
 import { checkOnLaunch } from "./host/update";
 import { GameEditor } from "./overlays/GameEditor";
 import { GuidesOverlay } from "./overlays/Guides";
-import { ProfileEditorOverlay } from "./overlays/ProfileEditor";
-import { ProfileOverlay } from "./overlays/Profile";
 import { MapOverlay } from "./overlays/Map";
 import { TrainerOverlay } from "./overlays/Trainer";
 import { Onboarding } from "./overlays/Onboarding";
@@ -99,7 +96,6 @@ export default function App() {
   async function enter(p: Profile) {
     set({ profile: p });
     await loadLibrary();
-    setPage(await api.profilePage().catch(() => null));
     set({ wishlist: await api.wishlist().catch(() => []) });
     useApp.getState().closeAll();
     setPhase("main");
@@ -140,8 +136,6 @@ export default function App() {
         if (!useApp.getState().profile) return;
         if (e.full) await loadLibrary();
         else if (e.ids?.length) useApp.getState().patchGames(await api.getGames(e.ids));
-        // Juegos nuevos o logros: el nivel y las insignias pueden cambiar.
-        refreshPage(3000);
       }),
       on("meta:progress", (m) => set({ meta: m })),
       on("scan:progress", (s) => set({ scan: s })),
@@ -174,8 +168,6 @@ export default function App() {
       on("game:state", async (e) => {
         set({ running: await api.runningGames() });
         window.dispatchEvent(new CustomEvent("ejg:game-state", { detail: e }));
-        // Partida guardada: horas, nivel e insignias al día.
-        if (e.state === "stopped") refreshPage(500);
         if (e.state === "stopped" && e.value && e.value >= 60) {
           const g = useApp.getState().games.find((x) => x.id === e.gameId);
           useApp.getState().toast("ok", `Sesión de ${playtime(e.value)}${g ? ` en ${g.title}` : ""} registrada`);
@@ -289,10 +281,6 @@ export default function App() {
             return <TrainerOverlay key={key} args={o.args} onClose={onClose} />;
           case "map":
             return <MapOverlay key={key} args={o.args} onClose={onClose} />;
-          case "profile":
-            return <ProfileOverlay key={key} args={o.args} onClose={onClose} />;
-          case "profile-editor":
-            return <ProfileEditorOverlay key={key} onClose={onClose} />;
           case "profiles":
             return (
               <ProfilePicker

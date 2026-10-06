@@ -404,19 +404,17 @@
       current: function () { return state.profile; },
       /** Selector de perfiles del host. */
       switch: function () { return call("ui.open", { name: "profiles" }); },
-      /** Tu perfil en corto (sin llamada): {id, name, avatarUrl, frame, background, backgroundImageUrl, color, level, xp, badges, featuredBadge}. */
+      /** Tu perfil en corto (sin llamada): {id, name, avatarUrl, color}. */
       get me() { return state.page; },
-      /** Cambió tu perfil: al guardar en el editor, al subir de nivel o al ganar una insignia. */
+      /** Cambió tu nombre o tu avatar. */
       onChange: function (fn) { return on("page", fn); },
-      /** Tu perfil entero: lo de `me` y además profile (resumen, vitrinas…), summary (juegos y estadísticas),
-       *  activity (partidas y logros) y presence (a qué juegas ahora). */
-      view: function () { return call("profiles.view"); },
-      /** Tu perfil en la ventana del host (o en el tema, si lo pinta). */
-      open: function () { return call("ui.open", { name: "profile" }); },
-      /** Página de insignias (nivel, experiencia y lo que falta para cada una). */
-      badges: function () { return call("ui.open", { name: "badges" }); },
-      /** Editor del perfil del host (avatar, marco, fondo, vitrinas…). */
+      /** Ajustes → Perfil del host (nombre, avatar, PIN…). */
       edit: function () { return call("ui.open", { name: "profile-editor" }); },
+    },
+    emulators: {
+      /** Los emuladores de la tienda (Tienda → Homebrew): {id, name, blurb, systems, platforms, installed, version,
+       *  latest, update, gameId}. `platforms` son los mismos ids que `game.platform`; gameId, su entrada en la biblioteca. */
+      list: function () { return call("emulators.list"); },
     },
     stats: {
       get: function (days) { return call("stats.get", { days: days }); },
@@ -432,7 +430,7 @@
     ui: {
       /** settings | game | profiles | search | add-folder | stats | theme | collections | menu | explore | downloads | software (emuladores)
        *  | homebrew ({system?: "switch"|"vita"|"3ds"}) | rom-import (importar ROMs)
-       *  | guides, trainer, map ({id: gameId}) | profile | badges | profile-editor */
+       *  | catalogs (catálogos de ROMs) | guides, trainer, map ({id: gameId}) | profile-editor (Ajustes → Perfil) */
       open: function (name, args) { return call("ui.open", { name: name, args: args || null }); },
       toast: function (message, kind) { return call("ui.toast", { message: message, kind: kind || "info" }); },
       /** El host pide abrir una vista del tema: fn({view: "explore"|"downloads"|"repack"|"guides", slug?, gameId?, guideId?}). */

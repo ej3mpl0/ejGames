@@ -1,112 +1,28 @@
 ---
 title: "Perfil"
-description: "ejg.profiles: el perfil del usuario al estilo Steam, con su nivel, sus insignias y sus vitrinas. Todo en su PC."
+description: "ejg.profiles: el perfil local activo (nombre, avatar y color), cambiar de perfil y editarlo."
 icon: "user"
 ---
 
-Cada perfil local tiene su **perfil** como el de Steam: avatar con marco, fondo animado o imagen, tema del perfil,
-resumen, vitrinas, nivel e insignias. Todo se guarda **en el PC** (no hay cuentas ni servidor): el nombre y el avatar
-son los del perfil local, y el nivel, las insignias y la actividad salen de su biblioteca, sus horas y sus logros.
-
-Si tu tema pinta su propio perfil, decláralo en `theme.json`:
-
-```json
-"features": { "explore": true, "guides": true, "profile": true }
-```
-
-y el host (el menú rápido, Ajustes → Perfil) te pedirá que lo abras:
+Cada perfil local tiene su nombre, su avatar (o su inicial sobre su color), su tema y sus horas. Todo se guarda **en el
+PC**: no hay cuentas ni servidor. Con eso pintas el avatar de tu tema y el menú de tu foto.
 
 ```js
-ejg.ui.onView(({ view }) => {
-  if (view === "profile") abrirPerfil();
-  if (view === "badges") abrirInsignias();
-});
-```
-
-Sin `features.profile`, el host tiene su propia ventana: `ejg.profiles.open()` y `ejg.profiles.badges()`. El editor
-es siempre el del host: `ejg.profiles.edit()`.
-
-## La forma rápida: la vista del kit
-
-`/_sdk/kit/profile.js` trae la página de perfil y la de insignias, con mando. Tú pones el sitio y el aspecto:
-
-```html
-<link rel="stylesheet" href="/_sdk/kit/profile.css" />
-```
-
-```js
-import { createProfilePages } from "/_sdk/kit/profile.js";
-
-const view = createProfilePages({
-  ejg,
-  root: document.getElementById("perfil"), // un contenedor visible, con altura
-  focus,                                   // tu createFocus()
-  start: "profile",                        // o "badges"
-  layout: "ps5",                           // el perfil de tu tema: steam | ps5 | xbox | switch | cinema | retro
-  onExit: cerrarPerfil,                    // «Atrás»
-  onChange: () => pistas.set(view.hints()),
-});
-
-// Antes que tu propia navegación:
-bindNav(focus, {
-  back: () => view.nav("back") || miAtras(),
-  lb: () => view.nav("lb"),  // pestañas (PS5, Xbox, Switch)
-  rb: () => view.nav("rb"),
-  y: () => view.nav("y"),    // editar el perfil
-});
-
-view.destroy(); // al salir
-```
-
-En `steam`, el nivel y «Insignias» abren la página de insignias y **Atrás** vuelve al perfil (`view.depth` dice
-cuántas pantallas hay abiertas). En los demás diseños, las insignias son su pestaña o su sección del perfil. La vista
-se repinta sola cuando el perfil cambia (al guardar en el editor, al subir de nivel…).
-
-La **página de perfil** tiene un diseño por plataforma (`layout`): `steam`, `ps5` (portada, avatar redondo y
-pestañas), `xbox` (tarjeta del gamertag y pivotes), `switch` (página de usuario con menú lateral), `cinema`
-(portada de película y filas) y `retro` (tarjeta PLAYER 1 con HI-SCORES, en inglés arcade). Los que no son Steam
-toman los colores de tu tema (`--s-fg`, `--s-muted`, `--s-bg`, `--s-surface`, `--s-surface-2`, `--s-line`,
-`--s-radius`, `--s-focus`, `--s-font`) y el del tema del perfil (`--s-pc`). En los que tienen pestañas, **LB/RB**
-las cambia.
-
-La de `steam` es la de Steam pieza a pieza (cabecera de 976 px, columnas de 652 y 268 px, vitrinas con su barra en
-degradado, actividad reciente, a qué juegas, insignias y juegos a la derecha) y se ve igual en todos los temas: sus
-colores son del **tema del perfil** que elige el usuario (`s-theme-summer`, `s-theme-midnight`, `s-theme-steel`,
-`s-theme-cosmic`, `s-theme-dark`…, los de Steam). Solo toma de tu tema `--s-focus` para el foco. Se adapta sola a
-contenedores estrechos (una columna por debajo de 820 px).
-
-<Tip>
-Si prefieres montarlo por piezas, el kit también trae `createProfileView` (con `tab`), `createBadgesView`,
-`avatar(perfil)` (con su marco), `levelBadge(nivel)`, `badgeEl(insignia)`, `activityText(entrada)` y las listas
-`FRAMES`, `BACKGROUNDS`, `COLORS`, `BADGES` y `SHOWCASES`.
-</Tip>
-
-## La API
-
-```js
-ejg.profiles.me;
-// { id, name, avatarUrl, frame, background, backgroundImageUrl, color, level, xp, badges, featuredBadge }
-ejg.profiles.onChange((me) => …);      // al guardar en el editor, al subir de nivel o al ganar una insignia
-await ejg.profiles.view();             // el perfil entero (abajo)
-ejg.profiles.open();                   // en la ventana del host (o en tu tema, con features.profile)
-ejg.profiles.badges();                 // la página de insignias
-ejg.profiles.edit();                   // el editor del perfil (del host)
 ejg.profiles.current();                // el perfil local: { id, name, avatar, color, themeId }
-ejg.profiles.switch();                 // el selector de perfiles
+ejg.profiles.me;                       // lo mismo en corto, sin llamada: { id, name, avatarUrl, color }
+ejg.profiles.onChange((me) => …);      // cambió el nombre o el avatar
+ejg.profiles.switch();                 // el selector de perfiles del host
+ejg.profiles.edit();                   // Ajustes → Perfil (nombre, avatar, PIN…)
 ```
 
-`view()` devuelve lo de `me` y además:
+Al cambiar el perfil también llega el evento `profile`:
 
-- `profile`: `name`, `avatarUrl`, `realName`, `country`, `bio`, `backgroundImageUrl`, `frame`, `background`,
-  `color`, `showcases` y `featuredBadge`.
-- `summary.games`: los juegos jugados (un minuto o más, o con logros) con `title`, `minutes`, `last`, `ach`
-  (`[conseguidos, total]`), `coverUrl` y `headerUrl`; `summary.stats`: `minutes`, `achievements`, `perfect`,
-  `library`, `played`, `recent` (minutos de las dos últimas semanas) y `shots`.
-- `activity`: lo último, con `kind` `played` (`data.minutes`), `achievement` (`data.name`, `data.rarity`,
-  `data.iconUrl`) o `completed`. `activityText(entrada)` la pone en palabras. Las partidas de menos de 5 minutos no
-  salen.
-- `presence`: `{ game, since }` mientras juega; si no, `null`.
-- `memberSince`: cuándo se creó el perfil local (de ahí sale la insignia Veterano).
+```js
+ejg.on("profile", (p) => pintarAvatar(p));
+```
 
-Las imágenes (`avatarUrl`, `backgroundImageUrl`, las capturas de la vitrina) son del almacén de medios del PC
-(`ejg-media`).
+<Note>
+Hasta la 1.3 había una página de perfil al estilo Steam (marcos, vitrinas, nivel e insignias). Desde la 1.4.0 ya no
+existe: `ejg.profiles.view()`, `open()` y `badges()` se quitaron, `/_sdk/kit/profile.js` también, y
+`features.profile` en `theme.json` ya no hace nada.
+</Note>

@@ -1,0 +1,87 @@
+---
+title: "Homebrew"
+description: "Los emuladores y los juegos de consola, en su propia vista: createHomebrewView del kit y ejg.emulators.list()."
+icon: "gamepad"
+---
+
+Los emuladores instalados (juegos con `source: "emulator"`) y los juegos de consola (los que tienen `platform`: ROMs
+propias, homebrew y lo bajado de los catálogos) no son de la biblioteca de PC: van en **Homebrew**, una vista aparte
+junto a la biblioteca. Desde la 1.4.0, `visible()` del kit ya los deja fuera:
+
+```js
+import { visible, roms, software, romsBySystem } from "/_sdk/kit/library.js";
+
+visible(ejg.library.all);                  // solo los juegos de PC
+visible(ejg.library.all, { roms: true });  // también los de consola
+roms(ejg.library.all);                     // los de consola, por nombre
+romsBySystem(ejg.library.all);             // [{ id, name, games }] por sistema
+software(ejg.library.all);                 // los emuladores
+```
+
+## La forma rápida: la vista del kit
+
+`/_sdk/kit/homebrew.js` trae la vista entera, con mando: una cabecera con cifras y accesos (tienda de emuladores,
+catálogos de ROMs, tienda de homebrew e Importar ROMs), los emuladores (instalados, configurados a mano y los que
+faltan para los sistemas que tienen juegos) y los juegos de consola por sistema, con «Seguir jugando». Se repinta sola
+cuando cambia la biblioteca o empieza una partida.
+
+```html
+<link rel="stylesheet" href="/_sdk/kit/homebrew.css" />
+```
+
+```js
+import { createHomebrewView } from "/_sdk/kit/homebrew.js";
+
+const hb = createHomebrewView({
+  ejg,
+  root: document.getElementById("homebrew"), // un contenedor visible (el scroll es suyo o de un padre)
+  focus,                                     // tu createFocus()
+  layout: "xbox",                            // steam | ps5 | xbox | switch | cinema | retro
+  onExit: volverAInicio,                     // «Atrás»
+  onChange: () => pistas.set(hb.hints()),
+  onGame: (g) => abrirFicha(g.id),           // sin él, A juega directamente
+});
+
+// Antes que tu propia navegación:
+bindNav(focus, {
+  back: () => hb.nav("back") || miAtras(),
+  lb: () => hb.nav("lb"),   // sistema anterior / siguiente
+  rb: () => hb.nav("rb"),
+  y: () => hb.nav("y"),     // la tienda de emuladores
+});
+
+hb.destroy(); // al salir
+```
+
+Las tarjetas de juego llevan `data-game-id`, así que tus atajos de siempre (favorito, propiedades…) siguen
+funcionando sobre ellas.
+
+### El aspecto
+
+La maqueta (`layout`) cambia las formas: carátulas cuadradas en `ps5`, `xbox` y `switch`, pósteres en `steam` y
+`cinema`, bordes de píxel y foco en negativo en `retro`. Los colores son los de tu tema, con estas variables en
+`.hb-view`:
+
+| Variable | Para qué |
+| --- | --- |
+| `--hb-fg`, `--hb-muted` | texto y texto secundario |
+| `--hb-accent`, `--hb-accent-fg` | acento (chip elegido, botones) y el texto encima |
+| `--hb-surface`, `--hb-surface-2`, `--hb-line` | tarjetas, tarjetas enfocadas y bordes |
+| `--hb-radius`, `--hb-focus` | esquinas y anillo de foco (`box-shadow`) |
+| `--hb-hero` | fondo de la cabecera |
+| `--hb-font`, `--hb-title-font` | fuentes del texto y de los títulos |
+| `--hb-cover`, `--hb-card` | proporción de las carátulas y ancho mínimo de cada juego |
+| `--hb-warn`, `--hb-ok` | avisos (falta emulador) y actualizaciones / en juego |
+
+## Los emuladores de la tienda
+
+```js
+const list = await ejg.emulators.list();
+// [{ id, name, blurb, systems, platforms, installed, version, latest, update, gameId }]
+```
+
+`platforms` son los mismos ids que `game.platform` (`switch`, `ps2`, `psx`…) y `systems` sus nombres; `gameId` es su
+entrada en la biblioteca (para `ejg.game.launch`) si está instalado, y `update` dice si hay una versión nueva. La
+primera llamada de la sesión pregunta las versiones a sus webs. Para instalarlos o actualizarlos, la tienda del host:
+`ejg.ui.open("software")`. Los demás accesos: `"catalogs"` (catálogos de ROMs), `"homebrew"` (tienda de homebrew) y
+`"rom-import"` (Importar ROMs).

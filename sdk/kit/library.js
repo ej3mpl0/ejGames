@@ -44,14 +44,16 @@ export function search(games, query, limit = 50) {
 }
 
 /**
- * Juegos visibles: sin ocultos ni desaparecidos (salvo que se pida).
+ * Juegos visibles: sin ocultos ni desaparecidos (salvo que se pida). Los emuladores
+ * (`software`) y los juegos de consola (`roms`) no salen: van en Homebrew.
  * installed: "all" (defecto) | "installed" | "uninstalled". Desde la 0.5.0
  * todos los juegos de la biblioteca están instalados; se mantiene por compatibilidad.
  */
-export function visible(games, { hidden = false, missing = false, installed = "all", software: sw = false } = {}) {
+export function visible(games, { hidden = false, missing = false, installed = "all", software: sw = false, roms: rm = false } = {}) {
   return games.filter(
     (g) =>
       (sw || !isSoftware(g)) &&
+      (rm || !isRom(g)) &&
       (hidden || !g.hidden) &&
       (missing || !g.missing) &&
       (installed === "all" || (installed === "installed" ? g.installed !== false : g.installed === false)),
@@ -60,7 +62,7 @@ export function visible(games, { hidden = false, missing = false, installed = "a
 
 export const isInstalled = (g) => g.installed !== false;
 
-/** Programas de la biblioteca (emuladores instalados desde Tienda → Homebrew): no son juegos y van en su apartado. */
+/** Programas de la biblioteca (emuladores instalados desde Tienda → Homebrew): no son juegos y van en Homebrew. */
 export const isSoftware = (g) => g.source === "emulator";
 /** Los programas de la biblioteca, por nombre. */
 export const software = (games) => games.filter((g) => isSoftware(g) && !g.missing).sort((a, b) => a.title.localeCompare(b.title));
@@ -75,10 +77,10 @@ export const SYSTEMS = {
 };
 export const systemName = (id) => SYSTEMS[id] || id || "";
 
-/** Juegos de consola (ROMs propias y homebrew): se juegan con un emulador. */
+/** Juegos de consola (ROMs propias y homebrew): se juegan con un emulador y van en Homebrew. */
 export const isRom = (g) => !!g.platform && !isSoftware(g);
 /** Los juegos de consola visibles, por nombre. */
-export const roms = (games) => visible(games).filter(isRom).sort((a, b) => (a.sortTitle < b.sortTitle ? -1 : a.sortTitle > b.sortTitle ? 1 : 0));
+export const roms = (games) => visible(games, { roms: true }).filter(isRom).sort((a, b) => (a.sortTitle < b.sortTitle ? -1 : a.sortTitle > b.sortTitle ? 1 : 0));
 /** Los juegos de consola agrupados por sistema: [{ id, name, games }], por nombre del sistema. */
 export function romsBySystem(games) {
   const by = new Map();

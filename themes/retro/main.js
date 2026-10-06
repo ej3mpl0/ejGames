@@ -7,14 +7,14 @@ import { repackUpdateNote } from "/_sdk/kit/updates.js";
 import { howLongNote } from "/_sdk/kit/hltb.js";
 import { createFocus, bindNav } from "/_sdk/kit/focus.js";
 import { playtime, relative, year, description } from "/_sdk/kit/format.js";
-import { visible, sort, software, romsBySystem, systemName } from "/_sdk/kit/library.js";
+import { visible, sort, isRom, isSoftware } from "/_sdk/kit/library.js";
 import { emulatorNote } from "/_sdk/kit/emulator.js";
 import { clock } from "/_sdk/kit/clock.js";
 import { hints } from "/_sdk/kit/hints.js";
 import { SIZES, drawCover, quantize, tones } from "./pixel.js";
 import { createStore } from "./store.js";
 import { createGuideView } from "/_sdk/kit/guides.js";
-import { createProfilePages } from "/_sdk/kit/profile.js";
+import { createHomebrewView } from "/_sdk/kit/homebrew.js";
 import { seasonOf } from "/_sdk/kit/events.js";
 
 const ejg = await window.ejg.ready();
@@ -26,23 +26,19 @@ const FILTERS = [
   ["played", "PLAYED"],
   ["new", "NEW"],
   ["fav", "FAV ★"],
-  ["roms", "ROMS"], // solo aparece si hay juegos de consola
-  ["software", "SOFTWARE"], // solo aparece si hay programas (emuladores)
   ["hidden", "HIDDEN"], // solo aparece si hay juegos ocultos
 ];
 const HID = FILTERS.length - 1;
-const TITLES = { library: "SELECT GAME", shop: "GAME SHOP", downloads: "DOWNLOADS" };
-// view: library (pestañas de filtro) | shop | downloads
+const TITLES = { library: "SELECT GAME", homebrew: "HOMEBREW", shop: "GAME SHOP", downloads: "DOWNLOADS" };
+// view: library (pestañas de filtro) | homebrew | shop | downloads
 const state = { filter: 0, selected: null, view: "library" };
 clock($("#clock"));
 
-const hiddenGames = () => ejg.library.all.filter((g) => g.hidden);
+// Los emuladores y los juegos de consola están en HOMEBREW.
+const hiddenGames = () => ejg.library.all.filter((g) => g.hidden && !isRom(g) && !isSoftware(g));
 const games = () => {
   const f = FILTERS[state.filter][0];
   // HIDDEN: solo los ocultos (para encontrarlos y volver a mostrarlos)
-  if (f === "software") return software(ejg.library.all);
-  // ROMS: por sistema (en la lista, un rótulo por sistema).
-  if (f === "roms") return romsBySystem(ejg.library.all).flatMap((s) => s.games);
   let l = sort(f === "hidden" ? hiddenGames() : visible(ejg.library.all), "title");
   if (f === "fav") l = l.filter((g) => g.favorite);
   if (f === "played") l = l.filter((g) => g.playtime > 0 || g.lastPlayed);
@@ -50,12 +46,9 @@ const games = () => {
   return l;
 };
 
-// ─────────────── pestañas: filtros (+ HIDDEN) + SHOP + DOWNLOADS + OPTIONS ───────────────
-const SW = FILTERS.findIndex((f) => f[0] === "software");
-const RO = FILTERS.findIndex((f) => f[0] === "roms");
-const filterTabs = () =>
-  FILTERS.map((_, i) => i).filter((i) => (i !== HID || hiddenGames().length) && (i !== SW || software(ejg.library.all).length) && (i !== RO || romsBySystem(ejg.library.all).length));
-const tabList = () => [...filterTabs(), ...(ejg.explore.enabled ? ["shop"] : []), "downloads", "options"];
+// ─────────────── pestañas: filtros (+ HIDDEN) + HOMEBREW + SHOP + DOWNLOADS + OPTIONS ───────────────
+const filterTabs = () => FILTERS.map((_, i) => i).filter((i) => i !== HID || hiddenGames().length);
+const tabList = () => [...filterTabs(), "homebrew", ...(ejg.explore.enabled ? ["shop"] : []), "downloads", "options"];
 const curTab = () => (state.view === "library" ? state.filter : state.view);
 const pending = () => ejg.downloads.all.filter((d) => ["queued", "downloading", "paused", "seeding", "completed", "installing", "error"].includes(d.state)).length;
 
@@ -68,6 +61,7 @@ function renderTabs() {
     ...[
       ...filterTabs().map((i) => tab(i, i === HID ? `HIDDEN (${nh})` : FILTERS[i][1])),
       h("span", { class: "tab-sep" }),
+      tab("homebrew", "HOMEBREW"),
       ejg.explore.enabled ? tab("shop", "SHOP") : null,
       tab("downloads", "DOWNLOADS", h("span", { class: "tab-n", id: "tab-n", hidden: !n }, String(n))),
       tab("options", "OPTIONS"),
@@ -90,7 +84,9 @@ function goTab(t) {
   } else state.view = t;
   document.documentElement.dataset.view = state.view;
   $("#lib").hidden = state.view !== "library";
-  $("#view").hidden = state.view === "library";
+  $("#view").hidden = state.view === "library" || state.view === "homebrew";
+  $("#homebrew").hidden = state.view !== "homebrew";
+  if (state.view !== "homebrew") dropHomebrew();
   $("#title").textContent = TITLES[state.view];
   renderTabs();
   updateStatus();
@@ -101,8 +97,21 @@ function goTab(t) {
     const g = ejg.library.byId(state.selected);
     if (g) showCard(g);
     else updateHints();
+  } else if (state.view === "homebrew") {
+    // A: START, como en la lista; X: INFO.
+    hbView ||= createHomebrewView({ ejg, root: $("#homebrew"), focus, layout: "retro", onExit: () => goTab(0), onChange: () => updateHints(), onGame: (g) => start(g.id) });
+    updateHints();
   } else shop.render();
 }
+
+// ─────────────── HOMEBREW: emuladores y juegos de consola (kit/homebrew.js) ───────────────
+let hbView = null;
+function dropHomebrew() {
+  hbView?.destroy();
+  hbView = null;
+}
+const hv = (a) => !!(state.view === "homebrew" && detail.hidden && hbView && hbView.nav(a));
+const HB_HINTS = { Abrir: "START", Sistema: "SYSTEM", Emuladores: "EMULATORS", "Atrás": "BACK" };
 function switchTab(d) {
   const tabs = tabList().filter((t) => t !== "options"); // LB/RB no abren los ajustes
   goTab(tabs[(tabs.indexOf(curTab()) + d + tabs.length) % tabs.length]);
@@ -111,10 +120,8 @@ function switchTab(d) {
 function renderList() {
   const l = games();
   const cur = focus.current?.dataset.gameId;
-  const byRom = FILTERS[state.filter][0] === "roms";
   list.replaceChildren(
-    ...l.flatMap((g, i) => [
-      byRom && g.platform !== l[i - 1]?.platform ? h("li", { class: "sys" }, systemName(g.platform).toUpperCase()) : null,
+    ...l.flatMap((g) => [
       h(
         "li",
         null,
@@ -263,8 +270,9 @@ function closeDetail(quiet) {
   detail.hidden = true;
   detail.replaceChildren();
   if (quiet === true) return;
-  // si ya no está en la lista (p. ej. se mostró desde HIDDEN), al primero
-  const el = list.querySelector(`[data-game-id="${state.selected}"]`) || list.querySelector(".item");
+  // si ya no está en la lista (p. ej. se mostró desde HIDDEN), al primero; en HOMEBREW, a su tarjeta
+  const box = state.view === "homebrew" ? $("#homebrew") : list;
+  const el = box.querySelector(`[data-game-id="${state.selected}"]`) || box.querySelector(".item, [data-focus]");
   if (el) focus.focus(el, { silent: !!el.dataset.gameId && +el.dataset.gameId === state.selected });
 }
 
@@ -273,19 +281,6 @@ let guideView = null;
 const guidesEl = $("#guides");
 // Las pistas de la vista del kit, en el inglés arcade del tema (la fuente no trae «Ó», «Á»…).
 const GUIDE_HINTS = { Leer: "READ", "Sección": "SECTION", Guardar: "SAVE", "Quitar de guardadas": "UNSAVE", Steam: "STEAM", Volver: "BACK", "Atrás": "BACK", Cerrar: "CLOSE", Ir: "GO", Buscar: "SEARCH" };
-// ─────────────── tu perfil e insignias (en la pantalla de las guías) ───────────────
-/** start: "profile" | "badges". */
-function openProfile(start = "profile") {
-  if (!detail.hidden) closeDetail(true);
-  guideView?.destroy();
-  guidesEl.hidden = false;
-  guideView = createProfilePages({ ejg, root: guidesEl, focus, start, layout: "retro", onExit: closeGuides, onChange: () => updateHints() });
-  updateHints();
-  ejg.sound.play("open");
-}
-
-$("#profile-btn").addEventListener("click", () => openProfile("profile"));
-
 function openGuides(gameId, guideId = null) {
   const g = ejg.library.byId(gameId);
   if (!g) return;
@@ -355,6 +350,7 @@ bindNav(focus, {
     if (gv("back")) return true;
     if (!detail.hidden) return closeDetail(), true;
     if (inLib()) return false;
+    if (state.view === "homebrew") return goTab(0), true;
     if (shop.back()) return true;
     goTab(0); // a la pantalla principal
     return true;
@@ -366,21 +362,26 @@ bindNav(focus, {
   right: () => (guideView ? false : inLib() ? (detail.hidden && list.contains(focus.current) ? (jump(10), true) : false) : shop.nav("right")),
   x: () => {
     if (gv("x")) return true;
+    if (state.view === "homebrew") {
+      const id = Number(focus.current?.dataset.gameId);
+      if (id && detail.hidden) openDetail(id);
+      return true;
+    }
     if (!inLib()) return shop.key("x");
     const id = Number(focus.current?.dataset.gameId);
     if (id && detail.hidden) openDetail(id);
     return true;
   },
   y: () => {
-    if (gv("y")) return true;
+    if (gv("y") || hv("y")) return true;
     if (!inLib()) return shop.key("y");
     const id = Number(focus.current?.dataset.gameId) || state.selected;
     if (id) ejg.game.favorite(id);
     return true;
   },
   rt: () => gv("rt") || (!inLib() && shop.key("rt")),
-  lb: () => gv("lb") || guideView || (shop.hasDialog() || switchTab(-1), true),
-  rb: () => gv("rb") || guideView || (shop.hasDialog() || switchTab(1), true),
+  lb: () => gv("lb") || guideView || hv("lb") || (shop.hasDialog() || switchTab(-1), true),
+  rb: () => gv("rb") || guideView || hv("rb") || (shop.hasDialog() || switchTab(1), true),
   menu: () => (ejg.ui.open("menu"), true),
   view: () => gv("view") || (ejg.ui.open("search"), true),
 });
@@ -431,7 +432,6 @@ function updateStatus() {
 }
 ejg.ui.onView(({ view, slug, gameId, guideId }) => {
   if (view === "guides" && gameId) return openGuides(gameId, guideId);
-  if (view === "profile" || view === "badges") return openProfile(view);
   closeGuides();
   if (view === "downloads") return goTab("downloads");
   if (!ejg.explore.enabled) return;
@@ -495,6 +495,10 @@ ejg.season.onChange(seasonBg);
 
 function updateHints(g) {
   if (guideView) return hintBar.set(guideView.hints().map(([a, l]) => [a, GUIDE_HINTS[l] || l.toUpperCase()]));
+  if (state.view === "homebrew" && hbView) {
+    const [first, ...rest] = hbView.hints().map(([a, l]) => [a, HB_HINTS[l] || l.toUpperCase()]);
+    return hintBar.set([first, ["x", "INFO"], ...rest]);
+  }
   if (!inLib()) return;
   hintBar.set([
     ["accept", "START"],

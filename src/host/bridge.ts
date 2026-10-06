@@ -1,7 +1,6 @@
 // Llamadas de los temas → host. Solo lo que aparece aquí es accesible para un
 // tema; cada parámetro se valida antes de tocar el núcleo.
 
-import { openProfile } from "./profile";
 import { api } from "../api/tauri";
 import { useApp, activeTheme, type OverlayName } from "../store/app";
 import { installDownload, locateInstall, openExplore, openKeyboard, pickFolder } from "./downloads";
@@ -15,7 +14,7 @@ const num = (v: unknown): number => {
   return n;
 };
 
-const UI_NAMES: Record<string, OverlayName | "badges"> = {
+const UI_NAMES: Record<string, OverlayName> = {
   settings: "settings",
   game: "game",
   profiles: "profiles",
@@ -35,9 +34,8 @@ const UI_NAMES: Record<string, OverlayName | "badges"> = {
   guides: "guides",
   trainer: "trainer",
   map: "map",
-  profile: "profile",
-  badges: "badges",
-  "profile-editor": "profile-editor",
+  // Editar tu perfil (nombre y avatar): Ajustes → Perfil.
+  "profile-editor": "settings",
 };
 
 const GUIDE_SORTS = ["toprated", "trend", "mostrecent"];
@@ -150,7 +148,7 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
       if (name === "add-folder") st.open("settings", { tab: "library", addFolder: true });
       else if (name === "guides") st.open("guides", { id: libGame(args?.id), guide: args?.guide == null ? null : validGuideId(args.guide) });
       else if (name === "trainer" || name === "map") st.open(name, { id: libGame(args?.id) });
-      else if (name === "profile" || name === "badges" || name === "profile-editor") openProfile(name, true);
+      else if (params?.name === "profile-editor") st.open("settings", { tab: "profile" });
       else if (name === "theme") st.open("settings", { tab: "appearance" });
       else if (name === "explore" || name === "downloads") st.open(name, { view: name, ...(args ?? {}) });
       else st.open(name, args);
@@ -246,8 +244,22 @@ export async function handleThemeCall(method: string, params: any): Promise<unkn
         anticheat: t.anticheat ?? null,
       };
     }
-    case "profiles.view":
-      return api.profilePage();
+    case "emulators.list": {
+      // Lo de la tienda de emuladores, sin rutas del disco; gameId: su entrada en la biblioteca.
+      const lib = st.games.filter((g) => g.source === "emulator");
+      return (await api.emulatorStore(false)).map((e) => ({
+        id: e.id,
+        name: e.name,
+        blurb: e.blurb,
+        systems: e.systems,
+        platforms: e.platforms,
+        installed: !!e.installed,
+        version: e.installed?.version ?? null,
+        latest: e.latest ?? null,
+        update: e.update,
+        gameId: lib.find((g) => g.title === e.name)?.id ?? null,
+      }));
+    }
     case "maps.info": {
       const m = await api.mapsFor(libGame(params?.gameId));
       return { game: m.game ? { name: m.game.name, maps: m.game.maps.map((x) => x.name) } : null, none: m.none };

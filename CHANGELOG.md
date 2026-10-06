@@ -5,6 +5,19 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.4.0
+
+- **Homebrew**, pestaña nueva junto a Biblioteca en los seis temas (en Switch, su botón redondo; en Retro, HOMEBREW):
+  tus emuladores (con su versión, los sistemas que abren, cuántos juegos usan y si hay una versión nueva), un aviso si a
+  un sistema le falta emulador, tus juegos de consola por sistema con «Seguir jugando», y accesos a la tienda de
+  emuladores, los catálogos de ROMs, la tienda de homebrew e Importar ROMs. Cada tema la pinta a su estilo.
+- La **Biblioteca** ya solo tiene tus juegos de PC: los emuladores y los juegos de consola están en Homebrew.
+- Fuera el **perfil al estilo Steam** (página de perfil, insignias, nivel, marcos, fondos y vitrinas) y su editor. El
+  nombre y el avatar se siguen cambiando en **Ajustes → Perfil**.
+- Para temas: `createHomebrewView` en el kit (`/_sdk/kit/homebrew.js`) y `ejg.emulators.list()`; `visible()` deja fuera
+  también los juegos de consola. Se quitan `/_sdk/kit/profile.js`, `ejg.profiles.view()`, `open()` y `badges()`, y
+  `ejg.profiles.me` trae solo el nombre, el avatar y el color.
+
 ## 1.3.5
 
 - **Catálogos**: una sola fuente de serie, con Switch, PlayStation (de PS1 a PS5) y Xbox 360, que **descarga directamente**

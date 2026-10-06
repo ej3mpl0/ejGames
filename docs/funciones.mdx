@@ -62,22 +62,6 @@ También de los juegos que solo tienen el `.exe`:
   `achievements.json`. El appid sale de `steam_appid.txt` o de la configuración del emulador.
 - Los nombres en español, los iconos y la rareza vienen de Steam, sin cuenta ni clave.
 
-## Tu perfil
-
-Cada perfil local tiene su **perfil**, con el estilo de cada tema: el de Steam en Steam, y el suyo en PS5, Xbox,
-Switch, Cine y Retro. Lleva avatar con **marco**, **fondo animado** o imagen propia, los **temas de perfil** de Steam
-(Verano, Medianoche, Acero, Cósmico, Modo oscuro…), resumen, **vitrinas** (juego destacado, favorito, estadísticas,
-jugados hace poco, logros, insignias, capturas e información personalizada), actividad reciente y **nivel** e
-**insignias** que se ganan jugando (con su página, como en Steam). Se edita en «Editar perfil», igual que en Steam.
-
-Todo se guarda **en tu PC**, sin cuenta ni servidor: el nombre y el avatar son los de tu perfil local, y el nivel, las
-insignias y la actividad salen de tu biblioteca, tus horas y tus logros. El historial de partidas y logros se queda
-aunque desinstales un juego.
-
-Está siempre a mano: en el tema Steam, tu nombre junto a **Biblioteca** (al pasar por encima: Perfil, Insignias,
-Editar perfil) y el menú de **tu foto**; en los demás, su botón de Perfil; en todos, «Mi perfil» en el menú rápido y
-**Ajustes → Perfil**.
-
 ## Guías, trucos y mapas
 
 - **Guías de la comunidad de Steam** de cada juego, en la ficha y en el overlay: con buscador, categorías, lector
@@ -149,7 +133,19 @@ Select + Start durante 1 s) abre el panel del overlay. Para escribir con el mand
 «Jugando a *juego*» con su portada y «Jugando desde ejGames». Viene activado de serie y se desactiva en
 **Ajustes → Sistema** (o solo en un perfil o en un juego).
 
-## Juegos de consola
+## Homebrew: emuladores y juegos de consola
+
+Los emuladores y los juegos de consola no se mezclan con tu biblioteca de PC: tienen su propia pestaña, **Homebrew**,
+junto a **Biblioteca** (en Switch, su botón redondo; en Retro, la pestaña HOMEBREW). Cada tema la pinta a su estilo y
+reúne:
+
+- **Tus emuladores**: los instalados desde ejGames (con su versión, los sistemas que abren, cuántos juegos usan y si hay
+  una versión nueva) y los que configuraste a mano. Con un clic se abren, para poner sus claves, firmware o BIOS. Si un
+  sistema tiene juegos y ningún emulador, sale un aviso con el botón para instalarlo.
+- **Tus juegos de consola**, por sistema y con «Seguir jugando», con su portada, su versión y si les falta emulador.
+  Con mando, **LB/RB** cambia de sistema e **Y** abre los emuladores.
+- Accesos a la **tienda de emuladores**, a los **catálogos de ROMs**, a la **tienda de homebrew** (Switch, Vita y 3DS)
+  y a **Importar ROMs**.
 
 **Ajustes → Biblioteca → Consolas** añade carpetas de ROMs por sistema (NES, SNES, Game Boy, GBA, DS, N64, GameCube, Wii,
 Wii U, Switch, 3DS, Master System, Mega Drive, Saturn, Dreamcast, PlayStation 1, 2, 3, PSP, PS Vita, arcade…). Cada sistema se juega con
@@ -157,28 +153,27 @@ Wii U, Switch, 3DS, Master System, Mega Drive, Saturn, Dreamcast, PlayStation 1,
 el programa que elijas. ejGames lanza el emulador con la ROM, cuenta las horas y saca el overlay y Discord. Los datos
 y las portadas salen de IGDB y SteamGridDB (con sus claves de **Ajustes → Info y arte**).
 
-**Tienda → Software** instala los emuladores con un clic: RetroArch, PCSX2, DuckStation, PPSSPP, Cemu, RPCS3, Eden
+La tienda de emuladores (**Homebrew → Emuladores**, o **Tienda → Homebrew**) los instala con un clic: RetroArch, PCSX2, DuckStation, PPSSPP, Cemu, RPCS3, Eden
 (Nintendo Switch), Azahar (3DS) y Vita3K (PS Vita). Se bajan de su fuente oficial (GitHub, el servidor de Eden o el de libretro), con su huella comprobada
 cuando la publican, a `emulators` en la carpeta de datos, y quedan puestos como emulador de sus sistemas. Desde ahí se
 actualizan y se quitan, y se instala el núcleo de RetroArch de cada sistema. Dolphin se baja de su web. ejGames no
 incluye juegos, BIOS, claves ni firmware: tienen que salir de tus propias consolas.
 
-Los emuladores instalados salen en la biblioteca, en su apartado **Software** (aparte de los juegos), para abrirlos
-desde ejGames y poner sus claves, firmware o BIOS. Los juegos de consola se añaden con una carpeta (ejGames reconoce
-el sistema por las extensiones) o uno a uno con **Ajustes → Biblioteca → Añadir un juego a mano** (un `.nsp`, un
+Los emuladores instalados salen en **Homebrew**, para abrirlos desde ejGames y poner sus claves, firmware o BIOS. Los
+juegos de consola se añaden con una carpeta (ejGames reconoce el sistema por las extensiones) o uno a uno con **Ajustes → Biblioteca → Añadir un juego a mano** (un `.nsp`, un
 `.iso`…; si la extensión vale para varias consolas, pregunta cuál). Al darle a **Jugar**, se abre su emulador con el juego.
 
-**Importar ROMs** (en **Ajustes → Biblioteca** y en **Tienda → Software**) añade tus volcados, homebrew o demos por
+**Importar ROMs** (en **Homebrew** y en **Ajustes → Biblioteca**) añade tus volcados, homebrew o demos por
 archivos o por carpeta, descomprimiendo los `.zip` y `.7z`. El sistema sale de la extensión y, si hace falta, de la
 cabecera del archivo; puedes copiarlas a `roms\<sistema>` en la carpeta de datos o jugarlas donde están. De la ROM se
 leen el TitleID, la versión, la región y la serie cuando el formato los trae, y las actualizaciones y los DLC de Switch,
 3DS y PS Vita se enganchan a su juego. Si un juego no tiene portada en IGDB ni en SteamGridDB, se busca en
 libretro-thumbnails por el nombre del archivo.
 
-Si el emulador elegido para un sistema no está, se usa el que haya (el instalado desde Software o uno del disco). Las
+Si el emulador elegido para un sistema no está, se usa el que haya (el instalado desde ejGames o uno del disco). Las
 partidas guardadas de los juegos de consola son las de su emulador y se copian igual que las de PC.
 
-**Homebrew** (en **Tienda → Software**) reúne software libre o redistribuible de **Switch** (hb-appstore), **PS Vita** (VitaDB) y
+La **tienda de homebrew** (desde **Homebrew** o la **Tienda**) reúne software libre o redistribuible de **Switch** (hb-appstore), **PS Vita** (VitaDB) y
 **3DS** (Universal-DB). Cada ficha dice con qué emulador se juega; **Instalar** lo baja, lo descomprime y lo deja en la
 biblioteca, listo para jugar. Lo que solo funciona en la consola real se ve, pero no se instala.
 

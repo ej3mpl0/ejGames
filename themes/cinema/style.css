@@ -155,24 +155,22 @@ body.playing-hero .hero-desc { opacity: 0; }
 .cg-inner .g-toc-box { background: #141414; }
 .cg-inner .g-toc-item.is-on { box-shadow: inset 3px 0 0 var(--accent); }
 
-/* ─── tu perfil (kit profile, en la capa de guías) ─── */
-.cg-inner .s-view {
-  --s-fg: #fff;
-  --s-muted: rgba(255, 255, 255, 0.65);
-  --s-accent: #e50914;
-  --s-bg: #181818;
-  --s-surface: #1f1f1f;
-  --s-surface-2: #2f2f2f;
-  --s-line: rgba(255, 255, 255, 0.12);
-  --s-radius: 4px;
-  --s-focus: 0 0 0 2px #fff;
-  height: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  overflow-y: auto;
-  scrollbar-width: none;
+/* ─── Homebrew (kit/homebrew.js): una vista más, bajo la barra, como Explorar ─── */
+#homebrew { display: none; padding-top: 68px; }
+:root[data-view="homebrew"] #homebrew { display: block; }
+#homebrew .hb-view {
+  --hb-fg: #fff;
+  --hb-muted: rgba(255, 255, 255, 0.65);
+  --hb-accent: #e50914;
+  --hb-accent-fg: #fff;
+  --hb-surface: #1c1c1c;
+  --hb-surface-2: #2c2c2c;
+  --hb-line: rgba(255, 255, 255, 0.1);
+  --hb-focus: 0 0 0 2px #fff, 0 16px 40px rgba(0, 0, 0, 0.8);
+  --hb-hero: radial-gradient(120% 160% at 100% 0%, rgba(229, 9, 20, 0.35), transparent 55%), linear-gradient(90deg, #141414 0%, #1b1b1b 100%);
+  max-width: none;
+  padding: 18px var(--pad) 70px;
 }
-.cg-inner .s-view.s-profile { max-width: none; }
 
 /* ─── evento de temporada: «Especial Halloween» ─── */
 /* El SDK ya cambia el acento y el fondo de los ajustes; aquí, lo que el tema
@@ -238,7 +236,7 @@ body.playing-hero .hero-desc { opacity: 0; }
 /* guías y perfil: sus colores fijos, a juego */
 :root[data-season="halloween"] .cg-bg { background-image: url("/_sdk/events/halloween/wallpaper-street.jpg"); }
 :root[data-season="halloween"] .cg-inner .g-view { --g-accent: var(--hw-accent); --g-bg: var(--hw-panel); --g-surface: #211933; --g-surface-2: #2a2040; --g-line: rgba(180, 150, 230, 0.14); --g-focus: var(--hw-ring); }
-:root[data-season="halloween"] .cg-inner .s-view { --s-accent: var(--hw-accent); --s-bg: var(--hw-panel); --s-surface: #211933; --s-surface-2: #2a2040; --s-line: rgba(180, 150, 230, 0.14); --s-focus: var(--hw-ring); }
+:root[data-season="halloween"] #homebrew .hb-view { --hb-accent: var(--hw-accent); --hb-surface: #211933; --hb-surface-2: #2a2040; --hb-line: rgba(180, 150, 230, 0.14); --hb-focus: var(--hw-ring); }
 :root[data-season="halloween"] .cg-inner .g-chip.is-on { background: var(--hw-accent); color: #1a0b02; }
 :root[data-season="halloween"] .cg-inner .g-chip.is-focused, :root[data-season="halloween"] .cg-inner .g-rbtn.is-focused { box-shadow: var(--hw-ring); }
 :root[data-season="halloween"] .cg-inner .g-item-item, :root[data-season="halloween"] .cg-inner .g-readerview, :root[data-season="halloween"] .cg-inner .g-section-title { background: var(--hw-panel); }

@@ -167,23 +167,23 @@ img { display: block; }
 .gx-inner .g-section-title { background: rgba(22, 24, 29, 0.99); }
 .gx-inner .g-toc-item.is-on { box-shadow: inset 3px 0 0 var(--accent); }
 
-/* ─── tu perfil (kit profile, en la página de guías) ─── */
-.gx-inner .s-view {
-  --s-fg: #f3f3f3;
-  --s-muted: rgba(243, 243, 243, 0.62);
-  --s-accent: color-mix(in srgb, var(--accent) 55%, #9be39b);
-  --s-bg: #16181d;
-  --s-surface: rgba(40, 42, 48, 0.82);
-  --s-surface-2: rgba(66, 68, 74, 0.9);
-  --s-line: rgba(255, 255, 255, 0.09);
-  --s-radius: var(--r);
-  --s-focus: 0 0 0 3px #fff;
-  height: 100%;
-  max-width: 1320px;
-  overflow-y: auto;
-  scrollbar-width: none;
+/* ─── Homebrew (kit/homebrew.js): una sección más, con los paneles del tema ─── */
+#homebrew .hb-view {
+  --hb-fg: #f3f3f3;
+  --hb-muted: rgba(243, 243, 243, 0.64);
+  --hb-accent: color-mix(in srgb, var(--accent) 70%, #9be39b);
+  --hb-accent-fg: #0b1d0b;
+  --hb-surface: rgba(34, 36, 42, 0.9);
+  --hb-surface-2: rgba(64, 66, 72, 0.95);
+  --hb-line: rgba(255, 255, 255, 0.08);
+  --hb-radius: var(--r);
+  --hb-focus: 0 0 0 3px #fff, 0 12px 30px rgba(0, 0, 0, 0.5);
+  --hb-hero: linear-gradient(110deg, color-mix(in srgb, var(--accent) 38%, rgba(20, 22, 26, 0.9)) 0%, rgba(30, 32, 38, 0.86) 55%);
+  max-width: none;
+  padding: 10px 56px 80px;
 }
-.gx-inner .s-view.s-profile { max-width: none; }
+#homebrew .hb-hero, #homebrew .hb-emu, #homebrew .hb-action, #homebrew .hb-chip, #homebrew .hb-group-emu { backdrop-filter: blur(16px); }
+#homebrew .hb-emu.is-missing { background: rgba(34, 36, 42, 0.78); }
 
 /* ─── ejGames Scream (Halloween): el mismo Xbox, de noche ─── */
 :root[data-season="halloween"] {
@@ -230,17 +230,18 @@ img { display: block; }
 :root[data-season="halloween"] .btn.primary.running { color: var(--hw-green); box-shadow: none; }
 :root[data-season="halloween"] .hints { background: rgba(24, 17, 38, 0.82); }
 
-/* guías y perfil */
+/* guías y Homebrew */
 :root[data-season="halloween"] #guides { background: var(--hw-bg); }
-:root[data-season="halloween"] .gx-inner .g-view, :root[data-season="halloween"] .gx-inner .s-view {
+:root[data-season="halloween"] .gx-inner .g-view {
   --g-accent: color-mix(in srgb, var(--accent) 60%, #ffd2a8);
   --g-bg: #17111f;
   --g-surface: rgba(38, 28, 56, 0.84);
   --g-surface-2: rgba(64, 50, 88, 0.9);
-  --s-accent: color-mix(in srgb, var(--accent) 60%, #ffd2a8);
-  --s-bg: #17111f;
-  --s-surface: rgba(38, 28, 56, 0.84);
-  --s-surface-2: rgba(64, 50, 88, 0.9);
+}
+:root[data-season="halloween"] #homebrew .hb-view {
+  --hb-accent: color-mix(in srgb, var(--accent) 60%, #ffd2a8);
+  --hb-surface: rgba(38, 28, 56, 0.84);
+  --hb-surface-2: rgba(64, 50, 88, 0.9);
 }
 :root[data-season="halloween"] .gx-inner .g-readerview { background: rgba(23, 17, 31, 0.97); }
 :root[data-season="halloween"] .gx-inner .g-section-title { background: rgba(23, 17, 31, 0.99); }
@@ -261,4 +262,3 @@ img { display: block; }
 :root[data-season="halloween"] .tile .hid { background: rgba(14, 10, 24, 0.78); }
 
 /* Filtros de ROMs: el primero lleva el rótulo del grupo */
-.filter .f-group { display: block; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.6; }

@@ -22,15 +22,13 @@
 * **Explorar y Descargas**: tienda de repacks con torrent integrado y un botón **Instalar** que deja el juego en tu
   biblioteca.
 * **Logros** de Steam y de los juegos sueltos, con **avisos dentro del juego** al estilo de cada plataforma.
-* **Tu perfil al estilo Steam**: marcos, fondos animados, vitrinas, nivel e insignias que se ganan jugando. Sin
-  cuentas: todo se guarda en tu PC.
 * **Overlay dentro del juego** con guías de la comunidad de Steam, **trucos** (trainers de FLiNG que tú decides
   instalar) y **mapas interactivos** de Map Genie que se pueden anclar encima del juego.
 * **6 temas de serie** (Steam, PS5, Xbox, Switch, Cinema y Retro) que se tunean sin código, o el tuyo desde cero con
   HTML, CSS y JavaScript.
 * **Mando y Big Picture**, perfiles, estadísticas, Discord Rich Presence y actualizaciones automáticas.
-* **Juegos de consola**: carpetas de ROMs por sistema, con RetroArch, PCSX2, Dolphin, PPSSPP, DuckStation, Cemu, RPCS3 o
-  tu emulador.
+* **Homebrew**: tus emuladores y tus juegos de consola en su propia pestaña, con catálogos de ROMs que descargan y
+  descomprimen solos (también `.rar`), RetroArch, PCSX2, Dolphin, PPSSPP, DuckStation, Cemu, RPCS3, Eden o tu emulador.
 * **Copias de seguridad** de la biblioteca (que viajan a otro PC por OneDrive o Drive) y de las **partidas guardadas** de
   cada juego, **modo juego**, accesos directos y «Añadir a Steam», aviso de **repack nuevo**, cuánto dura cada juego y
   **Tu año en ejGames**.

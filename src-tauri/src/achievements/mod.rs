@@ -312,9 +312,6 @@ fn store_unlocks(
         for (api, t, src) in unlocks {
             let t = if *t > 0 { *t } else { now };
             if ins.execute(params![game_id, api, t, src, profile])? == 1 {
-                if let Some(p) = profile {
-                    crate::activity::unlocked(&tx, p, game_id, api, t)?;
-                }
                 out.push(NewUnlock { api_name: api.clone(), unlocked_at: t });
             }
         }

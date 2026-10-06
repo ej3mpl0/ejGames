@@ -16,24 +16,19 @@
         "search": "/?s={query}",
         "popular": "/switch-games/",
         "newest": "/latest/",
-        "byPlatform": "/switch-games/{platformPath}",
+        "byPlatform": "/{platformPath}/",
         "detail": "{id}"
       },
       "selectors": {
         "gameList": "article.post",
-        "title": "h2.entry-title a",
-        "description": ".entry-content p:first-of-type",
-        "coverImage": "img.wp-post-image@src, .post-thumbnail img@src",
-        "detailLink": "h2.entry-title a@href",
-        "downloadLink": ".entry-content a[href*='drive.google.com']@href, .entry-content a[href*='mega.nz']@href, .entry-content a[href*='1fichier']@href, .entry-content a[href*='mediafire']@href",
-        "platform": ".cat-links a[href*='switch']",
-        "region": ".entry-content strong:contains('Region') + *, .entry-content p:has(strong:contains('Region'))",
-        "language": ".entry-content strong:contains('Language') + *, .entry-content p:has(strong:contains('Language'))",
-        "size": ".entry-content strong:contains('Size') + *, .entry-content p:has(strong:contains('Size'))",
-        "version": ".entry-content strong:contains('Update') + *, .entry-content p:has(strong:contains('Update'))",
-        "breadcrumbs": ".breadcrumb",
-        "screenshots": ".entry-content img@src",
-        "nextPage": "a.next@href"
+        "title": "h1.post-title, h2.post-title a",
+        "description": ".entry > p.has-background",
+        "coverImage": ".wp-block-media-text__media img@src, .post-thumbnail img@src",
+        "detailLink": "h2.post-title a@href",
+        "downloadLink": ".entry .wp-block-column a[href^='http']@href",
+        "platform": ".post-category a",
+        "screenshots": ".entry .wp-block-gallery img@src",
+        "nextPage": "a.nextpostslink@href"
       },
       "platformMapping": {
         "Switch": "switch",

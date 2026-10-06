@@ -5,6 +5,14 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.3.4
+
+- **Catálogos**: la fuente de Switch de serie vuelve a funcionar (decía «el relay no tiene dada de alta la fuente»): su
+  lista por plataforma pedía una dirección que no existe y sus selectores no encajaban con la web. Ahora salen la lista, las
+  páginas, las portadas, las fichas con capturas y los enlaces con el nombre de cada servidor.
+- Un 404 de la web ya no se confunde con una fuente sin dar de alta en el relay, y una web con comprobación anti-bots lo
+  dice en vez de salir vacía.
+
 ## 1.3.3
 
 - **Catálogos**: el relay ya trae las direcciones de las fuentes de serie, así que funcionan sin configurar nada.

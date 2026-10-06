@@ -147,6 +147,12 @@ pub async fn serve(st: &Arc<AppState>, id: &str) -> anyhow::Result<PathBuf> {
             r = http.get(base).send().await?;
         }
     }
+    // Webs que rechazan lo que no es un navegador (nxbrew): por el CDN de wp.com.
+    if r.status() == reqwest::StatusCode::FORBIDDEN {
+        if let Some(rest) = url.strip_prefix("https://").filter(|r| !r.contains("wp.com/")) {
+            r = http.get(format!("https://i0.wp.com/{rest}")).send().await?;
+        }
+    }
     if !r.status().is_success() {
         anyhow::bail!("HTTP {}", r.status());
     }

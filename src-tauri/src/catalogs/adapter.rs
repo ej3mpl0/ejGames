@@ -72,7 +72,17 @@ async fn direct(src: &CatalogSource, url: &str) -> anyhow::Result<String> {
     if !status.is_success() {
         anyhow::bail!("HTTP {status}");
     }
-    Ok(r.text().await?)
+    not_a_bot_wall(r.text().await?)
+}
+
+/// Las webs con comprobación anti-bots (Anubis, Cloudflare) contestan 200 con esa
+/// página en vez del catálogo: es un error (y no se guarda en la caché).
+fn not_a_bot_wall(body: String) -> anyhow::Result<String> {
+    let head = body.get(..4096).unwrap_or(&body);
+    if ["Making sure you&#39;re not a bot", "/.within.website/", "<title>Just a moment...</title>", "cf-chl-"].iter().any(|m| head.contains(m)) {
+        anyhow::bail!("la web pide una comprobación anti-bots que la app no puede pasar");
+    }
+    Ok(body)
 }
 
 /// Por el relay de ejGames (`/catalog/<fuente>/<ruta>`): solo reenvía las fuentes que
@@ -94,9 +104,15 @@ async fn relayed(src: &CatalogSource, url: &str) -> anyhow::Result<String> {
             }
         }
         if r.status() == reqwest::StatusCode::NOT_FOUND {
-            anyhow::bail!("el relay no tiene dada de alta la fuente «{}»", src.id);
+            // El 404 del propio relay es texto («relay: …», o «Not Found» en los de antes
+            // de la 1.3.2); cualquier otro viene de la web: esa dirección no existe.
+            let body = r.text().await.unwrap_or_default();
+            if body.starts_with("relay:") || body.trim() == "Not Found" {
+                anyhow::bail!("el relay no tiene dada de alta la fuente «{}»", src.id);
+            }
+            anyhow::bail!("HTTP 404 Not Found");
         }
-        return Ok(r.error_for_status()?.text().await?);
+        return not_a_bot_wall(r.error_for_status()?.text().await?);
     }
     anyhow::bail!("el relay no acepta la firma")
 }
@@ -290,12 +306,26 @@ fn all(scope: ElementRef, spec: Option<&str>) -> Vec<(String, String)> {
         for el in hits {
             if let Some(v) = value_of(el, attr.as_deref()) {
                 if !out.iter().any(|(x, _)| *x == v) {
-                    out.push((v, clean(&el.text().collect::<String>())));
+                    out.push((v, label_of(el)));
                 }
             }
         }
     }
     out
+}
+
+/// El texto de un enlace; si solo dice «Download» o similar, el resto de su párrafo
+/// («<strong>1Fichier</strong><br><a>Download</a>» → «1Fichier»).
+fn label_of(el: ElementRef) -> String {
+    let own = clean(&el.text().collect::<String>());
+    if !["", "download", "descargar", "link", "enlace", "here", "aquí", "click here"].contains(&own.to_lowercase().as_str()) {
+        return own;
+    }
+    el.parent()
+        .and_then(ElementRef::wrap)
+        .map(|p| clean(&p.text().collect::<String>().replacen(&own, "", 1)))
+        .filter(|t| !t.is_empty() && t.chars().count() <= 80)
+        .unwrap_or(own)
 }
 
 // ───────────────────────── deducciones ─────────────────────────
@@ -735,6 +765,37 @@ mod tests {
         assert_eq!(d.entry.platform.as_deref(), Some("wii"));
         let kinds: Vec<(&str, &str)> = d.links.iter().map(|l| (l.kind.as_str(), l.url.as_str())).collect();
         assert_eq!(kinds, vec![("direct", "https://cat.test/dl/smg.rvz"), ("magnet", "magnet:?xt=urn:btih:abc"), ("page", "https://files.host/f/123")]);
+    }
+
+    #[test]
+    fn nxbrew_default_source() {
+        let s = super::super::config::defaults().into_iter().find(|s| s.id == "nxbrew").unwrap();
+        assert_eq!(expand(&s, s.endpoints.by_platform.as_deref().unwrap(), "", 1, Some("switch"), ""), "https://nxbrew.net/switch-games/");
+        let list = r#"<html><body><article class="post"><div class="post-thumbnail"><a href="https://nxbrew.net/juego-switch-nsp/"><img src="https://nxbrew.net/wp-content/uploads/j-120x195.png" class="wp-post-image"></a></div>
+          <div class="post-category"><a href="https://nxbrew.net/switch-games/">Switch Games</a></div><h2 class="post-title"><a href="https://nxbrew.net/juego-switch-nsp/">Juego Switch NSP (eShop)</a></h2></article>
+          <a class="nextpostslink" rel="next" href="https://nxbrew.net/switch-games/page/2/">»</a></body></html>"#;
+        let r = scrape_list(&s, list, "https://nxbrew.net/switch-games/", Some("switch"));
+        assert_eq!(r.entries.len(), 1);
+        let e = &r.entries[0];
+        assert_eq!((e.id.as_str(), e.title.as_str(), e.platform.as_deref()), ("/juego-switch-nsp/", "Juego Switch NSP (eShop)", Some("switch")));
+        assert_eq!(e.cover_original.as_deref(), Some("https://nxbrew.net/wp-content/uploads/j-120x195.png"));
+        assert_eq!(r.next.as_deref(), Some("https://nxbrew.net/switch-games/page/2/"));
+        let detail = r#"<html><body><article><h1 class="post-title">Juego Switch NSP (eShop)</h1><div class="entry">
+          <div class="wp-block-media-text"><figure class="wp-block-media-text__media"><img src="https://nxbrew.net/wp-content/uploads/j.png"></figure></div>
+          <a href="javascript:void(0)"><button>Download Now</button></a><p class="has-background"><strong>Description:</strong> Un juego.</p>
+          <figure class="wp-block-gallery"><figure><img src="https://i6.imageban.ru/out/a.jpg"></figure></figure>
+          <div class="wp-block-columns"><div class="wp-block-column"><p><strong>Base Game NSP (6.7 GB)</strong></p></div>
+          <div class="wp-block-column"><p><strong>1Fichier</strong><br><a href="https://ouo.io/abc">Download</a></p></div></div></div></article>
+          <aside><h2 class="post-title"><a href="https://nxbrew.net/otro/">Otro juego</a></h2></aside></body></html>"#;
+        let d = scrape_detail(&s, detail, "https://nxbrew.net/juego-switch-nsp/", "/juego-switch-nsp/");
+        assert_eq!(d.entry.title, "Juego Switch NSP (eShop)");
+        assert_eq!(d.entry.cover_original.as_deref(), Some("https://nxbrew.net/wp-content/uploads/j.png"));
+        assert_eq!(d.entry.description.as_deref(), Some("Description: Un juego."));
+        let links: Vec<(&str, &str)> = d.links.iter().map(|l| (l.label.as_str(), l.url.as_str())).collect();
+        assert_eq!(links, vec![("1Fichier", "https://ouo.io/abc")]);
+        assert_eq!(d.screenshots.len(), 1);
+        assert!(not_a_bot_wall(detail.into()).is_ok());
+        assert!(not_a_bot_wall("<html><head><title>Making sure you&#39;re not a bot!</title>".into()).is_err());
     }
 
     #[test]

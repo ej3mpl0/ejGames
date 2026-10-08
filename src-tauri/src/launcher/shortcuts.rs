@@ -25,7 +25,7 @@ fn safe_file_name(title: &str) -> String {
     let s: String = title.chars().map(|c| if r#"<>:"/\|?*"#.contains(c) || c.is_control() { ' ' } else { c }).collect();
     let s = s.split_whitespace().collect::<Vec<_>>().join(" ");
     let s = s.trim_matches(|c| c == '.' || c == ' ');
-    if s.is_empty() { "Juego".into() } else { s.chars().take(80).collect() }
+    if s.is_empty() { crate::i18n::t("Juego").into() } else { s.chars().take(80).collect() }
 }
 
 // ───────────────────────── acceso directo (.lnk) ─────────────────────────
@@ -58,7 +58,7 @@ pub fn create_shortcut(game: &Game, ejgames_exe: &Path, dir: &Path) -> anyhow::R
         if init.is_ok() {
             CoUninitialize();
         }
-        r.context("no se pudo crear el acceso directo")?;
+        r.context(crate::i18n::t("no se pudo crear el acceso directo"))?;
     }
     Ok(lnk)
 }
@@ -195,7 +195,7 @@ fn entry(name: &str, exe: &str, start_dir: &str, icon: &str, opts: &str, id: u32
 pub fn add_to_shortcuts(config_dir: &Path, game: &Game, ejgames_exe: &Path) -> anyhow::Result<u32> {
     let file = config_dir.join("shortcuts.vdf");
     let mut top = match std::fs::read(&file) {
-        Ok(b) => vdf_parse(&b).context("shortcuts.vdf no se puede leer")?,
+        Ok(b) => vdf_parse(&b).context(crate::i18n::t("shortcuts.vdf no se puede leer"))?,
         Err(_) => vec![("shortcuts".to_string(), Vdf::Obj(vec![]))],
     };
     if file.exists() {
@@ -212,7 +212,7 @@ pub fn add_to_shortcuts(config_dir: &Path, game: &Game, ejgames_exe: &Path) -> a
     let new = entry(&game.title, &exe, &dir, &icon, &opts, id);
 
     let Some((_, Vdf::Obj(list))) = top.iter_mut().find(|(k, _)| k.eq_ignore_ascii_case("shortcuts")) else {
-        anyhow::bail!("shortcuts.vdf no tiene el formato esperado");
+        anyhow::bail!("{}", crate::i18n::t("shortcuts.vdf no tiene el formato esperado"));
     };
     // Ya estaba (mismo --play): se actualiza en su sitio.
     let existing = list.iter().position(|(_, v)| match v {

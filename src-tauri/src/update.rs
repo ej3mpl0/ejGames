@@ -158,26 +158,26 @@ impl Updater {
                 if e.is_timeout() {
                     anyhow::anyhow!("GitHub no responde")
                 } else if e.is_connect() {
-                    anyhow::anyhow!("Sin conexión")
+                    anyhow::anyhow!("{}", crate::i18n::t("Sin conexión"))
                 } else {
                     anyhow::anyhow!("{e}")
                 }
             })?;
         let status = resp.status();
         if status == reqwest::StatusCode::NOT_FOUND {
-            anyhow::bail!("Aún no hay versiones publicadas");
+            anyhow::bail!("{}", crate::i18n::t("Aún no hay versiones publicadas"));
         }
         if status == reqwest::StatusCode::FORBIDDEN || status.as_u16() == 429 {
-            anyhow::bail!("GitHub ha limitado las consultas; prueba más tarde");
+            anyhow::bail!("{}", crate::i18n::t("GitHub ha limitado las consultas; prueba más tarde"));
         }
         if !status.is_success() {
-            anyhow::bail!("GitHub respondió {}", status.as_u16());
+            anyhow::bail!("{}", crate::i18n::tf("GitHub respondió {0}", &[&status.as_u16()]));
         }
         let body: serde_json::Value = resp.json().await?;
         let tag = body.get("tag_name").and_then(|v| v.as_str()).unwrap_or("");
         let latest = parse_version(tag)
             .map(|(a, b, c)| format!("{a}.{b}.{c}"))
-            .ok_or_else(|| anyhow::anyhow!("Etiqueta de versión no reconocida: {tag}"))?;
+            .ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::tf("Etiqueta de versión no reconocida: {0}", &[&tag])))?;
         let assets = body.get("assets").and_then(|v| v.as_array()).cloned().unwrap_or_default();
         let asset = pick_asset(&assets);
         let s = |k: &str| body.get(k).and_then(|v| v.as_str()).map(str::to_string);
@@ -208,15 +208,15 @@ impl Updater {
             .await
             .as_ref()
             .map(|(_, c)| c.clone())
-            .ok_or_else(|| anyhow::anyhow!("Comprueba primero si hay actualizaciones"))?;
+            .ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Comprueba primero si hay actualizaciones")))?;
         if !check.available {
-            anyhow::bail!("Ya tienes la última versión");
+            anyhow::bail!("{}", crate::i18n::t("Ya tienes la última versión"));
         }
         let (Some(url), Some(name)) = (check.asset_url.clone(), check.asset_name.clone()) else {
-            anyhow::bail!("Esta versión no trae instalador");
+            anyhow::bail!("{}", crate::i18n::t("Esta versión no trae instalador"));
         };
         if !url.starts_with("https://github.com/") && !url.starts_with("https://objects.githubusercontent.com/") {
-            anyhow::bail!("Origen del instalador no permitido");
+            anyhow::bail!("{}", crate::i18n::t("Origen del instalador no permitido"));
         }
         self.fetch_installer(st, &url, &name, check.asset_size, check.asset_sha256.clone()).await
     }
@@ -267,13 +267,13 @@ impl Updater {
         if let Some(size) = size {
             if received != size {
                 let _ = std::fs::remove_file(&partial);
-                anyhow::bail!("Descarga incompleta ({received} de {size} bytes)");
+                anyhow::bail!("{}", crate::i18n::tf("Descarga incompleta ({0} de {1} bytes)", &[&received, &size]));
             }
         }
         if let Some(expected) = &sha256 {
             if &hex(&hasher.finalize()) != expected {
                 let _ = std::fs::remove_file(&partial);
-                anyhow::bail!("El instalador descargado no coincide con el publicado");
+                anyhow::bail!("{}", crate::i18n::t("El instalador descargado no coincide con el publicado"));
             }
         }
         std::fs::rename(&partial, &path)?;
@@ -325,13 +325,13 @@ impl Updater {
             .header("x-github-api-version", "2022-11-28")
             .send()
             .await
-            .map_err(|e| if e.is_connect() { anyhow::anyhow!("Sin conexión") } else { anyhow::anyhow!("{e}") })?;
+            .map_err(|e| if e.is_connect() { anyhow::anyhow!("{}", crate::i18n::t("Sin conexión")) } else { anyhow::anyhow!("{e}") })?;
         let status = resp.status();
         if status == reqwest::StatusCode::FORBIDDEN || status.as_u16() == 429 {
-            anyhow::bail!("GitHub ha limitado las consultas; prueba más tarde");
+            anyhow::bail!("{}", crate::i18n::t("GitHub ha limitado las consultas; prueba más tarde"));
         }
         if !status.is_success() {
-            anyhow::bail!("GitHub respondió {}", status.as_u16());
+            anyhow::bail!("{}", crate::i18n::tf("GitHub respondió {0}", &[&status.as_u16()]));
         }
         let list: Vec<serde_json::Value> = resp.json().await?;
         Ok(list.iter().filter_map(release_entry).collect())
@@ -345,12 +345,12 @@ impl Updater {
             .await?
             .into_iter()
             .find(|r| r.version == version)
-            .ok_or_else(|| anyhow::anyhow!("Esa versión ya no está publicada"))?;
+            .ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Esa versión ya no está publicada")))?;
         let (Some(url), Some(name)) = (entry.asset_url.clone(), entry.asset_name.clone()) else {
-            anyhow::bail!("Esta versión no trae instalador");
+            anyhow::bail!("{}", crate::i18n::t("Esta versión no trae instalador"));
         };
         if !url.starts_with("https://github.com/") && !url.starts_with("https://objects.githubusercontent.com/") {
-            anyhow::bail!("Origen del instalador no permitido");
+            anyhow::bail!("{}", crate::i18n::t("Origen del instalador no permitido"));
         }
         self.fetch_installer(st, &url, &name, entry.asset_size, entry.asset_sha256.clone()).await
     }
@@ -372,7 +372,7 @@ pub fn launch_installer(path: &str) -> anyhow::Result<()> {
     std::process::Command::new(&file)
         .args(["/P", "/R", "/UPDATE"])
         .spawn()
-        .map_err(|e| anyhow::anyhow!("No se pudo abrir el instalador: {e}"))?;
+        .map_err(|e| anyhow::anyhow!("{}", crate::i18n::tf("No se pudo abrir el instalador: {0}", &[&e])))?;
     Ok(())
 }
 

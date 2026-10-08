@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { t as translate } from "../lib/i18n";
 import type {
   Bootstrap,
   Collection,
@@ -136,7 +137,7 @@ export const useApp = create<State>((set, get) => ({
   closeAll: () => set({ overlays: [] }),
   toast: (kind, message, action) => {
     const id = ++toastId;
-    set({ toasts: [...get().toasts.slice(-3), { id, kind, message, action }] });
+    set({ toasts: [...get().toasts.slice(-3), { id, kind, message: translate(message), action }] });
     setTimeout(() => get().dismiss(id), action ? 10000 : kind === "error" ? 7000 : 4000);
   },
   dismiss: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),

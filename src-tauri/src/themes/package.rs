@@ -45,7 +45,7 @@ pub fn import(paths: &Paths, file: &Path) -> anyhow::Result<ThemeInfo> {
             }
         }
     }
-    let prefix = prefix.ok_or_else(|| anyhow::anyhow!("El paquete no contiene theme.json"))?;
+    let prefix = prefix.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("El paquete no contiene theme.json")))?;
 
     let tmp = paths.user_themes.join(format!(".import-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&tmp);
@@ -90,10 +90,10 @@ pub fn import(paths: &Paths, file: &Path) -> anyhow::Result<ThemeInfo> {
     let builtin_clash = paths.builtin_themes.join(&m.id).join("theme.json").exists();
     if builtin_clash {
         let _ = std::fs::remove_dir_all(&tmp);
-        anyhow::bail!("El id «{}» es de un tema de serie; cámbialo en theme.json", m.id);
+        anyhow::bail!("{}", crate::i18n::tf("El id «{0}» es de un tema de serie; cámbialo en theme.json", &[&m.id]));
     }
     let dst = paths.user_themes.join(&m.id);
     let _ = std::fs::remove_dir_all(&dst);
     std::fs::rename(&tmp, &dst)?;
-    super::find(paths, &m.id).ok_or_else(|| anyhow::anyhow!("no se pudo instalar"))
+    super::find(paths, &m.id).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("no se pudo instalar")))
 }

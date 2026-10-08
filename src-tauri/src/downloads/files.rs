@@ -80,15 +80,15 @@ pub fn validate(files: &[TorrentFile], selected: &[usize]) -> anyhow::Result<Vec
     sel.dedup();
     for f in files.iter().filter(|f| f.required) {
         if !sel.contains(&f.index) {
-            anyhow::bail!("Falta un archivo imprescindible: {}", f.label);
+            anyhow::bail!("{}", crate::i18n::tf("Falta un archivo imprescindible: {0}", &[&f.label]));
         }
     }
     let langs: Vec<&TorrentFile> = files.iter().filter(|f| f.kind == "selective").collect();
     if !langs.is_empty() && !langs.iter().any(|f| sel.contains(&f.index)) {
-        anyhow::bail!("Elige al menos un idioma");
+        anyhow::bail!("{}", crate::i18n::t("Elige al menos un idioma"));
     }
     if sel.is_empty() {
-        anyhow::bail!("No hay nada que descargar");
+        anyhow::bail!("{}", crate::i18n::t("No hay nada que descargar"));
     }
     Ok(sel)
 }

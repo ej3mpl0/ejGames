@@ -41,7 +41,7 @@ impl Igdb {
             .error_for_status()?
             .json()
             .await?;
-        let tok = r.get("access_token").and_then(Value::as_str).ok_or_else(|| anyhow::anyhow!("IGDB: sin token"))?.to_string();
+        let tok = r.get("access_token").and_then(Value::as_str).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("IGDB: sin token")))?.to_string();
         let secs = r.get("expires_in").and_then(Value::as_u64).unwrap_or(3600).saturating_sub(120);
         *t = Some((tok.clone(), Instant::now() + Duration::from_secs(secs)));
         Ok(tok)

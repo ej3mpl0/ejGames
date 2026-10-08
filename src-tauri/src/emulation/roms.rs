@@ -217,7 +217,7 @@ fn progress(st: &AppState, done: usize, total: usize, name: &str) {
 /// Copia sin pisar otra distinta: si ya hay un archivo igual (mismo tamaño) se reutiliza.
 fn place(src: &Path, dir: &Path, mv: bool) -> anyhow::Result<PathBuf> {
     std::fs::create_dir_all(dir)?;
-    let name = src.file_name().ok_or_else(|| anyhow::anyhow!("archivo sin nombre"))?;
+    let name = src.file_name().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("archivo sin nombre")))?;
     let dest = dir.join(name);
     if dest.is_file() {
         let same = std::fs::metadata(&dest)?.len() == std::fs::metadata(src)?.len();

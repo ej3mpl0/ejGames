@@ -122,7 +122,7 @@ mod tests {
     use super::*;
 
     fn t(url: &str, sha: &str) -> CommunityTheme {
-        CommunityTheme { id: "mi-tema".into(), name: "Mi tema".into(), download: url.into(), sha256: sha.into(), ..Default::default() }
+        CommunityTheme { id: "mi-tema".into(), name: crate::i18n::t("Mi tema").into(), download: url.into(), sha256: sha.into(), ..Default::default() }
     }
 
     #[test]

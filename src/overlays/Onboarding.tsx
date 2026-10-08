@@ -11,13 +11,22 @@ import { useOverlayNav } from "../input/nav";
 import { PROFILE_COLORS, bytes } from "../lib/format";
 import { useApp } from "../store/app";
 import { Hints } from "../components/Hints";
-import { getLang, t } from "../lib/i18n";
+import { getLang, isLang, LANG_LABELS, steamLanguageFor, t, UI_LANGS, type Lang } from "../lib/i18n";
 import { restoreBackup } from "./settings/BackupSection";
+
+const ONBOARD_STEP = "ejg.onboard.step";
+
+function initialStep() {
+  const n = Number(sessionStorage.getItem(ONBOARD_STEP) || "0");
+  return n >= 1 && n <= 4 ? n : 0;
+}
 
 export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) {
   const themes = useApp((s) => s.themes);
   const toast = useApp((s) => s.toast);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(initialStep);
+  const [picked, setPicked] = useState<Lang>(getLang());
+  const [systemLang, setSystemLang] = useState<Lang | null>(null);
   const [name, setName] = useState("");
   const [color, setColor] = useState(PROFILE_COLORS[0]);
   const [theme, setTheme] = useState("steam");
@@ -30,7 +39,10 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
   const ref = useOverlayNav<HTMLDivElement>({ onBack: () => setStep((s) => Math.max(0, s - 1)) });
 
   useEffect(() => {
-    if (step !== 3 || dlDir) return;
+    void api.systemUiLanguage().then((l) => { if (isLang(l)) setSystemLang(l); });
+  }, []);
+  useEffect(() => {
+    if (step !== 4 || dlDir) return;
     const lib = folders.find((f) => f.suggestedMode !== "single");
     if (lib) setDlDir(lib.path);
   }, [step]);
@@ -40,7 +52,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
   }, [dlDir]);
 
   async function pickDownloads() {
-    const path = await openDialog({ directory: true, multiple: false, title: "Carpeta de descargas", defaultPath: dlDir || undefined });
+    const path = await openDialog({ directory: true, multiple: false, title: t("Carpeta de descargas"), defaultPath: dlDir || undefined });
     if (typeof path === "string") setDlDir(path);
   }
 
@@ -55,13 +67,26 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
     }
   }
 
-  async function switchLanguage() {
-    await api.updateSettings({ uiLanguage: getLang() === "en" ? "es" : "en" });
-    location.reload();
+  async function confirmLanguage() {
+    try {
+      const raw = await api.systemUiLanguage();
+      const system = isLang(raw) ? raw : getLang();
+      const explicit = picked === system ? "" : picked;
+      const cur = (await api.getSettings()).uiLanguage;
+      if (cur !== explicit) {
+        sessionStorage.setItem(ONBOARD_STEP, "1");
+        await api.updateSettings({ uiLanguage: explicit });
+        location.reload();
+        return;
+      }
+      setStep(1);
+    } catch (e) {
+      toast("error", errMsg(e));
+    }
   }
 
   async function addFolder() {
-    const path = await openDialog({ directory: true, multiple: false, title: "Carpeta con juegos" });
+    const path = await openDialog({ directory: true, multiple: false, title: t("Carpeta con juegos") });
     if (typeof path !== "string") return;
     try {
       const info = await api.inspectFolder(path);
@@ -80,7 +105,9 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
         firstRunDone: true,
         exploreEnabled: explore,
         downloadDir: explore ? dlDir ?? "" : "",
+        language: steamLanguageFor(getLang()),
       });
+      sessionStorage.removeItem(ONBOARD_STEP);
       for (const f of folders) await api.addFolder(f.path, f.suggestedMode);
       onDone(p.id);
     } catch (e) {
@@ -89,7 +116,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
     }
   }
 
-  const steps = ["Tu perfil", "Tu estilo", "Tus juegos", "Descargas"];
+  const steps = ["Idioma", "Tu perfil", "Tu estilo", "Tus juegos", "Descargas"];
   const last = step === steps.length - 1;
   return (
     <div ref={ref} className="season-scene relative flex h-full flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,#1d2a4a,#090c12_60%)]">
@@ -98,7 +125,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
         onMouseDown={(e) => e.button === 0 && void api.windowAction(e.detail === 2 ? "toggle-maximize" : "drag")}
       />
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-10 pb-10">
-        <div className="mb-8 flex items-center gap-3 text-sm text-muted">
+        <div className="mb-8 flex flex-wrap items-center gap-3 text-sm text-muted">
           <Gamepad2 className="text-accent" size={22} />
           <span className="font-semibold text-fg">ejGames</span>
           <span className="mx-2 opacity-40">·</span>
@@ -115,6 +142,32 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
 
         <div className="panel-enter min-h-0 flex-1" key={step}>
           {step === 0 && (
+            <div className="max-w-xl">
+              <h1 className="text-4xl font-semibold tracking-tight">{t("Elige tu idioma")}</h1>
+              <p className="mt-3 text-muted">
+                {t("ejGames usará el idioma de Windows. Puedes cambiarlo ahora o más tarde en Ajustes → Sistema.")}
+              </p>
+              <div className="mt-8 flex max-w-md flex-col gap-2">
+                {UI_LANGS.map((id) => (
+                  <button
+                    key={id}
+                    data-nav
+                    {...(id === picked ? { "data-autofocus": true } : {})}
+                    onClick={() => setPicked(id)}
+                    className={cx(
+                      "flex items-center justify-between rounded-[var(--h-radius)] bg-surface-2/70 px-4 py-3 text-left ring-1 ring-line cursor-pointer hover:bg-surface-3/60",
+                      picked === id && "ring-2 ring-accent",
+                    )}
+                  >
+                    <span data-no-t className="text-base font-medium">{LANG_LABELS[id]}</span>
+                    {systemLang === id && <span className="text-xs text-muted">{t("El de Windows")}</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 1 && (
             <div className="max-w-xl">
               <h1 className="text-4xl font-semibold tracking-tight">Bienvenido a tu biblioteca</h1>
               <p className="mt-3 text-muted">
@@ -135,16 +188,13 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
                   value={name}
                   maxLength={32}
                   onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && name.trim() && setStep(1)}
+                  onKeyDown={(e) => e.key === "Enter" && name.trim() && setStep(2)}
                   className="h-12 text-lg"
                 />
               </div>
               <div className="mt-6 flex flex-wrap gap-2">
                 <Button size="sm" variant="ghost" onClick={() => void restoreFromFile()}>
                   {t("¿Vienes de otro PC? Restaurar una copia")}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => void switchLanguage()}>
-                  {getLang() === "en" ? "Español\u200b" : "English"}
                 </Button>
               </div>
               <div className="mt-5 flex flex-wrap gap-2.5">
@@ -162,7 +212,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
             </div>
           )}
 
-          {step === 1 && (
+          {step === 2 && (
             <div className="flex h-full flex-col">
               <h1 className="text-3xl font-semibold tracking-tight">Elige un estilo</h1>
               <p className="mt-2 text-muted">Podrás cambiarlo, retocar cada detalle o crear el tuyo desde Ajustes → Apariencia.</p>
@@ -174,7 +224,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
             </div>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <div className="grid h-full grid-cols-2 gap-8">
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight">Encuentra tus juegos</h1>
@@ -230,7 +280,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
             </div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <div className="max-w-2xl">
               <h1 className="text-3xl font-semibold tracking-tight">¿Dónde guardamos las descargas?</h1>
               <p className="mt-2 text-muted">
@@ -288,7 +338,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
             ]}
           />
           {!last ? (
-            <Button variant="primary" size="lg" onClick={() => setStep(step + 1)} disabled={step === 0 && !name.trim()}>
+            <Button variant="primary" size="lg" onClick={() => void (step === 0 ? confirmLanguage() : setStep(step + 1))} disabled={step === 1 && !name.trim()}>
               Siguiente <ArrowRight size={18} />
             </Button>
           ) : (

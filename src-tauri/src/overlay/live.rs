@@ -375,15 +375,15 @@ fn app_name(aumid: &str) -> String {
 pub fn media_command(cmd: &str) -> anyhow::Result<()> {
     use windows::Media::Control::*;
     let mgr = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()?.get()?;
-    let s = mgr.GetCurrentSession().map_err(|_| anyhow::anyhow!("No suena nada"))?;
+    let s = mgr.GetCurrentSession().map_err(|_| anyhow::anyhow!("{}", crate::i18n::t("No suena nada")))?;
     let ok = match cmd {
         "toggle" => s.TryTogglePlayPauseAsync()?.get()?,
         "next" => s.TrySkipNextAsync()?.get()?,
         "prev" => s.TrySkipPreviousAsync()?.get()?,
-        _ => anyhow::bail!("orden no válida"),
+        _ => anyhow::bail!("{}", crate::i18n::t("orden no válida")),
     };
     if !ok {
-        anyhow::bail!("El programa no lo permite");
+        anyhow::bail!("{}", crate::i18n::t("El programa no lo permite"));
     }
     Ok(())
 }
@@ -412,7 +412,7 @@ pub fn set_volume(st: &AppState, which: &str, level: Option<f32>, muted: Option<
         let _com = win::Com::init();
         let pids = match which {
             "game" => {
-                let target = st.overlay.inner.lock().live.as_ref().map(|l| l.target.clone()).ok_or_else(|| anyhow::anyhow!("No hay partida"))?;
+                let target = st.overlay.inner.lock().live.as_ref().map(|l| l.target.clone()).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No hay partida")))?;
                 crate::launcher::tracker::find_pids(&target, &mut Default::default())
             }
             _ => vec![],
@@ -669,7 +669,7 @@ mod win {
             if game {
                 let list = sessions(&dev, pids)?;
                 if list.is_empty() {
-                    anyhow::bail!("El juego aún no tiene sonido");
+                    anyhow::bail!("{}", crate::i18n::t("El juego aún no tiene sonido"));
                 }
                 for v in list {
                     if let Some(l) = level {

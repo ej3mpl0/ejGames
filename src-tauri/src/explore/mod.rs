@@ -529,13 +529,13 @@ pub async fn browse(st: &Arc<AppState>, f: &Browse, page: u32) -> anyhow::Result
 /// en caché (antes de descargar: el magnet cambia si el repack se actualiza).
 pub async fn details_raw(st: &Arc<AppState>, slug: &str, fresh: bool) -> anyhow::Result<RepackDetails> {
     if !fitgirl::valid_slug(slug) {
-        anyhow::bail!("Ficha no válida");
+        anyhow::bail!("{}", crate::i18n::t("Ficha no válida"));
     }
     let key = format!("fg:post:{slug}");
     let ttl = if fresh { 3600 } else { TTL_POST };
     cached(st, &key, ttl, || async {
         let posts = st.explore.fitgirl.by_slugs(&[slug.to_string()]).await?;
-        let raw = posts.first().ok_or_else(|| anyhow::anyhow!("Esa ficha ya no existe en FitGirl"))?;
+        let raw = posts.first().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Esa ficha ya no existe en FitGirl")))?;
         Ok(to_details(raw))
     })
     .await

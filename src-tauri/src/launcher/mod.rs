@@ -145,7 +145,7 @@ pub async fn play_cli(st: &Arc<AppState>, game_id: i64) {
 
 pub async fn play(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow::Result<()> {
     if !st.sessions.claim(game_id) {
-        anyhow::bail!("El juego ya está en marcha");
+        anyhow::bail!("{}", crate::i18n::t("El juego ya está en marcha"));
     }
     let r = play_inner(st, game_id, profile_id).await;
     st.sessions.release(game_id);
@@ -283,8 +283,8 @@ impl Track {
                 st.discord.set(
                     &d.id,
                     Presence {
-                        title: if d.hide { "Un juego".into() } else { self.game.title.clone() },
-                        details: Some("Jugando desde ejGames".into()),
+                        title: if d.hide { crate::i18n::t("Un juego").into() } else { self.game.title.clone() },
+                        details: Some(crate::i18n::t("Jugando desde ejGames").into()),
                         state: None,
                         start: started,
                         image_url: if d.hide { None } else { d.cover_url.clone() },

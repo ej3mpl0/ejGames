@@ -111,17 +111,15 @@ impl Default for FitGirl {
 /// Mensaje claro cuando la web no responde como debe.
 fn site_error(status: reqwest::StatusCode, body: &str) -> anyhow::Error {
     if body.contains("ddos-guard") || body.contains("DDoS-Guard") || status.as_u16() == 403 {
-        anyhow::anyhow!("La web de FitGirl está comprobando las visitas (protección anti-DDoS). Prueba dentro de unos minutos.")
+        anyhow::anyhow!(crate::i18n::t("La web de FitGirl está comprobando las visitas (protección anti-DDoS). Prueba dentro de unos minutos."))
     } else if status.is_success() {
         let head: String = body.chars().take(200).collect();
         tracing::warn!("fitgirl: respuesta inesperada: {head:?}");
-        anyhow::anyhow!("La web de FitGirl respondió con una página inesperada. Prueba dentro de un rato.")
+        anyhow::anyhow!(crate::i18n::t("La web de FitGirl respondió con una página inesperada. Prueba dentro de un rato."))
     } else {
-        anyhow::anyhow!("La web de FitGirl respondió con un error ({status}).")
+        anyhow::anyhow!(crate::i18n::tf("La web de FitGirl respondió con un error ({0}).", &[&status]))
     }
 }
-
-const BLOCKED: &str = "Tu red no te deja entrar en la web de FitGirl (lo normal es que tu proveedor de internet la bloquee), así que la tienda no puede cargar.";
 
 /// Mensaje claro cuando no se llega a la web. El de reqwest («error sending
 /// request for url …») esconde la causa en la cadena de `source()`: va al log.
@@ -131,29 +129,29 @@ async fn net_error(e: &reqwest::Error, dns: Option<JoinHandle<Dns>>) -> anyhow::
     tracing::warn!("fitgirl: {detail}");
     let low = detail.to_lowercase();
     let msg = if e.is_body() || e.is_decode() {
-        "La conexión con la web de FitGirl se cortó a mitad. Prueba otra vez."
+        crate::i18n::t("La conexión con la web de FitGirl se cortó a mitad. Prueba otra vez.")
     } else if low.contains("not valid for name") || low.contains("notvalidforname") {
         // Contesta otro servidor en su lugar: el DNS la manda a una página de bloqueo.
-        BLOCKED
+        crate::i18n::t("Tu red no te deja entrar en la web de FitGirl (lo normal es que tu proveedor de internet la bloquee), así que la tienda no puede cargar.")
     } else if low.contains("unknownissuer") {
-        "Un antivirus o un proxy está interceptando la conexión segura con la web de FitGirl y la app no se fía de él."
+        crate::i18n::t("Un antivirus o un proxy está interceptando la conexión segura con la web de FitGirl y la app no se fía de él.")
     } else {
         let dns = match dns {
             Some(task) => task.await.unwrap_or(Dns::Unknown),
             None => lookup().await,
         };
         match dns {
-            Dns::Sinkhole => BLOCKED,
+            Dns::Sinkhole => crate::i18n::t("Tu red no te deja entrar en la web de FitGirl (lo normal es que tu proveedor de internet la bloquee), así que la tienda no puede cargar."),
             Dns::Missing if resolves("store.steampowered.com").await => {
-                "Tu red no encuentra la web de FitGirl: o tu proveedor de internet la bloquea o la web está caída."
+                crate::i18n::t("Tu red no encuentra la web de FitGirl: o tu proveedor de internet la bloquea o la web está caída.")
             }
-            Dns::Missing => "Parece que no hay conexión a internet.",
-            _ if e.is_timeout() => "La web de FitGirl no responde a tiempo. Prueba dentro de un rato.",
+            Dns::Missing => crate::i18n::t("Parece que no hay conexión a internet."),
+            _ if e.is_timeout() => crate::i18n::t("La web de FitGirl no responde a tiempo. Prueba dentro de un rato."),
             // WSAECONNRESET / WSAECONNABORTED (el texto de Windows va traducido).
             _ if low.contains("os error 10054") || low.contains("os error 10053") => {
-                "La conexión con la web de FitGirl se corta nada más empezar: puede que tu red la bloquee."
+                crate::i18n::t("La conexión con la web de FitGirl se corta nada más empezar: puede que tu red la bloquee.")
             }
-            _ => return anyhow::anyhow!("No se pudo conectar con la web de FitGirl ({}).", root_cause(e)),
+            _ => return anyhow::anyhow!("{}", crate::i18n::tf("No se pudo conectar con la web de FitGirl ({0}).", &[&root_cause(e)])),
         }
     };
     anyhow::anyhow!(msg)
@@ -374,7 +372,7 @@ impl FitGirl {
                 }
             }
         };
-        Err(anyhow::anyhow!("Tampoco se pudo por el servidor de respaldo de ejGames ({why})."))
+        Err(anyhow::anyhow!(crate::i18n::tf("Tampoco se pudo por el servidor de respaldo de ejGames ({0}).", &[&why])))
     }
 
     async fn check(&self, r: reqwest::Response) -> anyhow::Result<reqwest::Response> {

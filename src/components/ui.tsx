@@ -210,7 +210,7 @@ export function Cycle<T extends string>({
         data-nav
         data-cycle
         onClick={() => setOpen((o) => !o)}
-        className="flex h-9 min-w-44 items-center justify-between gap-3 rounded-[calc(var(--h-radius)*0.6)] bg-surface-3/70 px-3 text-sm ring-1 ring-line cursor-pointer"
+        className="flex h-9 min-w-60 items-center justify-between gap-3 rounded-[calc(var(--h-radius)*0.6)] bg-surface-3/70 px-3 text-sm ring-1 ring-line cursor-pointer"
       >
         <span className="text-muted">‹</span>
         <span className="truncate">{options[idx]?.label ?? "—"}</span>

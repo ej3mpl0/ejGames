@@ -36,14 +36,14 @@ pub fn mime(rel: &str) -> &'static str {
 /// Devuelve la ruta local del fichero pedido, descargándolo si hace falta.
 pub async fn get(st: &Arc<AppState>, media_id: i64, rel: &str) -> anyhow::Result<PathBuf> {
     if !valid_rel(rel) {
-        anyhow::bail!("ruta no válida");
+        anyhow::bail!("{}", crate::i18n::t("ruta no válida"));
     }
     let rec = st
         .db
         .with(|c| repo::media_by_id(c, media_id))?
         .filter(|m| matches!(m.kind.as_str(), "trailer" | "microtrailer"))
         .ok_or_else(|| anyhow::anyhow!("media desconocida"))?;
-    let remote = rec.remote_url.ok_or_else(|| anyhow::anyhow!("sin URL"))?;
+    let remote = rec.remote_url.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("sin URL")))?;
     let base = remote.split('?').next().unwrap_or(&remote);
     let base = &base[..=base.rfind('/').unwrap_or(0)];
     let dir = st.paths.trailers.join(media_id.to_string());

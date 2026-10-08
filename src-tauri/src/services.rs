@@ -41,7 +41,7 @@ pub async fn scan_folder(st: &Arc<AppState>, folder_id: i64, incremental: bool) 
         .with(repo::list_folders)?
         .into_iter()
         .find(|f| f.id == folder_id)
-        .ok_or_else(|| anyhow::anyhow!("carpeta desconocida"))?;
+        .ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("carpeta desconocida")))?;
     let st2 = st.clone();
     let name = folder.path.clone();
     let rom_platform = folder.mode.strip_prefix("roms:").map(str::to_string);
@@ -90,7 +90,7 @@ pub fn sync_watcher(st: &Arc<AppState>) {
 pub async fn add_manual(st: &Arc<AppState>, exe: String, platform: Option<String>) -> anyhow::Result<i64> {
     let p = Path::new(&exe);
     if !p.is_file() {
-        anyhow::bail!("No existe el fichero");
+        anyhow::bail!("{}", crate::i18n::t("No existe el fichero"));
     }
     let ext = p.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
     if !matches!(ext.as_str(), "exe" | "lnk" | "bat" | "cmd" | "url") {
@@ -105,7 +105,7 @@ pub async fn add_manual(st: &Arc<AppState>, exe: String, platform: Option<String
         let (id, is_new) = st
             .db
             .with(|c| repo::upsert_game(c, &g))?
-            .ok_or_else(|| anyhow::anyhow!("Ese juego ya está en la biblioteca"))?;
+            .ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Ese juego ya está en la biblioteca")))?;
         // Como en las carpetas de ROMs: su colección del sistema («Nintendo Switch»).
         if let Some(pid) = *st.profile.read() {
             let _ = st.db.with(|c| repo::ensure_platform_collection(c, pid, pf.name, pf.id));
@@ -132,7 +132,7 @@ pub async fn add_manual(st: &Arc<AppState>, exe: String, platform: Option<String
     let (id, is_new) = st
         .db
         .with(|c| repo::upsert_game(c, &g))?
-        .ok_or_else(|| anyhow::anyhow!("Ese juego ya está en la biblioteca"))?;
+        .ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Ese juego ya está en la biblioteca")))?;
     if is_new {
         after_new_games(st, vec![(id, Some(exe))]).await;
     }

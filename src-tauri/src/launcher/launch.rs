@@ -152,9 +152,9 @@ pub fn launch(g: &Game) -> anyhow::Result<Launched> {
         shell_execute("open", uri, "", None)?;
         return Ok(Launched { pid: None, via_uri: true });
     }
-    let exe = g.exe_path.as_deref().ok_or_else(|| anyhow::anyhow!("El juego no tiene ejecutable"))?;
+    let exe = g.exe_path.as_deref().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("El juego no tiene ejecutable")))?;
     if !Path::new(exe).exists() {
-        anyhow::bail!("No existe el ejecutable: {exe}");
+        anyhow::bail!("{}", crate::i18n::tf("No existe el ejecutable: {0}", &[&exe]));
     }
     let dir = g
         .working_dir

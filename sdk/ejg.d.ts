@@ -521,10 +521,10 @@ export interface Ejg {
   readonly profile: Profile | null;
   readonly mode: "desktop" | "tv";
   /** Idioma de la interfaz. */
-  readonly lang: "es" | "en";
-  /** "es-ES" | "en-US", para Intl y toLocaleString. */
+  readonly lang: "es" | "en" | "de" | "fr" | "zh" | "ja" | "pt";
+  /** Locale de Intl: "es-ES", "en-US", "de-DE", "fr-FR", "zh-CN", "ja-JP" o "pt-BR". */
   readonly locale: string;
-  /** Traduce un texto (la clave es el texto en español; traducciones en `<tema>/i18n/en.json`). `{n}` → vars.n. */
+  /** Traduce un texto (la clave es el texto en español; traducciones en `<tema>/i18n/<lang>.json`). `{n}` → vars.n. */
   t(text: string, vars?: Record<string, string | number>): string;
   /** Singular o plural según n: `tn(n, "{n} juego", "{n} juegos")`. */
   tn(n: number, one: string, many: string, vars?: Record<string, string | number>): string;

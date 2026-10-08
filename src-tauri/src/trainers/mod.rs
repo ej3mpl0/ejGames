@@ -118,7 +118,7 @@ fn client(st: &AppState) -> &reqwest::Client {
                 } else if a.url().scheme() == "https" && a.url().host_str() == Some("flingtrainer.com") {
                     a.follow()
                 } else {
-                    a.error("redirección fuera de flingtrainer.com")
+                    a.error(crate::i18n::t("redirección fuera de flingtrainer.com"))
                 }
             }))
             .build()
@@ -130,16 +130,16 @@ fn net_error(e: impl std::fmt::Display) -> anyhow::Error {
     let text = e.to_string();
     tracing::warn!("trainers: {text}");
     if text.contains("dns") || text.contains("connect") || text.contains("timed out") {
-        anyhow::anyhow!("No se pudo conectar con flingtrainer.com. Revisa tu conexión.")
+        anyhow::anyhow!("{}", crate::i18n::t("No se pudo conectar con flingtrainer.com. Revisa tu conexión."))
     } else {
-        anyhow::anyhow!("flingtrainer.com no respondió bien ({text})")
+        anyhow::anyhow!("{}", crate::i18n::tf("flingtrainer.com no respondió bien ({0})", &[&text]))
     }
 }
 
 async fn get_text(st: &AppState, url: &str) -> anyhow::Result<(String, String)> {
     let r = client(st).get(url).header(reqwest::header::ACCEPT_LANGUAGE, "en-US,en;q=0.9").send().await.map_err(net_error)?;
     if !r.status().is_success() {
-        return Err(net_error(format!("respondió {}", r.status())));
+        return Err(net_error(crate::i18n::tf("respondió {0}", &[&r.status()])));
     }
     let final_url = r.url().to_string();
     Ok((r.text().await.map_err(net_error)?, final_url))
@@ -265,7 +265,7 @@ pub async fn find(st: &Arc<AppState>, game_id: i64, query: Option<String>) -> an
 /// La ficha de un trainer (opciones, versión, descargas).
 pub async fn details(st: &Arc<AppState>, url: &str) -> anyhow::Result<Page> {
     if !fling::valid_page(url) {
-        anyhow::bail!("Esa no es una ficha de flingtrainer.com");
+        anyhow::bail!("{}", crate::i18n::t("Esa no es una ficha de flingtrainer.com"));
     }
     if let Some(p) = cache_read(st, "fling_page", url, TTL_PAGE) {
         return Ok(p);
@@ -293,7 +293,7 @@ fn exe_from_zip(bytes: &[u8]) -> anyhow::Result<(String, Vec<u8>)> {
             best = Some((i, f.size()));
         }
     }
-    let (i, _) = best.ok_or_else(|| anyhow::anyhow!("El archivo descargado no trae ningún .exe"))?;
+    let (i, _) = best.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("El archivo descargado no trae ningún .exe")))?;
     let mut f = z.by_index(i)?;
     let name = Path::new(f.name()).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "trainer.exe".into());
     let mut out = Vec::with_capacity(f.size() as usize);
@@ -313,7 +313,7 @@ fn safe_name(name: &str) -> String {
 fn defender_error(e: &std::io::Error) -> Option<anyhow::Error> {
     matches!(e.raw_os_error(), Some(225) | Some(226)).then(|| {
         anyhow::anyhow!(
-            "Windows Defender ha bloqueado el trainer. Los trainers tocan la memoria del juego y los antivirus los marcan; si confías en él, permítelo en Seguridad de Windows → Protección contra virus → Historial de protección y vuelve a instalarlo."
+            "{}", crate::i18n::t("Windows Defender ha bloqueado el trainer. Los trainers tocan la memoria del juego y los antivirus los marcan; si confías en él, permítelo en Seguridad de Windows → Protección contra virus → Historial de protección y vuelve a instalarlo.")
         )
     })
 }
@@ -322,7 +322,7 @@ fn defender_error(e: &std::io::Error) -> Option<anyhow::Error> {
 pub async fn install(st: &Arc<AppState>, game_id: i64, page_url: &str, download_url: &str) -> anyhow::Result<Installed> {
     st.db.with(|c| repo::get_game(c, game_id))?;
     if !fling::valid_page(page_url) || !fling::valid_download(download_url) {
-        anyhow::bail!("Enlace no válido");
+        anyhow::bail!("{}", crate::i18n::t("Enlace no válido"));
     }
     // La ficha, recién leída: da las cookies que pide la descarga y confirma el enlace.
     let (html, final_url) = get_text(st, page_url).await?;
@@ -331,14 +331,14 @@ pub async fn install(st: &Arc<AppState>, game_id: i64, page_url: &str, download_
         let u = page_url_final.clone();
         tauri::async_runtime::spawn_blocking(move || fling::parse_page(&html, &u)).await?
     };
-    let dl = page.downloads.iter().find(|d| d.url == download_url).cloned().ok_or_else(|| anyhow::anyhow!("Ese archivo ya no está en la ficha del trainer"))?;
+    let dl = page.downloads.iter().find(|d| d.url == download_url).cloned().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Ese archivo ya no está en la ficha del trainer")))?;
 
     let r = client(st).get(&dl.url).header(reqwest::header::REFERER, &page_url_final).send().await.map_err(net_error)?;
     if !r.status().is_success() {
-        return Err(net_error(format!("la descarga respondió {}", r.status())));
+        return Err(net_error(crate::i18n::tf("la descarga respondió {0}", &[&r.status()])));
     }
     if r.content_length().map(|n| n as usize > MAX_BYTES).unwrap_or(false) {
-        anyhow::bail!("El archivo es demasiado grande para ser un trainer");
+        anyhow::bail!("{}", crate::i18n::t("El archivo es demasiado grande para ser un trainer"));
     }
     let last = r.url().path_segments().and_then(|mut s| s.next_back()).map(|s| percent_encoding::percent_decode_str(s).decode_utf8_lossy().into_owned()).unwrap_or_default();
     let mut bytes = Vec::new();
@@ -346,7 +346,7 @@ pub async fn install(st: &Arc<AppState>, game_id: i64, page_url: &str, download_
     while let Some(chunk) = stream.chunk().await.map_err(net_error)? {
         bytes.extend_from_slice(&chunk);
         if bytes.len() > MAX_BYTES {
-            anyhow::bail!("El archivo es demasiado grande para ser un trainer");
+            anyhow::bail!("{}", crate::i18n::t("El archivo es demasiado grande para ser un trainer"));
         }
     }
     let (file_name, exe_bytes) = if bytes.starts_with(b"MZ") {
@@ -354,10 +354,10 @@ pub async fn install(st: &Arc<AppState>, game_id: i64, page_url: &str, download_
     } else if bytes.starts_with(b"PK") {
         tauri::async_runtime::spawn_blocking(move || exe_from_zip(&bytes)).await??
     } else {
-        anyhow::bail!("flingtrainer.com no devolvió un trainer (puede que la web haya cambiado)");
+        anyhow::bail!("{}", crate::i18n::t("flingtrainer.com no devolvió un trainer (puede que la web haya cambiado)"));
     };
     if !exe_bytes.starts_with(b"MZ") {
-        anyhow::bail!("El archivo descargado no es un programa de Windows");
+        anyhow::bail!("{}", crate::i18n::t("El archivo descargado no es un programa de Windows"));
     }
     let sha: String = Sha256::digest(&exe_bytes).iter().map(|b| format!("{b:02x}")).collect();
 
@@ -415,7 +415,7 @@ pub async fn install(st: &Arc<AppState>, game_id: i64, page_url: &str, download_
     })?;
     // Instalado a mitad de partida: que el overlay lo sepa.
     run::refresh(st, game_id);
-    installed(st, game_id).ok_or_else(|| anyhow::anyhow!("No se pudo guardar el trainer"))
+    installed(st, game_id).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No se pudo guardar el trainer")))
 }
 
 pub fn remove(st: &Arc<AppState>, game_id: i64) -> anyhow::Result<()> {

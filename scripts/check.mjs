@@ -3,7 +3,7 @@
 //   · tipos del host (tsc)
 //   · sintaxis de los temas, del SDK y de sus módulos
 //   · theme.json de cada tema (que se lea, con id y nombre)
-//   · que los diccionarios de inglés cubran todo (i18n:check --strict)
+//   · que los diccionarios cubran todo (i18n:check --strict)
 
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -62,7 +62,7 @@ const run = (cmd, args, opts = {}) => spawnSync(cmd, args, { cwd: root, encoding
 {
   const r = run("node", ["scripts/i18n-check.mjs", "--wide", "--strict"]);
   const last = (r.stdout || "").trim().split("\n").pop();
-  step("Inglés: textos sin traducir y huecos", r.status === 0, r.status === 0 ? "" : last + " (pnpm i18n:check --wide para verlos)");
+  step("Traducciones: textos sin traducir y huecos", r.status === 0, r.status === 0 ? "" : last + " (pnpm i18n:check --wide para verlos)");
 }
 
 if (withRust) {

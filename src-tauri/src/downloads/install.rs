@@ -24,12 +24,12 @@ fn target(st: &AppState, row: &DownloadRow) -> Option<PathBuf> {
 }
 
 pub async fn install(st: &Arc<AppState>, id: i64) -> anyhow::Result<()> {
-    let row = st.db.with(|c| repo::get_download(c, id))?.ok_or_else(|| anyhow::anyhow!("Esa descarga ya no existe"))?;
+    let row = st.db.with(|c| repo::get_download(c, id))?.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Esa descarga ya no existe")))?;
     if !matches!(row.state.as_str(), "seeding" | "completed") {
-        anyhow::bail!("«{}» aún no ha terminado de descargarse", row.title);
+        anyhow::bail!("{}", crate::i18n::tf("«{0}» aún no ha terminado de descargarse", &[&row.title]));
     }
     if row.files_deleted {
-        anyhow::bail!("Los archivos de este repack ya se borraron");
+        anyhow::bail!("{}", crate::i18n::t("Los archivos de este repack ya se borraron"));
     }
     // Descargas de los catálogos: ROMs que se ordenan y se meten en la biblioteca.
     if row.source == "catalog" {
@@ -42,7 +42,7 @@ pub async fn install(st: &Arc<AppState>, id: i64) -> anyhow::Result<()> {
     {
         let mut g = st.downloads.installing.lock();
         if g.is_some() {
-            anyhow::bail!("Ya hay una instalación en curso");
+            anyhow::bail!("{}", crate::i18n::t("Ya hay una instalación en curso"));
         }
         *g = Some(id);
     }
@@ -70,7 +70,7 @@ async fn install_catalog(st: &Arc<AppState>, row: DownloadRow) -> anyhow::Result
     {
         let mut g = st.downloads.installing.lock();
         if g.is_some() {
-            anyhow::bail!("Ya hay una instalación en curso");
+            anyhow::bail!("{}", crate::i18n::t("Ya hay una instalación en curso"));
         }
         *g = Some(id);
     }
@@ -141,8 +141,8 @@ fn run(st: Arc<AppState>, row: DownloadRow, setup: PathBuf, dest: Option<PathBuf
                 }
             }
             // Inno Setup: 2 = cancelado antes de empezar, 5 = cancelado durante.
-            Some(2) | Some(5) => Outcome::Cancelled("Instalación cancelada".into()),
-            Some(c) => Outcome::Failed(format!("El instalador terminó con un error (código {c})")),
+            Some(2) | Some(5) => Outcome::Cancelled(crate::i18n::t("Instalación cancelada").into()),
+            Some(c) => Outcome::Failed(crate::i18n::tf("El instalador terminó con un error (código {0})", &[&c])),
         },
     };
     if let Some(d) = &dest {
@@ -155,8 +155,8 @@ fn run(st: Arc<AppState>, row: DownloadRow, setup: PathBuf, dest: Option<PathBuf
 fn start(verb: &str, setup: &Path, params: &str, dir: &str) -> Result<Option<u32>, Outcome> {
     use crate::launcher::launch::{start_installer, InstallerError};
     match start_installer(verb, &setup.to_string_lossy(), params, Some(dir)) {
-        Err(InstallerError::Cancelled) => Err(Outcome::Cancelled("Has cancelado el permiso de administrador".into())),
-        Err(InstallerError::Other(e)) => Err(Outcome::Failed(format!("No se pudo abrir el instalador: {e:#}"))),
+        Err(InstallerError::Cancelled) => Err(Outcome::Cancelled(crate::i18n::t("Has cancelado el permiso de administrador").into())),
+        Err(InstallerError::Other(e)) => Err(Outcome::Failed(crate::i18n::tf("No se pudo abrir el instalador: {0}", &[&format!("{e:#}")]))),
         Ok(None) => Ok(None),
         Ok(Some(p)) => {
             while !p.wait(1000) {}
@@ -189,8 +189,8 @@ fn find_install_dir(dest: Option<&Path>, before: &win::UninstallSnapshot, after:
 pub async fn register(st: &Arc<AppState>, row: &DownloadRow, dir: &Path) -> anyhow::Result<i64> {
     let d = dir.to_path_buf();
     let analysis = tauri::async_runtime::spawn_blocking(move || exe_detect::analyze(&d)).await?;
-    let a = analysis.ok_or_else(|| anyhow::anyhow!("No encuentro el ejecutable del juego en {}", dir.display()))?;
-    let mut g = scanner::to_new_game(&a, None).ok_or_else(|| anyhow::anyhow!("No encuentro el ejecutable del juego en {}", dir.display()))?;
+    let a = analysis.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::tf("No encuentro el ejecutable del juego en {0}", &[&dir.display()])))?;
+    let mut g = scanner::to_new_game(&a, None).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::tf("No encuentro el ejecutable del juego en {0}", &[&dir.display()])))?;
     g.source = "repack".into();
     g.source_id = row.source_id.clone();
     g.title = row.title.clone();
@@ -204,7 +204,7 @@ pub async fn register(st: &Arc<AppState>, row: &DownloadRow, dir: &Path) -> anyh
         tx.commit()?;
         Ok(r)
     })?;
-    let (id, is_new) = res.ok_or_else(|| anyhow::anyhow!("Esa carpeta ya es de otro juego de tu biblioteca"))?;
+    let (id, is_new) = res.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Esa carpeta ya es de otro juego de tu biblioteca")))?;
     if is_new {
         crate::services::after_new_games(st, vec![(id, g.exe_path.clone())]).await;
     } else {
@@ -218,7 +218,7 @@ async fn finish(st: &Arc<AppState>, row: &DownloadRow, outcome: Outcome) {
     match outcome {
         Outcome::Done(dir) => complete(st, row, &dir).await,
         Outcome::NotFound => {
-            let msg = "No sé dónde se instaló. Elige la carpeta del juego.".to_string();
+            let msg = crate::i18n::t("No sé dónde se instaló. Elige la carpeta del juego.").to_string();
             let _ = st.db.with(|c| repo::set_download_state(c, id, "completed", Some("needs-folder"), Some(&msg)));
             emit(st, id, "needs-folder", Some(msg), None);
         }
@@ -260,7 +260,7 @@ async fn complete(st: &Arc<AppState>, row: &DownloadRow, dir: &Path) {
             Err(e) => tracing::warn!("borrar repack: {e}"),
         }
     }
-    events::toast(st, "ok", format!("«{}» instalado. Ya está en tu biblioteca.", row.title));
+    events::toast(st, "ok", crate::i18n::tf("«{0}» instalado. Ya está en tu biblioteca.", &[&row.title]));
     emit(st, id, "done", None, game_id);
 }
 
@@ -269,7 +269,7 @@ pub async fn finish_manual(st: &Arc<AppState>, id: i64, dir: &str) -> anyhow::Re
     let row = st.db.with(|c| repo::get_download(c, id))?.ok_or_else(|| anyhow::anyhow!("Esa descarga ya no existe"))?;
     let path = PathBuf::from(crate::util::clean_dir(dir));
     if !path.is_dir() {
-        anyhow::bail!("Esa carpeta no existe");
+        anyhow::bail!("{}", crate::i18n::t("Esa carpeta no existe"));
     }
     complete(st, &row, &path).await;
     queue::reconcile(st).await;

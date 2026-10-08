@@ -206,6 +206,7 @@ pub fn run() {
             commands::clear_trailer_cache,
             commands::open_data_dir,
             commands::ui_language,
+            commands::system_ui_language,
             commands::theme_strings,
             commands::backup_create,
             commands::backup_inspect,

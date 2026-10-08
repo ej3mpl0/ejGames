@@ -238,7 +238,7 @@ async fn remote(st: &Arc<AppState>, id: i64, variant: &str) -> anyhow::Result<(P
         if let (Some(h), Some(e)) = (rec.hash, rec.ext) {
             return Ok((st.paths.media_file(&h, &e), true));
         }
-        anyhow::bail!("no se pudo descargar");
+        anyhow::bail!("{}", crate::i18n::t("no se pudo descargar"));
     }
     let url = match variant {
         "thumb" => rec.extra.get("thumb").and_then(|v| v.as_str()).map(str::to_string),
@@ -250,7 +250,7 @@ async fn remote(st: &Arc<AppState>, id: i64, variant: &str) -> anyhow::Result<(P
             rec.remote_url.clone()
         }
     }
-    .ok_or_else(|| anyhow::anyhow!("sin URL"))?;
+    .ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("sin URL")))?;
     if !url.starts_with("https://") {
         anyhow::bail!("URL no permitida");
     }

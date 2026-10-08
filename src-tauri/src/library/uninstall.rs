@@ -156,16 +156,16 @@ pub fn check_folder(dir: &str, protected: &[String], others: &[String]) -> Resul
     let d = norm(dir);
     let p = Path::new(dir);
     if !p.is_absolute() || p.parent().is_none() || d.len() <= 3 {
-        return Err("Esa carpeta no se puede borrar.".into());
+        return Err(crate::i18n::t("Esa carpeta no se puede borrar.").into());
     }
     for x in protected.iter().map(|x| norm(x)).filter(|x| !x.is_empty()) {
         if within(&x, &d) {
-            return Err("La carpeta del juego es también una carpeta de tu biblioteca o del sistema: no se borra.".into());
+            return Err(crate::i18n::t("La carpeta del juego es también una carpeta de tu biblioteca o del sistema: no se borra.").into());
         }
     }
     for o in others.iter().map(|o| norm(o)).filter(|o| !o.is_empty()) {
         if within(&o, &d) {
-            return Err("En la carpeta del juego hay otros juegos de tu biblioteca: no se borra.".into());
+            return Err(crate::i18n::t("En la carpeta del juego hay otros juegos de tu biblioteca: no se borra.").into());
         }
     }
     Ok(())
@@ -264,16 +264,16 @@ fn console_targets(g: &Game, rec: Option<crate::catalogs::InstalledRec>, extras:
         .or(g.exe_path.as_deref())
         .map(PathBuf::from)
         .filter(|p| p.is_absolute() && p.is_file())
-        .context("El archivo de este juego ya no está. Puedes quitarlo de la biblioteca en Editar.")?;
+        .context(crate::i18n::t("El archivo de este juego ya no está. Puedes quitarlo de la biblioteca en Editar."))?;
     let mut files = vec![rom];
     files.extend(extras.into_iter().map(PathBuf::from).filter(|p| p.is_absolute() && p.is_file()));
     Ok((files, vec![g.id]))
 }
 
 fn resolve(st: &AppState, id: i64) -> anyhow::Result<(Game, Plan, Action)> {
-    let g = st.db.with(|c| repo::get_game(c, id)).map_err(|_| anyhow::anyhow!("Ese juego ya no está en la biblioteca"))?;
+    let g = st.db.with(|c| repo::get_game(c, id)).map_err(|_| anyhow::anyhow!("{}", crate::i18n::t("Ese juego ya no está en la biblioteca")))?;
     if st.sessions.is_running(id) {
-        bail!("Cierra el juego antes de desinstalarlo.");
+        bail!("{}", crate::i18n::t("Cierra el juego antes de desinstalarlo."));
     }
     let mut plan = Plan { game_id: id, title: g.title.clone(), method: String::new(), dir: None, program: None, size_bytes: None };
     if g.platform.is_some() {
@@ -283,9 +283,9 @@ fn resolve(st: &AppState, id: i64) -> anyhow::Result<(Game, Plan, Action)> {
         plan.size_bytes = Some(files.iter().map(|p| if p.is_dir() { dir_size(p) } else { file_size(p) }).sum());
         return Ok((g, plan, Action::Console { files, ids }));
     }
-    let dir = game_dir(&g).context("No se sabe en qué carpeta está este juego")?;
+    let dir = game_dir(&g).context(crate::i18n::t("No se sabe en qué carpeta está este juego"))?;
     if !dir.is_dir() {
-        bail!("La carpeta del juego ya no existe. Puedes quitarlo de la biblioteca en Editar.");
+        bail!("{}", crate::i18n::t("La carpeta del juego ya no existe. Puedes quitarlo de la biblioteca en Editar."));
     }
     let dir_s = dir.to_string_lossy().into_owned();
     plan.dir = Some(dir_s.clone());
@@ -322,8 +322,8 @@ pub fn run(st: Arc<AppState>, id: i64) -> anyhow::Result<&'static str> {
                 use crate::launcher::launch::{start_installer, InstallerError};
                 match start_installer("open", &file, &args, dir.as_deref()) {
                     Ok(_) => {}
-                    Err(InstallerError::Cancelled) => bail!("Has cancelado el permiso de administrador."),
-                    Err(InstallerError::Other(e)) => return Err(e.context("No se pudo abrir el desinstalador")),
+                    Err(InstallerError::Cancelled) => bail!("{}", crate::i18n::t("Has cancelado el permiso de administrador.")),
+                    Err(InstallerError::Other(e)) => return Err(e.context(crate::i18n::t("No se pudo abrir el desinstalador"))),
                 }
             }
             #[cfg(not(windows))]
@@ -335,7 +335,7 @@ pub fn run(st: Arc<AppState>, id: i64) -> anyhow::Result<&'static str> {
         Action::Recycle(dir) => {
             recycle(&dir)?;
             if dir.exists() {
-                bail!("No se pudo mandar la carpeta a la papelera.");
+                bail!("{}", crate::i18n::t("No se pudo mandar la carpeta a la papelera."));
             }
             forget(&st, &g);
             Ok("removed")
@@ -344,7 +344,7 @@ pub fn run(st: Arc<AppState>, id: i64) -> anyhow::Result<&'static str> {
             for f in &files {
                 recycle(f)?;
                 if f.exists() {
-                    bail!("No se pudo mandar a la papelera: {}", f.display());
+                    bail!("{}", crate::i18n::tf("No se pudo mandar a la papelera: {0}", &[&f.display()]));
                 }
             }
             let paths: Vec<String> = files.iter().map(|p| p.to_string_lossy().into_owned()).collect();
@@ -413,7 +413,7 @@ fn recycle(dir: &Path) -> anyhow::Result<()> {
     };
     let r = unsafe { SHFileOperationW(&mut op) };
     if r != 0 || op.fAnyOperationsAborted.as_bool() {
-        bail!("No se pudo mandar la carpeta a la papelera (código {r}).");
+        bail!("{}", crate::i18n::tf("No se pudo mandar la carpeta a la papelera (código {0}).", &[&r]));
     }
     Ok(())
 }

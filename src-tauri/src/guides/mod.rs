@@ -138,7 +138,7 @@ async fn fetch(st: &AppState, url: &str) -> anyhow::Result<String> {
         .send()
         .await?;
     if !r.status().is_success() {
-        anyhow::bail!("Steam respondió {}", r.status());
+        anyhow::bail!("{}", crate::i18n::tf("Steam respondió {0}", &[&r.status()]));
     }
     Ok(r.text().await?)
 }
@@ -158,9 +158,9 @@ fn net_error(e: anyhow::Error) -> anyhow::Error {
     let text = format!("{e:#}");
     tracing::warn!("guías: {text}");
     if text.contains("dns") || text.contains("connect") || text.contains("timed out") || text.contains("operation timed out") {
-        anyhow::anyhow!("No se pudo conectar con la comunidad de Steam. Revisa tu conexión.")
+        anyhow::anyhow!("{}", crate::i18n::t("No se pudo conectar con la comunidad de Steam. Revisa tu conexión."))
     } else {
-        anyhow::anyhow!("No se pudieron cargar las guías de Steam ({text})")
+        anyhow::anyhow!("{}", crate::i18n::tf("No se pudieron cargar las guías de Steam ({0})", &[&text]))
     }
 }
 
@@ -294,7 +294,7 @@ fn is_pinned(st: &AppState, profile: Option<i64>, id: &str) -> bool {
 
 pub async fn get(st: &Arc<AppState>, id: &str) -> anyhow::Result<GuideView> {
     if !valid_id(id) {
-        anyhow::bail!("guía no válida");
+        anyhow::bail!("{}", crate::i18n::t("guía no válida"));
     }
     let prof = profile(st);
     let pinned = is_pinned(st, prof, id);
@@ -309,7 +309,7 @@ pub async fn get(st: &Arc<AppState>, id: &str) -> anyhow::Result<GuideView> {
                     let id2 = id.to_string();
                     let g = tauri::async_runtime::spawn_blocking(move || parse::guide(&id2, &html))
                         .await?
-                        .ok_or_else(|| anyhow::anyhow!("Esa guía ya no existe o Steam no la enseña sin iniciar sesión."))?;
+                        .ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Esa guía ya no existe o Steam no la enseña sin iniciar sesión.")))?;
                     cache_write(st, "guide", id, &g);
                     g
                 }
@@ -334,9 +334,9 @@ pub async fn get(st: &Arc<AppState>, id: &str) -> anyhow::Result<GuideView> {
 /// de la guía ya leída o de la lista (lo que haya en caché).
 pub fn pin(st: &AppState, game_id: i64, id: &str, title: &str, author: &str, preview: Option<&str>, value: bool) -> anyhow::Result<()> {
     if !valid_id(id) {
-        anyhow::bail!("guía no válida");
+        anyhow::bail!("{}", crate::i18n::t("guía no válida"));
     }
-    let prof = profile(st).ok_or_else(|| anyhow::anyhow!("No hay perfil activo"))?;
+    let prof = profile(st).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No hay perfil activo")))?;
     let preview = media_preview(preview);
     st.db.with(|c| {
         if value {
@@ -362,9 +362,9 @@ fn media_preview(p: Option<&str>) -> Option<&str> {
 #[allow(clippy::too_many_arguments)]
 pub fn set_progress(st: &AppState, game_id: i64, id: &str, title: &str, author: &str, preview: Option<&str>, section: u32, scroll: f64) -> anyhow::Result<()> {
     if !valid_id(id) {
-        anyhow::bail!("guía no válida");
+        anyhow::bail!("{}", crate::i18n::t("guía no válida"));
     }
-    let prof = profile(st).ok_or_else(|| anyhow::anyhow!("No hay perfil activo"))?;
+    let prof = profile(st).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No hay perfil activo")))?;
     st.db.with(|c| {
         c.execute(
             "INSERT INTO guide_progress (profile_id, game_id, guide_id, title, author, preview, section, scroll, read_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)

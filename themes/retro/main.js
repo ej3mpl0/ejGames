@@ -22,14 +22,14 @@ const $ = (s) => document.querySelector(s);
 const list = $("#list");
 const detail = $("#detail");
 const FILTERS = [
-  ["all", "ALL"],
-  ["played", "PLAYED"],
-  ["new", "NEW"],
+  ["all", "TODOS"],
+  ["played", "JUGADOS"],
+  ["new", "NUEVOS"],
   ["fav", "FAV ★"],
-  ["hidden", "HIDDEN"], // solo aparece si hay juegos ocultos
+  ["hidden", "OCULTOS"], // solo aparece si hay juegos ocultos
 ];
 const HID = FILTERS.length - 1;
-const TITLES = { library: "SELECT GAME", homebrew: "HOMEBREW", shop: "GAME SHOP", downloads: "DOWNLOADS" };
+const TITLES = { library: "ELIGE UN JUEGO", homebrew: "HOMEBREW", shop: "TIENDA DE JUEGOS", downloads: "DESCARGAS" };
 // view: library (pestañas de filtro) | homebrew | shop | downloads
 const state = { filter: 0, selected: null, view: "library" };
 clock($("#clock"));
@@ -59,17 +59,17 @@ function renderTabs() {
   const nh = hiddenGames().length;
   $("#tabs").replaceChildren(
     ...[
-      ...filterTabs().map((i) => tab(i, i === HID ? `HIDDEN (${nh})` : FILTERS[i][1])),
+      ...filterTabs().map((i) => tab(i, i === HID ? `OCULTOS (${nh})` : FILTERS[i][1])),
       h("span", { class: "tab-sep" }),
       tab("homebrew", "HOMEBREW"),
-      ejg.explore.enabled ? tab("shop", "SHOP") : null,
-      tab("downloads", "DOWNLOADS", h("span", { class: "tab-n", id: "tab-n", hidden: !n }, String(n))),
-      tab("options", "OPTIONS"),
+      ejg.explore.enabled ? tab("shop", "TIENDA") : null,
+      tab("downloads", "DESCARGAS", h("span", { class: "tab-n", id: "tab-n", hidden: !n }, String(n))),
+      tab("options", "OPCIONES"),
     ].filter(Boolean),
   );
   const total = visible(ejg.library.all).length;
-  $("#credits").textContent = `CREDIT ${String(Math.min(total, 99)).padStart(2, "0")}`;
-  $("#p1").textContent = `1UP ${(ejg.profile?.name || "PLAYER").toUpperCase().slice(0, 10)}`;
+  $("#credits").textContent = `CRÉDITO ${String(Math.min(total, 99)).padStart(2, "0")}`;
+  $("#p1").textContent = `1UP ${(ejg.profile?.name || "JUGADOR").toUpperCase().slice(0, 10)}`;
 }
 
 function goTab(t) {
@@ -111,7 +111,7 @@ function dropHomebrew() {
   hbView = null;
 }
 const hv = (a) => !!(state.view === "homebrew" && detail.hidden && hbView && hbView.nav(a));
-const HB_HINTS = { Abrir: "START", Borrar: "DELETE", Consola: "CONSOLE", Emuladores: "EMULATORS", "Atrás": "BACK", Elegir: "SELECT", Cerrar: "CLOSE" };
+const HB_HINTS = { Abrir: "ABRIR", Borrar: "BORRAR", Consola: "CONSOLA", Emuladores: "EMULADORES", "Atrás": "VOLVER", Elegir: "ELEGIR", Cerrar: "CERRAR" };
 function switchTab(d) {
   const tabs = tabList().filter((t) => t !== "options"); // LB/RB no abren los ajustes
   goTab(tabs[(tabs.indexOf(curTab()) + d + tabs.length) % tabs.length]);
@@ -130,12 +130,12 @@ function renderList() {
           { class: "item" + (g.missing ? " missing" : ""), "data-focus": "", "data-game-id": g.id, onclick: () => start(g.id) },
           g.title,
           g.favorite ? h("span", { class: "star" }, "★") : null,
-          ejg.game.isRunning(g.id) ? h("span", { class: "run" }, "● PLAY") : null,
+          ejg.game.isRunning(g.id) ? h("span", { class: "run" }, "● JUGANDO") : null,
         ),
       ),
     ].filter(Boolean)),
   );
-  if (!l.length) list.replaceChildren(h("li", { class: "empty" }, state.filter ? "NO HAY JUEGOS AQUÍ" : "INSERT GAME: pulsa ▶ para añadir carpetas", h("br"), h("button", { class: "item", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, "AÑADIR JUEGOS")));
+  if (!l.length) list.replaceChildren(h("li", { class: "empty" }, state.filter ? "NO HAY JUEGOS AQUÍ" : "INSERTA JUEGO: pulsa ▶ para añadir carpetas", h("br"), h("button", { class: "item", "data-focus": "", onclick: () => ejg.ui.open("add-folder") }, "AÑADIR JUEGOS")));
   if (cur) {
     const again = list.querySelector(`[data-game-id="${cur}"]`);
     if (again) focus.focus(again, { noScroll: true, silent: true });
@@ -188,18 +188,18 @@ function showCard(g) {
   const hs = String(Math.floor((g.playtime || 0) / 60)).padStart(6, "0");
   $("#info").replaceChildren(
     ...[
-    row("HI-SCORE", hs),
-    row("PLAY TIME", playtime(g.playtime, "0 MIN").toUpperCase()),
-    row("LAST", relative(g.lastPlayed).toUpperCase()),
-    g.achievements ? row("TROPHIES", `${g.achievements.unlocked}/${g.achievements.total}`) : null,
-    row("YEAR", year(g.releaseDate) || "????"),
-    row("DEV", (g.developer || "UNKNOWN").toUpperCase().slice(0, 22)),
+    row("RÉCORD", hs),
+    row("TIEMPO DE JUEGO", playtime(g.playtime, "0 MIN").toUpperCase()),
+    row("ÚLTIMA VEZ", relative(g.lastPlayed).toUpperCase()),
+    g.achievements ? row("TROFEOS", `${g.achievements.unlocked}/${g.achievements.total}`) : null,
+    row("AÑO", year(g.releaseDate) || "????"),
+    row("ESTUDIO", (g.developer || "DESCONOCIDO").toUpperCase().slice(0, 22)),
     row("GENRE", ((g.genres || [])[0] || "???").toUpperCase()),
     ].filter(Boolean),
   );
   if (state.view !== "library") return;
   updateHints(g);
-  $("#ticker").textContent = (g.shortDescription || `${g.title} · INSERT COIN`).toUpperCase();
+  $("#ticker").textContent = (g.shortDescription || `${g.title} · INSERTA MONEDA`).toUpperCase();
 }
 
 async function start(id) {
@@ -225,13 +225,13 @@ async function openDetail(id) {
   const actions = h(
     "div",
     { class: "actions", "data-focus-group": "detail" },
-    h("button", { "data-focus": "", onclick: () => (closeDetail(), start(g.id)) }, "▶ START"),
+    h("button", { "data-focus": "", onclick: () => (closeDetail(), start(g.id)) }, "▶ JUGAR"),
     h("button", { "data-focus": "", onclick: () => ejg.game.favorite(g.id) }, "★ FAV"),
-    h("button", { "data-focus": "", onclick: () => (closeDetail(true), openGuides(g.id)) }, "? GUIDES"),
-    h("button", { "data-focus": "", onclick: () => ejg.trainer.open(g.id) }, "* CHEATS"),
-    h("button", { "data-focus": "", onclick: () => ejg.maps.open(g.id) }, "# MAP"),
-    h("button", { "data-focus": "", onclick: () => (closeDetail(), ejg.game.edit(g.id)) }, "EDIT"),
-    h("button", { "data-focus": "", onclick: closeDetail }, "BACK"),
+    h("button", { "data-focus": "", onclick: () => (closeDetail(true), openGuides(g.id)) }, "? GUÍAS"),
+    h("button", { "data-focus": "", onclick: () => ejg.trainer.open(g.id) }, "* TRAINER"),
+    h("button", { "data-focus": "", onclick: () => ejg.maps.open(g.id) }, "# MAPA"),
+    h("button", { "data-focus": "", onclick: () => (closeDetail(), ejg.game.edit(g.id)) }, "EDITAR"),
+    h("button", { "data-focus": "", onclick: closeDetail }, "VOLVER"),
   );
   detail.replaceChildren(...[h("h2", null, g.title.toUpperCase()), notice, repackUpdateNote(g), emulatorNote(g), howLongNote(g), desc, shots, actions].filter(Boolean));
   detail.hidden = false;
@@ -280,7 +280,7 @@ function closeDetail(quiet) {
 let guideView = null;
 const guidesEl = $("#guides");
 // Las pistas de la vista del kit, en el inglés arcade del tema (la fuente no trae «Ó», «Á»…).
-const GUIDE_HINTS = { Leer: "READ", "Sección": "SECTION", Guardar: "SAVE", "Quitar de guardadas": "UNSAVE", Steam: "STEAM", Volver: "BACK", "Atrás": "BACK", Cerrar: "CLOSE", Ir: "GO", Buscar: "SEARCH" };
+const GUIDE_HINTS = { Leer: "LEER", "Sección": "SECCIÓN", Guardar: "GUARDAR", "Quitar de guardadas": "QUITAR DE GUARDADAS", Steam: "STEAM", Volver: "VOLVER", "Atrás": "VOLVER", Cerrar: "CERRAR", Ir: "IR", Buscar: "BUSCAR" };
 function openGuides(gameId, guideId = null) {
   const g = ejg.library.byId(gameId);
   if (!g) return;
@@ -295,21 +295,21 @@ function openGuides(gameId, guideId = null) {
     gameTitle: g.title.toUpperCase(),
     guide: guideId,
     labels: {
-      title: "GUIDES",
-      saved: "SAVED",
-      continue: "CONTINUE",
-      community: "COMMUNITY",
-      count: (n) => `${n} GUIDES`,
-      more: "MORE GUIDES",
-      loading: "LOADING…",
-      opening: "LOADING GUIDE…",
-      pin: "☆ SAVE",
-      pinned: "★ SAVED",
+      title: "GUÍAS",
+      saved: "GUARDADAS",
+      continue: "SEGUIR",
+      community: "COMUNIDAD",
+      count: (n) => `${n} GUÍAS`,
+      more: "MÁS GUÍAS",
+      loading: "CARGANDO…",
+      opening: "CARGANDO GUÍA…",
+      pin: "☆ GUARDAR",
+      pinned: "★ GUARDADA",
       browser: "STEAM",
-      back: "BACK",
-      search: "SEARCH",
-      index: "INDEX",
-      end: "GAME OVER · THE END",
+      back: "VOLVER",
+      search: "BUSCAR",
+      index: "ÍNDICE",
+      end: "FIN DE LA PARTIDA · FIN",
     },
     onExit: closeGuides,
     onChange: () => updateHints(),
@@ -496,7 +496,7 @@ function updateHints(g) {
   }
   if (!inLib()) return;
   hintBar.set([
-    ["accept", "START"],
+    ["accept", "JUGAR"],
     // oculto: en INFO está MOSTRAR EN LA BIBLIOTECA
     ["x", g?.hidden ? "INFO · MOSTRAR" : "INFO"],
     ["y", "FAV"],

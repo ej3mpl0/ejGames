@@ -39,7 +39,7 @@ const SECTIONS = [
   ["today", "HOY", "POPULARES HOY", "★ POPULAR HOY"],
   ["week", "SEMANA", "POPULARES DE LA SEMANA", "★ TOP SEMANA"],
   ["month", "MES", "POPULARES DEL MES", "★ TOP MES"],
-  ["latest", "NUEVOS", "NOVEDADES", "NEW!"],
+  ["latest", "NUEVOS", "NOVEDADES", "¡NUEVO!"],
   ["all", "TODO", "TODOS LOS JUEGOS", "CATÁLOGO"],
   ["wish", "DESEADOS", "LISTA DE DESEADOS", "♥ DESEADO"],
   ["search", "BUSCAR", "BUSCAR", "RESULTADO"],
@@ -503,7 +503,7 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
       { class: "s-card" },
       heroBox,
       h("div", { class: "s-mid" }, h("div", { class: "art s-art" }, cover), info),
-      h("div", { class: "s-none" }, h("span", { class: "blink-slow" }, "INSERT CARTRIDGE")),
+      h("div", { class: "s-none" }, h("span", { class: "blink-slow" }, "INSERTA CARTUCHO")),
     );
     // Evento: su banner y su lema encima de la lista, solo en su sección.
     const sev = season();
@@ -1223,11 +1223,11 @@ export function createStore({ ejg, root, screen, ficha, focus, hints, ticker, ta
       if (tab() === "downloads") {
         ui = null;
         paintDownloads();
-        ticker("DOWNLOADS · ELIGE UNA FILA Y PULSA LAS TECLAS QUE MUESTRA · LB/RB PARA CAMBIAR DE PESTAÑA");
+        ticker("DESCARGAS · ELIGE UNA FILA Y PULSA LAS TECLAS QUE MUESTRA · LB/RB PARA CAMBIAR DE PESTAÑA");
       } else {
         store.loadHome();
         paintShop();
-        ticker("GAME SHOP · ELIGE UN CARTUCHO Y PULSA A");
+        ticker("TIENDA DE JUEGOS · ELIGE UN CARTUCHO Y PULSA A");
         shopHints();
       }
     },

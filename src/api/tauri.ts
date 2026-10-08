@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { t } from "../lib/i18n";
 import type {
   AchList,
   ArtItem,
@@ -170,6 +171,7 @@ export const api = {
     invoke<void>("theme_storage_set", { themeId, key, value }),
 
   getSettings: () => invoke<Settings>("get_settings"),
+  systemUiLanguage: () => invoke<string>("system_ui_language"),
   updateSettings: (patch: Partial<Settings>) => invoke<Settings>("update_settings", { patch }),
   cacheInfo: () => invoke<{ mediaMb: number; trailersMb: number }>("cache_info"),
   clearTrailerCache: () => invoke<void>("clear_trailer_cache"),
@@ -291,7 +293,7 @@ export function on<K extends keyof Events>(name: K, fn: (payload: Events[K]) => 
 }
 
 export function errMsg(e: unknown): string {
-  if (typeof e === "string") return e;
-  if (e && typeof e === "object" && "message" in e) return String((e as { message: unknown }).message);
-  return String(e);
+  if (typeof e === "string") return t(e);
+  if (e && typeof e === "object" && "message" in e) return t(String((e as { message: unknown }).message));
+  return t(String(e));
 }

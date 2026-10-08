@@ -310,7 +310,7 @@ pub fn scan_roms(db: &Db, folder: &LibraryFolder, platform_id: &str) -> anyhow::
     let pf = platform(platform_id).ok_or_else(|| anyhow::anyhow!("Sistema desconocido: {platform_id}"))?;
     let root = PathBuf::from(&folder.path);
     if !root.is_dir() {
-        anyhow::bail!("La carpeta no existe: {}", folder.path);
+        anyhow::bail!("{}", crate::i18n::tf("La carpeta no existe: {0}", &[&folder.path]));
     }
     let roms = find_roms(&root, pf);
     // Lo ya leído no se vuelve a abrir: solo las ROMs nuevas (o de antes de 1.3.0).

@@ -210,7 +210,7 @@ pub fn extract_with(archive: &Path, dest: &Path, passwords: &[String]) -> anyhow
     let root = dest.canonicalize()?;
     for e in walkdir::WalkDir::new(dest).into_iter().filter_map(Result::ok) {
         if !e.path().canonicalize().map(|p| p.starts_with(&root)).unwrap_or(false) {
-            anyhow::bail!("El archivo trae rutas fuera de su carpeta");
+            anyhow::bail!("{}", crate::i18n::t("El archivo trae rutas fuera de su carpeta"));
         }
     }
     Ok(())
@@ -270,7 +270,7 @@ fn folder_name(title: &str) -> String {
     let t = crate::library::names::clean_title(title);
     let s = crate::downloads::sanitize(if t.trim().is_empty() { title } else { &t });
     if s.trim().is_empty() {
-        "Juego".into()
+        crate::i18n::t("Juego").into()
     } else {
         s
     }
@@ -279,7 +279,7 @@ fn folder_name(title: &str) -> String {
 /// Mueve sin pisar otro distinto; si ya hay uno igual (mismo tamaño), se reutiliza.
 fn move_into(src: &Path, dir: &Path) -> anyhow::Result<PathBuf> {
     std::fs::create_dir_all(dir)?;
-    let name = src.file_name().ok_or_else(|| anyhow::anyhow!("archivo sin nombre"))?;
+    let name = src.file_name().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("archivo sin nombre")))?;
     let mut dest = dir.join(name);
     if dest.is_file() {
         if std::fs::metadata(&dest)?.len() == std::fs::metadata(src)?.len() {

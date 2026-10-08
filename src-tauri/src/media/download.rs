@@ -45,7 +45,7 @@ pub async fn download_record(st: &Arc<AppState>, rec: &repo::MediaRecord) -> any
     if let Some(alts) = rec.extra.get("alts").and_then(|a| a.as_array()) {
         urls.extend(alts.iter().filter_map(|u| u.as_str().map(str::to_string)));
     }
-    let mut last = anyhow::anyhow!("sin URL");
+    let mut last = anyhow::anyhow!("{}", crate::i18n::t("sin URL"));
     for (i, url) in urls.iter().enumerate() {
         match download_into(st, rec.id, url, &rec.kind).await {
             Ok(()) => {
@@ -91,7 +91,7 @@ pub async fn cached_remote(st: &Arc<AppState>, url: &str) -> anyhow::Result<Path
     if tokio::fs::rename(&tmp, &path).await.is_err() {
         let _ = tokio::fs::remove_file(&tmp).await;
         if !path.exists() {
-            anyhow::bail!("no se pudo guardar {}", path.display());
+            anyhow::bail!("{}", crate::i18n::tf("no se pudo guardar {0}", &[&path.display()]));
         }
     }
     Ok(path)

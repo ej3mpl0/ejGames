@@ -414,7 +414,7 @@ pub fn extract(archive: &Path, dest: &Path) -> anyhow::Result<()> {
     let root = dest.canonicalize()?;
     for e in walkdir::WalkDir::new(dest).into_iter().filter_map(Result::ok) {
         if !e.path().canonicalize().map(|p| p.starts_with(&root)).unwrap_or(false) {
-            anyhow::bail!("El archivo trae rutas fuera de su carpeta");
+            anyhow::bail!("{}", crate::i18n::t("El archivo trae rutas fuera de su carpeta"));
         }
     }
     Ok(())
@@ -482,7 +482,7 @@ async fn install_inner(st: &Arc<AppState>, e: &'static Entry) -> anyhow::Result<
     .await;
     let _ = std::fs::remove_dir_all(&tmp);
     res?;
-    let inst = installed(&root, e.id).ok_or_else(|| anyhow::anyhow!("No se pudo dejar instalado"))?;
+    let inst = installed(&root, e.id).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No se pudo dejar instalado")))?;
     configure(st, e, &inst.exe)?;
     link(st, e, &inst).await;
     *LATEST.lock() = None;
@@ -604,7 +604,7 @@ pub async fn install_core(st: &Arc<AppState>, platform_id: &str) -> anyhow::Resu
     if core.is_empty() || !core.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
         anyhow::bail!("{}", crate::i18n::t("Núcleo no válido"));
     }
-    let cores_dir = Path::new(&cfg.exe).parent().map(|d| d.join("cores")).ok_or_else(|| anyhow::anyhow!("RetroArch no está donde se esperaba"))?;
+    let cores_dir = Path::new(&cfg.exe).parent().map(|d| d.join("cores")).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("RetroArch no está donde se esperaba")))?;
     if cores_dir.join(format!("{core}.dll")).is_file() {
         return Ok(core);
     }

@@ -107,7 +107,7 @@ pub fn press(c: &Combo) -> anyhow::Result<()> {
         ok &= send(*m, true, false);
     }
     if !ok {
-        anyhow::bail!("Windows no dejó pulsar las teclas del trainer");
+        anyhow::bail!("{}", crate::i18n::t("Windows no dejó pulsar las teclas del trainer"));
     }
     Ok(())
 }

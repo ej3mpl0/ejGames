@@ -148,13 +148,14 @@
 
   // ───────────── idioma ─────────────
   // La clave de cada texto es el propio texto en español; sin traducción se ve
-  // el original. Las traducciones del tema van en <tema>/i18n/en.json.
+  // el original. Las traducciones del tema van en <tema>/i18n/<lang>.json.
   function t(s, vars) {
     var out = Object.prototype.hasOwnProperty.call(state.strings, s) ? state.strings[s] : s;
     if (vars) Object.keys(vars).forEach(function (k) { out = out.split("{" + k + "}").join(String(vars[k])); });
     return out;
   }
-  function locale() { return state.lang === "en" ? "en-US" : "es-ES"; }
+  var LOCALES = { es: "es-ES", en: "en-US", de: "de-DE", fr: "fr-FR", zh: "zh-CN", ja: "ja-JP", pt: "pt-BR" };
+  function locale() { return LOCALES[state.lang] || "es-ES"; }
   /** Elementos con data-t: su texto y sus atributos placeholder/title/aria-label. */
   function translateDom(rootEl) {
     if (state.lang === "es") return;
@@ -199,12 +200,12 @@
       state.catalogJobs = m.data.catalogJobs || {};
       state.eventMode = m.data.eventMode || "auto";
       state.season = m.data.season || null;
-      state.lang = m.data.lang === "en" ? "en" : "es";
+      state.lang = Object.prototype.hasOwnProperty.call(LOCALES, m.data.lang) ? m.data.lang : "es";
       state.strings = m.data.strings || {};
-      root.setAttribute("lang", state.lang);
+      root.setAttribute("lang", LOCALES[state.lang] || state.lang);
       translateDom();
-      // En inglés, todo lo que pinta el tema se traduce con su diccionario (lo suyo y lo del kit).
-      if (state.lang === "en" && !state.translator) {
+      // Fuera del español, todo lo que pinta el tema se traduce con su diccionario (lo suyo y lo del kit).
+      if (state.lang !== "es" && !state.translator) {
         state.translator = true;
         import("/_sdk/kit/translate.js").then(function (m) {
           m.observe(m.makeTranslator(state.strings), document);
@@ -354,9 +355,9 @@
     get settings() { return state.settings; },
     get profile() { return state.profile; },
     get mode() { return root.getAttribute("data-mode") || "desktop"; },
-    /** Idioma de la interfaz: "es" | "en". */
+    /** Idioma de la interfaz: "es" | "en" | "de" | "fr" | "zh" | "ja" | "pt". */
     get lang() { return state.lang; },
-    /** Locale para Intl / toLocaleString ("es-ES" | "en-US"). */
+    /** Locale para Intl / toLocaleString. */
     get locale() { return locale(); },
     /** Traduce un texto (la clave es el texto en español) y sustituye {nombre} por vars.nombre. */
     t: t,

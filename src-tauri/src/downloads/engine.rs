@@ -181,7 +181,7 @@ async fn start(st: &Arc<AppState>) -> anyhow::Result<Arc<Session>> {
             }
         }
     }
-    Err(last.unwrap_or_else(|| anyhow::anyhow!("no se pudo arrancar")).context("No se pudo arrancar el motor de descargas"))
+    Err(last.unwrap_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("no se pudo arrancar"))).context(crate::i18n::t("No se pudo arrancar el motor de descargas")))
 }
 
 /// Aplica los límites de velocidad en caliente.

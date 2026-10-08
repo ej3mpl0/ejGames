@@ -421,7 +421,7 @@ pub async fn restore(st: &Arc<AppState>, game: &Game, snapshot_id: i64) -> anyho
 fn restore_zip(zip_path: &Path) -> anyhow::Result<usize> {
     let mut z = zip::ZipArchive::new(std::fs::File::open(zip_path)?)?;
     let mut s = String::new();
-    z.by_name(LIST_FILE).context("copia sin lista de rutas")?.read_to_string(&mut s)?;
+    z.by_name(LIST_FILE).context(crate::i18n::t("copia sin lista de rutas"))?.read_to_string(&mut s)?;
     let list: Vec<serde_json::Value> = serde_json::from_str(&s)?;
     let mut roots: std::collections::HashMap<usize, (PathBuf, bool)> = Default::default();
     for e in &list {

@@ -213,7 +213,7 @@ pub fn list(st: &AppState) -> anyhow::Result<Vec<DownloadItem>> {
 }
 
 pub fn get_item(st: &AppState, id: i64) -> anyhow::Result<DownloadItem> {
-    let row = st.db.with(|c| repo::get_download(c, id))?.ok_or_else(|| anyhow::anyhow!("Esa descarga ya no existe"))?;
+    let row = st.db.with(|c| repo::get_download(c, id))?.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Esa descarga ya no existe")))?;
     let cap = explore::steamart::capsule(st, &row.title);
     let live = st.downloads.live.lock();
     Ok(item(&row, live.get(&id), cap))
@@ -278,8 +278,8 @@ fn token() -> String {
 }
 
 fn hex_of(magnet: &str) -> anyhow::Result<(Magnet, String)> {
-    let m = Magnet::parse(magnet).map_err(|_| anyhow::anyhow!("El enlace magnet de esta ficha no es válido"))?;
-    let id = m.as_id20().ok_or_else(|| anyhow::anyhow!("El enlace magnet de esta ficha no es válido"))?;
+    let m = Magnet::parse(magnet).map_err(|_| anyhow::anyhow!("{}", crate::i18n::t("El enlace magnet de esta ficha no es válido")))?;
+    let id = m.as_id20().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("El enlace magnet de esta ficha no es válido")))?;
     Ok((m, id.as_string()))
 }
 
@@ -348,11 +348,11 @@ fn bare_details(source: &str, slug: String, hash: &str, magnet: &str, title: &st
 }
 
 async fn prepare_details(st: &Arc<AppState>, slug: &str, details: explore::RepackDetails) -> anyhow::Result<PreparedDownload> {
-    let magnet = details.magnet.clone().ok_or_else(|| anyhow::anyhow!("Esta ficha no tiene torrent"))?;
+    let magnet = details.magnet.clone().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Esta ficha no tiene torrent")))?;
     let (m, hash) = hex_of(&magnet)?;
     if let Some(row) = st.db.with(|c| repo::download_by_hash(c, &hash))? {
         if row.state != "installed" || !row.files_deleted {
-            anyhow::bail!("«{}» ya está en tus descargas", row.title);
+            anyhow::bail!("{}", crate::i18n::tf("«{0}» ya está en tus descargas", &[&row.title]));
         }
         // Ya instalado y sin archivos: se puede volver a bajar.
         st.db.with(|c| repo::delete_download(c, row.id))?;
@@ -371,7 +371,7 @@ async fn prepare_details(st: &Arc<AppState>, slug: &str, details: explore::Repac
         };
         tokio::select! {
             r = tokio::time::timeout(Duration::from_secs(120), session.add_torrent(AddTorrent::from_url(magnet.as_str()), Some(opts))) => {
-                r.map_err(|_| anyhow::anyhow!("No se encontró a nadie compartiendo este torrent. Prueba más tarde."))?
+                r.map_err(|_| anyhow::anyhow!("{}", crate::i18n::t("No se encontró a nadie compartiendo este torrent. Prueba más tarde.")))?
             }
             _ = notify.notified() => anyhow::bail!("cancelado"),
         }
@@ -381,7 +381,7 @@ async fn prepare_details(st: &Arc<AppState>, slug: &str, details: explore::Repac
     st.downloads.cancel_prepare.lock().remove(slug);
     let resp = res?;
     let AddTorrentResponse::ListOnly(r) = resp else {
-        anyhow::bail!("Ese torrent ya está en el motor de descargas");
+        anyhow::bail!("{}", crate::i18n::t("Ese torrent ya está en el motor de descargas"));
     };
 
     let mut list = Vec::new();
@@ -442,7 +442,7 @@ pub fn cancel_prepare(st: &AppState, slug_or_token: &str) {
 pub async fn start(st: &Arc<AppState>, tok: &str, selected: &[usize], dir: Option<String>) -> anyhow::Result<DownloadItem> {
     let (sel, row) = {
         let p = st.downloads.prepared.lock();
-        let prep = p.get(tok).ok_or_else(|| anyhow::anyhow!("La lista de archivos caducó; vuelve a pulsar Descargar"))?;
+        let prep = p.get(tok).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("La lista de archivos caducó; vuelve a pulsar Descargar")))?;
         let sel = files::validate(&prep.files, selected)?;
         let size: u64 = prep.files.iter().filter(|f| sel.contains(&f.index)).map(|f| f.size).sum();
         (sel, (prep.name.clone(), size, prep.info_hash.clone()))
@@ -454,10 +454,10 @@ pub async fn start(st: &Arc<AppState>, tok: &str, selected: &[usize], dir: Optio
         .filter(|d| !d.is_empty())
         .unwrap_or_else(|| defaults(st).download_dir);
     if base.is_empty() {
-        anyhow::bail!("Elige dónde guardar las descargas");
+        anyhow::bail!("{}", crate::i18n::t("Elige dónde guardar las descargas"));
     }
     let base_path = PathBuf::from(&base);
-    std::fs::create_dir_all(&base_path).map_err(|e| anyhow::anyhow!("No se puede usar la carpeta {base}: {e}"))?;
+    std::fs::create_dir_all(&base_path).map_err(|e| anyhow::anyhow!("{}", crate::i18n::tf("No se puede usar la carpeta {0}: {1}", &[&base, &e])))?;
     if let Some(free) = win::disk_free(&base_path) {
         let need = size + 512 * 1024 * 1024;
         if free < need {
@@ -478,7 +478,7 @@ pub async fn start(st: &Arc<AppState>, tok: &str, selected: &[usize], dir: Optio
     std::fs::create_dir_all(&out)?;
     let _ = std::fs::write(out.join(MARKER), format!("ejGames\n{hash}\n"));
 
-    let prep = st.downloads.prepared.lock().remove(tok).ok_or_else(|| anyhow::anyhow!("La lista de archivos caducó"))?;
+    let prep = st.downloads.prepared.lock().remove(tok).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("La lista de archivos caducó")))?;
     let r = &prep.details.repack;
     let new = NewDownload {
         source: r.source.clone(),
@@ -567,9 +567,9 @@ pub fn delete_files(row: &DownloadRow) -> anyhow::Result<()> {
         return Ok(());
     }
     if !dir.join(MARKER).exists() {
-        anyhow::bail!("La carpeta {} no es de ejGames; bórrala a mano si quieres", dir.display());
+        anyhow::bail!("{}", crate::i18n::tf("La carpeta {0} no es de ejGames; bórrala a mano si quieres", &[&dir.display()]));
     }
-    std::fs::remove_dir_all(dir).map_err(|e| anyhow::anyhow!("No se pudo borrar {}: {e}", dir.display()))
+    std::fs::remove_dir_all(dir).map_err(|e| anyhow::anyhow!("{}", crate::i18n::tf("No se pudo borrar {0}: {1}", &[&dir.display(), &e])))
 }
 
 /// Saca un torrent del motor (conservando los archivos).
@@ -584,9 +584,9 @@ pub async fn forget(st: &AppState, info_hash: &str) {
 }
 
 pub async fn remove(st: &Arc<AppState>, id: i64, delete: bool) -> anyhow::Result<()> {
-    let row = st.db.with(|c| repo::get_download(c, id))?.ok_or_else(|| anyhow::anyhow!("Esa descarga ya no existe"))?;
+    let row = st.db.with(|c| repo::get_download(c, id))?.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Esa descarga ya no existe")))?;
     if row.state == "installing" {
-        anyhow::bail!("Espera a que termine la instalación");
+        anyhow::bail!("{}", crate::i18n::t("Espera a que termine la instalación"));
     }
     forget(st, &row.info_hash).await;
     if delete && !row.files_deleted {
@@ -602,7 +602,7 @@ pub async fn remove(st: &Arc<AppState>, id: i64, delete: bool) -> anyhow::Result
 
 /// Borra los archivos de un repack ya instalado y conserva la entrada.
 pub async fn delete_repack(st: &Arc<AppState>, id: i64) -> anyhow::Result<()> {
-    let row = st.db.with(|c| repo::get_download(c, id))?.ok_or_else(|| anyhow::anyhow!("Esa descarga ya no existe"))?;
+    let row = st.db.with(|c| repo::get_download(c, id))?.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Esa descarga ya no existe")))?;
     forget(st, &row.info_hash).await;
     let r = row.clone();
     tauri::async_runtime::spawn_blocking(move || delete_files(&r)).await??;

@@ -69,7 +69,7 @@ pub async fn reconcile(st: &Arc<AppState>) {
     let _g = st.downloads.plan.lock().await;
     if let Err(e) = reconcile_inner(st).await {
         tracing::warn!("descargas: {e:#}");
-        events::toast(st, "error", format!("Descargas: {e:#}"));
+        events::toast(st, "error", crate::i18n::tf("Descargas: {0}", &[&format!("{e:#}")]));
     }
     kick(st);
 }
@@ -372,11 +372,11 @@ fn tray_text(st: &AppState, rows: &[DownloadRow]) -> String {
 fn friendly_error(e: &str) -> String {
     let l = e.to_lowercase();
     if l.contains("os error 112") || l.contains("not enough space") || l.contains("no space") {
-        "El disco está lleno".into()
+        crate::i18n::t("El disco está lleno").into()
     } else if l.contains("os error 5") || l.contains("access is denied") || l.contains("acceso denegado") {
-        "Windows no deja escribir en la carpeta (¿antivirus?)".into()
+        crate::i18n::t("Windows no deja escribir en la carpeta (¿antivirus?)").into()
     } else if l.contains("os error 32") {
-        "Otro programa tiene abiertos los archivos (¿antivirus?)".into()
+        crate::i18n::t("Otro programa tiene abiertos los archivos (¿antivirus?)").into()
     } else {
         e.chars().take(200).collect()
     }
@@ -387,7 +387,7 @@ async fn on_finished(st: &Arc<AppState>, r: &DownloadRow) {
     let state = if s.seed_policy == "never" { "completed" } else { "seeding" };
     let _ = st.db.with(|c| repo::set_download_state(c, r.id, state, None, None));
     tracing::info!("descarga terminada: {}", r.title);
-    events::toast(st, "ok", format!("«{}» descargado. Ya puedes instalarlo.", r.title));
+    events::toast(st, "ok", crate::i18n::tf("«{0}» descargado. Ya puedes instalarlo.", &[&r.title]));
     let _ = st.app.emit("downloads:finished", serde_json::json!({ "id": r.id, "title": r.title }));
     if s.auto_install && !st.sessions.any() && st.downloads.installing.lock().is_none() {
         let st2 = st.clone();

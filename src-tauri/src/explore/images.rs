@@ -127,7 +127,7 @@ fn sniff(b: &[u8]) -> Option<&'static str> {
 /// Ruta en disco de `/x/<id>` (la descarga si hace falta).
 pub async fn serve(st: &Arc<AppState>, id: &str) -> anyhow::Result<PathBuf> {
     if id.len() != 32 || !id.bytes().all(|b| b.is_ascii_hexdigit()) {
-        anyhow::bail!("id no válido");
+        anyhow::bail!("{}", crate::i18n::t("id no válido"));
     }
     let dir = cache_dir(st);
     if let Some(p) = cached(&dir, id) {
@@ -163,7 +163,7 @@ pub async fn serve(st: &Arc<AppState>, id: &str) -> anyhow::Result<PathBuf> {
         .map(|t| t.starts_with("image/"))
         .unwrap_or(false);
     if !is_image {
-        anyhow::bail!("no es una imagen");
+        anyhow::bail!("{}", crate::i18n::t("no es una imagen"));
     }
     let mut bytes = Vec::new();
     let mut stream = r.bytes_stream();

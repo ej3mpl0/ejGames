@@ -19,7 +19,7 @@ use tauri::{Emitter, State};
 type St<'a> = State<'a, Arc<AppState>>;
 
 fn active(st: &AppState) -> CmdResult<i64> {
-    st.profile.read().ok_or_else(|| CmdError::Msg("No hay perfil activo".into()))
+    st.profile.read().ok_or_else(|| CmdError::Msg(crate::i18n::t("No hay perfil activo").into()))
 }
 
 // ───────────────────────────── arranque ─────────────────────────────
@@ -64,10 +64,16 @@ pub async fn bootstrap(st: St<'_>) -> CmdResult<Bootstrap> {
     })
 }
 
-/// Idioma de la interfaz ya resuelto ("es" | "en"), antes de pintar nada.
+/// Idioma de la interfaz ya resuelto ("es", "en", "de", "fr", "zh", "ja" o "pt"), antes de pintar nada.
 #[tauri::command]
 pub fn ui_language() -> &'static str {
     crate::i18n::lang()
+}
+
+/// Idioma que corresponde a Windows, sin mirar el ajuste.
+#[tauri::command]
+pub fn system_ui_language() -> &'static str {
+    crate::i18n::resolve("")
 }
 
 /// El host ya pintó: mostrar la ventana (se crea oculta para evitar destellos).
@@ -98,7 +104,7 @@ pub async fn window_action(window: tauri::WebviewWindow, action: String, value: 
             window.set_fullscreen(v)?
         }
         "drag" => window.start_dragging()?,
-        _ => return Err(CmdError::Msg("acción desconocida".into())),
+        _ => return Err(CmdError::Msg(crate::i18n::t("acción desconocida").into())),
     }
     Ok(())
 }
@@ -124,7 +130,7 @@ pub async fn create_profile(st: St<'_>, name: String, color: String, theme_id: S
     let s = st.inner().clone();
     let name = name.trim().chars().take(32).collect::<String>();
     if name.is_empty() {
-        return Err(CmdError::Msg("El nombre no puede estar vacío".into()));
+        return Err(CmdError::Msg(crate::i18n::t("El nombre no puede estar vacío").into()));
     }
     blocking(move || {
         s.db.with(|c| {
@@ -158,7 +164,7 @@ pub async fn delete_profile(st: St<'_>, id: i64) -> CmdResult<()> {
     })
     .await?;
     if count <= 1 {
-        return Err(CmdError::Msg("Tiene que quedar al menos un perfil".into()));
+        return Err(CmdError::Msg(crate::i18n::t("Tiene que quedar al menos un perfil").into()));
     }
     blocking(move || s.db.with(|c| repo::delete_profile(c, id))).await?;
     if *st.profile.read() == Some(id) {
@@ -228,7 +234,7 @@ pub async fn import_image(st: St<'_>, path: String, max: Option<u32>) -> CmdResu
         let bytes = std::fs::read(&path)?;
         if lower.ends_with(".mp4") || lower.ends_with(".webm") {
             if bytes.len() > 300 * 1024 * 1024 {
-                anyhow::bail!("El vídeo es demasiado grande (máx. 300 MB)");
+                anyhow::bail!("{}", crate::i18n::t("El vídeo es demasiado grande (máx. 300 MB)"));
             }
             let ext = if lower.ends_with(".mp4") { "mp4" } else { "webm" };
             let hash = crate::media::store::put(&s.paths, &bytes, ext)?;
@@ -437,7 +443,7 @@ pub async fn add_folder(st: St<'_>, path: String, mode: String) -> CmdResult<i64
     let s = st.inner().clone();
     let path_norm = crate::util::clean_dir(&path);
     if !PathBuf::from(&path_norm).is_dir() {
-        return Err(CmdError::Msg(format!("No existe la carpeta: {path_norm}")));
+        return Err(CmdError::Msg(crate::i18n::tf("No existe la carpeta: {0}", &[&path_norm])));
     }
     let id = blocking(move || s.db.with(|c| repo::add_folder(c, &path_norm, &mode))).await?;
     crate::services::sync_watcher(st.inner());
@@ -526,7 +532,7 @@ pub async fn search_metadata(st: St<'_>, term: String) -> CmdResult<Vec<Candidat
 #[tauri::command]
 pub async fn apply_match(st: St<'_>, game_id: i64, provider: String, id: i64) -> CmdResult<()> {
     if !matches!(provider.as_str(), "steam" | "igdb") {
-        return Err(CmdError::Msg("proveedor no válido".into()));
+        return Err(CmdError::Msg(crate::i18n::t("proveedor no válido").into()));
     }
     if provider == "steam" {
         let s = st.inner().clone();
@@ -548,7 +554,7 @@ pub async fn art_options(st: St<'_>, game_id: i64, kind: String) -> CmdResult<Ve
 #[tauri::command]
 pub async fn set_art_url(st: St<'_>, game_id: i64, kind: String, url: String) -> CmdResult<()> {
     if !url.starts_with("https://") {
-        return Err(CmdError::Msg("URL no válida".into()));
+        return Err(CmdError::Msg(crate::i18n::t("URL no válida").into()));
     }
     let s = st.inner().clone();
     let (k2, u2) = (kind.clone(), url.clone());
@@ -627,7 +633,7 @@ pub async fn open_game_folder(app: tauri::AppHandle, st: St<'_>, id: i64) -> Cmd
     use tauri_plugin_opener::OpenerExt;
     let s = st.inner().clone();
     let g = blocking(move || s.db.with(|c| repo::get_game(c, id))).await?;
-    let target = g.exe_path.clone().or(g.install_dir.clone()).ok_or_else(|| CmdError::Msg("Sin carpeta".into()))?;
+    let target = g.exe_path.clone().or(g.install_dir.clone()).ok_or_else(|| CmdError::Msg(crate::i18n::t("Sin carpeta").into()))?;
     app.opener().reveal_item_in_dir(target).map_err(|e| CmdError::Msg(e.to_string()))?;
     Ok(())
 }
@@ -795,7 +801,7 @@ pub async fn theme_storage_set(st: St<'_>, theme_id: String, key: String, value:
         })
     })
     .await?
-    .map_err(|_| CmdError::Msg("Almacenamiento del tema lleno (512 KB)".into()))
+    .map_err(|_| CmdError::Msg(crate::i18n::t("Almacenamiento del tema lleno (512 KB)").into()))
 }
 
 // ───────────────────────────── ajustes ─────────────────────────────
@@ -822,19 +828,19 @@ pub async fn update_settings(app: tauri::AppHandle, st: St<'_>, patch: Value) ->
     }
     for k in [&next.overlay_hotkey, &next.screenshot_hotkey] {
         if !k.trim().is_empty() && crate::overlay::hotkey::parse(k).is_none() {
-            return Err(CmdError::Msg(format!("Atajo no válido: {k}")));
+            return Err(CmdError::Msg(crate::i18n::tf("Atajo no válido: {0}", &[&k])));
         }
     }
     if !next.screenshot_hotkey.trim().is_empty()
         && crate::overlay::hotkey::parse(&next.screenshot_hotkey) == crate::overlay::hotkey::parse(&next.overlay_hotkey)
     {
-        return Err(CmdError::Msg("El atajo de las capturas no puede ser el mismo que el del panel".into()));
+        return Err(CmdError::Msg(crate::i18n::t("El atajo de las capturas no puede ser el mismo que el del panel").into()));
     }
     if !crate::settings::OVERLAY_CORNERS.contains(&next.overlay_corner.as_str()) {
-        return Err(CmdError::Msg("Posición de los avisos no válida".into()));
+        return Err(CmdError::Msg(crate::i18n::t("Posición de los avisos no válida").into()));
     }
     if !crate::settings::OVERLAY_STYLES.contains(&next.overlay_style.as_str()) {
-        return Err(CmdError::Msg("Estilo de los avisos no válido".into()));
+        return Err(CmdError::Msg(crate::i18n::t("Estilo de los avisos no válido").into()));
     }
     for e in &next.emulators {
         let known = crate::emulation::platform(&e.platform).is_some();
@@ -847,31 +853,32 @@ pub async fn update_settings(app: tauri::AppHandle, st: St<'_>, patch: Value) ->
     }
     if next.ui_language != before.ui_language {
         // Los datos de Steam siguen al idioma de la interfaz (si no se eligió otro).
-        let ui = crate::i18n::resolve(&next.ui_language);
-        if matches!(next.language.as_str(), "spanish" | "english") {
-            next.language = if ui == "en" { "english" } else { "spanish" }.into();
+        if crate::i18n::steam_follows_ui(&next.language) {
+            if let Some(steam) = crate::i18n::steam_language(&next.ui_language) {
+                next.language = steam.into();
+            }
         }
         crate::i18n::set(&next.ui_language);
         crate::lifecycle::refresh_tray(&app);
     }
     if !crate::settings::CLOSE_ACTIONS.contains(&next.close_action.as_str()) {
-        return Err(CmdError::Msg("Opción al cerrar no válida".into()));
+        return Err(CmdError::Msg(crate::i18n::t("Opción al cerrar no válida").into()));
     }
     if !crate::settings::EVENT_MODES.contains(&next.event_mode.as_str()) {
-        return Err(CmdError::Msg("Opción de eventos no válida".into()));
+        return Err(CmdError::Msg(crate::i18n::t("Opción de eventos no válida").into()));
     }
     if !crate::settings::SEED_POLICIES.contains(&next.seed_policy.as_str()) {
-        return Err(CmdError::Msg("Opción de compartir no válida".into()));
+        return Err(CmdError::Msg(crate::i18n::t("Opción de compartir no válida").into()));
     }
     if !(0.1..=50.0).contains(&next.seed_ratio) {
-        return Err(CmdError::Msg("El ratio debe estar entre 0,1 y 50".into()));
+        return Err(CmdError::Msg(crate::i18n::t("El ratio debe estar entre 0,1 y 50").into()));
     }
     if !(1..=5).contains(&next.max_active_downloads) {
-        return Err(CmdError::Msg("Descargas a la vez: de 1 a 5".into()));
+        return Err(CmdError::Msg(crate::i18n::t("Descargas a la vez: de 1 a 5").into()));
     }
     let proxy = next.torrent_proxy.trim();
     if !proxy.is_empty() && !(proxy.starts_with("socks5://") && url::Url::parse(proxy).map(|u| u.port().is_some()).unwrap_or(false)) {
-        return Err(CmdError::Msg("El proxy debe ser socks5://host:puerto".into()));
+        return Err(CmdError::Msg(crate::i18n::t("El proxy debe ser socks5://host:puerto").into()));
     }
     let saved = st.settings.update(|s| *s = next)?;
     if before.start_with_windows != saved.start_with_windows {
@@ -1001,7 +1008,7 @@ pub async fn overlay_action(st: St<'_>, action: String) -> CmdResult<()> {
             use tauri_plugin_opener::OpenerExt;
             st.app.opener().open_path(dir.to_string_lossy(), None::<&str>).map_err(|e| CmdError::Msg(e.to_string()))?;
         }
-        _ => return Err(CmdError::Msg("acción no válida".into())),
+        _ => return Err(CmdError::Msg(crate::i18n::t("acción no válida").into())),
     }
     Ok(())
 }
@@ -1324,12 +1331,12 @@ pub async fn downloads_finish_install(st: St<'_>, id: i64, dir: String) -> CmdRe
 pub async fn downloads_open_folder(app: tauri::AppHandle, st: St<'_>, id: i64) -> CmdResult<()> {
     use tauri_plugin_opener::OpenerExt;
     let s = st.inner().clone();
-    let row = blocking(move || s.db.with(|c| repo::get_download(c, id))).await?.ok_or_else(|| CmdError::Msg("Esa descarga ya no existe".into()))?;
+    let row = blocking(move || s.db.with(|c| repo::get_download(c, id))).await?.ok_or_else(|| CmdError::Msg(crate::i18n::t("Esa descarga ya no existe").into()))?;
     let dir = [row.install_dir.as_deref().filter(|_| row.state == "installed"), Some(row.output_dir.as_str())]
         .into_iter()
         .flatten()
         .find(|d| std::path::Path::new(d).is_dir())
-        .ok_or_else(|| CmdError::Msg("La carpeta ya no existe".into()))?
+        .ok_or_else(|| CmdError::Msg(crate::i18n::t("La carpeta ya no existe").into()))?
         .to_string();
     app.opener().open_path(dir, None::<&str>).map_err(|e| CmdError::Msg(e.to_string()))?;
     Ok(())
@@ -1385,7 +1392,7 @@ pub async fn update_download_version(st: St<'_>, version: String) -> CmdResult<c
 #[tauri::command]
 pub async fn update_install(app: tauri::AppHandle, st: St<'_>, path: String) -> CmdResult<()> {
     if st.downloads.installing.lock().is_some() {
-        return Err(CmdError::Msg("Espera a que termine la instalación del juego".into()));
+        return Err(CmdError::Msg(crate::i18n::t("Espera a que termine la instalación del juego").into()));
     }
     crate::update::launch_installer(&path)?;
     tauri::async_runtime::spawn(async move {

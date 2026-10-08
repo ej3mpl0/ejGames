@@ -11,7 +11,7 @@ export const GLYPHS = {
   },
   playstation: {
     accept: ["✕", "#6f9ce8"], back: ["○", "#e0626b"], x: ["□", "#d985c9"], y: ["△", "#3fbfa4"],
-    lb: ["L1"], rb: ["R1"], lt: ["L2"], rt: ["R2"], menu: ["OPTIONS"], view: ["CREATE"], home: ["PS"],
+    lb: ["L1"], rb: ["R1"], lt: ["L2"], rt: ["R2"], menu: ["OPCIONES"], view: ["CREAR"], home: ["PS"],
     up: ["↑"], down: ["↓"], left: ["←"], right: ["→"],
   },
   // Nintendo: por posición física (el de abajo es B, el de la derecha A).

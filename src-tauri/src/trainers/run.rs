@@ -218,11 +218,11 @@ fn game_window(target: &Target) -> Option<(isize, u32)> {
 /// Abre el trainer del juego en marcha. `allow_elevation`: si el juego va como
 /// administrador, pedir permiso (UAC) para abrirlo igual; sin él, se avisa.
 pub fn start(st: &Arc<AppState>, game_id: i64, allow_elevation: bool) -> anyhow::Result<()> {
-    let info = super::installed(st, game_id).ok_or_else(|| anyhow::anyhow!("Este juego no tiene trainer"))?;
+    let info = super::installed(st, game_id).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Este juego no tiene trainer")))?;
     let (gen, target) = {
         let mut rt = st.trainers.rt.lock();
         if rt.game_id != Some(game_id) {
-            anyhow::bail!("El juego no está en marcha");
+            anyhow::bail!("{}", crate::i18n::t("El juego no está en marcha"));
         }
         if rt.pid != 0 {
             return Ok(());
@@ -232,15 +232,15 @@ pub fn start(st: &Arc<AppState>, game_id: i64, allow_elevation: bool) -> anyhow:
     };
     let exe = Path::new(&info.exe);
     if !exe.is_file() {
-        let msg = "No se encuentra el trainer. Windows Defender puede haberlo puesto en cuarentena: restáuralo desde Seguridad de Windows o vuelve a instalarlo.";
-        set_state(st, gen, "error", Some(msg.into()));
+        let msg = crate::i18n::t("No se encuentra el trainer. Windows Defender puede haberlo puesto en cuarentena: restáuralo desde Seguridad de Windows o vuelve a instalarlo.");
+        set_state(st, gen, "error", Some(msg.to_string()));
         anyhow::bail!(msg);
     }
     let game = target.as_ref().and_then(game_window);
     let game_elevated = game.map(|(_, pid)| crate::launcher::admin::above_us(pid)).unwrap_or(false);
     if game_elevated && !allow_elevation {
-        let msg = "El juego va como administrador, así que el trainer también tiene que ir así: ábrelo desde aquí y Windows pedirá permiso.";
-        set_state(st, gen, "idle", Some(msg.into()));
+        let msg = crate::i18n::t("El juego va como administrador, así que el trainer también tiene que ir así: ábrelo desde aquí y Windows pedirá permiso.");
+        set_state(st, gen, "idle", Some(msg.to_string()));
         anyhow::bail!(msg);
     }
     set_state(st, gen, "starting", None);
@@ -250,7 +250,7 @@ pub fn start(st: &Arc<AppState>, game_id: i64, allow_elevation: bool) -> anyhow:
         let proc = match proc {
             Ok(p) => p,
             Err(e) => {
-                let msg = format!("No se pudo abrir el trainer: {e:#}");
+                let msg = crate::i18n::tf("No se pudo abrir el trainer: {0}", &[&format!("{e:#}")]);
                 set_state(st, gen, "error", Some(msg.clone()));
                 anyhow::bail!(msg);
             }
@@ -277,7 +277,7 @@ pub fn start(st: &Arc<AppState>, game_id: i64, allow_elevation: bool) -> anyhow:
     #[cfg(not(windows))]
     {
         let _ = (exe, game_elevated);
-        set_state(st, gen, "error", Some("Solo en Windows".into()));
+        set_state(st, gen, "error", Some(crate::i18n::t("Solo en Windows").into()));
     }
     Ok(())
 }
@@ -327,7 +327,7 @@ fn watch(st: Arc<AppState>, gen: u64, proc: crate::launcher::launch::OwnedProces
         if proc.wait(1000) {
             let code = proc.exit_code();
             tracing::info!("trainer: se ha cerrado (código {code:?})");
-            set_state(&st, gen, "stopped", Some("El trainer se ha cerrado.".into()));
+            set_state(&st, gen, "stopped", Some(crate::i18n::t("El trainer se ha cerrado.").into()));
             return;
         }
         if st.trainers.rt.lock().gen != gen {
@@ -344,12 +344,12 @@ pub fn trigger(st: &Arc<AppState>, keys_text: &str) -> anyhow::Result<Live> {
         let rt = st.trainers.rt.lock();
         (rt.game_id, rt.state == "running" && rt.pid != 0)
     };
-    let game_id = game_id.ok_or_else(|| anyhow::anyhow!("No hay ningún juego en marcha"))?;
+    let game_id = game_id.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No hay ningún juego en marcha")))?;
     if !running {
-        anyhow::bail!("El trainer no está abierto");
+        anyhow::bail!("{}", crate::i18n::t("El trainer no está abierto"));
     }
-    let info = super::installed(st, game_id).ok_or_else(|| anyhow::anyhow!("Este juego no tiene trainer"))?;
-    let opt = info.options.iter().find(|o| o.keys == keys_text).ok_or_else(|| anyhow::anyhow!("Esa opción no es de este trainer"))?;
+    let info = super::installed(st, game_id).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Este juego no tiene trainer")))?;
+    let opt = info.options.iter().find(|o| o.keys == keys_text).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("Esa opción no es de este trainer")))?;
     let combo = keys::parse(&opt.keys).ok_or_else(|| anyhow::anyhow!("ejGames no sabe pulsar «{}»", opt.keys))?;
     keys::press(&combo)?;
     if opt.kind != "action" {
@@ -374,7 +374,7 @@ pub fn show(st: &Arc<AppState>, visible: bool) -> anyhow::Result<Live> {
     let (pid, hidden) = {
         let rt = st.trainers.rt.lock();
         if rt.pid == 0 {
-            anyhow::bail!("El trainer no está abierto");
+            anyhow::bail!("{}", crate::i18n::t("El trainer no está abierto"));
         }
         (rt.pid, rt.hidden.clone())
     };
@@ -478,8 +478,8 @@ fn spawn_elevated(exe: &Path) -> anyhow::Result<crate::launcher::launch::OwnedPr
     let dir = exe.parent().map(|p| p.to_string_lossy().into_owned());
     match start_shown("runas", &exe.to_string_lossy(), "", dir.as_deref(), SW_SHOWMINNOACTIVE) {
         Ok(Some(p)) => Ok(p),
-        Ok(None) => anyhow::bail!("Windows no devolvió el proceso"),
-        Err(InstallerError::Cancelled) => anyhow::bail!("No se dio permiso de administrador"),
+        Ok(None) => anyhow::bail!("{}", crate::i18n::t("Windows no devolvió el proceso")),
+        Err(InstallerError::Cancelled) => anyhow::bail!("{}", crate::i18n::t("No se dio permiso de administrador")),
         Err(InstallerError::Other(e)) => Err(e),
     }
 }

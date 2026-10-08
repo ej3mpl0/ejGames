@@ -27,7 +27,7 @@ pub struct EmulatorCfg {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Settings {
-    /// Idioma de la interfaz: "" (el de Windows) | "es" | "en".
+    /// Idioma de la interfaz: "" (el de Windows) | "es" | "en" | "de" | "fr" | "zh" | "ja" | "pt".
     pub ui_language: String,
     /// Idioma de los datos de Steam (descripciones, logros, guías).
     pub language: String,
@@ -231,7 +231,7 @@ impl Default for Settings {
 pub const OVERLAY_CORNERS: [&str; 7] = ["auto", "top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right"];
 pub const SEED_POLICIES: [&str; 3] = ["never", "until-install", "ratio"];
 
-pub const UI_LANGUAGES: [&str; 3] = ["", "es", "en"];
+pub const UI_LANGUAGES: [&str; 8] = ["", "es", "en", "de", "fr", "zh", "ja", "pt"];
 
 pub const CLOSE_ACTIONS: [&str; 3] = ["ask", "tray", "quit"];
 pub const EVENT_MODES: [&str; 3] = ["auto", "on", "off"];

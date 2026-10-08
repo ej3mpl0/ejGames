@@ -612,8 +612,8 @@ pub fn test(st: &Arc<AppState>) {
             kind: "achievement".into(),
             game_id: None,
             game: Some("ejGames".into()),
-            title: "¡Primer logro!".into(),
-            body: Some("Así se verán tus logros durante la partida.".into()),
+            title: crate::i18n::t("¡Primer logro!").into(),
+            body: Some(crate::i18n::t("Así se verán tus logros durante la partida.").into()),
             icon: None,
             rarity: Some(12.5),
             at: crate::util::now(),
@@ -652,7 +652,7 @@ pub fn pin_map(st: &Arc<AppState>, url: Option<String>) -> anyhow::Result<()> {
             if !ok {
                 anyhow::bail!("Solo mapas de Map Genie");
             }
-            let game_id = st.overlay.inner.lock().live.as_ref().map(|l| l.game_id).ok_or_else(|| anyhow::anyhow!("No hay ningún juego en marcha"))?;
+            let game_id = st.overlay.inner.lock().live.as_ref().map(|l| l.game_id).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No hay ningún juego en marcha")))?;
             Some(Pin { game_id, url: u })
         }
         None => None,
@@ -818,10 +818,10 @@ pub fn quit_game(st: &Arc<AppState>) -> anyhow::Result<()> {
         .live
         .as_ref()
         .map(|l| l.target.clone())
-        .ok_or_else(|| anyhow::anyhow!("No hay ningún juego en marcha"))?;
+        .ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No hay ningún juego en marcha")))?;
     let pids = tracker::find_pids(&target, &mut Default::default());
     if pids.is_empty() {
-        anyhow::bail!("No se encuentran los procesos del juego");
+        anyhow::bail!("{}", crate::i18n::t("No se encuentran los procesos del juego"));
     }
     close_panel(st, false);
     #[cfg(windows)]
@@ -831,9 +831,9 @@ pub fn quit_game(st: &Arc<AppState>) -> anyhow::Result<()> {
         if done == 0 {
             let admin = pids.iter().any(|p| crate::launcher::admin::above_us(*p));
             anyhow::bail!(if admin {
-                "El juego se ejecuta como administrador y Windows no deja que ejGames lo cierre."
+                crate::i18n::t("El juego se ejecuta como administrador y Windows no deja que ejGames lo cierre.")
             } else {
-                "Windows no dejó cerrar el juego."
+                crate::i18n::t("Windows no dejó cerrar el juego.")
             });
         }
     }
@@ -885,7 +885,7 @@ pub fn set_live_note(st: &AppState, text: &str) -> anyhow::Result<()> {
         .live
         .as_ref()
         .map(|l| (l.profile_id, l.game_id))
-        .ok_or_else(|| anyhow::anyhow!("No hay partida"))?;
+        .ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No hay partida")))?;
     set_note(st, profile, game, text)
 }
 
@@ -938,9 +938,9 @@ pub fn session_started(st: &Arc<AppState>, game: &Game, profile_id: i64, started
     let pad = s.gamepad_home_button;
     if s.overlay_enabled && s.overlay_start_hint && (hotkey_label.is_some() || pad) {
         let how = match (&hotkey_label, pad) {
-            (Some(k), true) => format!("Pulsa {} o el botón Guía del mando", display_hotkey(k)),
+            (Some(k), true) => crate::i18n::tf("Pulsa {0} o el botón Guía del mando", &[&display_hotkey(k)]),
             (Some(k), false) => format!("Pulsa {}", display_hotkey(k)),
-            (None, _) => "Pulsa el botón Guía del mando (o Select + Start)".into(),
+            (None, _) => crate::i18n::t("Pulsa el botón Guía del mando (o Select + Start)").into(),
         };
         let hint = Notice {
             id: next_id(st),
@@ -948,7 +948,7 @@ pub fn session_started(st: &Arc<AppState>, game: &Game, profile_id: i64, started
             game_id: Some(game.id),
             game: Some(game.title.clone()),
             title: "Overlay de ejGames".into(),
-            body: Some(format!("{how} para ver tus logros y la sesión.")),
+            body: Some(crate::i18n::tf("{0} para ver tus logros y la sesión.", &[&how])),
             icon: None,
             rarity: None,
             at: crate::util::now(),
@@ -978,12 +978,12 @@ pub fn session_started(st: &Arc<AppState>, game: &Game, profile_id: i64, started
                     // lea el teclado mientras está delante, así que el atajo no llega.
                     if keyboard && crate::launcher::admin::above_us(win::window_pid(hwnd)) {
                         let how = if pad {
-                            "usa el botón Guía del mando (o Select + Start)."
+                            crate::i18n::t("usa el botón Guía del mando (o Select + Start).")
                         } else {
-                            "el atajo de teclado no funcionará."
+                            crate::i18n::t("el atajo de teclado no funcionará.")
                         };
-                        let fix = if admin_in_ejgames { " Puedes quitarlo en Editar juego." } else { "" };
-                        hint.body = Some(format!("Este juego se abre como administrador y Windows no deja que ejGames lea el teclado: {how}{fix}"));
+                        let fix = if admin_in_ejgames { format!(" {}", crate::i18n::t("Puedes quitarlo en Editar juego.")) } else { String::new() };
+                        hint.body = Some(crate::i18n::tf("Este juego se abre como administrador y Windows no deja que ejGames lea el teclado: {0}{1}", &[&how, &fix]));
                     }
                     notify(&st, hint);
                     return;

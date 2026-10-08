@@ -517,7 +517,7 @@ export interface BackupInfo {
 }
 
 export interface Settings {
-  /** "" (el de Windows) | "es" | "en". */
+  /** "" (el de Windows) | "es" | "en" | "de" | "fr" | "zh" | "ja" | "pt". */
   uiLanguage: string;
   overlayFps: boolean;
   hltbEnabled: boolean;

@@ -1,4 +1,5 @@
-// Busca textos de interfaz en español sin traducción al inglés.
+// Busca textos de interfaz en español sin traducción, y comprueba que de, fr, zh, ja y pt
+// tengan las mismas claves que el inglés.
 //
 //   pnpm i18n:check            lista lo que falta, por zona
 //   pnpm i18n:check --strict   igual, y falla (código 1) si falta algo
@@ -37,6 +38,7 @@ function walk(dir, exts, out = []) {
 }
 
 function noise(t) {
+  if (/^[a-z]{2,3}-[A-Za-z]{2,4}$/.test(t)) return true; // códigos de idioma (de-DE…)
   if (/^\{\d+\}[-_a-z]/.test(t)) return true;
   if (/(px|rem|vh|vw|deg|ms)\b/.test(t) && !/[áéíóú ]/.test(t)) return true;
   if (/^[#.[\]{}()0-9a-zA-Z_:,;>+~*="' -]+$/.test(t) && /[#.[\]{}()0-9_:;>+~*="']/.test(t) && !t.includes(" ") && !/[A-ZÁÉÍÓÚ][a-záéíóú]/.test(t)) return true;
@@ -167,7 +169,10 @@ if (dumpAt > 0) {
 // Diccionarios: sin valores vacíos y con los mismos huecos {…} en las dos lenguas.
 let broken = 0;
 const holes = (t) => [...t.matchAll(/\{([A-Za-z0-9_]+)\}/g)].map((m) => m[1]).sort().join(",");
-const files = ["src/lib/en.json", "sdk/i18n/en.json", "src-tauri/i18n/en.json", ...fs.readdirSync(path.join(root, "themes")).map((t) => `themes/${t}/i18n/en.json`)];
+const LANG_CODES = ["en", "de", "fr", "zh", "ja", "pt"];
+const EXTRA_LANGS = ["de", "fr", "zh", "ja", "pt"];
+const dictBases = ["src/lib", "sdk/i18n", "src-tauri/i18n", ...fs.readdirSync(path.join(root, "themes"), { withFileTypes: true }).filter((e) => e.isDirectory() && fs.existsSync(path.join(root, "themes", e.name, "i18n", "en.json"))).map((e) => `themes/${e.name}/i18n`)];
+const files = dictBases.flatMap((b) => LANG_CODES.map((l) => `${b}/${l}.json`));
 for (const f of files) {
   for (const [k, v] of Object.entries(dict(f))) {
     if (typeof v !== "string" || !v.trim()) { console.log(`  ${f}: valor vacío para ${JSON.stringify(k)}`); broken++; }
@@ -175,6 +180,25 @@ for (const f of files) {
   }
 }
 if (broken) console.log(`${broken} entradas de diccionario con problemas`);
+
+let parity = 0;
+for (const b of dictBases) {
+  const en = dict(`${b}/en.json`);
+  const enKeys = Object.keys(en);
+  for (const l of EXTRA_LANGS) {
+    const p = `${b}/${l}.json`;
+    if (!fs.existsSync(path.join(root, p))) {
+      console.log(`  falta ${p}`);
+      parity++;
+      continue;
+    }
+    const other = dict(p);
+    const have = new Set(Object.keys(other));
+    for (const k of enKeys) if (!have.has(k)) { console.log(`  ${p}: falta ${JSON.stringify(k).slice(0, 140)}`); parity++; }
+    for (const k of have) if (!(k in en)) { console.log(`  ${p}: sobra ${JSON.stringify(k).slice(0, 140)}`); parity++; }
+  }
+}
+if (parity) console.log(`${parity} diferencias de claves entre idiomas`);
 
 let missing = 0;
 for (const z of zones) {
@@ -184,5 +208,17 @@ for (const z of zones) {
   for (const k of miss) console.log("  " + JSON.stringify(k).slice(0, 170));
   missing += miss.length;
 }
+{
+  // Claves de t() y tf() del núcleo (Rust) que faltan en src-tauri/i18n/en.json: el núcleo las traduce al mostrarlas.
+  const coreDict = dict("src-tauri/i18n/en.json");
+  const used = new Set();
+  for (const f of walk(path.join(root, "src-tauri/src"), /\.rs$/)) {
+    for (const m of fs.readFileSync(f, "utf8").matchAll(/(?<![\w.])tf?\(\s*"((?:[^"\\]|\\.)*)"/g)) used.add(m[1].replace(/\\"/g, '"').replace(/\\\\/g, "\\"));
+  }
+  const miss = [...used].filter((k) => !(k in coreDict) && !/^https?:/.test(k)).sort((a, b) => a.localeCompare(b, "es"));
+  console.log(`\n== núcleo (t() y tf() de src-tauri/src): ${used.size} claves, ${miss.length} sin traducir en src-tauri/i18n/en.json`);
+  for (const k of miss) console.log("  " + JSON.stringify(k).slice(0, 170));
+  missing += miss.length;
+}
 console.log(`\n${missing} textos sin traducir`);
-if (strict && (missing || broken)) process.exit(1);
+if (strict && (missing || broken || parity)) process.exit(1);

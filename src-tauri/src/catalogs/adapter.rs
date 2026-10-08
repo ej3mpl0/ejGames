@@ -89,8 +89,8 @@ fn not_a_bot_wall(body: String) -> anyhow::Result<String> {
 /// su dueño haya dado de alta en el Worker, con la misma firma que el resto.
 async fn relayed(src: &CatalogSource, url: &str) -> anyhow::Result<String> {
     use crate::explore::fitgirl::{relay, relay_signature, unix_now};
-    let (base, key) = relay().ok_or_else(|| anyhow::anyhow!("sin relay"))?;
-    let rest = url.strip_prefix(&src.base_url).ok_or_else(|| anyhow::anyhow!("el relay solo admite rutas de {}", src.base_url))?;
+    let (base, key) = relay().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("sin relay")))?;
+    let rest = url.strip_prefix(&src.base_url).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::tf("el relay solo admite rutas de {0}", &[&src.base_url])))?;
     let rest = if rest.starts_with('/') || rest.is_empty() { rest.to_string() } else { format!("/{rest}") };
     let full = reqwest::Url::parse(&format!("{base}/catalog/{}{rest}", src.id))?;
     let signed = full[url::Position::BeforePath..].to_string();
@@ -108,13 +108,13 @@ async fn relayed(src: &CatalogSource, url: &str) -> anyhow::Result<String> {
             // de la 1.3.2); cualquier otro viene de la web: esa dirección no existe.
             let body = r.text().await.unwrap_or_default();
             if body.starts_with("relay:") || body.trim() == "Not Found" {
-                anyhow::bail!("el relay no tiene dada de alta la fuente «{}»", src.id);
+                anyhow::bail!("{}", crate::i18n::tf("el relay no tiene dada de alta la fuente «{0}»", &[&src.id]));
             }
             anyhow::bail!("HTTP 404 Not Found");
         }
         return not_a_bot_wall(r.error_for_status()?.text().await?);
     }
-    anyhow::bail!("el relay no acepta la firma")
+    anyhow::bail!("{}", crate::i18n::t("el relay no acepta la firma"))
 }
 
 /// Una página de la fuente: de la caché si es reciente; si no, de la red (con su turno);

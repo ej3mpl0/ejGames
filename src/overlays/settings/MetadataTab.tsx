@@ -53,7 +53,9 @@ export function MetadataTab() {
             { value: "french", label: "Français" },
             { value: "german", label: "Deutsch" },
             { value: "italian", label: "Italiano\u200b" },
-            { value: "brazilian", label: "Português (Brasil)" },
+            { value: "brazilian", label: "Português (Brasil)\u200b" },
+            { value: "schinese", label: "中文\u200b" },
+            { value: "japanese", label: "日本語\u200b" },
           ]}
           onChange={(v) => save({ language: v })}
         />

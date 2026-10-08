@@ -363,7 +363,7 @@ pub fn list(c: &Connection, game_id: i64) -> rusqlite::Result<AchList> {
                 Achievement {
                     api_name: r.get(0)?,
                     name: if masked { "Logro oculto".into() } else { r.get(2)? },
-                    description: if masked { Some("Sigue jugando para descubrirlo.".into()) } else { r.get(3)? },
+                    description: if masked { Some(crate::i18n::t("Sigue jugando para descubrirlo.").into()) } else { r.get(3)? },
                     icon: if masked { None } else { icon_url(a, icon.as_deref()) },
                     icon_gray: if masked { None } else { icon_url(a, icon_gray.as_deref()) },
                     hidden,

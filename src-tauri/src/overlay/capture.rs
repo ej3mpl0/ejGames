@@ -132,7 +132,7 @@ pub fn take(st: &Arc<AppState>, delay_ms: u64) {
                         kind: "info".into(),
                         game_id: None,
                         game: None,
-                        title: "No se pudo hacer la captura".into(),
+                        title: crate::i18n::t("No se pudo hacer la captura").into(),
                         body: Some(format!("{e}")),
                         icon: None,
                         rarity: None,
@@ -151,11 +151,11 @@ pub fn take(st: &Arc<AppState>, delay_ms: u64) {
 fn shoot(st: &Arc<AppState>) -> anyhow::Result<Capture> {
     let (game_id, title) = {
         let g = st.overlay.inner.lock();
-        let live = g.live.as_ref().ok_or_else(|| anyhow::anyhow!("No hay ningún juego en marcha."))?;
+        let live = g.live.as_ref().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No hay ningún juego en marcha.")))?;
         (live.game_id, live.title.clone())
     };
-    let hwnd = super::game_window(st).ok_or_else(|| anyhow::anyhow!("No se encuentra la ventana del juego."))?;
-    let area = win::client_area(hwnd).ok_or_else(|| anyhow::anyhow!("La ventana del juego está minimizada."))?;
+    let hwnd = super::game_window(st).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No se encuentra la ventana del juego.")))?;
+    let area = win::client_area(hwnd).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("La ventana del juego está minimizada.")))?;
 
     // Que el overlay (panel y avisos) no salga en la imagen.
     let overlay = st.overlay.hwnd.load(Ordering::Relaxed);
@@ -355,7 +355,7 @@ mod win {
                     if desc.Rotation != DXGI_MODE_ROTATION_IDENTITY && desc.Rotation != DXGI_MODE_ROTATION_UNSPECIFIED {
                         anyhow::bail!("monitor girado");
                     }
-                    let crop = intersect(area, desc.DesktopCoordinates).ok_or_else(|| anyhow::anyhow!("la ventana está fuera del monitor"))?;
+                    let crop = intersect(area, desc.DesktopCoordinates).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("la ventana está fuera del monitor")))?;
                     let mut device: Option<ID3D11Device> = None;
                     let mut ctx: Option<ID3D11DeviceContext> = None;
                     D3D11CreateDevice(
@@ -369,7 +369,7 @@ mod win {
                         None,
                         Some(&mut ctx),
                     )?;
-                    let (device, ctx) = (device.ok_or_else(|| anyhow::anyhow!("sin dispositivo"))?, ctx.ok_or_else(|| anyhow::anyhow!("sin contexto"))?);
+                    let (device, ctx) = (device.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("sin dispositivo")))?, ctx.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("sin contexto")))?);
                     let dup = output.cast::<IDXGIOutput1>()?.DuplicateOutput(&device)?;
                     // El primer fotograma trae la imagen actual del escritorio; si
                     // solo trae el cursor (sin imagen), se espera al siguiente.
@@ -407,13 +407,13 @@ mod win {
                         }
                         let mut staging: Option<ID3D11Texture2D> = None;
                         device.CreateTexture2D(&staging_desc, None, Some(&mut staging))?;
-                        let staging = staging.ok_or_else(|| anyhow::anyhow!("sin textura"))?;
+                        let staging = staging.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("sin textura")))?;
                         ctx.CopyResource(&staging, &src);
                         let _ = dup.ReleaseFrame();
                         tex = Some(staging);
                         break;
                     }
-                    let tex = tex.ok_or_else(|| anyhow::anyhow!("el escritorio no dio ninguna imagen"))?;
+                    let tex = tex.ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("el escritorio no dio ninguna imagen")))?;
                     let mut map = D3D11_MAPPED_SUBRESOURCE::default();
                     ctx.Map(&tex, 0, D3D11_MAP_READ, 0, Some(&mut map))?;
                     let (ox, oy) = (crop.0 - desc.DesktopCoordinates.left, crop.1 - desc.DesktopCoordinates.top);
@@ -428,7 +428,7 @@ mod win {
                     return Ok(Frame { width: w as u32, height: hh as u32, bgra });
                 }
             }
-            anyhow::bail!("no se encontró el monitor del juego")
+            anyhow::bail!("{}", crate::i18n::t("no se encontró el monitor del juego"))
         }
     }
 
@@ -461,7 +461,7 @@ mod win {
             ReleaseDC(None, screen);
             copied?;
             if lines == 0 {
-                anyhow::bail!("GDI no devolvió la imagen");
+                anyhow::bail!("{}", crate::i18n::t("GDI no devolvió la imagen"));
             }
             Ok(Frame { width: w as u32, height: hh as u32, bgra })
         }

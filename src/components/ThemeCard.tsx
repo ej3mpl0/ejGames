@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import type { ThemeInfo } from "../api/types";
 import { cx } from "./ui";
+import { t } from "../lib/i18n";
 
 /** Miniatura de un tema: su preview o un boceto con su paleta. */
 export function ThemePreview({ theme }: { theme: ThemeInfo }) {
@@ -81,7 +82,7 @@ export function ThemeCard({ theme, active, onClick }: { theme: ThemeInfo; active
           {!theme.builtin && <span className="rounded bg-accent/20 px-1.5 text-[10px] uppercase text-accent">propio</span>}
           {!theme.compatible && <span className="rounded bg-red-500/20 px-1.5 text-[10px] uppercase text-red-300">sdk</span>}
         </div>
-        <div className="truncate text-xs text-muted">{theme.description || theme.author}</div>
+        <div className="truncate text-xs text-muted">{(theme.description && t(theme.description)) || theme.author}</div>
       </div>
     </button>
   );

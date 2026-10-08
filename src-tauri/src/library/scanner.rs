@@ -181,7 +181,7 @@ pub fn scan_folder(
     }
     let root = PathBuf::from(&folder.path);
     if !root.is_dir() {
-        anyhow::bail!("La carpeta no existe: {}", folder.path);
+        anyhow::bail!("{}", crate::i18n::tf("La carpeta no existe: {0}", &[&folder.path]));
     }
     let mut dirs = game_dirs(&root, &folder.mode);
     let mut unchanged: Vec<i64> = vec![];

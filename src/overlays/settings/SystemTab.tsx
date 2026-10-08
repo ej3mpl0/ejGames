@@ -8,7 +8,7 @@ import { Glyph } from "../../components/Hints";
 import { setBigPicture } from "../../host/window";
 import { checkNow, useUpdate } from "../../host/update";
 import { useApp } from "../../store/app";
-import { getLang, t } from "../../lib/i18n";
+import { LANG_LABELS, t, UI_LANGS, type Lang } from "../../lib/i18n";
 import { BackupSection } from "./BackupSection";
 import { RollbackSection } from "./RollbackSection";
 
@@ -145,14 +145,13 @@ export function SystemTab() {
 
   return (
     <div>
-      <Section title={t("Idioma") + (getLang() === "es" ? " · Language" : " · Idioma")}>
+      <Section title={t("Idioma")}>
         <Cycle
           label={t("Idioma de la interfaz")}
-          value={settings.uiLanguage as "" | "es" | "en"}
+          value={(settings.uiLanguage === "" || (UI_LANGS as readonly string[]).includes(settings.uiLanguage) ? settings.uiLanguage : "") as "" | Lang}
           options={[
             { value: "", label: t("El de Windows") },
-            { value: "es", label: "Español\u200b" },
-            { value: "en", label: "English" },
+            ...UI_LANGS.map((id) => ({ value: id, label: LANG_LABELS[id] })),
           ]}
           onChange={async (v) => {
             await save({ uiLanguage: v });

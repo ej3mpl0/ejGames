@@ -5,6 +5,13 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.6.0
+
+- **Idiomas**: ejGames habla español, inglés, alemán, francés, chino (simplificado), japonés y portugués de Brasil. El primer paso del asistente elige el idioma: por defecto el de Windows, y puedes cambiarlo cuando quieras en Ajustes → Sistema. Al cambiarlo, la ventana se recarga y la interfaz, los temas y el overlay se pintan en el idioma nuevo.
+- **Traducción completa**: los textos que salían en español aunque tuvieras el inglés (errores y avisos del núcleo, descripciones de los temas, las etiquetas del tema Retro, los mensajes del overlay) ya están traducidos. Los registros de diagnóstico (el log) siguen en español.
+- Los datos de Steam (descripciones, logros, guías) siguen al idioma de la interfaz, salvo que elijas otro a mano.
+- El instalador también elige el idioma de Windows.
+
 ## 1.5.1
 
 - **Homebrew**: las filas ya se deslizan bien. Antes eran tan anchas como todas sus tarjetas, así que las flechas se

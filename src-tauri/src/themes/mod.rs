@@ -85,7 +85,7 @@ pub fn read_manifest(dir: &Path) -> anyhow::Result<ThemeManifest> {
     let txt = std::fs::read_to_string(dir.join("theme.json"))?;
     let m: ThemeManifest = serde_json::from_str(txt.trim_start_matches('\u{feff}'))?;
     if !valid_id(&m.id) {
-        anyhow::bail!("id de tema no válido: {}", m.id);
+        anyhow::bail!("{}", crate::i18n::tf("id de tema no válido: {0}", &[&m.id]));
     }
     Ok(m)
 }
@@ -244,15 +244,15 @@ pub fn duplicate(paths: &Paths, id: &str) -> anyhow::Result<ThemeInfo> {
     let dst = paths.user_themes.join(&new_id);
     copy_dir(&src, &dst)?;
     m.id = new_id.clone();
-    m.name = format!("{} (mío)", m.name);
+    m.name = crate::i18n::tf("{0} (mío)", &[&m.name]);
     m.author = if m.author.is_empty() { "yo".into() } else { format!("{} + yo", m.author) };
     std::fs::write(dst.join("theme.json"), serde_json::to_vec_pretty(&m)?)?;
-    find(paths, &new_id).ok_or_else(|| anyhow::anyhow!("no se pudo duplicar"))
+    find(paths, &new_id).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("no se pudo duplicar")))
 }
 
 pub fn delete(paths: &Paths, id: &str) -> anyhow::Result<()> {
     if !valid_id(id) {
-        anyhow::bail!("id no válido");
+        anyhow::bail!("{}", crate::i18n::t("id no válido"));
     }
     let dir = paths.user_themes.join(id);
     if !dir.join("theme.json").exists() {

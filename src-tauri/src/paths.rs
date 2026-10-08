@@ -47,7 +47,7 @@ impl Paths {
         let exe_dir = std::env::current_exe()
             .ok()
             .and_then(|p| p.parent().map(Path::to_path_buf));
-        let (root, portable) = data_root().ok_or_else(|| anyhow::anyhow!("no se encontró %APPDATA%"))?;
+        let (root, portable) = data_root().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("no se encontró %APPDATA%")))?;
 
         // Temas y SDK de serie: en dev se leen del repo (hot reload sin copiar),
         // en release de los recursos empaquetados.

@@ -113,7 +113,7 @@ pub async fn catalog(st: &AppState) -> anyhow::Result<Arc<Vec<MapGame>>> {
             let fetched = async {
                 let r = st.http.get(format!("{SITE}/sitemap.xml")).send().await?;
                 if !r.status().is_success() {
-                    anyhow::bail!("Map Genie respondió {}", r.status());
+                    anyhow::bail!("{}", crate::i18n::tf("Map Genie respondió {0}", &[&r.status()]));
                 }
                 Ok(parse_sitemap(&r.text().await?))
             }
@@ -128,7 +128,7 @@ pub async fn catalog(st: &AppState) -> anyhow::Result<Arc<Vec<MapGame>>> {
                 other => {
                     let why = other.err().map(|e| format!("{e:#}")).unwrap_or_else(|| "sitemap vacío".into());
                     tracing::warn!("mapas: {why}");
-                    cached(TTL_STALE).ok_or_else(|| anyhow::anyhow!("No se pudo leer la lista de mapas de Map Genie. Revisa tu conexión."))?
+                    cached(TTL_STALE).ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("No se pudo leer la lista de mapas de Map Genie. Revisa tu conexión.")))?
                 }
             }
         }
@@ -203,7 +203,7 @@ pub async fn choose(st: &Arc<AppState>, game_id: i64, slug: Option<String>) -> a
         }
         Some(s) => {
             if !s.is_empty() && !catalog(st).await?.iter().any(|g| g.slug == s) {
-                anyhow::bail!("Ese juego no está en Map Genie");
+                anyhow::bail!("{}", crate::i18n::t("Ese juego no está en Map Genie"));
             }
             st.db.with(|c| {
                 c.execute(
@@ -221,7 +221,7 @@ pub async fn choose(st: &Arc<AppState>, game_id: i64, slug: Option<String>) -> a
 /// Recuerda el último mapa abierto del juego.
 pub fn set_last(st: &AppState, game_id: i64, map: &str) -> anyhow::Result<()> {
     if !valid_slug(map) {
-        anyhow::bail!("Mapa no válido");
+        anyhow::bail!("{}", crate::i18n::t("Mapa no válido"));
     }
     st.db.with(|c| {
         c.execute(

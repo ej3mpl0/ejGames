@@ -214,7 +214,7 @@ export function RetroPanel({ p }: { p: Panel }) {
         <span>
           {p.live.pad?.level != null && (
             <>
-              <b>PAD</b> <Blocks value={p.live.pad.level / 100} of={4} />{" "}
+              <b>MANDO</b> <Blocks value={p.live.pad.level / 100} of={4} />{" "}
             </>
           )}
           {clock(p.now)}
@@ -270,7 +270,7 @@ export function RetroPanel({ p }: { p: Panel }) {
             ["back", view === "menu" ? "Continuar" : "Volver"],
           ]}
         />
-        <span className="rt-insert">INSERT COIN</span>
+        <span className="rt-insert">INSERTA MONEDA</span>
       </footer>
       <Message k="rt" p={p} />
       <QuitConfirm k="rt" p={p} />

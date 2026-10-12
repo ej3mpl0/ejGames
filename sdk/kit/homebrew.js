@@ -17,6 +17,8 @@ import { norm, roms, software, systemName } from "./library.js";
 import { relative } from "./format.js";
 
 export const HOMEBREW_LAYOUTS = ["steam", "ps5", "xbox", "switch", "cinema", "retro", "moneda"];
+/** Maquetas cuya ficha es una página entera (como la de una tienda) en vez de una ventana. */
+const PAGE_SHEET = ["moneda"];
 
 const tr = (s, v) => (globalThis.ejg && globalThis.ejg.t ? globalThis.ejg.t(s, v) : s.replace(/\{(\w+)\}/g, (_, k) => (v && k in v ? v[k] : `{${k}}`)));
 
@@ -594,6 +596,88 @@ export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "
     ];
   }
 
+  /** Ficha a página entera, como la de una tienda: migas, título con la acción al lado,
+   *  la imagen grande con sus capturas, una columna con la carátula y los datos, y la
+   *  descripción debajo. La usan las maquetas de PAGE_SHEET. */
+  function pageBox(sh, e, key) {
+    const actions = sheetActions(sh, key).filter(Boolean);
+    const mirrors = actions.filter((n) => n.classList?.contains("hb-mirrors"));
+    const main = actions.filter((n) => !mirrors.includes(n));
+    const shots = (sh.data?.screenshots || []).slice(0, 10);
+    const big = h("div", { class: "hb-pg-big" });
+    const show = (u, fill) => {
+      big.classList.toggle("is-cover", !fill);
+      big.style.setProperty("--hb-pg-bg", u ? `url("${u}")` : "none");
+      big.replaceChildren(u ? h("img", { src: u, alt: "", draggable: "false" }) : h("b", { class: "hb-shot-title", "data-no-t": "" }, e.title));
+    };
+    show(shots[0] || e.coverUrl, !!shots[0]);
+    const strip =
+      shots.length > 1
+        ? h(
+            "div",
+            { class: "hb-pg-strip", "data-focus-group": "hb-pg-strip" },
+            ...shots.map((u, i) =>
+              h(
+                "button",
+                {
+                  class: "hb-pg-thumb" + (i === 0 ? " is-on" : ""),
+                  "data-focus": "",
+                  "data-key": `s-shot${i}`,
+                  onclick: (ev) => {
+                    show(u, true);
+                    ev.currentTarget.parentElement.querySelectorAll(".hb-pg-thumb").forEach((t) => t.classList.toggle("is-on", t === ev.currentTarget));
+                  },
+                },
+                h("img", { src: u, alt: "", loading: "lazy", draggable: "false" }),
+              ),
+            ),
+          )
+        : null;
+    const rows = [
+      ["Consola", e.system ? h("span", { class: "hb-pg-sys" }, sysTag(e.system), h("span", { "data-no-t": "" }, systemName(e.system))) : null],
+      ["Región", e.region],
+      ["Idioma", e.language],
+      ["Tamaño", e.size],
+      ["Versión", e.version && `v${String(e.version).replace(/^v/i, "")}`],
+    ].filter((r) => r[1]);
+    const emu = e.emulator
+      ? h("p", { class: "hb-sheet-note" }, h("span", null, "Se juega con"), " ", h("b", { "data-no-t": "" }, e.emulator))
+      : e.system
+        ? h("button", { class: "hb-alert", "data-focus": "", "data-key": "s-emu", onclick: () => open("software") }, icon("warn", "hb-alert-ico"), h("span", null, "Necesita un emulador: instálalo"))
+        : null;
+    return h(
+      "div",
+      { class: "hb-sheet-box hb-pg" },
+      h(
+        "nav",
+        { class: "hb-pg-crumbs" },
+        h("button", { class: "hb-pg-back", "data-focus": "", "data-key": "s-close", onclick: closeSheet }, icon("left", "hb-pg-back-ico"), h("span", null, "Homebrew")),
+        e.system ? h("span", { class: "hb-pg-sep" }, "›") : null,
+        e.system ? h("span", { "data-no-t": "" }, systemName(e.system)) : null,
+      ),
+      h(
+        "div",
+        { class: "hb-pg-head" },
+        h("h1", { class: "hb-pg-title", "data-no-t": "" }, e.title),
+        h("div", { class: "hb-pg-acts", "data-focus-group": "hb-sheet-actions" }, ...main),
+      ),
+      h(
+        "div",
+        { class: "hb-pg-top" },
+        h("div", { class: "hb-pg-media" }, big, strip),
+        h(
+          "div",
+          { class: "hb-pg-side" },
+          e.coverUrl ? h("div", { class: "hb-pg-cap" }, h("img", { src: e.coverUrl, alt: "", draggable: "false" })) : null,
+          rows.length ? h("dl", { class: "hb-pg-rows" }, ...rows.map(([k, v]) => h("div", { class: "hb-pg-row" }, h("dt", null, k), h("dd", { "data-no-t": typeof v === "string" ? "" : null }, v)))) : null,
+          emu,
+          ...mirrors,
+        ),
+      ),
+      e.description ? h("section", { class: "hb-pg-sec" }, h("h3", null, "Acerca de este juego"), h("p", { "data-no-t": "" }, e.description)) : null,
+    );
+  }
+
   function paintSheet(keepFocus = false) {
     const sh = s.sheet;
     if (!sh) return;
@@ -603,7 +687,7 @@ export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "
     const had = keepFocus && focus?.current && sheetEl?.contains(focus.current) && focus.current.dataset.key !== "s-close" ? focus.current.dataset.key : null;
     const facts = [e.region, e.language, e.size, e.version && `v${String(e.version).replace(/^v/i, "")}`].filter(Boolean).map((x) => h("span", { class: "hb-fact", "data-no-t": "" }, x));
     const shots = (sh.data?.screenshots || []).slice(0, 8);
-    const box = h(
+    const box = PAGE_SHEET.includes(layout) ? pageBox(sh, e, key) : h(
       "div",
       { class: "hb-sheet-box" },
       h("button", { class: "hb-sheet-close", "data-focus": "", "data-key": "s-close", "aria-label": "Cerrar", onclick: closeSheet, html: ICONS.close }),
@@ -624,7 +708,7 @@ export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "
       ),
       shots.length ? h("div", { class: "hb-shots" }, ...shots.map((u) => h("img", { src: u, alt: "", loading: "lazy", draggable: "false" }))) : null,
     );
-    const el = h("div", { class: `hb-sheet hb-layout-${layout}`, "data-focus-trap": "" }, h("div", { class: "hb-sheet-bg", style: e.coverUrl ? `background-image: url("${e.coverUrl}")` : "" }), box);
+    const el = h("div", { class: `hb-sheet hb-layout-${layout}${PAGE_SHEET.includes(layout) ? " is-page" : ""}`, "data-focus-trap": "" }, h("div", { class: "hb-sheet-bg", style: e.coverUrl ? `background-image: url("${e.coverUrl}")` : "" }), box);
     el.addEventListener("mousedown", (ev) => ev.target === el && closeSheet());
     if (sheetEl) sheetEl.replaceWith(el);
     else view.append(el);

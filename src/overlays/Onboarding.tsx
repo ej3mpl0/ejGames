@@ -9,7 +9,7 @@ import { Button, TextInput, Toggle, cx } from "../components/ui";
 import { ThemeCard } from "../components/ThemeCard";
 import { useOverlayNav } from "../input/nav";
 import { PROFILE_COLORS, bytes } from "../lib/format";
-import { useApp } from "../store/app";
+import { DEFAULT_THEME, useApp } from "../store/app";
 import { Hints } from "../components/Hints";
 import { getLang, isLang, LANG_LABELS, steamLanguageFor, t, UI_LANGS, type Lang } from "../lib/i18n";
 import { restoreBackup } from "./settings/BackupSection";
@@ -29,7 +29,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
   const [systemLang, setSystemLang] = useState<Lang | null>(null);
   const [name, setName] = useState("");
   const [color, setColor] = useState(PROFILE_COLORS[0]);
-  const [theme, setTheme] = useState("steam");
+  const [theme, setTheme] = useState(DEFAULT_THEME);
   const [folders, setFolders] = useState<FolderInspection[]>([]);
   const [busy, setBusy] = useState(false);
   // Descargas: carpeta (por defecto la primera carpeta de juegos) y Explorar.

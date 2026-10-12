@@ -37,7 +37,7 @@ pub const LABEL: &str = "overlay";
 const NOTICE_W: f64 = 480.0;
 const NOTICE_H: f64 = 460.0;
 
-pub const STYLES: [&str; 7] = ["steam", "playstation", "xbox", "switch", "cinema", "retro", "ejgames"];
+pub const STYLES: [&str; 8] = ["moneda", "steam", "playstation", "xbox", "switch", "cinema", "retro", "ejgames"];
 
 /// Aspecto de los avisos: estilo y, si es el del propio tema, sus colores.
 #[derive(Debug, Clone, Serialize, Default)]
@@ -189,6 +189,7 @@ fn default_corner(style: &str) -> &'static str {
         "switch" => "top-left",
         "cinema" => "bottom-left",
         "retro" => "top-center",
+        "moneda" => "top-right",
         _ => "bottom-right",
     }
 }
@@ -211,9 +212,9 @@ pub fn look(st: &AppState) -> Look {
     let profile_id = st.overlay.inner.lock().live.as_ref().map(|l| l.profile_id).or(*st.profile.read());
     let profile = profile_id.and_then(|id| st.db.with(|c| repo::get_profile(c, id)).ok());
     let manifest = |id: &str| crate::themes::dir_of(&st.paths, id).and_then(|d| crate::themes::read_manifest(&d).ok());
-    let theme = profile.as_ref().and_then(|p| manifest(&p.theme_id)).or_else(|| manifest("steam"));
+    let theme = profile.as_ref().and_then(|p| manifest(&p.theme_id)).or_else(|| manifest(crate::themes::DEFAULT_THEME));
     let native = theme.as_ref().and_then(native_style);
-    let style = STYLES.iter().find(|x| **x == s.overlay_style).copied().or(native).unwrap_or("ejgames");
+    let style = STYLES.iter().find(|x| **x == s.overlay_style).copied().or(native).unwrap_or("moneda");
     let corner = if s.overlay_corner == "auto" || s.overlay_corner.is_empty() { default_corner(style).to_string() } else { s.overlay_corner };
     let mut look = Look { style: style.into(), corner, dark: style != "switch", ..Default::default() };
     let Some(m) = theme else { return look };

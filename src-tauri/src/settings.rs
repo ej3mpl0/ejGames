@@ -236,7 +236,7 @@ pub const UI_LANGUAGES: [&str; 8] = ["", "es", "en", "de", "fr", "zh", "ja", "pt
 pub const CLOSE_ACTIONS: [&str; 3] = ["ask", "tray", "quit"];
 pub const EVENT_MODES: [&str; 3] = ["auto", "on", "off"];
 
-pub const OVERLAY_STYLES: [&str; 8] = ["auto", "steam", "playstation", "xbox", "switch", "cinema", "retro", "ejgames"];
+pub const OVERLAY_STYLES: [&str; 9] = ["auto", "moneda", "steam", "playstation", "xbox", "switch", "cinema", "retro", "ejgames"];
 
 /// Ajustes de versiones anteriores: hasta 0.2.1 la esquina "bottom-right" era la
 /// de serie (se guardaba siempre); ahora la de serie es la del estilo del aviso.

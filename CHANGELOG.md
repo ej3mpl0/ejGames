@@ -5,6 +5,27 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.7.0
+
+- **Diseño nuevo: el tema Moneda**, el de la casa y el de todos. Pestañas arriba (Inicio, Biblioteca, Tienda y
+  Homebrew), carbón cálido, esquinas redondeadas y tres formas sacadas del logo que siempre significan lo mismo: el
+  **disco rojo** es Jugar (hay uno por pantalla), el **anillo** es el progreso (logros, descargas) y la **ranura** marca
+  dónde estás (la pestaña abierta y el juego elegido con el mando).
+- Arriba, **solo el logo** (te lleva a Inicio) y **un único buscador** para todo: en la Biblioteca filtra tus juegos y
+  con la Tienda abierta busca en el catálogo (también con la tecla `/`).
+- **Inicio** con el juego para continuar en grande y tus filas; **Biblioteca** con filtros (jugados, sin jugar,
+  favoritos, ocultos) y colecciones en abanico; la **página de cada juego** con sus horas, el anillo de logros y cuánto
+  dura; la **tienda** con un destacado a lo ancho y portadas verticales; **descargas** con el anillo y sus pasos
+  (descargar, instalar, en tu biblioteca).
+- **Overlay nuevo** (Shift+Tab): un dock abajo con botones redondos (logros, guías, trucos, mapa, capturas, partidas,
+  notas, música, rendimiento y descargas) y lo elegido encima. Los **avisos** son pastillas con el anillo del progreso;
+  al completar todos los logros, la pastilla se vuelve blanca.
+- Las ventanas de la app (Ajustes, Propiedades, diálogos…) siguen el mismo sistema: botones en pastilla, el rojo solo
+  para Jugar y la ranura en la sección abierta.
+- **Halloween**: el tema se tiñe de naranja y noche con el arte del evento, pero el logo se queda como está.
+- Los temas de plataforma (Steam, PS5, Xbox, Switch, Cinema y Retro) y la galería de la comunidad quedan **apagados por
+  ahora**: los perfiles que los usaban pasan a Moneda. Tus temas propios siguen ahí.
+
 ## 1.6.1
 
 - **Icono nuevo**: la ficha, un disco rojo con una ranura sobre negro, en el ejecutable, la barra de tareas, la bandeja,

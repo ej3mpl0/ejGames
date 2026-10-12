@@ -30,8 +30,9 @@ ejGames is available in **English and Spanish** (Settings → System → Languag
   notes, screenshots, music, volume, performance and optional **FPS**, with no injection into the game.
 * **Saved-game backups** after every session, **library backups** you can carry to another PC through OneDrive or Drive,
   a **game mode** (power plan and notifications), desktop shortcuts and **Add to Steam**.
-* **6 built-in themes** (Steam, PS5, Xbox, Switch, Cinema, Retro) you can tweak without code, or build your own with
-  HTML, CSS and JavaScript; a **community themes** gallery.
+* **Its own theme**, Moneda: clear and one tap away, built from three shapes in the logo (the red disc is Play, the
+  ring is progress and the slot shows where you are). Tweak it without code, or build your own with HTML, CSS and
+  JavaScript.
 * **Controller and Big Picture**, profiles, statistics, Discord Rich Presence and automatic updates (with a way back to
   an earlier version).
 * **Light**: while you play it can stay in the tray using about 5 MB.

@@ -6,6 +6,7 @@ import type { NoticeStyle, OverlayLive, OverlayPanel } from "../../api/types";
 import { CinemaPanel } from "./cinema";
 import { EjGamesPanel } from "./ejgames";
 import { usePanel, type Panel } from "./model";
+import { MonedaPanel } from "./moneda";
 import "./panel.css";
 import { PlayStationPanel } from "./playstation";
 import { RetroPanel } from "./retro";
@@ -21,6 +22,7 @@ const VIEWS: Partial<Record<NoticeStyle, ComponentType<{ p: Panel }>>> = {
   cinema: CinemaPanel,
   retro: RetroPanel,
   ejgames: EjGamesPanel,
+  moneda: MonedaPanel,
 };
 
 function useZoom() {
@@ -37,7 +39,7 @@ function useZoom() {
 export function PanelView({ data, live }: { data: OverlayPanel; live: OverlayLive }) {
   const p = usePanel(data, live);
   const zoom = useZoom();
-  const View = VIEWS[data.look.style] ?? EjGamesPanel;
+  const View = VIEWS[data.look.style] ?? MonedaPanel;
   return (
     <div className="pn-root" data-style={data.look.style} style={{ zoom, width: `${100 / zoom}vw`, height: `${100 / zoom}vh` }}>
       <View p={p} />

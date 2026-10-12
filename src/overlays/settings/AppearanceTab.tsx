@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CommunityThemes } from "./CommunityThemes";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { Code2, Copy, Download, FolderOpen, ImagePlus, RotateCcw, Trash2, Upload, X, RefreshCw } from "lucide-react";
 import { api, errMsg } from "../../api/tauri";
@@ -9,7 +8,7 @@ import { ThemeCard } from "../../components/ThemeCard";
 import { mergedSettings } from "../../host/ThemeFrame";
 import { SOUND_PRESETS } from "../../host/sounds";
 import { refreshThemes, reloadTheme } from "../../host/window";
-import { activeTheme, useApp } from "../../store/app";
+import { activeTheme, DEFAULT_THEME, useApp } from "../../store/app";
 import { SEASON_ORIGIN, useSeason } from "../../host/season";
 
 const EVENT_OPTIONS: { value: Settings["eventMode"]; label: string }[] = [
@@ -307,7 +306,7 @@ export function AppearanceTab() {
         </div>
       </Section>
 
-      <CommunityThemes onInstalled={() => void refresh()} />
+      {/* Temas de la comunidad (CommunityThemes): apagados mientras solo está el tema de la casa. */}
 
       {current && (
         <Section title="Hazlo tuyo">
@@ -347,7 +346,7 @@ export function AppearanceTab() {
                   icon={<Trash2 size={15} />}
                   onClick={() =>
                     run(async () => {
-                      await select("steam");
+                      await select(DEFAULT_THEME);
                       await api.deleteTheme(current.id);
                       await refresh();
                       setConfirmDelete(false);

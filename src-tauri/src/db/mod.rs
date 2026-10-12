@@ -42,6 +42,8 @@ const MIGRATIONS: &[Migration] = &[
     Migration::Sql(include_str!("../../migrations/018_game_mode_profile.sql")),
     // 1.3.0: ROMs propias (datos de la cabecera, DLC y actualizaciones) y homebrew.
     Migration::Sql(include_str!("../../migrations/019_roms.sql")),
+    // 1.7.0: el tema de la casa para todos.
+    Migration::Sql(include_str!("../../migrations/020_default_theme.sql")),
 ];
 
 pub struct Db {

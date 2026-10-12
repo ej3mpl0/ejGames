@@ -9,6 +9,7 @@ import type { NoticeLook, NoticeStyle, OverlayNotice } from "../api/types";
 import "./notices.css";
 
 export const NOTICE_STYLES: { value: NoticeStyle; label: string }[] = [
+  { value: "moneda", label: "Moneda" },
   { value: "steam", label: "Steam" },
   { value: "playstation", label: "PlayStation" },
   { value: "xbox", label: "Xbox" },
@@ -404,6 +405,55 @@ function Plain({ n, look }: P) {
   );
 }
 
+// ─────────── Moneda: una pastilla con el anillo del progreso ───────────
+
+function Moneda({ n }: P) {
+  const info = n.kind === "info";
+  const shot = isShot(n);
+  const done = completed(n);
+  const head = shot
+    ? "Captura guardada"
+    : n.kind === "summary"
+      ? "Resumen de la partida"
+      : info
+        ? n.game || "ejGames"
+        : done
+          ? "Todos los logros"
+          : "Logro desbloqueado";
+  const meta = [n.kind !== "info" && n.progress ? `${n.progress[0]} de ${n.progress[1]}` : null, n.rarity != null && isRare(n) ? `${pct(n.rarity)} % de los jugadores` : null]
+    .filter(Boolean)
+    .join("  ·  ");
+  const p = n.kind === "achievement" && n.progress && n.progress[1] > 0 ? Math.min(1, n.progress[0] / n.progress[1]) : null;
+  return (
+    <div className={cls("nt-mo", done && "is-done", shot && "is-capture")}>
+      {shot ? (
+        <Art src={n.icon} className="nt-mo-shot">
+          <Camera />
+        </Art>
+      ) : (
+        <span className="nt-mo-ring">
+          {p != null && (
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+              <circle className="bg" cx="50" cy="50" r="45" />
+              <circle className="fg" cx="50" cy="50" r="45" pathLength="100" strokeDasharray={`${p * 100} 100`} />
+            </svg>
+          )}
+          <Art src={info ? null : n.icon} className="nt-mo-icon">
+            {info ? <Pad /> : <Cup />}
+          </Art>
+        </span>
+      )}
+      <div className="nt-mo-txt">
+        <div className="nt-mo-head">
+          {head}
+          {meta && <span> · {meta}</span>}
+        </div>
+        <div className="nt-mo-name">{info ? n.body : n.kind === "summary" ? n.body : shot ? n.game : n.title}</div>
+      </div>
+    </div>
+  );
+}
+
 const VIEWS: Record<NoticeStyle, (p: P) => ReactNode> = {
   steam: Steam,
   playstation: PlayStation,
@@ -412,6 +462,7 @@ const VIEWS: Record<NoticeStyle, (p: P) => ReactNode> = {
   cinema: Cinema,
   retro: Retro,
   ejgames: Plain,
+  moneda: Moneda,
 };
 
 export function NoticeView({ n, leaving }: { n: OverlayNotice; leaving?: boolean }) {

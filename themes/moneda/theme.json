@@ -1,0 +1,27 @@
+{
+  "id": "moneda",
+  "name": "Moneda",
+  "version": "1.0.0",
+  "author": "ejGames",
+  "description": "El tema de la casa: tu biblioteca, la tienda y Homebrew, claros y a un toque",
+  "sdk": 1,
+  "entry": "index.html",
+  "modes": ["desktop", "tv"],
+  "palette": ["#141315", "#1c1b1e", "#ff3a2d", "#f5f2ee"],
+  "host": { "accent": "#ff3a2d", "surface": "#141315", "radius": "22px" },
+  "sounds": { "preset": "soft" },
+  "overlay": { "style": "moneda" },
+  "features": { "explore": true, "guides": true },
+  "windowControls": "theme",
+  "settings": [
+    { "key": "accent", "type": "color", "label": "Color de acento", "default": "#ff3a2d" },
+    { "key": "bg", "type": "color", "label": "Fondo", "default": "#141315" },
+    { "key": "panel", "type": "color", "label": "Paneles", "default": "#1c1b1e" },
+    { "key": "text", "type": "color", "label": "Texto", "default": "#f5f2ee" },
+    { "key": "wallpaper", "type": "image", "label": "Fondo personalizado (imagen o vídeo)" },
+    { "key": "coverSize", "type": "range", "label": "Tamaño de las portadas", "min": 120, "max": 260, "step": 5, "unit": "px", "default": 170, "group": "Biblioteca" },
+    { "key": "showRecent", "type": "toggle", "label": "Fila «Jugado hace poco» en Inicio", "default": true, "group": "Biblioteca" },
+    { "key": "blurHero", "type": "toggle", "label": "Fondo difuminado con el arte del juego", "default": true, "group": "Página de juego" },
+    { "key": "autoTrailer", "type": "toggle", "label": "Reproducir el tráiler al abrir un juego", "default": false, "group": "Página de juego" }
+  ]
+}

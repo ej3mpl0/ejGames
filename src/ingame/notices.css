@@ -477,3 +477,27 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+/* ─────────── Moneda: una pastilla; el anillo es el progreso de los logros ─────────── */
+.nt-mo { display: flex; align-items: center; gap: 14px; width: 420px; max-width: 100%; margin: 6px; padding: 10px 22px 10px 10px; border-radius: 40px; background: #1c1b1e; color: #f5f2ee; font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45); animation: nt-mo-in 0.32s cubic-bezier(0.2, 0.9, 0.25, 1.15) both; }
+.nt.leaving .nt-mo { animation: nt-mo-out 0.3s ease-in both; }
+@keyframes nt-mo-in { from { opacity: 0; transform: translateY(calc(-18px * var(--dir-y))) scale(0.96); } }
+@keyframes nt-mo-out { to { opacity: 0; transform: translateY(calc(-12px * var(--dir-y))) scale(0.97); } }
+.nt-mo-ring { position: relative; width: 56px; height: 56px; flex: none; display: grid; place-items: center; }
+.nt-mo-ring > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.nt-mo-ring circle { fill: none; stroke-width: 7; stroke-linecap: round; }
+.nt-mo-ring .bg { stroke: #2a282c; }
+.nt-mo-ring .fg { stroke: #ff3a2d; }
+.nt-mo-icon { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; }
+.nt-mo-icon.ph { background: #262428; color: #f5f2ee; }
+.nt-mo-icon.ph svg { width: 20px; height: 20px; }
+.nt-mo-shot { width: 88px; height: 56px; flex: none; border-radius: 28px; overflow: hidden; }
+.nt-mo-shot.ph { background: #262428; color: #a8a29c; }
+.nt-mo-txt { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.nt-mo-head { font-size: 13px; color: #a8a29c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nt-mo-name { font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* Todos los logros: la pastilla se vuelve blanca. */
+.nt-mo.is-done { background: #f5f2ee; color: #141315; }
+.nt-mo.is-done .nt-mo-head { color: #5e5954; }
+.nt-mo.is-done .nt-mo-ring .bg { stroke: #ff3a2d; }
+@media (prefers-reduced-motion: reduce) { .nt-mo, .nt.leaving .nt-mo { animation: none; } }

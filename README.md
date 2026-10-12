@@ -24,8 +24,9 @@
 * **Logros** de Steam y de los juegos sueltos, con **avisos dentro del juego** al estilo de cada plataforma.
 * **Overlay dentro del juego** con guías de la comunidad de Steam, **trucos** (trainers de FLiNG que tú decides
   instalar) y **mapas interactivos** de Map Genie que se pueden anclar encima del juego.
-* **6 temas de serie** (Steam, PS5, Xbox, Switch, Cinema y Retro) que se tunean sin código, o el tuyo desde cero con
-  HTML, CSS y JavaScript.
+* **Un tema propio**, Moneda: claro y a un toque, con tres formas sacadas del logo (el disco rojo es Jugar, el anillo
+  es el progreso y la ranura marca dónde estás). Se tunea sin código, o haces el tuyo desde cero con HTML, CSS y
+  JavaScript.
 * **Mando y Big Picture**, perfiles, estadísticas, Discord Rich Presence y actualizaciones automáticas.
 * **Homebrew**: tus emuladores y tus juegos de consola en su propia pestaña, con catálogos de ROMs que descargan y
   descomprimen solos (también `.rar`), RetroArch, PCSX2, Dolphin, PPSSPP, DuckStation, Cemu, RPCS3, Eden o tu emulador.

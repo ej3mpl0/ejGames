@@ -31,11 +31,11 @@ export const Button = forwardRef<
       data-nav
       {...rest}
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-[calc(var(--h-radius)*0.7)] font-medium whitespace-nowrap disabled:opacity-40 disabled:pointer-events-none cursor-pointer",
+        "inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap disabled:opacity-40 disabled:pointer-events-none cursor-pointer",
         size === "sm" && "h-8 px-3 text-[13px]",
         size === "md" && "h-10 px-4 text-sm",
         size === "lg" && "h-12 px-6 text-base",
-        variant === "primary" && "bg-accent text-accent-contrast hover:brightness-110",
+        variant === "primary" && "bg-fg text-surface hover:brightness-95",
         variant === "soft" && "bg-surface-3 text-fg hover:brightness-125",
         variant === "ghost" && "text-fg hover:bg-surface-3",
         variant === "danger" && "bg-red-500/15 text-red-300 hover:bg-red-500/25",
@@ -96,12 +96,13 @@ export function Toggle({
       <span
         className={cx(
           "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-          checked ? "bg-accent" : "bg-surface-3 ring-1 ring-line",
+          checked ? "bg-fg" : "bg-surface-3 ring-1 ring-line",
         )}
       >
         <span
           className={cx(
-            "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
+            "absolute top-0.5 h-5 w-5 rounded-full shadow transition-transform",
+            checked ? "bg-surface" : "bg-muted",
             checked ? "translate-x-[22px]" : "translate-x-0.5",
           )}
         />
@@ -130,7 +131,7 @@ export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLIn
       data-nav
       {...rest}
       className={cx(
-        "h-10 w-full rounded-[calc(var(--h-radius)*0.6)] bg-surface-3/70 px-3 text-sm text-fg outline-none ring-1 ring-line placeholder:text-muted/70 focus:ring-2 focus:ring-accent",
+        "h-10 w-full rounded-[calc(var(--h-radius)*0.6)] bg-surface-3/70 px-3 text-sm text-fg outline-none ring-1 ring-line placeholder:text-muted/70 focus:ring-2 focus:ring-fg",
         className,
       )}
     />
@@ -304,11 +305,13 @@ export function Tabs<T extends string>({
           onClick={() => onChange(t.value)}
           className={cx(
             "flex h-10 items-center gap-3 rounded-[calc(var(--h-radius)*0.7)] px-3 text-left text-sm cursor-pointer",
-            t.value === value ? "bg-accent/15 text-fg" : "text-muted hover:bg-surface-3 hover:text-fg",
+            t.value === value ? "bg-surface-3 text-fg" : "text-muted hover:bg-surface-3 hover:text-fg",
           )}
         >
-          <span className={t.value === value ? "text-accent" : ""}>{t.icon}</span>
+          <span className={t.value === value ? "text-fg" : ""}>{t.icon}</span>
           {t.label}
+          {/* La ranura del logo: la sección abierta. */}
+          {t.value === value && <span className="ml-auto h-[18px] w-[5px] shrink-0 rounded-[1.5px] bg-accent" />}
         </button>
       ))}
     </nav>

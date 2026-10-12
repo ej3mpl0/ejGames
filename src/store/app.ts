@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { t as translate } from "../lib/i18n";
 import type {
+
   Bootstrap,
   Collection,
   DownloadItem,
@@ -14,6 +15,9 @@ import type {
   CatalogState,
   EmulatorCfg,
 } from "../api/types";
+
+/** El tema de la casa: el de los perfiles nuevos y el de reserva. */
+export const DEFAULT_THEME = "moneda";
 
 export type PadType = "xbox" | "playstation" | "nintendo" | "generic";
 
@@ -150,8 +154,8 @@ export const useApp = create<State>((set, get) => ({
 }));
 
 export function activeTheme(s: Pick<State, "themes" | "profile" | "themeOverride">): ThemeInfo | undefined {
-  const id = s.themeOverride ?? s.profile?.themeId ?? "steam";
-  return s.themes.find((t) => t.id === id) ?? s.themes.find((t) => t.id === "steam") ?? s.themes[0];
+  const id = s.themeOverride ?? s.profile?.themeId ?? DEFAULT_THEME;
+  return s.themes.find((t) => t.id === id) ?? s.themes.find((t) => t.id === DEFAULT_THEME) ?? s.themes[0];
 }
 
 /** Los juegos de consola de la biblioteca (ROMs propias y homebrew), por sistema. */

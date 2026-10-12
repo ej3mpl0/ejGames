@@ -2,15 +2,15 @@
 
 /* Tokens del host: los rellena el tema activo (theme.json → "host"). */
 :root {
-  --h-accent: #4f8cff;
-  --h-accent-contrast: #ffffff;
-  --h-surface: #11151d;
-  --h-surface-2: #181e29;
-  --h-surface-3: #222a38;
-  --h-text: #e8edf6;
-  --h-muted: #8d99ad;
-  --h-border: rgba(255, 255, 255, 0.08);
-  --h-radius: 14px;
+  --h-accent: #ff3a2d;
+  --h-accent-contrast: #141315;
+  --h-surface: #141315;
+  --h-surface-2: #1c1b1e;
+  --h-surface-3: #262428;
+  --h-text: #f5f2ee;
+  --h-muted: #a8a29c;
+  --h-border: rgba(245, 242, 238, 0.08);
+  --h-radius: 22px;
   --h-font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   color-scheme: dark;
 }
@@ -44,7 +44,7 @@ body,
   height: 100%;
   margin: 0;
   overflow: hidden;
-  background: #090c12;
+  background: #0e0d0f;
 }
 
 body {
@@ -88,8 +88,8 @@ textarea {
 [data-nav].is-focused,
 [data-nav]:focus-visible {
   box-shadow:
-    0 0 0 2px var(--h-accent),
-    0 0 0 5px color-mix(in srgb, var(--h-accent) 25%, transparent);
+    0 0 0 2px var(--h-text),
+    0 0 0 5px color-mix(in srgb, var(--h-text) 18%, transparent);
 }
 /* Con ratón, el anillo de foco (pensado para mando/teclado) no se pinta: basta
    con el fondo de :hover de cada control. */

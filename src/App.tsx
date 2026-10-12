@@ -30,7 +30,7 @@ import { YearReviewOverlay } from "./overlays/YearReview";
 import { SoftwareStore } from "./overlays/SoftwareStore";
 import { Catalogs } from "./overlays/Catalogs";
 import { RomImport } from "./overlays/RomImport";
-import { activeTheme, useApp } from "./store/app";
+import { activeTheme, DEFAULT_THEME, useApp } from "./store/app";
 import { useHostSeason } from "./host/season";
 import { restoreBackup } from "./overlays/settings/BackupSection";
 import { t } from "./lib/i18n";
@@ -108,7 +108,7 @@ export default function App() {
     (async () => {
       try {
         const b = await api.bootstrap();
-        set({ boot: b, profiles: b.profiles, settings: b.settings, themes: b.themes, running: b.running, themeOverride: b.safeMode ? "steam" : null, safeOrigin: b.safeMode });
+        set({ boot: b, profiles: b.profiles, settings: b.settings, themes: b.themes, running: b.running, themeOverride: b.safeMode ? DEFAULT_THEME : null, safeOrigin: b.safeMode });
         setDownloads(b.downloads ?? []);
         if (b.safeMode) useApp.getState().toast("info", "Modo seguro: se ha cargado el tema Steam.");
         if (b.settings.startBigPicture) void setBigPicture(true);

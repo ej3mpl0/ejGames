@@ -81,7 +81,7 @@ export interface AchList {
   items: Achievement[];
 }
 
-export type NoticeStyle = "steam" | "playstation" | "xbox" | "switch" | "cinema" | "retro" | "ejgames";
+export type NoticeStyle = "steam" | "playstation" | "xbox" | "switch" | "cinema" | "retro" | "ejgames" | "moneda";
 export type NoticeCorner = "top-left" | "top-center" | "top-right" | "bottom-left" | "bottom-center" | "bottom-right";
 
 /** Aspecto de los avisos: estilo y, si es el del propio tema, sus colores. */

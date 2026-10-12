@@ -19,7 +19,8 @@ function useSave() {
   };
 }
 
-const STYLES: { value: Settings["overlayStyle"]; label: string }[] = [{ value: "auto", label: "El de mi tema" }, ...NOTICE_STYLES];
+// Los estilos de plataforma (Steam, Xbox…) se quedan en el código, apagados como sus temas.
+const STYLES: { value: Settings["overlayStyle"]; label: string }[] = [{ value: "auto", label: "El de mi tema" }, ...NOTICE_STYLES.filter((s) => s.value === "moneda" || s.value === "ejgames")];
 
 const CORNERS: { value: Settings["overlayCorner"]; label: string }[] = [
   { value: "auto", label: "La de su plataforma" },

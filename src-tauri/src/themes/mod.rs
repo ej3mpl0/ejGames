@@ -13,6 +13,17 @@ use std::path::{Path, PathBuf};
 
 pub const SDK_VERSION: u32 = 1;
 
+/// El tema de la casa: el de todos los perfiles nuevos y el de reserva.
+pub const DEFAULT_THEME: &str = "moneda";
+
+/// Temas de serie apagados por ahora: siguen en la carpeta, pero no se listan
+/// ni se cargan (los perfiles que los usaban pasaron a `DEFAULT_THEME`).
+pub const DISABLED_BUILTIN: [&str; 6] = ["steam", "ps5", "xbox", "switch", "cinema", "retro"];
+
+fn disabled(id: &str) -> bool {
+    DISABLED_BUILTIN.contains(&id)
+}
+
 fn default_entry() -> String {
     "index.html".into()
 }
@@ -99,6 +110,9 @@ fn scan(root: &Path, builtin: bool, out: &mut Vec<ThemeInfo>) {
         }
         match read_manifest(&dir) {
             Ok(m) => {
+                if builtin && disabled(&m.id) {
+                    continue;
+                }
                 if out.iter().any(|t| t.manifest.id == m.id) {
                     continue; // el de usuario ya ganó
                 }
@@ -181,7 +195,7 @@ pub fn list(paths: &Paths) -> Vec<ThemeInfo> {
     for t in &mut out {
         localize(paths, t);
     }
-    let order = ["steam", "ps5", "xbox", "switch", "cinema", "retro"];
+    let order = [DEFAULT_THEME];
     out.sort_by_key(|t| {
         (
             !t.builtin,
@@ -209,7 +223,7 @@ pub fn dir_of(paths: &Paths, id: &str) -> Option<PathBuf> {
     }
     // Los de serie viven en una carpeta con su id: sin releer todos los temas.
     let builtin = paths.builtin_themes.join(id);
-    if builtin.join("theme.json").exists() {
+    if !disabled(id) && builtin.join("theme.json").exists() {
         return Some(builtin);
     }
     // Carpetas de usuario/serie cuyo nombre no coincide con el id.
@@ -292,5 +306,39 @@ mod i18n_tests {
         assert_eq!(en.get("Cerrar").map(String::as_str), Some("Dismiss"));
         assert_eq!(en.get("Hola").map(String::as_str), Some("Hi"));
         assert!(strings(&paths, Some(&root.join("mi-tema")), "es").is_empty());
+    }
+}
+
+#[cfg(test)]
+mod disabled_tests {
+    use super::*;
+
+    #[test]
+    fn disabled_builtins_are_hidden_but_user_copies_stay() {
+        let d = tempfile::tempdir().unwrap();
+        let root = d.path();
+        let theme = |dir: PathBuf, id: &str| {
+            std::fs::create_dir_all(&dir).unwrap();
+            std::fs::write(dir.join("theme.json"), format!(r#"{{"id":"{id}","name":"{id}"}}"#)).unwrap();
+        };
+        theme(root.join("b").join("steam"), "steam");
+        theme(root.join("b").join(DEFAULT_THEME), DEFAULT_THEME);
+        theme(root.join("u").join("steam-custom"), "steam-custom");
+        let paths = Paths {
+            root: root.to_path_buf(),
+            db: root.join("x.db"),
+            settings: root.join("s.json"),
+            media: root.join("m"),
+            trailers: root.join("t"),
+            user_themes: root.join("u"),
+            builtin_themes: root.join("b"),
+            sdk: root.join("sdk"),
+            logs: root.join("l"),
+            portable: false,
+        };
+        let ids: Vec<String> = list(&paths).into_iter().map(|t| t.manifest.id).collect();
+        assert_eq!(ids, vec![DEFAULT_THEME.to_string(), "steam-custom".to_string()]);
+        assert!(dir_of(&paths, "steam").is_none());
+        assert!(dir_of(&paths, DEFAULT_THEME).is_some());
     }
 }

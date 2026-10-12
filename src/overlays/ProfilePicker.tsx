@@ -8,7 +8,7 @@ import { Button, TextInput, cx } from "../components/ui";
 import { useOverlayNav } from "../input/nav";
 import { playSound } from "../host/sounds";
 import { PROFILE_COLORS } from "../lib/format";
-import { useApp } from "../store/app";
+import { DEFAULT_THEME, useApp } from "../store/app";
 import { Hints } from "../components/Hints";
 
 export function Avatar({ p, size = 120 }: { p: Pick<Profile, "name" | "avatar" | "color">; size?: number }) {
@@ -58,7 +58,7 @@ export function ProfilePicker({ onLogin, onClose }: { onLogin: (p: Profile) => v
   async function create() {
     if (!name.trim()) return;
     try {
-      const p = await api.createProfile(name.trim(), color, current?.themeId ?? "steam");
+      const p = await api.createProfile(name.trim(), color, current?.themeId ?? DEFAULT_THEME);
       upsert(p);
       setCreating(false);
       setName("");

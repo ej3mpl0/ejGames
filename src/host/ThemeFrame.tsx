@@ -5,7 +5,7 @@ import { api, errMsg, on } from "../api/tauri";
 import type { LibGame, Profile, ProfileCard, ThemeInfo } from "../api/types";
 import { setThemeSink } from "../input/nav";
 import { currentSeason, useSeason } from "./season";
-import { activeTheme, useApp } from "../store/app";
+import { activeTheme, DEFAULT_THEME, useApp } from "../store/app";
 import { handleThemeCall } from "./bridge";
 import { configureSounds, playSound, type SoundName } from "./sounds";
 import { globalKey } from "./window";
@@ -187,13 +187,13 @@ export function ThemeFrame() {
       if (dead && theme) {
         clearInterval(t);
         const st = useApp.getState();
-        if (theme.id !== "steam") {
-          st.toast("error", `El tema «${theme.name}» no responde. Se ha cargado el tema Steam.`);
+        if (theme.id !== DEFAULT_THEME) {
+          st.toast("error", `El tema «${theme.name}» no responde. Se ha cargado el tema de la casa.`);
           // Desmontar el iframe colgado y esperar a que Chromium cierre su proceso;
           // si no, el tema de reserva reutilizaría el mismo proceso bloqueado.
           setRecovering(true);
           setTimeout(() => {
-            st.set({ themeOverride: "steam", safeOrigin: true });
+            st.set({ themeOverride: DEFAULT_THEME, safeOrigin: true });
             setRecovering(false);
           }, 300);
         } else {

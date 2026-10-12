@@ -1,62 +1,64 @@
 ---
-title: "Juegos"
-description: "ejg.game: ficha completa, lanzar, favoritos, valoración y estado."
+title: "Games"
+description: "ejg.game: the full page, launch, favorites, rating and state."
 icon: "play"
 ---
 
 ```js
 const d = await ejg.game.details(id)   // + description, screenshots[], trailers[], recentSessions[]
 await ejg.game.launch(id)
-ejg.game.favorite(id)                  // alterna (o pasa true/false)
+ejg.game.favorite(id)                  // toggles (or pass true/false)
 ejg.game.hide(id, true)
 ejg.game.rate(id, 80)
-ejg.game.edit(id)                      // abre el editor del host
+ejg.game.edit(id)                      // opens the host's editor
 ejg.game.openFolder(id)
-ejg.game.uninstall(id)                 // abre el diálogo «Desinstalar» del host
+ejg.game.uninstall(id)                 // opens the host's Uninstall dialog
 ejg.game.isRunning(id)
 ejg.game.onState(({ gameId, state }) => …)   // "launching" | "running" | "stopped"
 ```
 
-`description` es texto con un marcado mínimo (`## título`, `- viñeta`,
-párrafos separados por línea en blanco). `description()` del kit lo convierte en
-nodos DOM seguros.
+`description` is text with a small markup (`## title`, `- bullet`, paragraphs
+separated by a blank line). The kit's `description()` turns it into safe DOM nodes.
 
-Los tráilers (`d.trailers[i].url`) son HLS (`.m3u8`): usa `attachStream()` del kit,
-que usa HLS nativo o hls.js según haga falta.
+Trailers (`d.trailers[i].url`) are HLS (`.m3u8`). Use the kit's `attachStream()`,
+which uses native HLS or hls.js as needed.
 
-## Desinstalar
+## Uninstall
 
-`ejg.game.uninstall(id)` no desinstala nada por sí solo: abre un diálogo del host que
-explica qué va a pasar y pide confirmación.
+`ejg.game.uninstall(id)` does not uninstall anything by itself. It opens a host
+dialog that explains what will happen and asks for confirmation.
 
-- **Si el juego tiene desinstalador**, se abre (el de su entrada en «Aplicaciones
-  instaladas» de Windows, o un `unins000.exe` / `uninstall.exe` de su carpeta). Cuando el
-  juego desaparece del disco, sale de la biblioteca.
-- **Si no tiene nada**, su carpeta va a la papelera de reciclaje. Nunca se borra una carpeta
-  de la biblioteca, de descargas o del sistema, ni una que tenga dentro otros juegos.
-- **Si es un juego de consola**, se borra: su carpeta (si se bajó de un catálogo) o su archivo, con su DLC y sus
-  actualizaciones, va a la papelera de reciclaje.
+- **If the game has an uninstaller**, it is opened (the one from its entry in
+  Windows' Installed apps, or an `unins000.exe` / `uninstall.exe` in its folder).
+  When the game disappears from disk, it leaves the library.
+- **If it has nothing**, its folder goes to the recycle bin. A library folder, a
+  downloads folder, a system folder, or a folder that contains other games is
+  never deleted.
+- **If it is a console game**, it is deleted: its folder (if it was downloaded
+  from a catalog) or its file, with its DLC and updates, goes to the recycle bin.
 
-Sirve para cualquier juego que siga en su sitio. Para saber si enseñar la opción, usa
-`canUninstall(juego)` del kit (`/_sdk/kit/library.js`).
+It works for any game that is still in place. To know whether to show the option,
+use the kit's `canUninstall(game)` (`/_sdk/kit/library.js`).
 
-Los emuladores instalados desde ejGames están en `library.all` con `source: "emulator"`: no son juegos.
-`isSoftware(juego)` los distingue, `visible()` los deja fuera (como a los de consola) y `software(library.all)` los
-da para [Homebrew](/referencia/homebrew).
+Emulators installed from ejGames are in `library.all` with `source: "emulator"`.
+They are not games. `isSoftware(game)` tells them apart, `visible()` leaves them
+out (the same as console games) and `software(library.all)` returns them for
+[Homebrew](/referencia/homebrew).
 
-Los juegos de consola (`source: "rom"` o `"homebrew"`) llevan `platform` (`"switch"`, `"vita"`, `"3ds"`, `"ps2"`…),
-`emulator` (con qué se abren; `""` si no hay ninguno) y `rom` (lo leído del archivo: `titleId`, `version`, `region`,
-`serial` y `extras`, sus actualizaciones y DLC). Del kit:
+Console games (`source: "rom"` or `"homebrew"`) carry `platform` (`"switch"`,
+`"vita"`, `"3ds"`, `"ps2"`…), `emulator` (what opens them; `""` if there is none)
+and `rom` (what was read from the file: `titleId`, `version`, `region`, `serial`
+and `extras`, its updates and DLC). From the kit:
 
 ```js
 import { isRom, romsBySystem, systemName, romParts } from "/_sdk/kit/library.js"
 import { emulatorNote } from "/_sdk/kit/emulator.js"
 
 romsBySystem(ejg.library.all)   // [{ id: "switch", name: "Nintendo Switch", games: [...] }, ...]
-ficha.append(emulatorNote(game)) // «Requiere emulador: Eden» + TitleID, versión, región, DLC; nada en los de PC
-ejg.ui.open("rom-import")                     // Importar ROMs
+page.append(emulatorNote(game)) // "Requires an emulator: Eden" plus TitleID, version, region, DLC; nothing for PC games
+ejg.ui.open("rom-import")       // Import ROMs
 ```
 
 <Note>
-Al desinstalar, el juego sale de la biblioteca junto con sus horas.
+When you uninstall, the game leaves the library along with its hours.
 </Note>

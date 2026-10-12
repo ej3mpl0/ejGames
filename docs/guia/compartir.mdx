@@ -1,39 +1,38 @@
 ---
-title: "Exportar y compartir"
-description: "Empaquetar el tema en un .ejtheme y qué hacer después."
-sidebarTitle: "11. Exportar y compartir"
+title: "Export and share"
+description: "Pack the theme into a .ejtheme, and what to do next."
+sidebarTitle: "11. Export and share"
 ---
 
-Cuando tu tema esté listo:
+When your theme is ready:
 
-1. Cambia en `theme.json` el `id` (si lo has copiado de aquí, que no sea
-   `ejemplo`), el `name`, el `author` y la `version`. Si puedes, añade una
+1. In `theme.json`, change the `id` (if you copied it from here, it must not be
+   `ejemplo`), the `name`, the `author` and the `version`. If you can, add a
    `preview`.
-2. Quita de la carpeta lo que no haga falta: **se exporta todo lo que haya
-   dentro**.
-3. Elige tu tema en **Ajustes → Apariencia** y pulsa **Exportar .ejtheme**
-   (exporta el tema activo y te pregunta dónde guardarlo). Un `.ejtheme` no es
-   más que un zip con la carpeta del tema.
+2. Remove anything the folder does not need: **everything inside it is exported**.
+3. Choose your theme in **Settings → Appearance** and press **Export .ejtheme**
+   (it exports the active theme and asks where to save it). A `.ejtheme` is
+   just a zip of the theme folder.
 
-Para instalarlo en otro PC: **Ajustes → Apariencia → Importar**, elige el
-`.ejtheme` y queda instalado y seleccionado. Detalles útiles:
+To install it on another PC: **Settings → Appearance → Import**, choose the
+`.ejtheme`, and it is installed and selected. Useful details:
 
-- También acepta un `.zip` hecho a mano, con `theme.json` en la raíz o dentro
-  de una única carpeta.
-- Se instala en `themes\<id>`. **Si ya había un tema con ese `id`, lo
-  sustituye.**
-- No se puede importar un tema con el `id` de uno de serie («El id «steam» es de
-  un tema de serie; cámbialo en theme.json»).
-- Límite: 200 MB descomprimido.
+- It also accepts a `.zip` you made by hand, with `theme.json` at the root or
+  inside a single folder.
+- It is installed to `themes\<id>`. **If a theme with that `id` was already
+  there, it replaces it.**
+- You cannot import a theme with a built-in `id` ("The id «steam» belongs to a
+  built-in theme; change it in theme.json").
+- Limit: 200 MB uncompressed.
 
-## Y ahora, ¿qué?
+## What now?
 
-- **[La referencia](/referencia/sdk)** lo tiene todo: logros
-  (`ejg.game.achievements()`), colecciones (`ejg.library.collections`),
-  estadísticas (`ejg.stats`), tráileres con `attachStream()`, fondos con fundido
-  (`createBackdrop()`), arte que encaja en cualquier marco (`artFor()`)…
-- Los temas de serie están hechos exactamente con lo mismo: **Retro** es el más
-  sencillo y **Steam** el más completo. Los encontrarás en la carpeta `themes`
-  de la instalación (normalmente `%LOCALAPPDATA%\ejGames\themes`), y **Duplicar para
-  editar** (Apariencia) copia cualquiera a tu carpeta de temas para que
-  trastees con él.
+- **[The reference](/referencia/sdk)** has everything: achievements
+  (`ejg.game.achievements()`), collections (`ejg.library.collections`),
+  statistics (`ejg.stats`), trailers with `attachStream()`, crossfading
+  backgrounds (`createBackdrop()`), art that fits any frame (`artFor()`)…
+- The built-in themes are made with exactly the same tools. **Retro** is the
+  simplest and **Steam** the most complete. You will find them in the `themes`
+  folder of the installation (usually `%LOCALAPPDATA%\ejGames\themes`), and
+  **Duplicate to edit** (Appearance) copies any of them into your themes folder
+  so you can take it apart.

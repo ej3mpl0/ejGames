@@ -1,180 +1,190 @@
 ---
-title: "Explorar y descargas"
-description: "ejg.explore y ejg.downloads: la tienda de repacks y la cola de descargas."
+title: "Explore and downloads"
+description: "ejg.explore and ejg.downloads: the repack store and the download queue."
 icon: "cloud-arrow-down"
 ---
 
-**Explorar** es la tienda de repacks del launcher y **Descargas**, la cola de su
-torrent integrado (con el botón «Instalar» al terminar). Un tema puede pintar las
-dos cosas a su manera: declara en `theme.json`
+**Explore** is the launcher's repack store and **Downloads** is the queue of its
+built-in torrent client (with the Install button when a download finishes). A theme
+can paint both its own way. Declare this in `theme.json`:
 
 ```json
 "features": { "explore": true }
 ```
 
-y el menú rápido, **Ctrl+E**, **Ctrl+J** y los avisos del host le pedirán que abra
-su vista en vez de abrir las ventanas genéricas del launcher:
+and the quick menu, **Ctrl+E**, **Ctrl+J** and the host's notices will ask it to
+open its view instead of opening the launcher's generic windows:
 
 ```js
 ejg.ui.onView(({ view, slug }) => {
-  // view: "explore" | "downloads" | "repack" (una ficha: slug)
+  // view: "explore" | "downloads" | "repack" (a page: slug)
 });
 ```
 
-Sin `features.explore`, el tema no tiene que hacer nada: el host abre sus propias
-ventanas (y el tema puede abrirlas con `ejg.downloads.open("explore" | "downloads")`).
+Without `features.explore`, the theme does not have to do anything. The host opens
+its own windows (and the theme can open them with `ejg.downloads.open("explore" | "downloads")`).
 
 ```js
-ejg.explore.enabled              // el usuario tiene Explorar activado
+ejg.explore.enabled              // the user has Explore turned on
 ejg.explore.onEnabled((on) => …)
 await ejg.explore.home()         // { sections: [{ id: "today"|"week"|"month"|"latest", title, items }] }
-await ejg.explore.search("elden", 1)   // { query, items, page, pages, total }; sin texto: novedades
+await ejg.explore.search("elden", 1)   // { query, items, page, pages, total }; with no text: new releases
 await ejg.explore.genres()       // [{ id, name, group: "genre" | "view" | "setting" }]
-await ejg.explore.browse(filtros, 1)   // el catálogo entero con filtros (mismo formato que search)
-await ejg.explore.details(slug)  // ficha: screenshots [{thumb, full}], features, installSize, description
-ejg.explore.openPage(slug)       // abre la ficha en la web de la fuente
+await ejg.explore.browse(filters, 1)   // the whole catalog with filters (same shape as search)
+await ejg.explore.details(slug)  // page: screenshots [{thumb, full}], features, installSize, description
+ejg.explore.openPage(slug)       // opens the page on the source's website
 ```
 
-## Lista de deseados
+## Wishlist
 
-Los juegos que el usuario quiere. Se guarda en el PC (en la base de datos de ejGames), una por perfil local, y es la
-misma en todos los temas y en la ventana Explorar del host. Cada juego lleva su estado al día (descargando, instalado,
-en la biblioteca…), como en las demás listas.
+The games the user wants. It is stored on the PC (in ejGames' database), one per
+local profile, and it is the same in every theme and in the host's Explore window.
+Each game carries its status, kept up to date (downloading, installed, in the
+library…), like the other lists.
 
 ```js
-ejg.explore.wishlist.items              // [{ ...ficha, addedAt }], la última añadida primero
+ejg.explore.wishlist.items              // [{ ...page, addedAt }], the latest added first
 ejg.explore.wishlist.has(slug)
-await ejg.explore.wishlist.toggle(slug) // true si queda en la lista (también add y remove)
-ejg.explore.wishlist.onChange((items) => …)  // cambia desde cualquier tema o el host
+await ejg.explore.wishlist.toggle(slug) // true if it stays on the list (add and remove too)
+ejg.explore.wishlist.onChange((items) => …)  // changes from any theme or the host
 ```
 
-El kit trae lo común para pintarla (`/_sdk/kit/store.js`): `WISH_SORTS` y `sortWishlist(items, orden)` (añadidos,
-nombre, publicación, tamaño) y `toggleWish(ejg, ficha)`, que la añade o la quita con su aviso. Cada tema la llama a
-su manera: «Lista de deseados» en Steam, «Lista de deseos» en PS5, Xbox y Switch, «Deseados» en Cine y DESEADOS en
-Retro. `toggleWish(ejg, ficha, "tu lista de deseos")` usa ese nombre en el aviso.
+The kit has the usual pieces for painting it (`/_sdk/kit/store.js`): `WISH_SORTS`
+and `sortWishlist(items, order)` (added, name, release, size) and `toggleWish(ejg, page)`,
+which adds or removes it with a notice. Each theme names it in its own words. The
+source strings are "Lista de deseados" on Steam and Moneda, "Lista de deseos" on
+PS5, Xbox and Switch, "Deseados" on Cinema and "DESEADOS" on Retro. In English those
+become Wishlist, or WISHLIST on Retro. `toggleWish(ejg, page, "tu lista de deseos")`
+uses that name in the notice.
 
-## Cracks de hipervisor (HV)
+## Hypervisor cracks (HV)
 
-Algunos repacks llevan un crack de **hipervisor**: no quitan la protección del juego, la engañan con un driver sin
-firmar que funciona por debajo de Windows. Para jugarlos hay que desactivar un rato la seguridad de Windows basada en
-virtualización (integridad de memoria, Credential Guard, el hipervisor de Windows, la firma obligatoria de drivers…)
-y volver a activarla al terminar. Esas fichas traen `hypervisor: true` (y la descarga preparada, `p.hypervisor`).
+Some repacks carry a **hypervisor** crack. They do not remove the game's protection.
+They fool it with an unsigned driver that runs underneath Windows. To play them you
+have to turn off Windows' virtualization-based security for a while (memory integrity,
+Credential Guard, the Windows hypervisor, mandatory driver signing…) and turn it
+back on when you are done. Those pages carry `hypervisor: true` (and the prepared
+download, `p.hypervisor`).
 
-Márcalo junto al nombre allí donde salga el juego y explícalo en su ficha antes del botón de descargar. El kit trae
-el texto y las piezas, para que cada tema solo les ponga su piel:
+Mark it next to the name wherever the game appears, and explain it on the page
+before the download button. The kit has the text and the pieces, so each theme only
+has to give them its skin:
 
 ```js
 import { HYPERVISOR, repackName, hypervisorTag, hypervisorInfo, openHypervisorGuide } from "/_sdk/kit/store.js";
 
-repackName(r)                 // <b>Nombre</b>, o con HV: <b class="hv-name"><span class="hv-name-t">Nombre</span><span class="hv-tag">HV</span></b>
+repackName(r)                 // <b>Name</b>, or with HV: <b class="hv-name"><span class="hv-name-t">Name</span><span class="hv-tag">HV</span></b>
 repackName(r, "h1", { class: "titulo" })
-hypervisorTag(r)              // solo la etiqueta (null si no es HV)
-hypervisorInfo(ejg, r)        // <section class="hv">: resumen, y al desplegar requisitos, qué se desactiva,
-                              // pasos y riesgos, con un botón a la guía completa de la web (null si no es HV)
-HYPERVISOR.download           // aviso corto para el diálogo de descarga
+hypervisorTag(r)              // just the tag (null if it is not HV)
+hypervisorInfo(ejg, r)        // <section class="hv">: a summary, and when expanded the requirements,
+                              // what gets turned off, the steps and the risks, with a button to the
+                              // full guide on the web (null if it is not HV)
+HYPERVISOR.download           // a short warning for the download dialog
 ```
 
-`repackName` deja el nombre en un `<span>` para que se corte con «…» sin llevarse la etiqueta:
+`repackName` puts the name in a `<span>` so it can be cut with "…" without taking the tag with it:
 
 ```css
 .hv-name { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
 .hv-name-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 ```
 
-`hypervisorInfo(ejg, r, { cls, open, labels })` empieza plegado (`open: true` lo abre); `cls` pone un prefijo a
-todas sus clases (`hv`, `hv-head`, `hv-badge`, `hv-title`, `hv-sum`, `hv-body`, `hv-sec`, `hv-sec-<id>`,
-`hv-sec-title`, `hv-note`, `hv-list`, `hv-foot`, `hv-more`, `hv-guide`; `is-open` al desplegar) y `labels` cambia
-los textos de `HYPERVISOR` (p. ej. en mayúsculas). Sus botones llevan `data-focus`.
+`hypervisorInfo(ejg, r, { cls, open, labels })` starts collapsed (`open: true` opens
+it). `cls` prefixes all of its classes (`hv`, `hv-head`, `hv-badge`, `hv-title`,
+`hv-sum`, `hv-body`, `hv-sec`, `hv-sec-<id>`, `hv-sec-title`, `hv-note`, `hv-list`,
+`hv-foot`, `hv-more`, `hv-guide`; `is-open` when expanded) and `labels` changes the
+`HYPERVISOR` texts (for example, into capitals). Its buttons carry `data-focus`.
 
-## El catálogo con filtros
+## The catalog with filters
 
-`browse(filtros, página)` recorre todo el catálogo:
+`browse(filters, page)` walks the whole catalog:
 
 ```js
 await ejg.explore.browse({
-  query: "",                 // texto en el título
-  genres: [47, 59],          // hasta 4 ids de genres(); salen los que tienen todos
-  sort: "date",              // "date" (novedades) | "modified" (actualizados hace poco) | "title" (A-Z)
-  maxGb: 25,                 // tamaño máximo de la descarga (null: cualquiera)
-  hideOwned: true,           // sin los que ya están en la biblioteca o en descargas
+  query: "",                 // text in the title
+  genres: [47, 59],          // up to 4 ids from genres(); games that have all of them
+  sort: "date",              // "date" (new) | "modified" (recently updated) | "title" (A–Z)
+  maxGb: 25,                 // maximum download size (null: any)
+  hideOwned: true,           // without the ones already in the library or in downloads
 }, 1);
 ```
 
-Con `maxGb` o `hideOwned` se filtra en el launcher, así que una respuesta puede leer
-varias páginas de la web: pide la siguiente con `page + 1` **de la respuesta** (no la
-tuya) y, si `filtered` es `true`, el `total` es una estimación.
+With `maxGb` or `hideOwned` the filtering happens in the launcher, so one response
+can read several pages of the website. Ask for the next one with `page + 1` **from
+the response** (not yours) and, if `filtered` is `true`, `total` is an estimate.
 
-`genres()` da los géneros en español con su grupo: `genre` (géneros), `view`
-(perspectiva: primera persona, isométrico…) y `setting` (ambientación: fantasía,
-cyberpunk…). Cada `Repack` trae sus ids en `tags`, así que en una ficha puedes
-llevar al catálogo filtrado por sus géneros.
+`genres()` returns the genres in Spanish, with their group: `genre` (genres),
+`view` (perspective: first person, isometric…) and `setting` (setting: fantasy,
+cyberpunk…). Each `Repack` carries its ids in `tags`, so on a page you can open
+the catalog filtered by its genres.
 
-Cada elemento (`Repack`) trae `title`, `version`, `cover` (portada vertical,
-miniatura), `coverFull`, `hero` (captura grande; puede faltar), `genres`,
-`companies`, `languages`, `originalSize`, `repackSize`, `selective`, `hypervisor` y `status`
-(`{ state, downloadId, gameId, progress }`, con `state` = `none`, `library`,
-`queued`, `downloading`, `paused`, `seeding`, `completed`, `installing`,
-`installed` o `error`). Las imágenes ya vienen como URLs de `ejg-media`.
+Each item (`Repack`) carries `title`, `version`, `cover` (vertical cover, a
+thumbnail), `coverFull`, `hero` (a large screenshot; it can be missing), `genres`,
+`companies`, `languages`, `originalSize`, `repackSize`, `selective`, `hypervisor`
+and `status` (`{ state, downloadId, gameId, progress }`, with `state` = `none`,
+`library`, `queued`, `downloading`, `paused`, `seeding`, `completed`, `installing`,
+`installed` or `error`). The images already arrive as `ejg-media` URLs.
 
-Si el juego está en la tienda de Steam, también trae su arte: `capsule` (la cápsula
-horizontal de 460×215), `capsuleBig` (la grande del carrusel, 616×353) y `library` (la
-vertical de 600×900). La primera vez ejGames lo busca en segundo plano y, al tenerlo, avisa
-con el evento `explore-art`. `createExplore` del kit ya vuelve a pedir la portada y la
-búsqueda; si no lo usas:
+If the game is on the Steam store, it also carries its art: `capsule` (the
+horizontal 460×215 capsule), `capsuleBig` (the large carousel one, 616×353) and
+`library` (the vertical 600×900). The first time, ejGames looks it up in the
+background and, once it has it, fires the `explore-art` event. The kit's
+`createExplore` already asks for the front page and the search again. If you do
+not use it:
 
 ```js
-ejg.on("explore-art", () => recargarLaTienda());
+ejg.on("explore-art", () => reloadTheStore());
 ```
 
-Mientras no llega (o si el juego no está en Steam), usa `cover` y `hero`.
+Until it arrives (or if the game is not on Steam), use `cover` and `hero`.
 
 ```js
-ejg.downloads.all                // lista en memoria, al día (como mucho 1 vez/s)
+ejg.downloads.all                // the in-memory list, up to date (at most once a second)
 ejg.downloads.onChange((list) => …)
-const p = await ejg.downloads.prepare(slug)   // lista de archivos del torrent (puede tardar)
+const p = await ejg.downloads.prepare(slug)   // the torrent's file list (it can take a while)
 // p = { token, files: [{ index, path, size, kind, label, required, selected }], dir, freeBytes,
 //       installSize, installDir, installFreeBytes, hypervisor }
-await ejg.downloads.start(p.token, indices, dir)   // dir: "" o una carpeta de pickFolder()
+await ejg.downloads.start(p.token, indices, dir)   // dir: "" or a folder from pickFolder()
 ejg.downloads.cancelPrepare(slug)
-ejg.downloads.pause(id) / resume(id)      // sin id: todas
-ejg.downloads.move(id, 0)                  // descargar primero
-ejg.downloads.remove(id, borrarArchivos)
-ejg.downloads.install(id)                  // abre el instalador (pide administrador)
-ejg.downloads.locate(id)                   // tras instalar, elegir la carpeta del juego
+ejg.downloads.pause(id) / resume(id)      // with no id: all of them
+ejg.downloads.move(id, 0)                  // download this one first
+ejg.downloads.remove(id, deleteFiles)
+ejg.downloads.install(id)                  // opens the installer (asks for administrator)
+ejg.downloads.locate(id)                   // after installing, choose the game's folder
 ejg.downloads.openFolder(id)
-ejg.downloads.deleteFiles(id)              // borra el repack de un juego ya instalado
-await ejg.downloads.pickFolder(actual)     // { path, freeBytes } o null
-ejg.ui.keyboard({ title, value })          // teclado en pantalla: texto o null
+ejg.downloads.deleteFiles(id)              // deletes the repack of a game already installed
+await ejg.downloads.pickFolder(current)    // { path, freeBytes } or null
+ejg.ui.keyboard({ title, value })          // on-screen keyboard: text, or null
 ```
 
-Estados de una descarga: `queued` (esperando; `pauseReason` dice por qué: `queue`,
-`playing` o `install`), `downloading` (`checking` mientras comprueba archivos),
-`paused` (la pausó el usuario), `seeding` y `completed` (lista para instalar),
-`installing`, `installed` (`gameId`) y `error` (`error`). Además: `progress`
-(0..1), `doneBytes`, `totalBytes`, `downBps`, `upBps`, `peers` y `eta` (segundos).
+A download's states: `queued` (waiting; `pauseReason` says why: `queue`, `playing`
+or `install`), `downloading` (`checking` while it checks files), `paused` (the user
+paused it), `seeding` and `completed` (ready to install), `installing`, `installed`
+(`gameId`) and `error` (`error`). Also: `progress` (0..1), `doneBytes`, `totalBytes`,
+`downBps`, `upBps`, `peers` and `eta` (seconds).
 
-`kind` de cada archivo: `setup` y `core` son imprescindibles; `selective` son
-idiomas y `optional`, extras que se pueden dejar sin bajar (`selected` es la
-selección propuesta: inglés, el idioma del usuario y nada opcional).
+Each file's `kind`: `setup` and `core` are required. `selective` are languages and
+`optional` are extras you can leave out (`selected` is the proposed selection:
+English, the user's language, and nothing optional).
 
-El kit trae la lógica común en `/_sdk/kit/store.js`: `createExplore` (portada,
-búsqueda con espera al escribir, páginas y fichas en caché), `createDownloads`
-(la cola agrupada), `fileSelection` (lo obligatorio no se puede quitar; `bytes`,
-`error`, `fits(libre)`, `indices()`), `askQuery` (con mando abre el teclado en
-pantalla), `repackAction` (qué botón toca: Descargar, Instalar, Jugar…),
-`downloadLabel`, `canInstall`, `isActive`, `genreLabel` (los géneros llegan en
-inglés: «Open world» → «Mundo abierto») y los formatos `bytes`, `speed`, `eta`,
-`percent` y `sizeText` («from 18 GB» → «desde 18 GB»). El tema Steam lo usa todo
-(`themes/steam/store.js`).
+The kit has the shared logic in `/_sdk/kit/store.js`: `createExplore` (front page,
+search that waits while you type, pages and cached game pages), `createDownloads`
+(the queue, grouped), `fileSelection` (what is required cannot be removed; `bytes`,
+`error`, `fits(free)`, `indices()`), `askQuery` (with a controller it opens the
+on-screen keyboard), `repackAction` (which button is due: Download, Install, Play…),
+`downloadLabel`, `canInstall`, `isActive`, `genreLabel` (genres arrive in English:
+"Open world" → "Mundo abierto") and the formatters `bytes`, `speed`, `eta`,
+`percent` and `sizeText` ("from 18 GB" → "desde 18 GB"). The Steam theme uses all
+of it (`themes/steam/store.js`).
 
-Para el catálogo, `createExplore` tiene `loadGenres()`, `browse(cambios, espera)`
-(mezcla los cambios con los filtros que hay y vuelve a la primera página),
-`browseMore()`, `toggleGenre(id)` (`false` si ya hay cuatro), `clearFilters()` y
-`similar(repack)` (juegos parecidos: los que comparten sus dos primeros géneros), con
-el estado en `state.catalog` (`filters`, `items`, `page`, `pages`, `total`,
-`filtered`, `loading`, `error`) y `state.genres`. Además exporta `SORTS`, `SIZES`,
-`GENRE_GROUPS`, `MAX_GENRES`, `emptyFilters`, `filterCount` y `describeFilters`
-(«Rol · Mundo abierto · Hasta 25 GB»).
+For the catalog, `createExplore` has `loadGenres()`, `browse(changes, wait)` (it
+merges the changes with the current filters and goes back to the first page),
+`browseMore()`, `toggleGenre(id)` (`false` if there are already four),
+`clearFilters()` and `similar(repack)` (similar games: the ones that share its first
+two genres), with the state in `state.catalog` (`filters`, `items`, `page`, `pages`,
+`total`, `filtered`, `loading`, `error`) and `state.genres`. It also exports `SORTS`,
+`SIZES`, `GENRE_GROUPS`, `MAX_GENRES`, `emptyFilters`, `filterCount` and
+`describeFilters` ("Rol · Mundo abierto · Hasta 25 GB").
 
-Dentro del iframe no funcionan `confirm()`, `alert()` ni `window.open()`: pinta
-tus propios diálogos.
+Inside the iframe, `confirm()`, `alert()` and `window.open()` do not work. Paint
+your own dialogs.

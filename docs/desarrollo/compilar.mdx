@@ -1,65 +1,65 @@
 ---
-title: "Compilar ejGames"
-description: "Entorno, comandos, variables útiles y cómo se publica una versión."
+title: "Build ejGames"
+description: "Environment, commands, useful variables, and how a version is published."
 icon: "hammer"
 ---
 
-## Requisitos
+## Requirements
 
-- Windows 10/11 con WebView2.
-- Node 20+ y pnpm.
-- Rust estable con el toolchain MSVC (y las Build Tools de Visual Studio).
+- Windows 10/11 with WebView2.
+- Node 20+ and pnpm.
+- Stable Rust with the MSVC toolchain (and the Visual Studio Build Tools).
 
-## Comandos
+## Commands
 
 ```bash
-pnpm install          # también copia hls.js y las fuentes de los temas (scripts/vendor.mjs)
-pnpm tauri dev        # app con recarga en caliente
-pnpm tauri build      # instalador NSIS en target/release/bundle/nsis
+pnpm install          # also copies hls.js and the theme fonts (scripts/vendor.mjs)
+pnpm tauri dev        # app with hot reload
+pnpm tauri build      # NSIS installer in target/release/bundle/nsis
 cd src-tauri && cargo test --lib
 ```
 
 <Warning>
-**Espacio en disco:** la carpeta `target` de Rust ocupa varios GB. Si la unidad del proyecto va justa, compila en
-otra: `set CARGO_TARGET_DIR=D:\build\ejgames-target` (o `$env:CARGO_TARGET_DIR=…` en PowerShell).
+**Disk space:** Rust's `target` folder takes several GB. If the project drive is tight, build somewhere else:
+`set CARGO_TARGET_DIR=D:\build\ejgames-target` (or `$env:CARGO_TARGET_DIR=…` in PowerShell).
 </Warning>
 
-## Variables útiles
+## Useful variables
 
-| Variable | Efecto |
+| Variable | Effect |
 |---|---|
-| `EJGAMES_DATA_DIR` | Guarda los datos en otra carpeta y funciona como instancia aparte, aunque la instalada esté abierta (pruebas). |
-| `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222` | Depurar la UI y los temas con DevTools (`scripts/cdp.mjs`). |
-| `RUST_LOG=ejgames_lib=debug` | Logs detallados del núcleo. |
-| `EJGAMES_INSTALL_VERB=open` | (Solo en desarrollo) Abre el instalador de un repack sin pedir administrador, para probar. |
-| `EJGAMES_UPDATE_REPO=dueño/repo` | (Solo en desarrollo) Busca actualizaciones en otro repositorio. |
+| `EJGAMES_DATA_DIR` | Stores data in another folder and runs as a separate instance, even while the installed app is open (for testing). |
+| `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222` | Debug the UI and themes with DevTools (`scripts/cdp.mjs`). |
+| `RUST_LOG=ejgames_lib=debug` | Detailed logs from the core. |
+| `EJGAMES_INSTALL_VERB=open` | (Development only) Opens a repack's installer without asking for administrator, for testing. |
+| `EJGAMES_UPDATE_REPO=owner/repo` | (Development only) Looks for updates in another repository. |
 
-## Publicar una versión
+## Publish a version
 
 <Steps>
-  <Step title="Apunta los cambios">
-    Añade la sección `## <versión>` a `CHANGELOG.md`: sus notas son las de la release.
+  <Step title="Write down the changes">
+    Add a `## <version>` section to `CHANGELOG.md`. Those notes become the release notes.
   </Step>
-  <Step title="Compila">
-    `pnpm release patch` (o `minor`, `major`, `x.y.z`) sube la versión en `package.json`, `tauri.conf.json`,
-    `Cargo.toml` y `Cargo.lock`, compila el NSIS y después el instalador propio (`installer-app/`), que lo lleva
-    dentro. Deja `installer/ejGames_<versión>_Setup.exe` y nunca pisa uno anterior.
+  <Step title="Build">
+    `pnpm release patch` (or `minor`, `major`, `x.y.z`) bumps the version in `package.json`, `tauri.conf.json`,
+    `Cargo.toml` and `Cargo.lock`, builds the NSIS installer, then the custom installer (`installer-app/`), which
+    carries the NSIS one inside. It leaves `installer/ejGames_<version>_Setup.exe` and never overwrites an older one.
   </Step>
-  <Step title="Publica">
-    `pnpm publish-release` crea la release `v<versión>` en GitHub con ese instalador. Las copias instaladas la
-    ofrecen al abrirse. Necesita el GitHub CLI con sesión iniciada (`gh auth login`).
+  <Step title="Publish">
+    `pnpm publish-release` creates the `v<version>` release on GitHub with that installer. Installed copies offer it
+    the next time they open. It needs the GitHub CLI signed in (`gh auth login`).
   </Step>
 </Steps>
 
-El instalador propio es una app de Tauri aparte: pinta su ventana y ejecuta en silencio el NSIS de Tauri, que va
-incrustado. Cuando lo abre el actualizador con `/P /R /UPDATE`, actualiza sin preguntar y vuelve a abrir ejGames.
-Si al PC le falta WebView2, abre el NSIS tal cual, con los mismos argumentos.
+The published installer is a separate Tauri app: it draws its own window and silently runs Tauri's NSIS installer,
+which is embedded in it. When the updater opens it with `/P /R /UPDATE`, it updates without asking and opens ejGames
+again. If the PC is missing WebView2, it opens the NSIS installer as-is, with the same arguments.
 
-## Documentación
+## Documentation
 
-Esta web se genera con [Mintlify](https://mintlify.com) desde la carpeta `docs/` del repositorio. Para verla en
-local:
+This site is generated with [Mintlify](https://mintlify.com) from the `docs/` folder of the repository. To see it
+locally:
 
 ```bash
-npx mint dev          # desde docs/
+npx mint dev          # from docs/
 ```

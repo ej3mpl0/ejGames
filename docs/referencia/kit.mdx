@@ -1,10 +1,10 @@
 ---
-title: "El kit"
-description: "Módulos opcionales sin dependencias en /_sdk/kit/."
+title: "The kit"
+description: "Optional modules with no dependencies, in /_sdk/kit/."
 icon: "toolbox"
 ---
 
-Módulos sin dependencias en `/_sdk/kit/`. Importa solo lo que uses:
+Modules with no dependencies, in `/_sdk/kit/`. Import only what you use:
 
 ```js
 import { h, img, keyed, debounce, initials, hueOf } from "/_sdk/kit/dom.js";
@@ -18,31 +18,31 @@ import { hints, glyph } from "/_sdk/kit/hints.js";
 import { createGuideView, createGuides, renderGuide, renderBlocks, GUIDE_CATEGORIES } from "/_sdk/kit/guides.js";
 ```
 
-* **`createFocus` + `bindNav`**: navegación espacial con mando. Marca lo navegable
-  con `data-focus`, agrupa filas con `data-focus-group` (recuerda el último foco de
-  cada grupo) y encierra diálogos con `data-focus-trap`. El elemento enfocado
-  recibe la clase `is-focused`.
-  * **Con ratón:** pasar por encima enfoca, y al salir se quita la clase para
-    que no se quede marcado. Con mando, el cursor se oculta y `:hover` no se
-    aplica.
-  * **`onChange(el, prev, { pointer })`:** si `pointer` es `true`, el foco vino
-    del ratón. En ese caso no desplaces ni selecciones nada, porque el elemento
-    se movería de debajo del cursor.
-* **`artFor(juego, "portrait" | "square" | "landscape")`**: arte que encaja en el
-  marco sin recortar logos. En cuadrado y panorámico compone el fondo del juego con
-  su logo encima; si falta algo, recurre a la carátula centrada, a la cabecera o
-  al nombre. Devuelve un elemento que ocupa todo su contenedor.
-* **`hints(contenedor, [[acción, texto], …])`**: barra de pistas de controles (ver arriba).
-* **`keyed(contenedor, lista, clave, render)`**: reutiliza nodos al redibujar,
-  así el foco no salta y va rápido con cientos de juegos.
-* **`createBackdrop`**: fondo con fundido entre imágenes y vídeo encima.
-* **`createGuideView`**: las guías de la comunidad de Steam de un juego, con lista,
-  lector y mando, listas para montar en tu tema (con `/_sdk/kit/guides.css`). Ver
-  [Guías de la comunidad](/referencia/guias).
-* **`createHomebrewView`**: la vista Homebrew (emuladores y juegos de consola, con accesos a sus tiendas), con mando
-  y una maqueta por plataforma. Ver [Homebrew](/referencia/homebrew).
+* **`createFocus` + `bindNav`**: spatial navigation with a controller. Mark what can be
+  reached with `data-focus`, group rows with `data-focus-group` (it remembers each
+  group's last focus) and enclose dialogs with `data-focus-trap`. The focused element
+  receives the class `is-focused`.
+  * **With the mouse:** passing over focuses, and leaving removes the class so it
+    does not stay marked. With a controller, the cursor is hidden and `:hover` does
+    not apply.
+  * **`onChange(el, prev, { pointer })`:** if `pointer` is `true`, focus came from
+    the mouse. In that case do not scroll or select anything, because the element
+    would move out from under the cursor.
+* **`artFor(game, "portrait" | "square" | "landscape")`**: art that fits the frame
+  without cropping logos. In square and landscape it composes the game's background
+  with its logo on top. If something is missing, it falls back to the centered cover,
+  the header, or the name. It returns an element that fills its container.
+* **`hints(container, [[action, text], …])`**: the control hint bar.
+* **`keyed(container, list, key, render)`**: reuses nodes when redrawing, so focus
+  does not jump and it stays fast with hundreds of games.
+* **`createBackdrop`**: a background that crossfades between images, with video on top.
+* **`createGuideView`**: a game's Steam community guides, with a list, a reader and
+  controller support, ready to mount in your theme (with `/_sdk/kit/guides.css`). See
+  [Community guides](/referencia/guias).
+* **`createHomebrewView`**: the Homebrew view (emulators and console games, with links
+  to their stores), with a controller and a layout per platform. See [Homebrew](/referencia/homebrew).
 
-Esqueleto mínimo:
+A minimal skeleton:
 
 ```js
 import { h, img, keyed } from "/_sdk/kit/dom.js";

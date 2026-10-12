@@ -1,55 +1,55 @@
 ---
-title: "Arquitectura"
-description: "Cómo se reparte el código entre el núcleo en Rust, el host en React y los temas."
+title: "Architecture"
+description: "How the code is split between the Rust core, the React host, and the themes."
 icon: "sitemap"
 ---
 
-ejGames es una app de [Tauri 2](https://tauri.app): un núcleo en Rust y una interfaz web en WebView2. La interfaz
-tiene dos capas: el **host** (React), que pinta ajustes, editores y menús, y el **tema**, que pinta la biblioteca
-dentro de un iframe aislado.
+ejGames is a [Tauri 2](https://tauri.app) app: a Rust core and a web interface in WebView2. The interface has two
+layers. The **host** (React) draws settings, editors and menus. The **theme** draws the library inside an isolated
+iframe.
 
 ```
-src-tauri/src/     núcleo en Rust
-  library/         escaneo de carpetas, detección de exes (PE), vigilancia de carpetas
-  metadata/        Steam GetItems, SteamGridDB, IGDB, matcher, cola con rate limit
-  media/           almacén de imágenes + miniaturas, proxy/caché de tráileres HLS
-  launcher/        ShellExecuteEx, «ejecutar como administrador», tracker de procesos, sesiones, botón Guía
-  achievements/    esquema de Steam, ficheros de emuladores y estadísticas locales de Steam (KeyValues binario)
-  overlay/         ventana transparente encima del juego, atajo global, avisos y panel
-  explore/         fuente de repacks (API de WordPress), lectura de fichas, caché e imágenes por ejg-media
-  downloads/       motor torrent (librqbit) perezoso, cola, progreso, instalación y registro del juego
-  guides/          guías de la comunidad de Steam: HTML → bloques seguros, guardadas y progreso
-  trainers/        trainers de FLiNG: búsqueda, ficha, instalación, proceso durante la partida y SendInput
-  maps.rs          catálogo de Map Genie (sitemap), emparejado por título y elección manual
-  protocols.rs     ejg-media (Range) y ejg-theme / ejg-safe (CSP + sandbox)
-  lifecycle.rs     ventana, bandeja, modo ahorro (EcoQoS + recorte de memoria)
-  update.rs        versiones nuevas desde GitHub Releases (descarga + SHA-256 + instalador pasivo)
-src/               host en React: ajustes, editor de juego, perfiles, estadísticas, puente con los temas
-sdk/               SDK de temas (window.ejg) y kit de utilidades
-themes/            temas de serie
-installer-app/     instalador que se publica (Tauri): lleva dentro el NSIS y lo ejecuta en silencio
-docs/              esta documentación (Mintlify)
-examples/          el tema de ejemplo de la guía
+src-tauri/src/     Rust core
+  library/         folder scanning, exe detection (PE), folder watching
+  metadata/        Steam GetItems, SteamGridDB, IGDB, matcher, rate-limited queue
+  media/           image store + thumbnails, HLS trailer proxy/cache
+  launcher/        ShellExecuteEx, "run as administrator", process tracker, sessions, Guide button
+  achievements/    Steam schema, emulator files and local Steam stats (binary KeyValues)
+  overlay/         transparent window over the game, global shortcut, notices and panel
+  explore/         repack source (WordPress API), page reading, cache and images through ejg-media
+  downloads/       lazy torrent engine (librqbit), queue, progress, install and game registration
+  guides/          Steam community guides: HTML → safe blocks, saved guides and progress
+  trainers/        FLiNG trainers: search, page, install, process during play and SendInput
+  maps.rs          Map Genie catalog (sitemap), title matching and manual choice
+  protocols.rs     ejg-media (Range) and ejg-theme / ejg-safe (CSP + sandbox)
+  lifecycle.rs     window, tray, saver mode (EcoQoS + memory trim)
+  update.rs        new versions from GitHub Releases (download + SHA-256 + passive installer)
+src/               React host: settings, game editor, profiles, statistics, bridge to themes
+sdk/               theme SDK (window.ejg) and utility kit
+themes/            built-in themes
+installer-app/     the installer that gets published (Tauri): carries the NSIS installer and runs it silently
+docs/              this documentation (Mintlify)
+examples/          the guide's example theme
 ```
 
-## Seguridad de los temas
+## Theme security
 
-Cada tema corre en un iframe aislado con origen `null`, sin `allow-same-origin` y con una CSP que corta la red.
-Aunque WebView2 inyecta el IPC de Tauri en todos los frames, Tauri rechaza las llamadas de orígenes `null` y la CSP
-bloquea `ipc.localhost`. El tema solo habla con el host por `postMessage`, y el host valida cada llamada
-(`src/host/bridge.ts`).
+Each theme runs in an isolated iframe with a `null` origin, without `allow-same-origin`, and with a CSP that cuts
+off the network. WebView2 injects Tauri's IPC into every frame, but Tauri rejects calls from `null` origins and the
+CSP blocks `ipc.localhost`. The theme only talks to the host through `postMessage`, and the host validates every
+call (`src/host/bridge.ts`).
 
-Los mapas de Map Genie son iframes de terceros (`sandbox` sin `allow-top-navigation` ni `allow-popups`). También
-reciben el IPC de Tauri, pero sus llamadas llegan con origen `https://mapgenie.io` y Tauri las rechaza: ningún comando
-admite orígenes remotos. Por eso `Object.prototype` no se congela con `freezePrototype` (en Windows entraría también
-en esas webs y las rompe) sino con un script propio que solo actúa en los documentos de ejGames
+Map Genie maps are third-party iframes (`sandbox` without `allow-top-navigation` or `allow-popups`). They also
+receive Tauri's IPC, but their calls arrive with origin `https://mapgenie.io` and Tauri rejects them: no command
+accepts remote origins. That is why `Object.prototype` is not frozen with `freezePrototype` (on Windows that would
+also enter those pages and break them) but with a script of our own that only acts on ejGames documents
 (`lifecycle::FREEZE_OURS`).
 
-Si un tema se cuelga, un watchdog lo sustituye por el tema Steam servido desde otro origen (`ejg-safe`), es decir, en
-otro proceso.
+If a theme hangs, a watchdog replaces it with the house theme, Moneda, served from another origin (`ejg-safe`),
+which means another process.
 
-## Datos
+## Data
 
-`%APPDATA%\ejGames\` guarda `library.db` (SQLite), `settings.json`, `logs\ejgames.log`, `cache\media` (arte,
-direccionado por contenido), `cache\trailers` (LRU con tamaño configurable) y `themes\` (temas de usuario). Con un
-fichero `portable.txt` junto al exe, todo va a `.\data`.
+`%APPDATA%\ejGames\` holds `library.db` (SQLite), `settings.json`, `logs\ejgames.log`, `cache\media` (art,
+addressed by content), `cache\trailers` (LRU with a configurable size) and `themes\` (user themes). With a
+`portable.txt` file next to the exe, everything goes to `.\data`.

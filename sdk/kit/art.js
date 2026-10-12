@@ -60,7 +60,8 @@ function shade(shape) {
 /**
  * @param {any} game  juego de ejg.library
  * @param {"portrait"|"square"|"landscape"} shape
- * @param {{ full?: boolean }} [opts]  full: usa las imágenes grandes en vez de miniaturas
+ * @param {{ full?: boolean, fit?: boolean }} [opts]  full: imágenes grandes. fit: la carátula
+ *   entera dentro del marco (sobre su propia versión difuminada), sin recortarla.
  */
 export function artFor(game, shape = "portrait", opts = {}) {
   const m = game.media || {};
@@ -97,7 +98,8 @@ export function artFor(game, shape = "portrait", opts = {}) {
   };
 
   if (shape === "portrait") {
-    if (cover) el.append(image(cover, { ...abs, objectFit: "cover" }, "ejg-art-main", (im) => im.replaceWith(titleText(game.title, shape))));
+    if (cover && opts.fit) blurredContain(cover);
+    else if (cover) el.append(image(cover, { ...abs, objectFit: "cover" }, "ejg-art-main", (im) => im.replaceWith(titleText(game.title, shape))));
     else if (hero && m.logo) withLogo(hero);
     else if (m.header || hero) blurredContain(m.header || hero);
     else el.append(titleText(game.title, shape));

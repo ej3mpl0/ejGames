@@ -1,26 +1,28 @@
 ---
-title: "Idiomas"
-description: "ejg.t, ejg.lang y los diccionarios: tu tema en español e inglés."
+title: "Languages"
+description: "ejg.t, ejg.lang and the dictionaries: your theme in every language ejGames speaks."
 icon: "language"
 ---
 
-ejGames se ve en **español** y en **inglés** (Ajustes → Sistema → Idioma; por defecto, el de Windows). Tu tema
-corre en el idioma que elija el usuario: tú escribes los textos en español y un diccionario dice cómo van en inglés.
+ejGames is shown in the language chosen in **Settings → System → Language**. By
+default it follows Windows. Your theme runs in the language the user picks. You
+write the texts in Spanish, and a dictionary says how they go in each other language.
 
 ```js
-ejg.lang        // "es" | "en"
-ejg.locale      // "es-ES" | "en-US", para Intl y toLocaleString
-ejg.t("Jugar")                                // "Jugar" o "Play"
+ejg.lang        // "es" | "en" | "fr" | "de" | "pt" | "ja" | "zh"
+ejg.locale      // "es-ES" | "en-US" | …, for Intl and toLocaleString
+ejg.t("Jugar")                                // "Jugar" or "Play"
 ejg.t("Descargas ({n})", { n: 3 })            // "Downloads (3)"
-ejg.tn(n, "{n} juego", "{n} juegos")          // singular o plural
+ejg.tn(n, "{n} juego", "{n} juegos")          // singular or plural
 ```
 
-La **clave** de cada texto es el propio texto en español: si no hay traducción, se ve el original. Nunca hace falta
-dar un identificador.
+The **key** of each text is the Spanish text itself. If there is no translation,
+the original is shown. You never need an identifier.
 
-## El diccionario del tema
+## The theme's dictionary
 
-`<tema>/i18n/en.json`, un objeto de «español» → «inglés»:
+`<theme>/i18n/<lang>.json`, an object of "Spanish" → "translation". English is
+`en.json`:
 
 ```json
 {
@@ -30,24 +32,28 @@ dar un identificador.
 }
 ```
 
-- Los datos que cambian van como `{nombre}` (o `{0}`, `{1}`…) y el inglés los puede reordenar.
-- El kit (`/_sdk/kit/`) trae su propio diccionario en el SDK: no hace falta repetir lo suyo.
-- El nombre del tema, su descripción y las etiquetas de sus ajustes de `theme.json` también se traducen con él.
+- Values that change go as `{name}` (or `{0}`, `{1}`…) and the translation can reorder them.
+- The kit (`/_sdk/kit/`) brings its own dictionary in the SDK. You do not need to repeat its strings.
+- The theme's name, its description and the labels of its `theme.json` settings are translated with the same dictionary.
 
-## Traducción automática del DOM
+## Automatic DOM translation
 
-En inglés, ejGames **traduce solo** todo texto que pinte tu tema (nodos de texto y los atributos `title`,
-`placeholder`, `aria-label` y `alt`) en cuanto coincide con una clave del diccionario, también lo que se pinta
-después. Por eso un tema escrito en español solo necesita su `en.json`: no hay que envolver cada texto en `ejg.t()`.
+Outside Spanish, ejGames **translates on its own** every text your theme paints
+(text nodes and the `title`, `placeholder`, `aria-label` and `alt` attributes) as
+soon as it matches a dictionary key, including what is painted later. That is why
+a theme written in Spanish only needs its dictionary files: you do not have to
+wrap every string in `ejg.t()`.
 
-- Un texto se traduce **entero** (el nodo de texto, sin espacios sobrantes). Si lo montas con varias piezas
-  (`"Hola " + nombre`), cada pieza se traduce por separado; si necesitas reordenar, usa `ejg.t("Hola {n}", { n })`.
-- Un tema que lo escribe todo en mayúsculas (como Retro) no necesita las mayúsculas en el diccionario: «JUGAR» se
-  traduce a «PLAY» si existe «Jugar».
-- Un elemento con `data-no-t` (y todo lo que lleva dentro) no se traduce. Tampoco `<code>`, `<pre>`, `<script>`,
-  `<style>` ni `<textarea>`.
+- A text is translated **whole** (the text node, without leftover spaces). If you
+  build it from several pieces (`"Hola " + name`), each piece is translated on
+  its own. If you need to reorder, use `ejg.t("Hola {n}", { n })`.
+- A theme that writes everything in capitals (like Retro) does not need the
+  capitals in the dictionary: "JUGAR" becomes "PLAY" if "Jugar" exists.
+- An element with `data-no-t` (and everything inside it) is not translated.
+  Neither are `<code>`, `<pre>`, `<script>`, `<style>` or `<textarea>`.
 
-## Comprobar que no falta nada
+## Check that nothing is missing
 
-En el repositorio de ejGames, `pnpm i18n:check --wide` lista los textos en español sin traducir y `pnpm check`
-lo da por bueno o no. Para un tema propio, copia el patrón de `themes/<tema>/i18n/en.json`.
+In the ejGames repository, `pnpm i18n:check --wide` lists the Spanish texts with
+no translation, and `pnpm check` accepts the result or not. For your own theme,
+copy the pattern of `themes/<theme>/i18n/en.json`.

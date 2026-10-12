@@ -1,10 +1,10 @@
 ---
-title: "El theme.json mínimo"
-description: "El manifiesto que hace que ejGames reconozca tu tema."
-sidebarTitle: "2. El theme.json mínimo"
+title: "The smallest theme.json"
+description: "The manifest that makes ejGames recognize your theme."
+sidebarTitle: "2. The smallest theme.json"
 ---
 
-Crea `theme.json` con esto:
+Create `theme.json` with this:
 
 ```json
 {
@@ -17,21 +17,21 @@ Crea `theme.json` con esto:
 }
 ```
 
-| Campo | Qué es |
+| Field | What it is |
 |---|---|
-| `id` | **Obligatorio.** Identificador único: letras, números, `-` y `_` (máximo 64). No uses el de un tema de serie (`steam`, `ps5`, `xbox`, `switch`, `cinema`, `retro`). Lo normal es que coincida con el nombre de la carpeta. |
-| `name` | **Obligatorio.** El nombre que se ve en la galería. |
-| `version`, `author`, `description` | Opcionales; la descripción sale bajo el nombre en la galería. |
-| `sdk` | Versión del SDK que usa tu tema. Hoy es `1`. |
+| `id` | **Required.** A unique identifier: letters, numbers, `-` and `_` (64 at most). Do not use a built-in theme's (`steam`, `ps5`, `xbox`, `switch`, `cinema`, `retro`, `moneda`). It usually matches the folder name. |
+| `name` | **Required.** The name shown in the gallery. |
+| `version`, `author`, `description` | Optional. The description appears under the name in the gallery. |
+| `sdk` | The SDK version your theme uses. Today it is `1`. |
 
-Hay más campos (`entry`, `palette`, `host`, `sounds`, `settings`…) que iremos
-añadiendo en los pasos 7 y 8. `entry` es la página de entrada y, si no lo pones,
-vale `index.html`.
+There are more fields (`entry`, `palette`, `host`, `sounds`, `settings`…) that we
+will add in steps 7 and 8. `entry` is the entry page and, if you leave it out,
+it is `index.html`.
 
 <Tip>
-**¿No aparece en la galería?** Casi siempre es un JSON mal escrito (una coma
-de más al final, comillas que faltan) o un `id` con espacios o tildes. ejGames
-se salta el tema y lo apunta en `%APPDATA%\ejGames\logs\ejgames.log`, en una
-línea como `WARN ejgames_lib::themes: tema C:\…\themes\ejemplo: trailing comma
-at line 1 column 33`. Arréglalo y vuelve a entrar en Apariencia.
+**Not in the gallery?** It is almost always badly written JSON (a trailing
+comma, missing quotes) or an `id` with spaces or accents. ejGames skips the
+theme and writes it to `%APPDATA%\ejGames\logs\ejgames.log`, on a line like
+`WARN ejgames_lib::themes: tema C:\…\themes\ejemplo: trailing comma at line 1
+column 33`. Fix it and open Appearance again.
 </Tip>

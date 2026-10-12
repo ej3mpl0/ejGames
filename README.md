@@ -1,6 +1,6 @@
 <p align="center">
-  <img src="docs/images/logo-light.png#gh-light-mode-only" alt="ejGames" height="56" />
-  <img src="docs/images/logo-dark.png#gh-dark-mode-only" alt="ejGames" height="56" />
+  <img src="docs/images/logo-light.png#gh-light-mode-only" alt="ejGames" height="64" />
+  <img src="docs/images/logo-dark.png#gh-dark-mode-only" alt="ejGames" height="64" />
 </p>
 
 <p align="center">
@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="https://github.com/ej3mpl0/ejGames/releases/latest"><b>Descargar</b></a> ·
-  <a href="https://ej3mplo.mintlify.site">Documentación</a> ·
+  <a href="https://ej3mplo.mintlify.site">Documentación (inglés)</a> ·
   <a href="https://ej3mplo.mintlify.site/temas">Crear temas</a> ·
   <a href="CHANGELOG.md">Novedades</a> ·
   <a href="README.en.md">Read in English</a>

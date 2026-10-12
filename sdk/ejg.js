@@ -156,6 +156,35 @@
   }
   var LOCALES = { es: "es-ES", en: "en-US", de: "de-DE", fr: "fr-FR", zh: "zh-CN", ja: "ja-JP", pt: "pt-BR" };
   function locale() { return LOCALES[state.lang] || "es-ES"; }
+  // boot-translate.js (módulo) publica window.__ejgTr. import() desde aquí no
+  // sirve: este fichero es un script clásico de otro origen y la URL base de
+  // import() queda en about:blank.
+  function armTranslator() {
+    if (state.lang === "es" || state.translator) return;
+    var run = function () {
+      if (state.translator || !window.__ejgTr) return;
+      state.translator = true;
+      try {
+        window.__ejgTr.observe(window.__ejgTr.makeTranslator(state.strings), document);
+      } catch (e) {
+        state.translator = false;
+        console.warn("[ejg] traductor", e);
+      }
+    };
+    if (window.__ejgTr) run();
+    else {
+      document.addEventListener("ejg-tr", run, { once: true });
+      // Por si el HTML no trae el módulo (el host todavía no lo inyecta): lo
+      // añade el propio SDK. Un <script type="module"> sí carga; import() no.
+      if (!document.querySelector("script[src$='boot-translate.js']")) {
+        var s = document.createElement("script");
+        s.type = "module";
+        s.src = "/_sdk/kit/boot-translate.js";
+        s.setAttribute("data-ejg-tr", "");
+        (document.head || document.documentElement).appendChild(s);
+      }
+    }
+  }
   /** Elementos con data-t: su texto y sus atributos placeholder/title/aria-label. */
   function translateDom(rootEl) {
     if (state.lang === "es") return;
@@ -205,12 +234,7 @@
       root.setAttribute("lang", LOCALES[state.lang] || state.lang);
       translateDom();
       // Fuera del español, todo lo que pinta el tema se traduce con su diccionario (lo suyo y lo del kit).
-      if (state.lang !== "es" && !state.translator) {
-        state.translator = true;
-        import("/_sdk/kit/translate.js").then(function (m) {
-          m.observe(m.makeTranslator(state.strings), document);
-        }).catch(function (e) { console.warn("[ejg] traductor", e); });
-      }
+      armTranslator();
       root.setAttribute("data-mode", m.data.mode || "desktop");
       applyInput();
       applySeason();

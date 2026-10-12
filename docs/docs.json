@@ -2,22 +2,40 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "maple",
   "name": "ejGames",
-  "description": "Launcher de juegos para Windows, ligero y personalizable al 100 %. Documentación y guía para crear temas.",
+  "description": "Your games, one tap away. A lightweight, fully customizable game launcher for Windows, and a guide to building themes.",
   "colors": {
-    "primary": "#5B6CF0",
-    "light": "#8C9BFF",
-    "dark": "#3F4FD8"
+    "primary": "#FF3A2D",
+    "light": "#FF6A5C",
+    "dark": "#FF3A2D"
   },
   "logo": {
     "light": "/images/logo-light.png",
     "dark": "/images/logo-dark.png"
   },
-  "favicon": "/images/favicon.png",
+  "favicon": "/images/favicon.svg",
   "appearance": {
-    "default": "system"
+    "default": "dark"
+  },
+  "fonts": {
+    "family": "Geist",
+    "heading": {
+      "family": "Geist",
+      "weight": 700
+    }
+  },
+  "background": {
+    "color": {
+      "light": "#F5F2EE",
+      "dark": "#141315"
+    }
+  },
+  "thumbnails": {
+    "preset": "classic",
+    "appearance": "dark",
+    "surface": "neutral"
   },
   "search": {
-    "prompt": "Buscar en la documentación…"
+    "prompt": "Search the docs…"
   },
   "navbar": {
     "links": [
@@ -25,28 +43,28 @@
     ],
     "primary": {
       "type": "button",
-      "label": "Descargar",
+      "label": "Download",
       "href": "https://github.com/ej3mpl0/ejGames/releases/latest"
     }
   },
   "navigation": {
     "languages": [
       {
-        "language": "es",
+        "language": "en",
         "default": true,
         "tabs": [
           {
-            "tab": "Empezar",
+            "tab": "Start",
             "groups": [
-              { "group": "Empezar", "pages": ["index", "instalar", "funciones"] }
+              { "group": "Start", "pages": ["index", "instalar", "funciones"] }
             ]
           },
           {
-            "tab": "Crear temas",
+            "tab": "Build themes",
             "groups": [
-              { "group": "Temas", "pages": ["temas"] },
+              { "group": "Themes", "pages": ["temas"] },
               {
-                "group": "Guía paso a paso",
+                "group": "Step by step",
                 "pages": [
                   "guia/index",
                   "guia/carpeta",
@@ -65,9 +83,9 @@
             ]
           },
           {
-            "tab": "Referencia",
+            "tab": "Reference",
             "groups": [
-              { "group": "Manifiesto", "pages": ["referencia/theme-json"] },
+              { "group": "Manifest", "pages": ["referencia/theme-json"] },
               {
                 "group": "SDK",
                 "pages": [
@@ -88,15 +106,15 @@
                 ]
               },
               {
-                "group": "Kit y buenas prácticas",
+                "group": "Kit and practices",
                 "pages": ["referencia/kit", "referencia/limites", "referencia/rendimiento"]
               }
             ]
           },
           {
-            "tab": "Desarrollo",
+            "tab": "Development",
             "groups": [
-              { "group": "Desarrollo", "pages": ["desarrollo/compilar", "desarrollo/arquitectura"] }
+              { "group": "Development", "pages": ["desarrollo/compilar", "desarrollo/arquitectura"] }
             ]
           }
         ]

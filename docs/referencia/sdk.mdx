@@ -1,51 +1,51 @@
 ---
-title: "El SDK: window.ejg"
-description: "Cómo habla un tema con ejGames: datos, acciones y eventos."
-sidebarTitle: "Visión general"
+title: "The SDK: window.ejg"
+description: "How a theme talks to ejGames: data, actions and events."
+sidebarTitle: "Overview"
 icon: "code"
 ---
 
-ejGames inyecta el SDK en tu `index.html` antes que tus scripts. Espera a que el host mande los datos:
+ejGames injects the SDK into your `index.html` before your scripts. Wait until the host sends the data:
 
 ```js
 const ejg = await window.ejg.ready();
 ```
 
-A partir de ahí todo es síncrono cuando los datos ya están en memoria (`ejg.library.all`, `ejg.settings`,
-`ejg.profile`…) y asíncrono cuando hay que pedirle algo al launcher (`ejg.game.details()`, `ejg.explore.search()`…).
+From there, everything is synchronous when the data is already in memory (`ejg.library.all`, `ejg.settings`,
+`ejg.profile`…) and asynchronous when you have to ask the launcher for something (`ejg.game.details()`, `ejg.explore.search()`…).
 
 <CardGroup cols={2}>
-  <Card title="Biblioteca" icon="layer-group" href="/referencia/biblioteca">`ejg.library`: juegos, colecciones y arte.</Card>
-  <Card title="Juegos" icon="play" href="/referencia/juegos">`ejg.game`: ficha, lanzar, favorito, estado.</Card>
-  <Card title="Logros" icon="trophy" href="/referencia/logros">`ejg.game.achievements`: lista, iconos y rareza.</Card>
-  <Card title="Explorar y descargas" icon="cloud-arrow-down" href="/referencia/explorar">`ejg.explore` y `ejg.downloads`.</Card>
-  <Card title="Guías de la comunidad" icon="book-open" href="/referencia/guias">`ejg.guides`: las guías de Steam de cada juego.</Card>
-  <Card title="Trucos y mapas" icon="map" href="/referencia/trucos-mapas">`ejg.trainer` y `ejg.maps`: trainers de FLiNG y mapas de Map Genie.</Card>
-  <Card title="Perfil" icon="user" href="/referencia/perfil">`ejg.profiles`: el perfil local (nombre y avatar), cambiarlo y editarlo.</Card>
-  <Card title="Homebrew" icon="gamepad" href="/referencia/homebrew">Juegos de consola como una tienda: `createHomebrewView`, `ejg.catalogs` y `ejg.emulators`.</Card>
-  <Card title="Mando y teclado" icon="gamepad" href="/referencia/mando">`ejg.input` y las pistas de controles.</Card>
-  <Card title="Host y ventana" icon="window-maximize" href="/referencia/host">`ejg.ui`, `ejg.sound`, `ejg.window`, `ejg.storage`.</Card>
+  <Card title="Library" icon="layer-group" href="/referencia/biblioteca">`ejg.library`: games, collections and art.</Card>
+  <Card title="Games" icon="play" href="/referencia/juegos">`ejg.game`: the page, launch, favorite, state.</Card>
+  <Card title="Achievements" icon="trophy" href="/referencia/logros">`ejg.game.achievements`: list, icons and rarity.</Card>
+  <Card title="Explore and downloads" icon="cloud-arrow-down" href="/referencia/explorar">`ejg.explore` and `ejg.downloads`.</Card>
+  <Card title="Community guides" icon="book-open" href="/referencia/guias">`ejg.guides`: each game's Steam guides.</Card>
+  <Card title="Cheats and maps" icon="map" href="/referencia/trucos-mapas">`ejg.trainer` and `ejg.maps`: FLiNG trainers and Map Genie maps.</Card>
+  <Card title="Profile" icon="user" href="/referencia/perfil">`ejg.profiles`: the local profile (name and avatar), switching and editing it.</Card>
+  <Card title="Homebrew" icon="gamepad" href="/referencia/homebrew">Console games as a store: `createHomebrewView`, `ejg.catalogs` and `ejg.emulators`.</Card>
+  <Card title="Controller and keyboard" icon="gamepad" href="/referencia/mando">`ejg.input` and the control hints.</Card>
+  <Card title="Host and window" icon="window-maximize" href="/referencia/host">`ejg.ui`, `ejg.sound`, `ejg.window`, `ejg.storage`.</Card>
 </CardGroup>
 
-## Eventos
+## Events
 
-`ejg.on(nombre, fn)` escucha los avisos del host:
+`ejg.on(name, fn)` listens for notices from the host:
 
-| Evento | Cuándo |
+| Event | When |
 |---|---|
-| `settings` | el usuario cambió una opción del tema en Apariencia |
-| `input` | cambió el tipo de control (mando, teclado o ratón) |
-| `focus-return` | se cerró una pantalla del host: recupera el foco |
-| `visibility` | el tema deja de verse o vuelve (`{ visible }`) |
+| `settings` | the user changed a theme option in Appearance |
+| `input` | the control type changed (controller, keyboard or mouse) |
+| `focus-return` | a host screen closed: take the focus back |
+| `visibility` | the theme stops being visible, or comes back (`{ visible }`) |
 
-Además, cada parte tiene sus propios `onChange` / `onState` (biblioteca, juegos, descargas…).
+Each part also has its own `onChange` / `onState` (library, games, downloads…).
 
-## Tipos
+## Types
 
-Los tipos completos están en `/_sdk/ejg.d.ts` (también dentro de la instalación, en `sdk\ejg.d.ts`). Con
-`// @ts-check` y una referencia a ese fichero, tu editor autocompleta todo el SDK.
+The full types are in `/_sdk/ejg.d.ts` (also inside the installation, at `sdk\ejg.d.ts`). With
+`// @ts-check` and a reference to that file, your editor autocompletes the whole SDK.
 
 <Note>
-Dentro del iframe no funcionan `confirm()`, `alert()` ni `window.open()`, y no hay red ni `localStorage`. Mira
-[qué puede hacer un tema](/referencia/limites).
+Inside the iframe, `confirm()`, `alert()` and `window.open()` do not work, and there is no network and no `localStorage`. See
+[what a theme can do](/referencia/limites).
 </Note>

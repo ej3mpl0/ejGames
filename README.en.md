@@ -1,6 +1,6 @@
 <p align="center">
-  <img src="docs/images/logo-light.png#gh-light-mode-only" alt="ejGames" height="56" />
-  <img src="docs/images/logo-dark.png#gh-dark-mode-only" alt="ejGames" height="56" />
+  <img src="docs/images/logo-light.png#gh-light-mode-only" alt="ejGames" height="64" />
+  <img src="docs/images/logo-dark.png#gh-dark-mode-only" alt="ejGames" height="64" />
 </p>
 
 <p align="center">
@@ -9,14 +9,14 @@
 
 <p align="center">
   <a href="https://github.com/ej3mpl0/ejGames/releases/latest"><b>Download</b></a> ·
-  <a href="https://ej3mplo.mintlify.site">Documentation (Spanish)</a> ·
+  <a href="https://ej3mplo.mintlify.site">Documentation</a> ·
   <a href="CHANGELOG.md">Changelog (Spanish)</a> ·
   <a href="README.md">Léeme en español</a>
 </p>
 
 ---
 
-ejGames is available in **English and Spanish** (Settings → System → Language; it follows Windows by default).
+ejGames follows Windows by default, and the language can be changed in Settings → System → Language.
 
 * **Your local games**: detects the games in your folders (and their right `.exe`), the `.exe` files you add by hand and
   what you install from Downloads.
@@ -44,8 +44,8 @@ open it. If you already have ejGames, the same installer updates it without touc
 
 ## Translating a theme
 
-Themes written in Spanish get an English version with a dictionary, `<theme>/i18n/en.json`, and no code changes. See
-[Languages](https://ej3mplo.mintlify.site/referencia/idiomas) (Spanish) and `pnpm i18n:check`.
+Themes are written in Spanish. The other languages come from dictionaries in `<theme>/i18n/`, with no code changes. See
+[Languages](https://ej3mplo.mintlify.site/referencia/idiomas) and `pnpm i18n:check`.
 
 ## Build
 

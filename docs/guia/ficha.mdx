@@ -1,24 +1,24 @@
 ---
-title: "La ficha del juego"
-description: "Descripción, Jugar o Instalar, favorito y volver."
-sidebarTitle: "6. La ficha del juego"
+title: "The game page"
+description: "Description, Play or Install, favorite, and back."
+sidebarTitle: "6. The game page"
 ---
 
-Ahora, en vez de lanzar el juego al pulsar una carátula, abriremos una ficha
-con su descripción y sus botones. La ficha es la `<section id="ficha" hidden
-data-focus-trap>` del HTML:
+Now, instead of launching the game when a cover is pressed, we will open a page
+with its description and its buttons. The page is the `<section id="ficha" hidden
+data-focus-trap>` from the HTML:
 
-- **`hidden`**: empieza oculta.
-- **`data-focus-trap`**: mientras se vea, el foco no sale de ella (las flechas
-  no se escapan a la rejilla que queda detrás).
+- **`hidden`**: it starts hidden.
+- **`data-focus-trap`**: while it is visible, focus cannot leave it (the arrows
+  do not escape to the grid behind it).
 
-Cambia el `onclick` de la tarjeta por `onclick: () => abrirFicha(g.id)` y añade
-esto a `main.js` (añade también `description`, `playtime` y `year` a los
-imports: `import { description, playtime, year } from "/_sdk/kit/format.js";`):
+Change the card's `onclick` to `onclick: () => abrirFicha(g.id)` and add this to
+`main.js` (also add `description`, `playtime` and `year` to the imports:
+`import { description, playtime, year } from "/_sdk/kit/format.js";`):
 
 ```js
 let fichaId = null;
-let turno = 0; // para descartar respuestas de una ficha que ya se cerró
+let turno = 0; // drop answers for a page that has already closed
 
 const datos = (g) => [g.developer, year(g.releaseDate), playtime(g.playtime)].filter(Boolean).join(" · ");
 
@@ -53,7 +53,7 @@ async function abrirFicha(id) {
   foco.first(botones);
   pistasFicha();
 
-  // La descripción larga no viene en la biblioteca: se pide aparte.
+  // The long description is not in the library: it is requested separately.
   try {
     const d = await ejg.game.details(id);
     if (miTurno !== turno) return;
@@ -64,22 +64,22 @@ async function abrirFicha(id) {
 }
 ```
 
-(y `const ficha = document.querySelector("#ficha");` junto a las demás constantes).
+(and `const ficha = document.querySelector("#ficha");` next to the other constants).
 
-- **`ejg.library.byId(id)`** da el juego al instante, sin esperar.
-- **`ejg.game.details(id)`** pide lo que no viene en la biblioteca: la
-  descripción, capturas (`screenshots`), tráileres (`trailers`) y últimas
-  sesiones (`recentSessions`). Es asíncrono, así que primero pintamos la ficha y
-  luego rellenamos el texto. El `turno` evita que, si el usuario abre y cierra
-  fichas deprisa, la descripción de un juego acabe en la ficha de otro.
-- **`description(texto)`** convierte el formato de las descripciones (`## título`,
-  `- viñeta` y párrafos separados por una línea en blanco) en elementos HTML
-  seguros. No uses `innerHTML` con textos que vienen de fuera.
-- **`playtime(segundos)`** → «12 h 34 min» o «Sin jugar»; **`year(fecha)`** → «2017».
-- Aquí sí usamos las imágenes grandes (`cover`, `hero`): en una ficha solo hay una.
+- **`ejg.library.byId(id)`** returns the game instantly, with no waiting.
+- **`ejg.game.details(id)`** asks for what the library does not include: the
+  description, screenshots (`screenshots`), trailers (`trailers`) and recent
+  sessions (`recentSessions`). It is asynchronous, so we paint the page first and
+  fill in the text afterwards. `turno` keeps a game's description from landing on
+  another game's page if the user opens and closes pages quickly.
+- **`description(text)`** turns the description format (`## title`, `- bullet`
+  and paragraphs separated by a blank line) into safe HTML elements. Do not use
+  `innerHTML` with text that comes from outside.
+- **`playtime(seconds)`** → "12 h 34 min" or "Not played". **`year(date)`** → "2017".
+- Here we do use the large images (`cover`, `hero`): a page has only one.
 
-Los botones van aparte porque se repintan cuando cambia algo (favorito, partida
-en marcha):
+The buttons are separate because they are repainted when something changes
+(favorite, a session in progress):
 
 ```js
 function pintarBotones(g) {
@@ -97,7 +97,7 @@ function pintarBotones(g) {
     h("button", { class: "boton", "data-focus": "", "data-accion": "editar", onclick: () => ejg.game.edit(g.id) }, "Editar"),
     h("button", { class: "boton", "data-focus": "", "data-accion": "volver", onclick: cerrarFicha }, "Volver"),
   );
-  // Tras repintar, el foco vuelve al mismo botón.
+  // After repainting, focus returns to the same button.
   const b = antes && caja.querySelector(`[data-accion="${antes}"]`);
   if (b) foco.focus(b, { noScroll: true, silent: true });
 }
@@ -107,7 +107,7 @@ async function jugar(id) {
   const b = ficha.querySelector('[data-accion="jugar"]');
   if (b) b.textContent = "Iniciando…";
   try {
-    await ejg.game.launch(id); // el sonido de lanzar lo pone ejGames
+    await ejg.game.launch(id); // ejGames plays the launch sound
   } catch (e) {
     ejg.ui.toast(String(e.message || e), "error");
   }
@@ -130,17 +130,18 @@ function cerrarFicha() {
 }
 ```
 
-- **Jugar**, o **En marcha** si `ejg.game.isRunning(id)`.
-- **`ejg.game.edit(id)`** abre el editor de juegos de ejGames (nombre, arte,
-  ejecutable…). Al cerrarlo llega `focus-return` y el foco vuelve al botón.
+- **Play**, or **Running** if `ejg.game.isRunning(id)`. The example's source
+  strings are `Jugar` and `En marcha`.
+- **`ejg.game.edit(id)`** opens ejGames' game editor (name, art, executable…).
+  When it closes, `focus-return` arrives and focus returns to the button.
 
-Queda enseñar a `bindNav` que **Atrás** cierra la ficha y que el favorito
-también funciona dentro de ella, cambiar las pistas según dónde estemos y
-repintar cuando algo cambie:
+What is left is to teach `bindNav` that **Back** closes the page and that the
+favorite also works inside it, to change the hints depending on where you are,
+and to repaint when something changes:
 
 ```js
 bindNav(foco, {
-  // Sin ficha abierta devolvemos false: así "Atrás" lo gestiona ejGames.
+  // With no page open we return false, so ejGames handles "Back".
   back: () => {
     if (ficha.hidden) return false;
     cerrarFicha();
@@ -165,21 +166,21 @@ const repintar = debounce(() => {
     const g = ejg.library.byId(fichaId);
     if (!g) return cerrarFicha();
     pintarBotones(g);
-    ficha.querySelector(".datos").textContent = datos(g); // las horas, al cerrar el juego
+    ficha.querySelector(".datos").textContent = datos(g); // the hours, when the game closes
   }
 }, 50);
-ejg.library.onChange(repintar); // juegos nuevos, favoritos, carátulas…
-ejg.on("running", repintar); // un juego empieza o termina
+ejg.library.onChange(repintar); // new games, favorites, covers…
+ejg.on("running", repintar); // a game starts or ends
 
 pintar();
 pistasRejilla();
 ```
 
-Sustituye con esto el `bindNav`, la barra de pistas y las dos últimas líneas
-que tenías, y añade `debounce` al `import` de `dom.js`: agrupa varios avisos
-seguidos en un solo repintado. Al cerrar un juego, sus horas nuevas llegan por
-el mismo aviso: por eso `repintar` también pone al día los datos de la ficha
-abierta. El CSS de la ficha, resumido (el completo está en
+Replace your previous `bindNav`, the hint bar and the last two lines with this,
+and add `debounce` to the `dom.js` import. It groups several notices in a row
+into a single repaint. When a game closes, its new hours arrive through the same
+notice, which is why `repintar` also updates the open page. The page CSS, in
+short (the full file is in
 [`examples/ejemplo-tema/style.css`](https://github.com/ej3mpl0/ejGames/blob/main/examples/ejemplo-tema/style.css)):
 
 ```css
@@ -197,7 +198,7 @@ abierta. El CSS de la ficha, resumido (el completo está en
 ```
 
 <Tip>
-¿Quieres guías en tu ficha? La vista del kit `createGuideView` trae la lista de guías de la
-comunidad de Steam y su lector con mando: la montas en un contenedor y la vistes con CSS.
-Mira [Guías de la comunidad](/referencia/guias).
+Want guides on your page? The kit view `createGuideView` brings the list of
+Steam community guides and a reader you can use with a controller. You mount it
+in a container and dress it with CSS. See [Community guides](/referencia/guias).
 </Tip>

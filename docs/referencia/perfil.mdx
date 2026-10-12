@@ -1,28 +1,28 @@
 ---
-title: "Perfil"
-description: "ejg.profiles: el perfil local activo (nombre, avatar y color), cambiar de perfil y editarlo."
+title: "Profile"
+description: "ejg.profiles: the active local profile (name, avatar and color), switching profiles and editing it."
 icon: "user"
 ---
 
-Cada perfil local tiene su nombre, su avatar (o su inicial sobre su color), su tema y sus horas. Todo se guarda **en el
-PC**: no hay cuentas ni servidor. Con eso pintas el avatar de tu tema y el menú de tu foto.
+Each local profile has its name, its avatar (or its initial on its color), its theme and its hours. Everything is stored **on the
+PC**: there are no accounts and no server. With that you paint your theme's avatar and the menu on your picture.
 
 ```js
-ejg.profiles.current();                // el perfil local: { id, name, avatar, color, themeId }
-ejg.profiles.me;                       // lo mismo en corto, sin llamada: { id, name, avatarUrl, color }
-ejg.profiles.onChange((me) => …);      // cambió el nombre o el avatar
-ejg.profiles.switch();                 // el selector de perfiles del host
-ejg.profiles.edit();                   // Ajustes → Perfil (nombre, avatar, PIN…)
+ejg.profiles.current();                // the local profile: { id, name, avatar, color, themeId }
+ejg.profiles.me;                       // the same, short, with no call: { id, name, avatarUrl, color }
+ejg.profiles.onChange((me) => …);      // the name or the avatar changed
+ejg.profiles.switch();                 // the host's profile picker
+ejg.profiles.edit();                   // Settings → Profile (name, avatar, PIN…)
 ```
 
-Al cambiar el perfil también llega el evento `profile`:
+Changing profile also sends the `profile` event:
 
 ```js
 ejg.on("profile", (p) => pintarAvatar(p));
 ```
 
 <Note>
-Hasta la 1.3 había una página de perfil al estilo Steam (marcos, vitrinas, nivel e insignias). Desde la 1.4.0 ya no
-existe: `ejg.profiles.view()`, `open()` y `badges()` se quitaron, `/_sdk/kit/profile.js` también, y
-`features.profile` en `theme.json` ya no hace nada.
+Until 1.3 there was a Steam-style profile page (frames, showcases, level and badges). Since 1.4.0 it no longer
+exists: `ejg.profiles.view()`, `open()` and `badges()` were removed, `/_sdk/kit/profile.js` too, and
+`features.profile` in `theme.json` does nothing.
 </Note>

@@ -1,13 +1,13 @@
 ---
-title: "index.html y el primer main.js"
-description: "La página, un poco de estilo y los primeros datos del SDK."
-sidebarTitle: "3. index.html y el primer main.js"
+title: "index.html and the first main.js"
+description: "The page, a little style, and the first data from the SDK."
+sidebarTitle: "3. index.html and main.js"
 ---
 
-## La página
+## The page
 
-Este es el `index.html` completo del tema. No cambiará en el resto de la guía,
-así que lo ponemos ya entero:
+This is the theme's complete `index.html`. It will not change for the rest of the
+guide, so here it is in full:
 
 ```html
 <!doctype html>
@@ -36,25 +36,26 @@ así que lo ponemos ya entero:
 </html>
 ```
 
-Lo importante:
+What matters:
 
-- **Deja la etiqueta `<head>` tal cual**, sin atributos. ejGames mete el SDK
-  (`<script src="/_sdk/ejg.js">`) justo detrás de `<head>`, antes que tus
-  scripts. Si no la encuentra, lo pone al principio de todo, por delante del
-  `<!doctype>`, y la página pasa a modo *quirks*.
-- **`type="module"`** en tu script: así puedes usar `import` y `await` fuera de
-  funciones.
-- **`data-ejg-drag`** convierte la barra en el asa para arrastrar la ventana
-  (doble clic maximiza). Lo que no deba arrastrar, como los botones, lleva
-  **`data-ejg-nodrag`**.
-- `#rejilla` tendrá las carátulas, `#ficha` será la ficha del juego ([paso 6](/guia/ficha)) y
-  `#pistas` la barra de controles ([paso 5](/guia/mando)). Los atributos `data-focus…` los
-  explicamos en el [paso 5](/guia/mando).
+- **Leave the `<head>` tag as it is**, with no attributes. ejGames inserts the SDK
+  (`<script src="/_sdk/ejg.js">`) right after `<head>`, before your scripts. If it
+  cannot find the tag, it puts the script at the very start, ahead of the
+  `<!doctype>`, and the page drops into *quirks* mode.
+- **`type="module"`** on your script, so you can use `import` and `await` outside
+  functions.
+- **`data-ejg-drag`** turns the bar into the handle for dragging the window
+  (double-click maximizes). Anything that should not drag, such as the buttons,
+  gets **`data-ejg-nodrag`**.
+- `#rejilla` will hold the covers, `#ficha` will be the game page ([step 6](/guia/ficha)) and
+  `#pistas` the control bar ([step 5](/guia/mando)). The `data-focus…` attributes are
+  explained in [step 5](/guia/mando).
 
-## Un poco de estilo
+The visible strings (`Buscar`, `Ajustes`, and the ones in later steps) stay in Spanish. That text is the translation key. See [Languages](/referencia/idiomas).
 
-Empieza `style.css` con la base: colores en variables, la página a pantalla
-completa y la barra superior.
+## A little style
+
+Start `style.css` with the base: colors in variables, the page fullscreen, and the top bar.
 
 ```css
 :root {
@@ -83,7 +84,7 @@ body {
 
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
 
-/* Arriba se deja una franja libre: ahí aparecen los botones de ventana del launcher. */
+/* Leave a strip free at the top: the launcher's window buttons appear there. */
 .barra { display: flex; align-items: center; gap: 16px; padding: 40px 32px 14px; }
 .barra h1 { margin: 0; font-size: 1.6em; font-weight: 600; }
 .total { margin-left: 6px; font-size: 0.6em; font-weight: 400; color: var(--tenue); }
@@ -91,11 +92,11 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .acciones button { padding: 6px 14px; border-radius: 8px; color: var(--tenue); }
 ```
 
-Esa franja libre de arriba es porque ejGames dibuja **minimizar, maximizar y
-cerrar** en la esquina superior derecha (aparecen al pasar el ratón) y esa zona
-recibe los clics. En el [paso 8](/guia/sonidos-colores) verás cómo pintarlos tú si lo prefieres.
+That free strip is there because ejGames draws **minimize, maximize and close**
+in the top-right corner (they appear when the mouse passes over) and that area
+receives the clicks. In [step 8](/guia/sonidos-colores) you will see how to draw them yourself if you prefer.
 
-## El primer `main.js`
+## The first `main.js`
 
 ```js
 const ejg = await window.ejg.ready();
@@ -116,24 +117,24 @@ ejg.library.onChange(pintar);
 pintar();
 ```
 
-- **`await window.ejg.ready()`** espera a que ejGames mande los datos
-  (biblioteca, perfil, opciones). Empieza siempre así.
-- **`ejg.library.all`** es la lista de juegos, ya ordenada por nombre. Es una
-  copia en memoria: leerla no cuesta nada.
-- **`ejg.library.onChange(fn)`** te avisa cuando algo cambia: juegos nuevos,
-  un favorito, la carátula que acaba de descargarse… Aquí volvemos a pintarlo
-  todo; en el paso siguiente lo haremos sin rehacer lo que no cambia.
+- **`await window.ejg.ready()`** waits until ejGames has sent the data (library,
+  profile, options). Always start this way.
+- **`ejg.library.all`** is the list of games, already sorted by name. It is an
+  in-memory copy: reading it costs nothing.
+- **`ejg.library.onChange(fn)`** tells you when something changes: new games, a
+  favorite, a cover that just finished downloading… Here we draw everything
+  again. In the next step we will do it without rebuilding what did not change.
 
-Guarda, elige el tema y deberías ver los nombres de tus juegos. Cada juego
-(`Game`) trae, entre otros:
+Save, choose the theme, and you should see your games' names. Each game (`Game`)
+carries, among other things:
 
-| Campo | Qué es |
+| Field | What it is |
 |---|---|
-| `id`, `title` | identificador y nombre |
-| `source` | de dónde salió: `folder` (carpeta), `manual` (`.exe` añadido a mano) o `repack` (Descargas) |
-| `favorite`, `hidden` | favorito / oculto por el usuario |
-| `playtime`, `lastPlayed` | segundos jugados y última partida (fecha Unix, en segundos) |
-| `developer`, `releaseDate`, `genres` | datos de la ficha |
-| `media` | URLs del arte: `coverThumb`/`cover` (carátula 2:3), `heroThumb`/`hero` (fondo panorámico), `logo`, `header`, `icon`… |
+| `id`, `title` | identifier and name |
+| `source` | where it came from: `folder` (a folder), `manual` (an `.exe` added by hand) or `repack` (Downloads) |
+| `favorite`, `hidden` | favorite / hidden by the user |
+| `playtime`, `lastPlayed` | seconds played, and the last session (Unix time, in seconds) |
+| `developer`, `releaseDate`, `genres` | page data |
+| `media` | art URLs: `coverThumb`/`cover` (2:3 cover), `heroThumb`/`hero` (wide background), `logo`, `header`, `icon`… |
 
-La lista completa está en la [referencia](/referencia/biblioteca).
+The full list is in the [reference](/referencia/biblioteca).

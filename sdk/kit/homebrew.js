@@ -54,6 +54,7 @@ const ICONS = {
   link: I('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'),
 };
 const icon = (name, cls) => h("span", { class: cls, html: ICONS[name] });
+const cssUrl = (u) => `url("${String(u).replace(/["\\\n\r()]/g, "")}")`;
 
 /** Emulador de un juego («Eden», «RetroArch (Snes9x)»…) → clave para emparejarlo con su programa. */
 const emuKey = (name) => norm(String(name || "").replace(/\(.*\)/, ""));
@@ -173,8 +174,18 @@ export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "
     const got = installedOf(e);
     const shot = h("span", { class: "hb-shot", style: `--hb-hue: ${hueOf(e.title)}` });
     if (e.coverUrl) {
+      shot.classList.add("is-fit");
+      shot.style.backgroundImage = cssUrl(e.coverUrl);
       const im = h("img", { src: e.coverUrl, alt: "", loading: "lazy", decoding: "async", draggable: "false" });
-      im.addEventListener("error", () => im.replaceWith(h("b", { class: "hb-shot-title", "data-no-t": "" }, e.title)), { once: true });
+      im.addEventListener(
+        "error",
+        () => {
+          shot.classList.remove("is-fit");
+          shot.style.backgroundImage = "";
+          im.replaceWith(h("b", { class: "hb-shot-title", "data-no-t": "" }, e.title));
+        },
+        { once: true },
+      );
       shot.append(im);
     } else shot.append(h("b", { class: "hb-shot-title", "data-no-t": "" }, e.title));
     if (tag && e.system) shot.append(sysTag(e.system));
@@ -200,7 +211,7 @@ export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "
     return h(
       "button",
       { class: `hb-game${g.emulator ? "" : " no-emu"}${running ? " is-running" : ""}`, "data-focus": "", "data-key": `g-${g.id}`, "data-game-id": g.id, onclick: () => play(g) },
-      h("span", { class: "hb-cover" }, artFor(g, "portrait"), tag ? sysTag(g.platform) : null, g.emulator ? null : h("span", { class: "hb-cover-warn", title: "Sin emulador" }, icon("warn", "hb-warn-ico"))),
+      h("span", { class: "hb-cover" }, artFor(g, "portrait", { fit: true }), tag ? sysTag(g.platform) : null, g.emulator ? null : h("span", { class: "hb-cover-warn", title: "Sin emulador" }, icon("warn", "hb-warn-ico"))),
       h(
         "span",
         { class: "hb-game-info" },
@@ -564,7 +575,7 @@ export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "
     const links = sh.data?.links || [];
     if (game)
       return [
-        h("button", { class: "hb-btn hb-btn-big", "data-focus": "", "data-key": "s-play", onclick: () => (closeSheet(), play(game)) }, icon("play", "hb-btn-ico"), h("span", null, "Jugar")),
+        h("button", { class: "hb-btn hb-btn-big hb-play", "data-focus": "", "data-key": "s-play", onclick: () => (closeSheet(), play(game)) }, icon("play", "hb-btn-ico"), h("span", null, "Jugar")),
         h("button", { class: "hb-btn hb-btn-ghost hb-btn-big", "data-focus": "", "data-key": "s-del", onclick: () => ejg.game.uninstall(game.id) }, icon("trash", "hb-btn-ico"), h("span", null, "Borrar")),
       ];
     if (job && ACTIVE.has(job.phase))
@@ -668,7 +679,7 @@ export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "
         h(
           "div",
           { class: "hb-pg-side" },
-          e.coverUrl ? h("div", { class: "hb-pg-cap" }, h("img", { src: e.coverUrl, alt: "", draggable: "false" })) : null,
+          e.coverUrl ? h("div", { class: "hb-pg-cap is-fit", style: { backgroundImage: cssUrl(e.coverUrl) } }, h("img", { src: e.coverUrl, alt: "", draggable: "false" })) : null,
           rows.length ? h("dl", { class: "hb-pg-rows" }, ...rows.map(([k, v]) => h("div", { class: "hb-pg-row" }, h("dt", null, k), h("dd", { "data-no-t": typeof v === "string" ? "" : null }, v)))) : null,
           emu,
           ...mirrors,
@@ -817,6 +828,7 @@ export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "
   const offs = [ejg.on("library", () => (paint(), s.sheet && paintSheet(true))), ejg.game.onState(() => paint()), cat?.onJobs?.(onJobs)];
   paint();
   emulatorList(ejg).then((list) => {
+    if (destroyed) return;
     infos = list || [];
     paint();
   });

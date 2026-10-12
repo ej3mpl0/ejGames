@@ -1,67 +1,67 @@
 ---
-title: "Dónde va el tema y cómo activarlo"
-description: "La carpeta del tema, la galería y el modo desarrollador."
-sidebarTitle: "1. Dónde va el tema y cómo activarlo"
+title: "Where the theme goes, and how to turn it on"
+description: "The theme folder, the gallery and developer mode."
+sidebarTitle: "1. Where the theme goes"
 ---
 
-## La carpeta
+## The folder
 
-Cada tema es una carpeta dentro de:
+Each theme is a folder inside:
 
 ```
 %APPDATA%\ejGames\themes\
 ```
 
-Pega esa ruta en **Win + R** o en la barra del Explorador. También puedes llegar
-desde ejGames: **Ajustes → Apariencia → Carpeta de temas**. (Si usas la versión
-portable, es la carpeta `data\themes` que hay junto a `ejgames.exe`.)
+Paste that path into **Win + R** or the Explorer address bar. You can also get there
+from ejGames: **Settings → Appearance → Themes folder**. (If you use the portable
+version, it is the `data\themes` folder next to `ejgames.exe`.)
 
-Crea dentro una carpeta llamada `ejemplo`. Al terminar la guía tendrá esto:
+Create a folder inside it called `ejemplo`. By the end of the guide it will look like this:
 
 ```
 ejemplo/
-  theme.json    el manifiesto: nombre, opciones, colores…
-  index.html    la página
+  theme.json    the manifest: name, options, colors…
+  index.html    the page
   style.css
   main.js
 ```
 
 <Warning>
-**Ojo con Windows:** si tienes ocultas las extensiones, es fácil acabar con un
-`theme.json.txt`. Actívalas en el Explorador (Vista → Mostrar → Extensiones de
-nombre de archivo) y guarda los ficheros en UTF-8.
+**Watch out on Windows:** if extensions are hidden, it is easy to end up with a
+`theme.json.txt`. Turn them on in Explorer (View → Show → File name extensions)
+and save the files as UTF-8.
 </Warning>
 
-¿Prisa por verlo funcionar? Copia los cuatro ficheros de [`examples/ejemplo-tema/`](https://github.com/ej3mpl0/ejGames/tree/main/examples/ejemplo-tema) a
-esa carpeta y sigue leyendo para entender cada parte.
+In a hurry to see it work? Copy the four files from [`examples/ejemplo-tema/`](https://github.com/ej3mpl0/ejGames/tree/main/examples/ejemplo-tema) into
+that folder and keep reading to understand each part.
 
-## Que aparezca en la galería y activarlo
+## Make it show up in the gallery, and turn it on
 
-Abre **Ajustes** (**Ctrl + ,**) → **Apariencia**: la galería vuelve a leer la
-carpeta de temas cada vez que entras, así que tu tema aparece sin reiniciar
-ejGames. Pulsa la tarjeta **Mi primer tema**. Los temas tuyos llevan la etiqueta
-«PROPIO». El tema elegido se guarda en tu perfil.
+Open **Settings** (**Ctrl + ,**) → **Appearance**. The gallery reads the themes
+folder again every time you enter, so your theme appears without restarting
+ejGames. Press the **Mi primer tema** card. Your themes are marked as yours.
+The chosen theme is saved in your profile.
 
-## Modo desarrollador y recargas
+## Developer mode and reloads
 
-En esa misma pantalla, en el bloque **Hazlo tuyo**, activa **Modo desarrollador**.
-Con él:
+On that same screen, in the **Make it yours** block, turn on **Developer mode**.
+With it:
 
-- el tema se **recarga solo cada vez que guardas** cualquiera de sus ficheros,
-  también `theme.json` (nombre, opciones, colores, sonidos);
-- los errores de JavaScript de tu tema salen como avisos («Tema: …»).
+- the theme **reloads itself every time you save** any of its files,
+  including `theme.json` (name, options, colors, sounds);
+- your theme's JavaScript errors show up as notices ("Theme: …").
 
-**F5** recarga el tema a mano en cualquier momento (también tienes el botón
-**Recargar tema**). Si guardas un `theme.json` con un error, el tema sigue con
-la versión anterior hasta que lo arregles.
+**F5** reloads the theme by hand at any time (there is also a **Reload theme**
+button). If you save a `theme.json` with an error, the theme keeps the previous
+version until you fix it.
 
-## Si algo sale mal
+## If something goes wrong
 
-- **Un error en tu JavaScript** deja el tema en blanco o a medias. Con el modo
-  desarrollador verás el aviso con el error; arréglalo, guarda y listo.
-- **Si el tema se cuelga** (por ejemplo, un bucle infinito), a los pocos
-  segundos ejGames carga el tema Steam y te avisa: «El tema «Mi primer tema» no
-  responde. Se ha cargado el tema Steam.». Arregla el fallo y vuelve a elegir tu
-  tema en Apariencia.
-- **Modo seguro:** mantén pulsada **Mayús** mientras abres ejGames y arrancará
-  con el tema Steam, por si el tuyo no te deja ni llegar a los ajustes.
+- **An error in your JavaScript** leaves the theme blank or half drawn. With
+  developer mode you will see the notice with the error. Fix it, save, and that is it.
+- **If the theme hangs** (an infinite loop, for example), after a few seconds
+  ejGames loads the house theme, Moneda, and tells you: “The theme «Mi primer tema»
+  isn't responding. The house theme was loaded.” Fix the problem and choose your
+  theme again in Appearance.
+- **Safe mode:** hold **Shift** while opening ejGames and it will start with
+  Moneda, in case yours will not even let you reach settings.

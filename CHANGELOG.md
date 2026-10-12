@@ -5,6 +5,14 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.7.1
+
+- **El idioma en toda la app.** Lo elegido en Ajustes, o en el primer arranque, se aplica en Inicio, Biblioteca, Tienda
+  y Homebrew, no solo en Ajustes. En el asistente cambia al pulsar el idioma, sin esperar a Siguiente.
+- **Géneros de la tienda** en el idioma de la interfaz. En las tarjetas y las filas se quedaban en español.
+- **Homebrew**: la carátula se ve entera dentro de la tarjeta, sobre su propia copia difuminada.
+- **Documentación en inglés**, con los logos nuevos.
+
 ## 1.7.0
 
 - **Diseño nuevo: el tema Moneda**, el de la casa y el de todos. Pestañas arriba (Inicio, Biblioteca, Tienda y

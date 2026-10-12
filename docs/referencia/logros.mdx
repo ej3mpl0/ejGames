@@ -1,6 +1,6 @@
 ---
-title: "Logros"
-description: "ejg.game.achievements: lista, iconos y rareza."
+title: "Achievements"
+description: "ejg.game.achievements: list, icons and rarity."
 icon: "trophy"
 ---
 
@@ -10,15 +10,14 @@ const list = await ejg.game.achievements(id)
 //                              hidden, globalPct, unlockedAt }] }
 ```
 
-Salen de los ficheros de los emuladores de los juegos (y, si tienes Steam
-instalado, de sus estadísticas locales). La primera vez puede tardar un momento, porque descarga
-el esquema de Steam; después se cachea una semana. Para pintar un resumen sin
-esperar, usa `game.achievements` de la biblioteca.
+They come from the game's emulator files (and, if you have Steam installed, from
+its local stats). The first time can take a moment, because it downloads the
+Steam schema. After that it is cached for a week. To paint a summary without
+waiting, use `game.achievements` from the library.
 
-- `items` va en el orden del juego. Sin `unlockedAt`, el logro está bloqueado.
-- `icon` y `iconGray` se sirven por `ejg-media`, así que cargan en el tema sin
-  red.
-- `globalPct` es el % de jugadores de Steam que lo tienen; sirve para marcar la
-  rareza.
-- Un logro oculto sin desbloquear llega como «Logro oculto», sin icono ni
-  descripción.
+- `items` follows the game's order. Without `unlockedAt`, the achievement is locked.
+- `icon` and `iconGray` are served through `ejg-media`, so they load in the theme
+  with no network.
+- `globalPct` is the percentage of Steam players who have it. Use it to mark rarity.
+- A hidden achievement that is still locked arrives named `Logro oculto`, with
+  no icon and no description. That name is a normal string, so a dictionary entry translates it.

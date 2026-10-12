@@ -1,32 +1,32 @@
 ---
-title: "Explorar y descargas"
-description: "Abrir la tienda, enseñar lo que se descarga o pintar tu propia tienda."
-sidebarTitle: "9. Explorar y descargas"
+title: "Explore and downloads"
+description: "Open the store, show what is downloading, or draw your own store."
+sidebarTitle: "9. Explore and downloads"
 ---
 
-El launcher trae una tienda de repacks (**Explorar**) y una cola de descargas con
-torrent integrado (**Descargas**). Tu tema no tiene que hacer nada para que
-funcionen: el menú rápido, **Ctrl+E** y **Ctrl+J** abren las ventanas del
-launcher encima de tu tema. Pero queda mucho mejor si el tema, al menos, enseña
-qué se está descargando y tiene un botón para ir a la tienda.
+The launcher includes a repack store (**Explore**) and a download queue with a
+built-in torrent client (**Downloads**). Your theme does not have to do anything
+for them to work: the quick menu, **Ctrl+E** and **Ctrl+J** open the launcher's
+windows on top of your theme. It looks much better if the theme at least shows
+what is downloading and has a button that goes to the store.
 
-## Un botón para abrir la tienda
+## A button that opens the store
 
 ```js
-// Abre las ventanas del launcher (para temas sin vistas propias).
+// Opens the launcher windows (for themes without their own views).
 botonTienda.addEventListener("click", () => ejg.downloads.open("explore"));
 botonDescargas.addEventListener("click", () => ejg.downloads.open("downloads"));
-// Si el usuario desactiva Explorar en los ajustes, escóndelo:
+// If the user turns Explore off in settings, hide it:
 const pintarBoton = () => (botonTienda.hidden = !ejg.explore.enabled);
 ejg.explore.onEnabled(pintarBoton);
 pintarBoton();
 ```
 
-## Qué se está descargando
+## What is downloading
 
-`ejg.downloads.all` es la lista de descargas y `ejg.downloads.onChange` avisa
-cuando cambia (como mucho una vez por segundo, así que puedes repintar sin
-miedo). El kit trae los formatos:
+`ejg.downloads.all` is the list of downloads and `ejg.downloads.onChange` fires
+when it changes (at most once a second, so you can repaint without worry). The
+kit has the formatters:
 
 ```js
 import { bytes, speed, percent, downloadLabel } from "/_sdk/kit/store.js";
@@ -44,60 +44,60 @@ pintarDescargas();
 tira.addEventListener("click", () => ejg.downloads.open("downloads"));
 ```
 
-`downloadLabel(d)` da un texto corto para cualquier estado («En pausa mientras
-juegas», «Listo para instalar», «Instalando…»).
+`downloadLabel(d)` gives a short text for any state ("Paused while you play",
+"Ready to install", "Installing…").
 
-## Descubrir juegos
+## Discovering games
 
-`ejg.explore.browse()` da el catálogo entero con filtros (géneros, orden, tamaño y
-«ocultar los que ya tengo») y `ejg.explore.genres()`, los géneros en español. Con el
-kit es casi gratis:
+`ejg.explore.browse()` returns the whole catalog with filters (genres, sort,
+size and "hide the ones I already have") and `ejg.explore.genres()` returns the
+genres. With the kit it is almost free:
 
 ```js
 import { createExplore, SORTS } from "/_sdk/kit/store.js";
 
 const tienda = createExplore(ejg, pintar);
 tienda.loadGenres();
-tienda.browse({ genres: [47], sort: "date" }); // Rol, lo último primero
-// Más al llegar abajo:
+tienda.browse({ genres: [47], sort: "date" }); // Role-playing, newest first
+// More as you reach the bottom:
 lista.addEventListener("scroll", () => lista.scrollTop + lista.clientHeight > lista.scrollHeight - 400 && tienda.browseMore());
 
 function pintar(s) {
   const c = s.catalog; // { filters, items, total, filtered, loading, error, … }
-  // …pinta c.items y unos botones con s.genres que llamen a tienda.toggleGenre(id)
+  // …paint c.items and some buttons from s.genres that call tienda.toggleGenre(id)
 }
 ```
 
-En una ficha, `tienda.similar(repack)` da juegos parecidos para una fila «Más como
-este».
+On a game page, `tienda.similar(repack)` gives similar games for a "More like
+this" row.
 
-## Juegos con crack de hipervisor (HV)
+## Games with a hypervisor crack (HV)
 
-Los repacks con `hypervisor: true` piden desactivar un rato la seguridad de Windows
-para jugar. Márcalos junto al nombre y explícalo en la ficha; el kit trae el texto y
-las piezas:
+Repacks with `hypervisor: true` ask you to turn off Windows' security for a
+while in order to play. Mark them next to the name and explain it on the page.
+The kit has the text and the pieces:
 
 ```js
 import { repackName, hypervisorInfo } from "/_sdk/kit/store.js";
 
-tarjeta.append(repackName(repack));          // «Nombre» o «Nombre HV»
-ficha.append(hypervisorInfo(ejg, repack) ?? "");  // el aviso plegable (nada si no es HV)
+tarjeta.append(repackName(repack));              // "Name" or "Name HV"
+ficha.append(hypervisorInfo(ejg, repack) ?? "");  // the collapsible notice (nothing if it is not HV)
 ```
 
-Las clases y el resto están en [la referencia](/referencia/explorar#cracks-de-hipervisor-hv).
+The classes and the rest are in [the reference](/referencia/explorar#hypervisor-cracks-hv).
 
-## Tu propia tienda
+## Your own store
 
-Si quieres que la tienda y la cola tengan el aspecto de tu tema, declara en
+If you want the store and the queue to look like your theme, declare this in
 `theme.json`:
 
 ```json
 "features": { "explore": true }
 ```
 
-A partir de ahí, el launcher ya no abre sus ventanas: le pide a tu tema que abra
-su vista con `ejg.ui.onView(({ view, slug }) => …)` (`explore`, `downloads` o
-`repack`, una ficha). La lógica difícil ya está hecha en `/_sdk/kit/store.js`
-(portada, búsqueda, selección de archivos, estados…); el tema **Steam**
-(`themes/steam/store.js`) es un ejemplo completo y la referencia está en
-[la referencia](/referencia/explorar).
+From then on, the launcher no longer opens its windows. It asks your theme to
+open its view with `ejg.ui.onView(({ view, slug }) => …)` (`explore`, `downloads`
+or `repack`, a game page). The hard logic is already done in `/_sdk/kit/store.js`
+(the front page, search, file selection, states…). The **Steam** theme
+(`themes/steam/store.js`) is a complete example, and the reference is in
+[the reference](/referencia/explorar).

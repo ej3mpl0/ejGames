@@ -1,25 +1,25 @@
 ---
-title: "Eventos de temporada"
-description: "Halloween y demás: qué hace el SDK solo y cómo darle a tu tema su toque."
+title: "Seasonal events"
+description: "Halloween and the rest: what the SDK does on its own, and how to give your theme its own touch."
 icon: "ghost"
 ---
 
-En sus fechas, ejGames se viste para la ocasión. El primero es **ejGames Scream** (Halloween, del 3 de octubre
-al 2 de noviembre). El usuario lo elige en **Ajustes → Apariencia → Modo Halloween**: *En sus
-fechas*, *Siempre* o *Nunca*. El host decide si hay un evento activo y se lo manda a tu tema.
+On their dates, ejGames dresses for the occasion. The first is **ejGames Scream** (Halloween, from October 3
+to November 2). The user chooses it in **Settings → Appearance → Halloween mode**: *On its dates*, *Always*
+or *Never*. The host decides whether an event is active and sends that to your theme.
 
-## Lo que hace el SDK sin que hagas nada
+## What the SDK does without you doing anything
 
-Mientras dura el evento:
+While the event lasts:
 
-- Pone `data-season="halloween"` en `<html>` y las variables `--ejg-season-accent` (naranja calabaza),
-  `--ejg-season-green`, `--ejg-season-violet`, `--ejg-season-bg`, `--ejg-season-panel` y `--ejg-season-text`.
-- Cambia tus opciones de color `accent`, `bg`, `panel` y `play`, activa `dark` y pone su fondo en la
-  opción `wallpaper` de tipo imagen (`ejg.settings` ya los trae). Al acabar vuelven las del usuario.
-- Carga una capa de ambiente encima de todo (`#ejg-season`): niebla a ras de suelo, ascuas y algún murciélago.
-  No recibe clics y se queda quieta con «reducir movimiento».
+- It sets `data-season="halloween"` on `<html>` and the variables `--ejg-season-accent` (pumpkin orange),
+  `--ejg-season-green`, `--ejg-season-violet`, `--ejg-season-bg`, `--ejg-season-panel` and `--ejg-season-text`.
+- It changes your `accent`, `bg`, `panel` and `play` color options, turns `dark` on, and puts its background
+  in the `wallpaper` image option (`ejg.settings` already has them). When it ends, the user's values come back.
+- It loads an atmosphere layer over everything (`#ejg-season`): fog along the floor, embers and the occasional
+  bat. It does not receive clicks, and it stays still with "reduce motion".
 
-Para lo que no sale de tus opciones (colores fijos, logos, decoración), usa el selector en tu CSS:
+For what does not come from your options (fixed colors, logos, decoration), use the selector in your CSS:
 
 ```css
 :root[data-season="halloween"] .topbar {
@@ -28,34 +28,33 @@ Para lo que no sale de tus opciones (colores fijos, logos, decoración), usa el 
 }
 ```
 
-## En JavaScript
+## In JavaScript
 
 | | |
 |---|---|
-| `ejg.season.id` | `"halloween"` o `null` |
-| `ejg.season.event` | el evento: `name`, `dates`, `banner`, `video`, `wallpaper`, `wallpaperVideo`, `wallpaperAlt`, `palette`, `genre`, `title`, `subtitle` |
-| `ejg.season.mode` | el ajuste del usuario: `"auto"`, `"on"` u `"off"` |
-| `ejg.season.onChange(fn)` | empieza o acaba un evento, o cambia el ajuste (`fn({ mode, season })`) |
+| `ejg.season.id` | `"halloween"` or `null` |
+| `ejg.season.event` | the event: `name`, `dates`, `banner`, `video`, `wallpaper`, `wallpaperVideo`, `wallpaperAlt`, `palette`, `genre`, `title`, `subtitle` |
+| `ejg.season.mode` | the user's setting: `"auto"`, `"on"` or `"off"` |
+| `ejg.season.onChange(fn)` | an event starts or ends, or the setting changes (`fn({ mode, season })`) |
 
-Al cambiar, también llega el evento `settings` (con la paleta ya aplicada o quitada).
+When it changes, the `settings` event also arrives (with the palette already applied, or removed).
 
-## La tienda: banner y selección
+## The store: banner and picks
 
-`/_sdk/kit/events.js` trae las piezas para la portada de tu tienda:
+`/_sdk/kit/events.js` has the pieces for your store's front page:
 
 ```js
 import { seasonOf, seasonBanner, seasonPicks } from "/_sdk/kit/events.js";
 
-const ev = seasonOf(ejg);   // null sin evento
+const ev = seasonOf(ejg);   // null when there is no event
 if (ev) {
-  front.prepend(seasonBanner(ev));   // el banner animado en bucle (2000×297)
+  front.prepend(seasonBanner(ev));   // the looping animated banner (2000×297)
   const { items, loading } = seasonPicks(ejg, ev, home.sections, repaint);
-  // items: los de su género (Terror), primero los populares; con `loading`, repaint() avisa al llegar el resto
-  front.append(miFila(ev.title, items, () => openCatalog({ genres: [ev.genre] })));
+  // items: the ones in its genre (Horror), popular first; with `loading`, repaint() fires when the rest arrive
+  front.append(myRow(ev.title, items, () => openCatalog({ genres: [ev.genre] })));
 }
 ejg.season.onChange(repaint);
 ```
 
-El arte está en `/_sdk/events/<id>/`: `banner.webp` y `banner.mp4`, `hero.webp` y `hero.mp4` (la cabecera grande, con `seasonBanner(ev, cls, { hero: true })`), `wallpaper-street.jpg` (y su versión
-animada `.mp4`) y `wallpaper-graveyard.jpg`. Los seis temas de serie lo usan; mira el de Steam
-(`themes/steam/store.js`, `eventFront`) como ejemplo.
+The art is in `/_sdk/events/<id>/`: `banner.webp` and `banner.mp4`, `hero.webp` and `hero.mp4` (the large header, with `seasonBanner(ev, cls, { hero: true })`), `wallpaper-street.jpg` (and its animated `.mp4`) and `wallpaper-graveyard.jpg`. The built-in themes use it. Look at Steam's
+(`themes/steam/store.js`, `eventFront`) as an example.

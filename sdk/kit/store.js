@@ -67,9 +67,14 @@ const GENRES = {
   war: "Bélico", western: "Western", "2d": "2D", "3d": "3D", "isometric": "Isométrico", "anime": "Anime",
 };
 
-/** Género de la ficha (en inglés) en español: "Open world" → "Mundo abierto". */
+/** Género de la ficha (en inglés) en el idioma de la interfaz.
+ *  Primero al español ("Open world" → "Mundo abierto"), que es la clave, y
+ *  luego con ejg.t. Hay que hacerlo aquí: en la tienda varios géneros comparten
+ *  un solo texto ("Acción, Aventura") y el observador solo casa el nodo entero. */
 export function genreLabel(g) {
-  return GENRES[String(g || "").trim().toLowerCase()] || g;
+  const es = GENRES[String(g || "").trim().toLowerCase()] || g;
+  const t = globalThis.ejg && globalThis.ejg.t;
+  return typeof t === "function" && typeof es === "string" ? t(es) : es;
 }
 
 /** 0.4321 → "43 %" */

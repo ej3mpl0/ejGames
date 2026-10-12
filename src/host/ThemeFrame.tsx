@@ -300,7 +300,6 @@ export function ThemeFrame() {
     const un = on("saves:changed", (e) => beats.current.ready && event("saves", e));
     return () => void un.then((f) => f());
   }, []);
-
   // Eventos de partida reenviados al tema.
   useEffect(() => {
     const fn = (e: Event) => event("game-state", (e as CustomEvent).detail);

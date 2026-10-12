@@ -318,7 +318,9 @@ async fn theme(st: &Arc<AppState>, req: &Request<Vec<u8>>, safe: bool) -> Resp {
         let Ok(html) = tokio::fs::read_to_string(&file).await else {
             return text(StatusCode::NOT_FOUND, "no encontrado");
         };
-        let tag = "<script src=\"/_sdk/ejg.js\"></script>";
+        // El módulo va detrás: ejg.js es clásico y no puede import() el traductor
+        // (origen opaco del iframe). boot-translate.js lo publica en window.__ejgTr.
+        let tag = "<script src=\"/_sdk/ejg.js\"></script><script type=\"module\" src=\"/_sdk/kit/boot-translate.js\"></script>";
         let html = match html.find("<head>").or_else(|| html.find("<HEAD>")) {
             Some(i) => format!("{}{}{}", &html[..i + 6], tag, &html[i + 6..]),
             None => format!("{tag}{html}"),

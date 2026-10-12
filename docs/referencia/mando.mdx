@@ -1,38 +1,38 @@
 ---
-title: "Mando y teclado"
-description: "ejg.input: acciones de navegación y pistas de controles."
+title: "Controller and keyboard"
+description: "ejg.input: navigation actions and control hints."
 icon: "gamepad"
 ---
 
 ```js
 ejg.input.on("nav", (e) => {
   // e.action: up down left right accept back x y lb rb lt rt menu view
-  // e.source: "keyboard" | "gamepad"; e.repeat: al mantener pulsado
-  if (e.action === "back" && algoAbierto) { cerrar(); e.preventDefault(); }
+  // e.source: "keyboard" | "gamepad"; e.repeat: while held down
+  if (e.action === "back" && somethingOpen) { close(); e.preventDefault(); }
 });
 ```
 
-Teclado: flechas, Enter/Espacio (accept), Esc/Retroceso (back), **E** (x),
-**F** (y), RePág/AvPág (lb/rb), Tab (rb). **Ctrl+E** (Explorar) y **Ctrl+J**
-(Descargas) los gestiona el host.
+Keyboard: arrows, Enter/Space (accept), Esc/Backspace (back), **E** (x),
+**F** (y), Page Up/Page Down (lb/rb), Tab (rb). **Ctrl+E** (Explore) and **Ctrl+J**
+(Downloads) are handled by the host.
 
-Si no marcas un `back` como gestionado, lo usa el host: cierra lo que tenga
-abierto y, en Big Picture sin nada abierto, abre el menú rápido. El botón Guía
-del mando abre siempre el menú rápido del host.
+If you do not mark a `back` as handled, the host uses it: it closes whatever it
+has open and, in Big Picture with nothing open, opens the quick menu. The
+controller's Guide button always opens the host's quick menu.
 
-## Pistas de controles (mando o teclado)
+## Control hints (controller or keyboard)
 
-`ejg.input.source` dice qué se usó por última vez (`"gamepad"`, `"keyboard"` o
-`"mouse"`) y `ejg.input.pad` qué mando es (`"xbox"`, `"playstation"`,
-`"nintendo"` o `"generic"`). El `<html>` lleva `data-input` y `data-pad`, y
-`ejg.on("input", …)` avisa de los cambios. Lo más fácil es usar el kit:
+`ejg.input.source` says what was used last (`"gamepad"`, `"keyboard"` or
+`"mouse"`) and `ejg.input.pad` says which controller it is (`"xbox"`, `"playstation"`,
+`"nintendo"` or `"generic"`). The `<html>` element carries `data-input` and `data-pad`,
+and `ejg.on("input", …)` reports changes. The easiest way is the kit:
 
 ```js
 import { hints } from "/_sdk/kit/hints.js";
 const bar = hints(document.querySelector("#hints"), [["accept", "Jugar"], ["back", "Atrás"], ["y", "Favorito"]]);
-bar.set([["accept", "Instalar"]]);   // cambia los textos cuando haga falta
+bar.set([["accept", "Instalar"]]);   // change the texts when you need to
 ```
 
-Con un mando de PlayStation se ven ✕ ○ △ □; con uno de Xbox, A B X Y en sus
-colores; con teclado, Enter, Esc, E y F. Se actualiza solo. Truco CSS:
+With a PlayStation controller you see ✕ ○ △ □. With an Xbox one, A B X Y in their
+colors. With a keyboard, Enter, Esc, E and F. It updates itself. CSS trick:
 `html[data-input="mouse"] .hints { display: none; }`.

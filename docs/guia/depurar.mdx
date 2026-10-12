@@ -1,71 +1,70 @@
 ---
-title: "Depurar y errores típicos"
-description: "Ver los errores, los límites del tema y los fallos más comunes."
-sidebarTitle: "10. Depurar y errores típicos"
+title: "Debugging and common mistakes"
+description: "See the errors, the theme's limits, and the most common failures."
+sidebarTitle: "10. Debugging"
 ---
 
-## Ver los errores
+## See the errors
 
-- Con el **modo desarrollador** activado, los errores sin capturar de tu tema
-  salen como avisos: «Tema: Uncaught SyntaxError: …».
-- Para tener las **herramientas de desarrollo** de verdad (consola, inspector,
-  red):
-  1. Sal de ejGames del todo (menú rápido → **Salir de ejGames**).
-  2. Ábrelo desde una ventana de `cmd` con la depuración remota activada:
+- With **developer mode** on, uncaught errors from your theme show up as
+  notices: "Theme: Uncaught SyntaxError: …".
+- For the real **developer tools** (console, inspector, network):
+  1. Quit ejGames completely (quick menu → **Quit ejGames**).
+  2. Open it from a `cmd` window with remote debugging on:
 
      ```bat
      set WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222
      "%LOCALAPPDATA%\ejGames\ejgames.exe"
      ```
 
-     (cambia la ruta si lo instalaste en otro sitio).
-  3. En Edge, abre `edge://inspect` (si no sale nada, pulsa **Configure…** y
-     añade `localhost:9222`) y pulsa **inspect** en la entrada de tipo iframe
-     que empieza por `http://ejg-theme.localhost/ejemplo/`. Ahí tienes la
-     consola de tu tema: `console.log()` escribe ahí. También vale inspeccionar
-     la página `http://tauri.localhost/` y elegir el iframe del tema en el
-     selector de contexto de la consola (donde pone «top»).
+     (change the path if you installed it somewhere else).
+  3. In Edge, open `edge://inspect` (if nothing appears, press **Configure…** and
+     add `localhost:9222`) and press **inspect** on the iframe entry that starts
+     with `http://ejg-theme.localhost/ejemplo/`. That is your theme's console:
+     `console.log()` writes there. You can also inspect the page
+     `http://tauri.localhost/` and pick the theme iframe in the console's context
+     selector (where it says "top").
 
-## Lo que un tema no puede hacer
+## What a theme cannot do
 
-El tema vive en una caja cerrada por seguridad. Esto **no** funciona:
+The theme lives in a closed box, for safety. This does **not** work:
 
-| Quieres… | Qué pasa | Qué hacer |
+| You want… | What happens | What to do |
 |---|---|---|
-| Datos de internet (`fetch`, una API) | bloqueado | Todo lo que necesites, dentro de la carpeta del tema. |
-| Fuentes, imágenes o scripts de internet (Google Fonts, un CDN) | no cargan | Descárgalos a la carpeta y usa rutas relativas: `@font-face { src: url("fonts/mi-fuente.woff2"); }` |
-| Leer tus propios ficheros con `fetch("datos.json")` | también bloqueado: `fetch` solo llega al arte de la biblioteca (`http://ejg-media.localhost`) | Pon los datos en un módulo JS (`export default { … }`) y cárgalo con `import datos from "./datos.js";`. Imágenes, CSS, fuentes, audio y vídeo del tema sí cargan en sus etiquetas. |
-| `localStorage`, `sessionStorage`, `IndexedDB`, cookies | lanzan `SecurityError` | `ejg.storage` (abajo). |
-| `alert()`, `confirm()`, `prompt()` | no hacen nada | `ejg.ui.toast("Texto", "info" \| "ok" \| "error")` o tu propio diálogo en HTML. |
-| Abrir webs | `window.open` está bloqueado, y un enlace `<a href="https://…">` abre la web **dentro** del tema, que desaparece (a los pocos segundos ejGames carga el tema Steam) | No pongas enlaces a webs. |
-| Acceder al disco, a otros programas o a Tauri | imposible | Solo lo que ofrece `window.ejg`. |
+| Data from the internet (`fetch`, an API) | blocked | Put everything you need inside the theme folder. |
+| Fonts, images or scripts from the internet (Google Fonts, a CDN) | they do not load | Download them into the folder and use relative paths: `@font-face { src: url("fonts/my-font.woff2"); }` |
+| Read your own files with `fetch("datos.json")` | also blocked: `fetch` only reaches library art (`http://ejg-media.localhost`) | Put the data in a JS module (`export default { … }`) and load it with `import datos from "./datos.js";`. The theme's images, CSS, fonts, audio and video do load in their tags. |
+| `localStorage`, `sessionStorage`, `IndexedDB`, cookies | they throw `SecurityError` | `ejg.storage` (below). |
+| `alert()`, `confirm()`, `prompt()` | they do nothing | `ejg.ui.toast("Text", "info" \| "ok" \| "error")` or your own HTML dialog. |
+| Open websites | `window.open` is blocked, and an `<a href="https://…">` link opens the site **inside** the theme, which then disappears (after a few seconds ejGames loads the house theme) | Do not link out to websites. |
+| Reach the disk, other programs, or Tauri | impossible | Only what `window.ejg` offers. |
 
-Para guardar cosas (el último juego abierto, un filtro…) usa **`ejg.storage`**:
-cada tema tiene 512 KB por perfil y guarda cualquier valor JSON.
+To store things (the last game you opened, a filter…) use **`ejg.storage`**:
+each theme has 512 KB per profile and can store any JSON value.
 
 ```js
 await ejg.storage.set("ultimo", 42);
-const ultimo = await ejg.storage.get("ultimo"); // 42 (undefined si no existe)
+const ultimo = await ejg.storage.get("ultimo"); // 42 (undefined if it does not exist)
 const todo = await ejg.storage.getAll();        // { ultimo: 42, … }
 ```
 
-Gracias a estas restricciones, instalar el tema de otra persona es seguro: como
-mucho puede lanzar juegos de tu biblioteca o abrir pantallas del launcher.
+Because of these limits, installing someone else's theme is safe. At most it can
+launch games from your library or open launcher screens.
 
-## Errores típicos
+## Common mistakes
 
-| Síntoma | Causa probable |
+| Symptom | Likely cause |
 |---|---|
-| El tema no sale en la galería | `theme.json` con errores o `id` no válido (mira `logs\ejgames.log`). |
-| Cambié `theme.json` y no se nota | Tiene un error (el tema sigue con la versión anterior): mira el log. |
-| Guardo y no se recarga | Modo desarrollador apagado. Mientras, F5. |
-| Pantalla en blanco | Error de JavaScript (activa el modo desarrollador), `import` mal escrito (las rutas del kit empiezan por `/_sdk/kit/`, las tuyas por `./`) o falta `type="module"` en el `<script>` (sin él, `await` e `import` dan error). |
-| «No responde. Se ha cargado el tema Steam» | Tu código bloquea la página (un bucle que no termina, un cálculo enorme al arrancar). |
-| El mando no llega a un botón | Le falta `data-focus`, o está oculto o `disabled`. |
-| Las flechas se escapan de un panel | Ponle `data-focus-trap` al panel. |
-| Esc cierra tu panel **y** además actúa ejGames (en Big Picture, se abre el menú rápido) | Tu `back` no se dio por gestionado: en `bindNav`, no devuelvas `false` cuando sí lo has usado. |
-| Tras cerrar los ajustes no hay foco | Falta `ejg.on("focus-return", () => foco.restore())`. |
-| El anillo de foco sale cortado | `content-visibility: auto` recorta lo que sobresale: deja `padding` en la tarjeta. |
-| Un elemento con `hidden` se sigue viendo | Tu CSS le da `display`: añade `[hidden] { display: none !important; }`. |
-| Un clic arriba a la derecha no llega | Esa esquina es de los botones de ventana del launcher (`windowControls: "host"`). |
-| La variable CSS no se aplica desde `h()` | Con `style` como objeto no se pueden poner variables: usa texto, `style: "--tono: 120"`. |
+| The theme does not appear in the gallery | `theme.json` has errors, or the `id` is not valid (see `logs\ejgames.log`). |
+| I changed `theme.json` and nothing happened | It has an error (the theme keeps the previous version): see the log. |
+| I save and it does not reload | Developer mode is off. Meanwhile, F5. |
+| Blank screen | A JavaScript error (turn on developer mode), a bad `import` (kit paths start with `/_sdk/kit/`, yours with `./`), or the `<script>` is missing `type="module"` (without it, `await` and `import` fail). |
+| "isn't responding. The house theme was loaded" | Your code blocks the page (a loop that never ends, a huge calculation at startup). |
+| The controller never reaches a button | It is missing `data-focus`, or it is hidden or `disabled`. |
+| The arrows escape a panel | Put `data-focus-trap` on the panel. |
+| Esc closes your panel **and** ejGames also acts (in Big Picture, the quick menu opens) | Your `back` was not treated as handled. In `bindNav`, do not return `false` when you did use it. |
+| After closing settings there is no focus | `ejg.on("focus-return", () => foco.restore())` is missing. |
+| The focus ring is clipped | `content-visibility: auto` clips whatever sticks out. Leave `padding` on the card. |
+| An element with `hidden` is still visible | Your CSS sets `display`. Add `[hidden] { display: none !important; }`. |
+| A click at the top right does not land | That corner belongs to the launcher's window buttons (`windowControls: "host"`). |
+| A CSS variable does not apply from `h()` | With `style` as an object you cannot set variables. Use a string, `style: "--tono: 120"`. |

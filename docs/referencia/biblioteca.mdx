@@ -1,35 +1,35 @@
 ---
-title: "Biblioteca"
-description: "ejg.library: los juegos del perfil, sus datos y su arte."
+title: "Library"
+description: "ejg.library: the profile's games, their data and their art."
 icon: "layer-group"
 ---
 
 ```js
-ejg.library.all              // Game[] ya ordenados (copia local, sin llamadas)
+ejg.library.all              // Game[], already sorted (a local copy, no calls)
 ejg.library.byId(id)
-ejg.library.collections      // colecciones del perfil
+ejg.library.collections      // the profile's collections
 ejg.library.onChange(({ full, changed, removed }) => render())
 ```
 
-Cada `Game` trae: `id, title, sortTitle, source, developer, publisher,
+Each `Game` carries: `id, title, sortTitle, source, developer, publisher,
 releaseDate, genres[], tags[], rating, favorite, hidden, missing, installed,
-playtime` (segundos)`, lastPlayed` (Unix)`, launchCount, userRating, collections[],
-running`, `media` y, si el juego tiene logros, `achievements: { unlocked, total }`.
+playtime` (seconds), `lastPlayed` (Unix), `launchCount, userRating, collections[],
+running`, `media` and, if the game has achievements, `achievements: { unlocked, total }`.
 
-`source` dice de dónde salió: `folder` (una carpeta de la biblioteca), `manual`
-(un `.exe` añadido a mano) o `repack` (instalado desde Descargas). Desde la 0.5.0
-ejGames ya no importa juegos de tiendas, así que `installed` siempre es `true`
-(se mantiene para no romper temas antiguos).
+`source` says where it came from: `folder` (a library folder), `manual` (an `.exe`
+added by hand) or `repack` (installed from Downloads). Since 0.5.0 ejGames no
+longer imports games from stores, so `installed` is always `true` (it stays so
+older themes do not break).
 
-`media` contiene:
+`media` contains:
 
-| `media.` | Qué es |
+| `media.` | What it is |
 |---|---|
-| `cover` / `coverThumb` | carátula 2:3 (la miniatura pesa ~40 KB) |
-| `hero` / `heroThumb` | fondo panorámico |
-| `logo` | logo con transparencia |
-| `header` | cápsula horizontal 460×215 |
-| `icon` | icono pequeño |
-| `microtrailer` | vídeo corto sin sonido (mp4) |
+| `cover` / `coverThumb` | 2:3 cover (the thumbnail is about 40 KB) |
+| `hero` / `heroThumb` | wide background |
+| `logo` | logo with transparency |
+| `header` | horizontal capsule, 460×215 |
+| `icon` | small icon |
+| `microtrailer` | short silent video (mp4) |
 
-Usa las miniaturas en listas y rejillas; las grandes, solo en fondos y fichas.
+Use the thumbnails in lists and grids. Use the large ones only on backgrounds and game pages.

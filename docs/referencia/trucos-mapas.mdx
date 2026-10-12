@@ -1,51 +1,54 @@
 ---
-title: "Trucos y mapas"
-description: "ejg.trainer y ejg.maps: los trainers de FLiNG y los mapas de Map Genie de cada juego."
+title: "Cheats and maps"
+description: "ejg.trainer and ejg.maps: each game's FLiNG trainers and Map Genie maps."
 icon: "map"
 ---
 
-ejGames trae dos herramientas por juego que se usan sobre todo **durante la partida**, desde el overlay:
+ejGames brings two tools per game, used mostly **during play**, from the overlay:
 
-- **Trucos**: el trainer de [FLiNG](https://flingtrainer.com) del juego. ejGames lo abre al jugar (sin permisos de
-  administrador y con la ventana escondida), pulsa sus teclas desde el overlay y lo cierra con el juego.
-- **Mapa**: el mapa interactivo de [Map Genie](https://mapgenie.io) del juego, con sus puntos de interés. En el
-  overlay se puede anclar en una esquina, encima del juego.
+- **Cheats**: the game's trainer from [FLiNG](https://flingtrainer.com). ejGames
+  opens it when you play (without administrator permission and with the window
+  hidden), presses its keys from the overlay, and closes it with the game.
+- **Map**: the game's interactive map from [Map Genie](https://mapgenie.io), with
+  its points of interest. In the overlay it can be pinned in a corner, over the game.
 
-En la ficha de tu tema basta con **dos botones** que abran las ventanas del host: buscar e instalar un trainer siempre
-pasa por el host, que enseña de dónde viene, cuánto pesa y sus avisos, y pide confirmación. Ningún tema puede
-instalar nada.
+On your theme's game page, **two buttons** that open the host's windows are
+enough. Searching for and installing a trainer always goes through the host,
+which shows where it comes from, how big it is and its warnings, and asks for
+confirmation. No theme can install anything.
 
 ```js
-h("button", { onclick: () => ejg.trainer.open(juego.id) }, "Trucos");
-h("button", { onclick: () => ejg.maps.open(juego.id) }, "Mapa");
+h("button", { onclick: () => ejg.trainer.open(game.id) }, "Trucos");
+h("button", { onclick: () => ejg.maps.open(game.id) }, "Mapa");
 ```
 
-Los seis temas de serie los ponen junto a las guías: enlaces en la barra del juego (Steam), tarjetas (PS5), botones
-del hub (Xbox), opciones del juego (Switch), botones redondos (Cine) y `* CHEATS` / `# MAP` (Retro).
+The six built-in platform themes put them next to the guides: links in the game
+bar (Steam), cards (PS5), hub buttons (Xbox), game options (Switch), round
+buttons (Cinema) and `* CHEATS` / `# MAP` (Retro).
 
-## Para enseñar el estado
+## Showing the state
 
-Si quieres decir algo más que «Trucos», pide el resumen:
+If you want to say more than "Cheats", ask for the summary:
 
 ```js
 const t = await ejg.trainer.info(gameId);
-// null (sin trainer) o { name, title, options, gameVersion, autoStart, present, anticheat }
+// null (no trainer) or { name, title, options, gameVersion, autoStart, present, anticheat }
 
 const m = await ejg.maps.info(gameId);
 // { game: { name: "Elden Ring", maps: ["The Lands Between", "The Shadow Realm"] } | null, none }
 ```
 
-| Campo | Qué es |
+| Field | What it is |
 |---|---|
-| `options` | cuántas opciones tiene el trainer |
-| `gameVersion` | versiones del juego que cubre, según FLiNG (`"v1.02-v1.16.*+"`) |
-| `autoStart` | se abre solo al jugar |
-| `present` | el `.exe` sigue en su sitio (un antivirus puede habérselo llevado) |
-| `anticheat` | el juego tiene antitrampas (`"EasyAntiCheat"`, `"BattlEye"`…): solo sin conexión |
-| `m.game` | `null` si ejGames no encontró el juego en Map Genie (en la ventana del host se elige a mano) |
-| `m.none` | el usuario dijo que el juego no tiene mapa |
+| `options` | how many options the trainer has |
+| `gameVersion` | game versions it covers, according to FLiNG (`"v1.02-v1.16.*+"`) |
+| `autoStart` | it opens on its own when you play |
+| `present` | the `.exe` is still in place (an antivirus may have removed it) |
+| `anticheat` | the game has anti-cheat (`"EasyAntiCheat"`, `"BattlEye"`…): offline only |
+| `m.game` | `null` if ejGames did not find the game on Map Genie (it is chosen by hand in the host window) |
+| `m.none` | the user said the game has no map |
 
 ```js
-const t = await ejg.trainer.info(juego.id);
-boton.textContent = t ? `Trucos · ${t.options}` : "Buscar trucos";
+const t = await ejg.trainer.info(game.id);
+button.textContent = t ? `Trucos · ${t.options}` : "Buscar trucos";
 ```

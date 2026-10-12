@@ -1,45 +1,49 @@
 ---
-title: "Tu primer tema, paso a paso"
-description: "Un tema pequeño pero completo desde cero: rejilla, mando, ficha y opciones."
-sidebarTitle: "Introducción"
+title: "Your first theme, step by step"
+description: "A small but complete theme from scratch: grid, controller, game page and options."
+sidebarTitle: "Introduction"
 ---
 
-Esta guía es para ti si sabes algo de HTML, CSS y JavaScript y quieres hacer un
-tema **desde cero**, sin partir de uno de los de serie. Vamos a construir entre
-los dos un tema pequeño pero completo:
+This guide is for you if you know some HTML, CSS and JavaScript and want to build a
+theme **from scratch**, without starting from a built-in one. Together we will build
+a theme that is small but complete:
 
-- una rejilla con las carátulas de tus juegos,
-- que se maneja con ratón, teclado o mando,
-- con una ficha para cada juego (descripción, Jugar/Instalar, favorito),
-- con opciones que cualquiera puede cambiar en **Ajustes → Apariencia** sin tocar código,
-- y que se adapta al modo **Big Picture**.
+- a grid of your games' covers,
+- used with mouse, keyboard or controller,
+- with a page for each game (description, Play/Install, favorite),
+- with options anyone can change in **Settings → Appearance** without touching code,
+- and that adapts to **Big Picture**.
 
-El resultado final está en [`examples/ejemplo-tema/`](https://github.com/ej3mpl0/ejGames/tree/main/examples/ejemplo-tema): son cuatro ficheros que puedes copiar tal cual. Esta guía es práctica; para ver **todo** lo que ofrece el SDK tienes la [referencia](/referencia/sdk).
+The finished result is in [`examples/ejemplo-tema/`](https://github.com/ej3mpl0/ejGames/tree/main/examples/ejemplo-tema): four files you can copy as they are. This guide is practical. To see **everything** the SDK offers, use the [reference](/referencia/sdk).
 
-## Antes de empezar: qué es un tema
+<Note>
+The example writes its interface in Spanish. That Spanish text is the translation key: English, and the other languages, come from a dictionary, with no code changes. See [Languages](/referencia/idiomas).
+</Note>
 
-Un tema es una **página web normal** que ejGames abre a pantalla completa. Se
-ejecuta en una caja cerrada (un *iframe* aislado): no tiene internet ni acceso
-al disco. Todo lo que necesita se lo pide a ejGames a través de un objeto que
-aparece solo en tu página, **`window.ejg`** (el SDK): la lista de juegos, avisos
-cuando algo cambia, lanzar un juego, abrir los ajustes…
+## Before you start: what a theme is
 
-Las pantallas del propio launcher (ajustes, buscador, editor de juegos, menú
-rápido, perfiles) las dibuja ejGames **por encima** de tu tema. Tú solo te
-ocupas de enseñar la biblioteca a tu manera.
+A theme is an **ordinary web page** that ejGames opens fullscreen. It runs in a
+closed box (an isolated *iframe*): no internet, and no access to the disk. Everything
+it needs, it asks ejGames for through an object that appears on your page on its own,
+**`window.ejg`** (the SDK): the list of games, notices when something changes,
+launching a game, opening settings…
 
-## Capítulos
+The launcher's own screens (settings, search, the game editor, the quick menu,
+profiles) are drawn by ejGames **on top of** your theme. You only take care of
+showing the library your way.
+
+## Chapters
 
 <CardGroup cols={2}>
-  <Card title="1. Dónde va el tema y cómo activarlo" href="/guia/carpeta">La carpeta del tema, la galería y el modo desarrollador.</Card>
-  <Card title="2. El theme.json mínimo" href="/guia/theme-json">El manifiesto que hace que ejGames reconozca tu tema.</Card>
-  <Card title="3. index.html y el primer main.js" href="/guia/primer-main">La página, un poco de estilo y los primeros datos del SDK.</Card>
-  <Card title="4. Rejilla de carátulas" href="/guia/rejilla">Pintar la biblioteca rápido, también con miles de juegos.</Card>
-  <Card title="5. Mando y teclado" href="/guia/mando">Navegación espacial con el kit y la barra de pistas.</Card>
-  <Card title="6. La ficha del juego" href="/guia/ficha">Descripción, Jugar o Instalar, favorito y volver.</Card>
-  <Card title="7. Opciones sin código y modo Big Picture" href="/guia/opciones">Ajustes editables desde Apariencia y el modo tele.</Card>
-  <Card title="8. Sonidos y colores del launcher" href="/guia/sonidos-colores">Sonidos, colores de las pantallas del host, avisos de logros y botones de ventana.</Card>
-  <Card title="9. Explorar y descargas" href="/guia/explorar">Abrir la tienda, enseñar lo que se descarga o pintar tu propia tienda.</Card>
-  <Card title="10. Depurar y errores típicos" href="/guia/depurar">Ver los errores, los límites del tema y los fallos más comunes.</Card>
-  <Card title="11. Exportar y compartir" href="/guia/compartir">Empaquetar el tema en un .ejtheme y qué hacer después.</Card>
+  <Card title="1. Where the theme goes, and how to turn it on" href="/guia/carpeta">The theme folder, the gallery and developer mode.</Card>
+  <Card title="2. The smallest theme.json" href="/guia/theme-json">The manifest that makes ejGames recognize your theme.</Card>
+  <Card title="3. index.html and the first main.js" href="/guia/primer-main">The page, a little style, and the first data from the SDK.</Card>
+  <Card title="4. Cover grid" href="/guia/rejilla">Draw the library fast, even with thousands of games.</Card>
+  <Card title="5. Controller and keyboard" href="/guia/mando">Spatial navigation with the kit, and the hint bar.</Card>
+  <Card title="6. The game page" href="/guia/ficha">Description, Play or Install, favorite, and back.</Card>
+  <Card title="7. Options without code, and Big Picture" href="/guia/opciones">Settings anyone can edit from Appearance, and TV mode.</Card>
+  <Card title="8. Sounds and launcher colors" href="/guia/sonidos-colores">Sounds, host screen colors, achievement notices and window buttons.</Card>
+  <Card title="9. Explore and downloads" href="/guia/explorar">Open the store, show what is downloading, or draw your own store.</Card>
+  <Card title="10. Debugging and common mistakes" href="/guia/depurar">See the errors, the theme's limits, and the most common failures.</Card>
+  <Card title="11. Export and share" href="/guia/compartir">Pack the theme into a .ejtheme, and what to do next.</Card>
 </CardGroup>

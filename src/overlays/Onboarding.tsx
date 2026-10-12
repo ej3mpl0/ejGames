@@ -1,6 +1,6 @@
 // Primer arranque: perfil → tema → biblioteca → descargas.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { ArrowLeft, ArrowRight, Compass, FolderOpen, FolderPlus, Gamepad2, HardDrive, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import { api, errMsg } from "../api/tauri";
@@ -37,6 +37,22 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
   const [dlFree, setDlFree] = useState<number | null>(null);
   const [explore, setExplore] = useState(true);
   const ref = useOverlayNav<HTMLDivElement>({ onBack: () => setStep((s) => Math.max(0, s - 1)) });
+  const applying = useRef(false);
+
+  /** Guarda el idioma y recarga para pintarlo. `true` si la recarga ya está en marcha. */
+  async function persistLanguage(id: Lang, nextStep: number) {
+    if (applying.current) return true;
+    const raw = await api.systemUiLanguage();
+    const system = isLang(raw) ? raw : getLang();
+    const explicit = id === system ? "" : id;
+    const cur = (await api.getSettings()).uiLanguage;
+    if (cur === explicit) return false;
+    applying.current = true;
+    sessionStorage.setItem(ONBOARD_STEP, String(nextStep));
+    await api.updateSettings({ uiLanguage: explicit });
+    location.reload();
+    return true;
+  }
 
   useEffect(() => {
     void api.systemUiLanguage().then((l) => { if (isLang(l)) setSystemLang(l); });
@@ -67,20 +83,21 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
     }
   }
 
+  async function chooseLanguage(id: Lang) {
+    setPicked(id);
+    try {
+      await persistLanguage(id, 0);
+    } catch (e) {
+      applying.current = false;
+      toast("error", errMsg(e));
+    }
+  }
+
   async function confirmLanguage() {
     try {
-      const raw = await api.systemUiLanguage();
-      const system = isLang(raw) ? raw : getLang();
-      const explicit = picked === system ? "" : picked;
-      const cur = (await api.getSettings()).uiLanguage;
-      if (cur !== explicit) {
-        sessionStorage.setItem(ONBOARD_STEP, "1");
-        await api.updateSettings({ uiLanguage: explicit });
-        location.reload();
-        return;
-      }
-      setStep(1);
+      if (!(await persistLanguage(picked, 1))) setStep(1);
     } catch (e) {
+      applying.current = false;
       toast("error", errMsg(e));
     }
   }
@@ -153,7 +170,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
                     key={id}
                     data-nav
                     {...(id === picked ? { "data-autofocus": true } : {})}
-                    onClick={() => setPicked(id)}
+                    onClick={() => void chooseLanguage(id)}
                     className={cx(
                       "flex items-center justify-between rounded-[var(--h-radius)] bg-surface-2/70 px-4 py-3 text-left ring-1 ring-line cursor-pointer hover:bg-surface-3/60",
                       picked === id && "ring-2 ring-accent",

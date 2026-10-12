@@ -85,7 +85,6 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
   let dialog = null;
   // Lista de deseados: orden y filtro de su página.
   let wishSort = "added";
-  let wishQuery = "";
   const wished = (slug) => ejg.explore.wishlist.has(slug);
   const active = () => tabRef();
   // Evento de temporada (Halloween…): portada propia y colores en toda la tienda.
@@ -178,7 +177,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
   /** El número de la lista en el botón de la barra. */
   function wishCount() {
     const n = ejg.explore.wishlist.items.length;
-    links.wish?.querySelector(".sn-wish-n")?.replaceChildren(n ? ` (${n})` : "");
+    links.wish?.querySelector(".sn-wish-n")?.replaceChildren(n ? String(n) : "");
   }
 
   function openWish() {
@@ -693,7 +692,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     }
     if (view.slug === slug && view.name === "detail") {
       paint();
-      const b = main.querySelector(".buy-btn");
+      const b = main.querySelector('[data-key="act"]');
       if (b) focus.focus(b, { instant: true, silent: true });
     }
   }
@@ -720,100 +719,68 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
 
   // ─────────────── lista de deseados ───────────────
   const addedDate = (t) => new Date(t * 1000).toLocaleDateString(ejg.locale, { day: "numeric", month: "short", year: "numeric" }).replace(".", "");
-  function wishRow(r) {
+  /** Una portada de la lista: su acción (Descargar, En descargas, Jugar…) y quitarla. */
+  function wishCard(r) {
     const act = repackAction(r);
+    const b = badge(r);
     return h(
       "div",
-      { class: "wrow", "data-slug": r.slug },
-      h("button", { class: "wrow-cap", "data-focus": "", onclick: () => openRepack(r.slug), title: r.title }, wide(r)),
+      { class: "wcard", "data-slug": r.slug },
       h(
-        "div",
-        { class: "wrow-main" },
-        repackName(r, "button", { class: "wrow-title", "data-focus": "", onclick: () => openRepack(r.slug) }),
-        h("div", { class: "wrow-meta" }, h("span", { class: "trow-plat", html: I.win }), h("span", null, `Publicado: ${date(r.date)}`)),
-        r.genres.length ? h("div", { class: "wrow-tags" }, ...r.genres.slice(0, 5).map((g) => h("span", null, genreLabel(g)))) : null,
+        "button",
+        { class: "scard", "data-focus": "", onclick: () => openRepack(r.slug), title: r.title },
+        h("span", { class: "scard-art" }, tallArt(r), b && r.status?.state && r.status.state !== "none" ? h("span", { class: "scard-badge" }, b) : null),
+        repackName(r, "span", { class: "t" }),
+        h("span", { class: "m" }, [sizeText(r.repackSize), `Añadido el ${addedDate(r.addedAt)}`].filter(Boolean).join(" · ")),
       ),
       h(
         "div",
-        { class: "wrow-side" },
-        h(
-          "div",
-          { class: "wrow-buy" },
-          // En la lista no hace falta decir que está en la lista: su estado o su tamaño.
-          h("span", { class: "wrow-price" }, (r.status?.state && r.status.state !== "none" ? badge(r) : null) || sizeText(r.repackSize) || "—"),
-          h("button", { class: "buy-btn" + (act.id === "downloads" ? " blue" : ""), "data-focus": "", onclick: () => runAction(r) }, act.label),
-        ),
-        h(
-          "div",
-          { class: "wrow-added" },
-          `Añadido el ${addedDate(r.addedAt)} `,
-          h("button", { class: "wrow-rm", "data-focus": "", onclick: () => toggleWish(ejg, r) }, "(quitar)"),
-        ),
+        { class: "wcard-acts" },
+        h("button", { class: "soft light sm", "data-focus": "", onclick: () => runAction(r) }, act.label),
+        h("button", { class: "round fill sm", "data-focus": "", title: "Quitar de la lista", "aria-label": "Quitar de la lista", onclick: () => toggleWish(ejg, r) }, icon("x")),
       ),
     );
   }
 
   function wishPage() {
     const all = ejg.explore.wishlist.items;
-    const q = wishQuery.trim().toLowerCase();
-    const items = sortWishlist(all, wishSort).filter((r) => !q || r.title.toLowerCase().includes(q) || r.genres.some((g) => genreLabel(g).toLowerCase().includes(q)));
-    const name = ejg.profile?.name || "";
-    const search = h("input", {
-      class: "wish-search",
-      placeholder: "Buscar por nombre o etiqueta",
-      spellcheck: "false",
-      "data-focus": "",
-      "data-key": "wish-q",
-      value: wishQuery,
-      oninput: debounce((e) => {
-        wishQuery = e.target.value;
-        paint(true);
-      }, 120),
-    });
-    const list = h("div", { class: "wrows", "data-focus-group": "wish" });
-    keyed(list, items, (r) => r.slug, (r) => wishRow(r));
+    const items = sortWishlist(all, wishSort);
+    const grid = h("div", { class: "wgrid", "data-focus-group": "wish" });
+    keyed(grid, items, (r) => r.slug, (r) => wishCard(r));
     return h(
       "div",
       { class: "wish-page" },
-      h("div", { class: "wish-head" }, h("h2", null, name ? `Lista de deseados de ${name}` : "Tu lista de deseados"), h("span", { class: "muted" }, "Se guarda en este PC, solo para este perfil.")),
+      h("div", { class: "wish-head" }, h("h1", null, "Lista de deseados"), all.length ? h("span", { class: "muted" }, `${all.length} juegos`) : null),
       all.length
         ? h(
             "div",
-            { class: "wish-tools" },
-            search,
-            h(
-              "div",
-              { class: "wish-sorts" },
-              h("span", { class: "muted" }, "Ordenar por:"),
-              ...WISH_SORTS.map((o) =>
-                h(
-                  "button",
-                  {
-                    class: "wish-sort" + (wishSort === o.id ? " on" : ""),
-                    "data-focus": "",
-                    "data-key": `wsort-${o.id}`,
-                    onclick: () => {
-                      wishSort = o.id;
-                      paint(true);
-                    },
+            { class: "wish-sorts", "data-focus-group": "wish-sorts" },
+            ...WISH_SORTS.map((o) =>
+              h(
+                "button",
+                {
+                  class: "wish-sort" + (wishSort === o.id ? " on" : ""),
+                  "data-focus": "",
+                  "data-key": `wsort-${o.id}`,
+                  onclick: () => {
+                    wishSort = o.id;
+                    paint(true);
                   },
-                  o.label,
-                ),
+                },
+                o.label,
               ),
             ),
           )
         : null,
       all.length
-        ? items.length
-          ? list
-          : h("div", { class: "store-empty small" }, h("p", null, "Ningún juego de tu lista coincide con la búsqueda."))
+        ? grid
         : h(
             "div",
             { class: "store-empty" },
             h("span", { class: "wish-empty-ico", html: I.heart }),
             h("h2", null, "Tu lista de deseados está vacía"),
             h("p", null, "Añade juegos con «Añadir a tu lista de deseados» en su página. La lista se guarda en este PC, solo para este perfil."),
-            h("button", { class: "soft", "data-focus": "", onclick: () => openCatalog({}) }, "Explorar la tienda"),
+            h("button", { class: "soft light", "data-focus": "", onclick: () => openCatalog({}) }, "Explorar la tienda"),
           ),
     );
   }
@@ -889,7 +856,15 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
           "div",
           { class: "app-head" },
           repackName(d, "h1", { class: "app-title" }),
-          h("div", { class: "app-head-acts" }, wishButton(d), d.url ? h("button", { class: "soft", "data-focus": "", onclick: () => ejg.explore.openPage(d.slug) }, "Ver la ficha en FitGirl") : null),
+          h(
+            "div",
+            { class: "app-head-acts" },
+            act.id === "play"
+              ? h("button", { class: "play", "data-focus": "", "data-key": "act", onclick: doAction }, h("i", { class: "disc" }), act.label)
+              : h("button", { class: "soft light lg act-main", "data-focus": "", "data-key": "act", onclick: doAction }, icon("down"), act.label),
+            act.hint ? h("span", { class: "act-hint" }, act.hint) : sizeText(d.repackSize) ? h("span", { class: "act-hint" }, sizeText(d.repackSize)) : null,
+            wishButton(d),
+          ),
         ),
         h(
           "div",
@@ -913,19 +888,6 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
             null,
             // Como el aviso de «Acceso anticipado» de Steam: antes de la compra.
             hypervisorInfo(ejg, d),
-            h(
-              "div",
-              { class: "buy" },
-              h("span", { class: "buy-plat", html: I.win }),
-              h("h2", null, act.id === "play" ? `Jugar a ${d.title}` : `Descargar ${d.title}`),
-              h("div", { class: "buy-meta" }, [d.version && `Versión ${d.version}`, d.selective ? "Descarga selectiva" : null].filter(Boolean).join(" · ")),
-              h(
-                "div",
-                { class: "buy-box" },
-                h("span", { class: "buy-price" }, act.hint || sizeText(d.repackSize) || ""),
-                h("button", { class: "buy-btn" + (act.id === "downloads" ? " blue" : ""), "data-focus": "", onclick: doAction }, act.label),
-              ),
-            ),
             d.description ? h("div", { class: "app-sec" }, h("h3", null, "Acerca de este juego"), h("div", { class: "app-desc" }, d.description)) : null,
             d.features.length ? h("div", { class: "app-sec" }, h("h3", null, "Características del repack"), h("ul", { class: "feat" }, ...d.features.map((f) => h("li", null, f)))) : null,
           ),
@@ -940,6 +902,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
               d.hypervisor ? h("div", { class: "cat hv-cat", title: HYPERVISOR.tip }, icon("shield"), h("span", null, HYPERVISOR.title)) : null,
               h("div", { class: "cat" }, icon("down"), h("span", null, "Torrent integrado")),
             ),
+            d.url ? h("button", { class: "soft", "data-focus": "", onclick: () => ejg.explore.openPage(d.slug) }, icon("ext"), "Ver la ficha en FitGirl") : null,
             h(
               "div",
               { class: "side-box" },

@@ -20,8 +20,12 @@ biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 - **Overlay nuevo** (Shift+Tab): un dock abajo con botones redondos (logros, guías, trucos, mapa, capturas, partidas,
   notas, música, rendimiento y descargas) y lo elegido encima. Los **avisos** son pastillas con el anillo del progreso;
   al completar todos los logros, la pastilla se vuelve blanca.
-- Las ventanas de la app (Ajustes, Propiedades, diálogos…) siguen el mismo sistema: botones en pastilla, el rojo solo
-  para Jugar y la ranura en la sección abierta.
+- **Ajustes, rediseñados** a pantalla completa, con la barra lateral y una sección nueva, **Acerca de**: la versión, buscar
+  actualizaciones, volver a una versión anterior, la documentación y quién lo hace. El resto de ventanas (Propiedades,
+  diálogos…) siguen el mismo sistema: botones en pastilla, el rojo solo para Jugar y la ranura en la sección abierta.
+- **Logros** en su propia ventana, con filtros (todos, conseguidos y pendientes), en lugar de una lista que no acababa.
+- En la ficha de la tienda, **Descargar** está arriba, junto al título, sin tener que bajar. La **lista de deseados** es
+  una rejilla de portadas con su botón y «quitar».
 - **Halloween**: el tema se tiñe de naranja y noche con el arte del evento, pero el logo se queda como está.
 - Los temas de plataforma (Steam, PS5, Xbox, Switch, Cinema y Retro) y la galería de la comunidad quedan **apagados por
   ahora**: los perfiles que los usaban pasan a Moneda. Tus temas propios siguen ahí.

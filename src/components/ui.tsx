@@ -87,11 +87,11 @@ export function Toggle({
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="flex w-full items-center gap-4 rounded-[calc(var(--h-radius)*0.7)] px-3 py-2.5 text-left hover:bg-surface-3/60 cursor-pointer disabled:opacity-40"
+      className="flex min-h-[60px] w-full items-center gap-4 rounded-[calc(var(--h-radius)*0.7)] px-4 py-3 text-left hover:bg-surface-3/60 cursor-pointer disabled:opacity-40"
     >
       <span className="flex-1">
-        <span className="block text-sm">{label}</span>
-        {hint && <span className="block text-xs text-muted mt-0.5">{hint}</span>}
+        <span className="block text-[15px] font-medium">{label}</span>
+        {hint && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{hint}</span>}
       </span>
       <span
         className={cx(
@@ -114,7 +114,7 @@ export function Toggle({
 export function Field({ label, hint, children }: { label: ReactNode; hint?: ReactNode; children: ReactNode }) {
   return (
     <label className="block px-3 py-2">
-      <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted">{label}</span>
+      <span className="mb-1.5 block text-[13px] font-semibold text-muted">{label}</span>
       {children}
       {hint && <span className="mt-1 block text-xs text-muted">{hint}</span>}
     </label>
@@ -272,14 +272,14 @@ export function ColorInput({ value, onChange, label }: { value: string; onChange
 
 export function Section({ title, children, actions }: { title?: ReactNode; children: ReactNode; actions?: ReactNode }) {
   return (
-    <section className="mb-5 rounded-[var(--h-radius)] bg-surface-2/70 p-2 ring-1 ring-line">
+    <section className="mb-8">
       {(title || actions) && (
-        <header className="flex items-center justify-between px-3 pb-1 pt-2">
-          <h3 className="text-sm font-semibold">{title}</h3>
+        <header className="mb-2.5 flex min-h-9 items-center justify-between gap-3 px-1">
+          <h3 className="text-[18px] font-bold tracking-tight">{title}</h3>
           <div className="flex gap-2">{actions}</div>
         </header>
       )}
-      {children}
+      <div className="rounded-[var(--h-radius)] bg-surface-2 p-1.5">{children}</div>
     </section>
   );
 }
@@ -304,7 +304,7 @@ export function Tabs<T extends string>({
           aria-selected={t.value === value}
           onClick={() => onChange(t.value)}
           className={cx(
-            "flex h-10 items-center gap-3 rounded-[calc(var(--h-radius)*0.7)] px-3 text-left text-sm cursor-pointer",
+            "flex h-11 items-center gap-3 rounded-[calc(var(--h-radius)*0.65)] px-3.5 text-left text-[15px] font-semibold cursor-pointer",
             t.value === value ? "bg-surface-3 text-fg" : "text-muted hover:bg-surface-3 hover:text-fg",
           )}
         >

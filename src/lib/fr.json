@@ -1480,5 +1480,14 @@
  "Menú arcade con pantalla CRT, fuente pixel y sonidos de 8 bits": "Menu d'arcade avec écran CRT, police pixel et sons 8 bits",
  "La biblioteca, la tienda y las descargas del cliente de Steam": "La bibliothèque, la boutique et les téléchargements du client Steam",
  "Claro y limpio, iconos grandes y botones redondos (con modo oscuro)": "Clair et épuré, grandes icônes et boutons arrondis (avec mode sombre)",
- "Panel de mosaicos con filas, acento verde y ficha de juego": "Panneau de tuiles avec rangées, accent vert et fiche de jeu"
+ "Panel de mosaicos con filas, acento verde y ficha de juego": "Panneau de tuiles avec rangées, accent vert et fiche de jeu",
+ "Código en GitHub": "Code sur GitHub",
+ "Cómo se usa todo y cómo crear temas": "Comment tout fonctionne et comment créer des thèmes",
+ "Documentación": "Documentation",
+ "Enlaces": "Liens",
+ "Es libre (MIT): avisa de fallos o propón mejoras": "Logiciel libre (MIT) : signale des bugs ou propose des améliorations",
+ "Hecho por": "Fait par",
+ "Lo que trae cada versión": "Ce qu'apporte chaque version",
+ "Versión": "Version",
+ "Volver (Esc)": "Retour (Échap)"
 }

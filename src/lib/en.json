@@ -1480,5 +1480,14 @@
  "Menú arcade con pantalla CRT, fuente pixel y sonidos de 8 bits": "Arcade menu with a CRT screen, pixel font and 8-bit sounds",
  "La biblioteca, la tienda y las descargas del cliente de Steam": "The library, store and downloads of the Steam client",
  "Claro y limpio, iconos grandes y botones redondos (con modo oscuro)": "Light and clean, big icons and round buttons (with dark mode)",
- "Panel de mosaicos con filas, acento verde y ficha de juego": "Tile panel with rows, green accent and game page"
+ "Panel de mosaicos con filas, acento verde y ficha de juego": "Tile panel with rows, green accent and game page",
+ "Código en GitHub": "Code on GitHub",
+ "Cómo se usa todo y cómo crear temas": "How everything works and how to make themes",
+ "Documentación": "Documentation",
+ "Enlaces": "Links",
+ "Es libre (MIT): avisa de fallos o propón mejoras": "It's free software (MIT): report bugs or suggest improvements",
+ "Hecho por": "Made by",
+ "Lo que trae cada versión": "What each version brings",
+ "Versión": "Version",
+ "Volver (Esc)": "Back (Esc)"
 }

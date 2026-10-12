@@ -25,6 +25,7 @@ img.img-error { visibility: hidden; }
 .sn-wish { display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 20px; background: var(--panel); color: var(--soft-text); font-size: 14px; font-weight: 600; white-space: nowrap; }
 .sn-wish:hover, .sn-wish.on { background: var(--lift); color: var(--text); }
 .sn-wish.is-focused { box-shadow: 0 0 0 2px var(--text); }
+.sn-wish-n:not(:empty) { margin-left: 8px; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 11px; background: var(--text); color: var(--bg); font-size: 12px; font-weight: 700; display: inline-grid; place-items: center; }
 
 .store-front, .store-results { display: flex; flex-direction: column; gap: 30px; padding: 4px var(--pad) 60px; }
 .st-sec { display: flex; flex-direction: column; gap: 14px; }
@@ -185,8 +186,11 @@ img.img-error { visibility: hidden; }
 .crumb:hover, .crumb.is-focused { color: var(--text); }
 .crumb.is-focused { box-shadow: 0 0 0 2px var(--text); }
 .app-head { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
-.app-title { flex: 1 1 auto; min-width: 0; font-family: var(--display); font-size: 44px; font-weight: 800; letter-spacing: -0.045em; line-height: 1.05; margin: 0; }
-.app-head-acts { display: flex; gap: 8px; margin-left: auto; }
+.app-title { flex: 1 1 420px; min-width: 0; font-family: var(--display); font-size: 44px; font-weight: 800; letter-spacing: -0.045em; line-height: 1.05; margin: 0; }
+.app-head-acts { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.act-main svg { width: 18px; height: 18px; }
+.act-hint { font-size: 14px; color: var(--muted); white-space: nowrap; }
+.app-right > .soft { align-self: flex-start; }
 .app-top { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; }
 .pv-big { aspect-ratio: 16 / 9; border-radius: 22px; overflow: hidden; background: #000; }
 .pv-big img { width: 100%; height: 100%; object-fit: cover; }
@@ -305,38 +309,24 @@ img.img-error { visibility: hidden; }
 .dl-btns .play.sm .disc { width: 44px; height: 44px; }
 .dl-btns .play.sm .disc::before { border-left-width: 13px; border-top-width: 8px; border-bottom-width: 8px; margin-left: 4px; }
 
-/* ─── lista de deseados ─── */
-.wish-page { display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
-.wish-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
-.wish-head h2 { font-family: var(--display); font-size: 32px; font-weight: 800; letter-spacing: -0.035em; }
-.wish-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 20px; }
-.wish-search { width: 300px; height: 40px; padding: 0 16px; border: 0; border-radius: 20px; outline: none; background: var(--panel); color: var(--text); font: inherit; font-size: 14px; }
-.wish-search::placeholder { color: var(--muted); }
-.wish-search.is-focused, .wish-search:focus { background: var(--lift); box-shadow: 0 0 0 2px var(--text); }
-.wish-sorts { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 14px; }
-.wish-sort { height: 36px; padding: 0 14px; border-radius: 18px; background: var(--panel); color: var(--soft-text); font-size: 14px; font-weight: 600; }
+/* ─── lista de deseados: rejilla de portadas ─── */
+.wish-page { display: flex; flex-direction: column; gap: 18px; padding: 4px var(--pad) 60px; }
+.wish-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.wish-head h1 { margin: 0; font-family: var(--display); font-size: 36px; font-weight: 800; letter-spacing: -0.035em; }
+.wish-head .muted { font-size: 15px; }
+.wish-sorts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: -4px; }
+.wish-sort { height: 38px; padding: 0 16px; border-radius: 19px; background: var(--panel); color: var(--soft-text); font-size: 14px; font-weight: 600; }
 .wish-sort.on { background: var(--text); color: var(--bg); }
 .wish-sort:hover { background: var(--lift); color: var(--text); }
+.wish-sort.on:hover { background: var(--text); color: var(--bg); }
 .wish-sort.is-focused { box-shadow: 0 0 0 2px var(--text); }
-.wrows { display: flex; flex-direction: column; border-radius: 22px; background: var(--panel); overflow: hidden; }
-.wrow { display: grid; grid-template-columns: 200px minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 12px; }
-.wrow + .wrow { box-shadow: inset 0 1px 0 var(--line); }
-.wrow:hover, .wrow:has(.is-focused) { background: var(--lift); }
-.wrow-cap { display: block; border-radius: 12px; overflow: hidden; }
-.wrow-cap .st-art.wide { width: 200px; }
-.wrow-cap.is-focused { box-shadow: 0 0 0 2px var(--text); }
-.wrow-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.wrow-title { align-self: flex-start; max-width: 100%; font-family: var(--display); font-size: 20px; font-weight: 700; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.wrow-meta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-.wrow-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.wrow-tags span { padding: 4px 10px; border-radius: 12px; background: var(--lift-2); font-size: 12px; color: var(--soft-text); }
-.wrow-side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-.wrow-buy { display: flex; align-items: center; gap: 12px; }
-.wrow-buy .buy-btn { height: 42px; padding: 0 20px; border-radius: 21px; font-size: 14px; }
-.wrow-price { font-size: 14px; color: var(--muted); white-space: nowrap; }
-.wrow-added { font-size: 13px; color: var(--muted); white-space: nowrap; }
-.wrow-rm { color: var(--muted); font-size: 13px; text-decoration: underline; }
-.wrow-rm:hover, .wrow-rm.is-focused { color: var(--text); }
+.wgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--cover), 1fr)); gap: 30px 18px; margin-top: 6px; }
+.wcard { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.wcard .scard::after { display: none; }
+.wcard-acts { display: flex; align-items: center; gap: 8px; }
+.wcard-acts .soft.sm { flex: 1; height: 36px; padding: 0 12px; border-radius: 18px; font-size: 13px; }
+.wcard-acts .round.sm { width: 36px; height: 36px; }
+.wcard-acts .round.sm svg { width: 15px; height: 15px; }
 .wish-empty-ico svg { width: 46px; height: 46px; stroke-width: 1.6; color: var(--muted); }
 
 /* ─── crack de hipervisor (HV) ─── */

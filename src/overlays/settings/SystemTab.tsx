@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FolderOpen, Gamepad2, MonitorPlay, Power, RefreshCw } from "lucide-react";
+import { FolderOpen, Gamepad2, MonitorPlay, RefreshCw } from "lucide-react";
 import { api } from "../../api/tauri";
 import type { NavAction, Settings } from "../../api/types";
 import { Button, Cycle, Section, Toggle } from "../../components/ui";
@@ -10,7 +10,6 @@ import { checkNow, useUpdate } from "../../host/update";
 import { useApp } from "../../store/app";
 import { LANG_LABELS, t, UI_LANGS, type Lang } from "../../lib/i18n";
 import { BackupSection } from "./BackupSection";
-import { RollbackSection } from "./RollbackSection";
 
 function useSave() {
   const set = useApp((s) => s.set);
@@ -182,19 +181,7 @@ export function SystemTab() {
         />
       </Section>
 
-      <Section title="Actualizaciones">
-        <Toggle
-          label="Buscar versiones nuevas al abrir ejGames"
-          hint="Si hay una, te avisa y la descarga e instala con un clic, sin perder nada."
-          checked={settings.updateAuto}
-          onChange={(v) => save({ updateAuto: v })}
-        />
-        <UpdateRow />
-      </Section>
-
       <BackupSection />
-
-      <RollbackSection />
 
       <Section title="Datos">
         <div className="flex items-center gap-3 px-3 py-2 text-sm">
@@ -207,21 +194,11 @@ export function SystemTab() {
         </div>
       </Section>
 
-      <Section title="Acerca de">
-        <div className="flex items-center gap-3 px-3 py-2 text-sm">
-          <span className="flex-1">
-            ejGames <span className="text-muted">v{boot?.version}</span>
-          </span>
-          <Button size="sm" variant="danger" icon={<Power size={14} />} onClick={() => api.quit()}>
-            Salir de ejGames
-          </Button>
-        </div>
-      </Section>
     </div>
   );
 }
 
-function UpdateRow() {
+export function UpdateRow() {
   const boot = useApp((s) => s.boot);
   const open = useApp((s) => s.open);
   const { check, phase, checkError } = useUpdate();

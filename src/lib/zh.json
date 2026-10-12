@@ -1480,5 +1480,14 @@
  "Menú arcade con pantalla CRT, fuente pixel y sonidos de 8 bits": "街机风菜单，配 CRT 屏幕、像素字体和 8 位音效",
  "La biblioteca, la tienda y las descargas del cliente de Steam": "Steam 客户端的库、商店和下载",
  "Claro y limpio, iconos grandes y botones redondos (con modo oscuro)": "明亮简洁，大图标和圆形按钮（支持深色模式）",
- "Panel de mosaicos con filas, acento verde y ficha de juego": "带行的磁贴面板、绿色强调色和游戏页面"
+ "Panel de mosaicos con filas, acento verde y ficha de juego": "带行的磁贴面板、绿色强调色和游戏页面",
+ "Código en GitHub": "GitHub 上的代码",
+ "Cómo se usa todo y cómo crear temas": "使用方法和主题制作教程",
+ "Documentación": "文档",
+ "Enlaces": "链接",
+ "Es libre (MIT): avisa de fallos o propón mejoras": "自由软件（MIT）：报告问题或提出改进",
+ "Hecho por": "作者",
+ "Lo que trae cada versión": "每个版本的更新内容",
+ "Versión": "版本",
+ "Volver (Esc)": "返回（Esc）"
 }

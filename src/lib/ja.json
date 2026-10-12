@@ -1480,5 +1480,14 @@
  "Menú arcade con pantalla CRT, fuente pixel y sonidos de 8 bits": "CRT 画面、ピクセルフォント、8 ビット音のアーケード風メニュー",
  "La biblioteca, la tienda y las descargas del cliente de Steam": "Steam クライアントのライブラリ、ストア、ダウンロード",
  "Claro y limpio, iconos grandes y botones redondos (con modo oscuro)": "明るくすっきり。大きなアイコンと丸いボタン（ダークモード対応）",
- "Panel de mosaicos con filas, acento verde y ficha de juego": "タイルとリスト、緑のアクセントとゲーム詳細"
+ "Panel de mosaicos con filas, acento verde y ficha de juego": "タイルとリスト、緑のアクセントとゲーム詳細",
+ "Código en GitHub": "GitHub のコード",
+ "Cómo se usa todo y cómo crear temas": "使い方とテーマの作り方",
+ "Documentación": "ドキュメント",
+ "Enlaces": "リンク",
+ "Es libre (MIT): avisa de fallos o propón mejoras": "フリーソフト（MIT）：不具合の報告や改善の提案はこちら",
+ "Hecho por": "制作",
+ "Lo que trae cada versión": "各バージョンの変更点",
+ "Versión": "バージョン",
+ "Volver (Esc)": "戻る（Esc）"
 }

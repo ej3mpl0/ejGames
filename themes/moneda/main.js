@@ -496,7 +496,7 @@ function tiles(g) {
     a && a.total
       ? h(
           "button",
-          { class: "tile row-tile", "data-focus": "", onclick: () => main.querySelector(".ach")?.scrollIntoView({ behavior: "smooth", block: "center" }) },
+          { class: "tile row-tile", "data-focus": "", onclick: () => ejg.game.achievements(g.id).then((l) => l.total && openAchievements(l)).catch(() => {}) },
           ring(a.unlocked / a.total, { size: 76, stroke: 9, label: percent(a.unlocked / a.total) }),
           h("span", null, h("span", { class: "lbl" }, "Logros"), h("b", { class: "big" }, `${a.unlocked}/${a.total}`)),
         )
@@ -618,7 +618,7 @@ async function renderGame(id) {
     "nav",
     { class: "g-nav", "data-focus-group": "gnav" },
     link("Resumen", () => main.scrollTo({ top: 0, behavior: "smooth" }), true),
-    link("Logros", () => main.querySelector(".ach")?.scrollIntoView({ behavior: "smooth", block: "center" })),
+    g.achievements?.total ? link("Logros", () => ejg.game.achievements(g.id).then((l) => l.total && openAchievements(l)).catch(() => {})) : null,
     link("Guías", () => openGuides(g.id)),
     link("Trucos", () => ejg.trainer.open(g.id)),
     link("Mapa", () => ejg.maps.open(g.id)),
@@ -836,24 +836,11 @@ function achRow(a) {
 function achievementsCard(list) {
   const done = list.items.filter((a) => a.unlockedAt).sort((a, b) => b.unlockedAt - a.unlockedAt);
   const locked = list.items.filter((a) => !a.unlockedAt).sort((a, b) => (b.globalPct ?? -1) - (a.globalPct ?? -1));
-  const all = h("div", { class: "ach-list", hidden: true, "data-focus-group": "achievements" }, ...[...done, ...locked].map(achRow));
   const icons = (arr, max) => {
     const out = arr.slice(0, max).map(achTile);
     if (arr.length > max) out.push(h("div", { class: "ach-tile more-n" }, `+${arr.length - max}`));
     return out;
   };
-  const more = h(
-    "button",
-    {
-      class: "soft wide",
-      "data-focus": "",
-      onclick: () => {
-        all.hidden = !all.hidden;
-        more.textContent = all.hidden ? "Ver mis logros" : "Ocultar la lista";
-      },
-    },
-    "Ver mis logros",
-  );
   return h(
     "div",
     { class: "card-box ach" },
@@ -861,9 +848,76 @@ function achievementsCard(list) {
     done.length ? h("div", { class: "ach-icons" }, ...icons(done, 7)) : null,
     locked.length ? h("div", { class: "ach-sub" }, "Logros bloqueados") : null,
     locked.length ? h("div", { class: "ach-icons" }, ...icons(locked, 7)) : null,
-    all,
-    more,
+    h("button", { class: "soft wide", "data-focus": "", onclick: () => openAchievements(list) }, "Ver mis logros"),
   );
+}
+
+/** Los logros en su propia ventana (con su scroll), con filtros. */
+let achModal = null;
+function openAchievements(list) {
+  closeAchievements(true);
+  const prev = focus.current;
+  const done = list.items.filter((a) => a.unlockedAt).sort((a, b) => b.unlockedAt - a.unlockedAt);
+  const locked = list.items.filter((a) => !a.unlockedAt).sort((a, b) => (b.globalPct ?? -1) - (a.globalPct ?? -1));
+  let filter = "all";
+  const rows = h("div", { class: "ach-list", "data-focus-group": "achievements" });
+  const chips = h("div", { class: "chips ach-chips", "data-focus-group": "ach-chips" });
+  const paintList = () => {
+    const items = filter === "done" ? done : filter === "locked" ? locked : [...done, ...locked];
+    rows.replaceChildren(...items.map(achRow));
+    rows.scrollTop = 0;
+    chips.replaceChildren(
+      ...[
+        ["all", `Todos · ${list.items.length}`],
+        ["done", `Conseguidos · ${done.length}`],
+        ["locked", `Pendientes · ${locked.length}`],
+      ].map(([k, label]) =>
+        h(
+          "button",
+          {
+            class: "chip" + (filter === k ? " on" : ""),
+            "data-focus": "",
+            "data-key": k,
+            onclick: () => {
+              filter = k;
+              paintList();
+              focus.focus(chips.querySelector(`[data-key="${k}"]`), { silent: true, noScroll: true });
+            },
+          },
+          label,
+        ),
+      ),
+    );
+  };
+  const box = h(
+    "div",
+    { class: "dlg ach-dlg", role: "dialog", "aria-label": "Logros" },
+    h(
+      "div",
+      { class: "ach-dlg-head" },
+      ring(list.total ? list.unlocked / list.total : 0, { size: 60, stroke: 9, label: percent(list.total ? list.unlocked / list.total : 0) }),
+      h("div", { class: "grow" }, h("h2", null, "Logros"), h("span", { class: "muted" }, `Has desbloqueado ${list.unlocked}/${list.total} `)),
+      h("button", { class: "round fill", "data-focus": "", title: "Cerrar", "aria-label": "Cerrar", onclick: () => closeAchievements() }, h("span", { class: "i", html: '<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>' })),
+    ),
+    chips,
+    rows,
+  );
+  const layer = h("div", { class: "dlg-layer", "data-focus-trap": "" }, box);
+  layer.addEventListener("mousedown", (e) => e.target === layer && closeAchievements());
+  document.body.append(layer);
+  achModal = { layer, prev };
+  paintList();
+  ejg.sound.play("open");
+  focus.focus(chips.querySelector("[data-focus]"), { instant: true, silent: true });
+}
+function closeAchievements(silent) {
+  if (!achModal) return false;
+  const { layer, prev } = achModal;
+  achModal = null;
+  layer.remove();
+  if (!silent) ejg.sound.play("back");
+  if (prev?.isConnected) focus.focus(prev, { silent: true, noScroll: true });
+  return true;
 }
 
 // ─────────────── lightbox ───────────────
@@ -910,6 +964,7 @@ function dropHomebrew() {
 
 // ─────────────── navegación ───────────────
 function stopMedia() {
+  closeAchievements(true);
   dropGuides();
   dropHomebrew();
   heroRelease();
@@ -949,6 +1004,7 @@ function goPage(page) {
 function back() {
   if (!lightbox.hidden) return closeLightbox(), true;
   if (closeMenu()) return true;
+  if (closeAchievements()) return true;
   if (inHomebrew() && hbView.nav("back")) return true;
   if (inGuides() && guideView.mode === "reader") return guideView.nav("back");
   if (isShop() && shop.back()) return true;

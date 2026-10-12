@@ -9,13 +9,14 @@
 //   <link rel="stylesheet" href="/_sdk/kit/homebrew.css" />
 //   const hb = createHomebrewView({ ejg, root, focus, layout: "steam", onGame: (g) => abrirFicha(g.id) });
 //   hb.nav("rb"); hb.hints(); hb.destroy();
+//   Con `searchBox: false` no pinta su buscador: el tema le pasa lo que se escribe en el suyo con hb.query(texto).
 
 import { h, hueOf, initials } from "./dom.js";
 import { artFor } from "./art.js";
 import { norm, roms, software, systemName } from "./library.js";
 import { relative } from "./format.js";
 
-export const HOMEBREW_LAYOUTS = ["steam", "ps5", "xbox", "switch", "cinema", "retro"];
+export const HOMEBREW_LAYOUTS = ["steam", "ps5", "xbox", "switch", "cinema", "retro", "moneda"];
 
 const tr = (s, v) => (globalThis.ejg && globalThis.ejg.t ? globalThis.ejg.t(s, v) : s.replace(/\{(\w+)\}/g, (_, k) => (v && k in v ? v[k] : `{${k}}`)));
 
@@ -68,11 +69,12 @@ function emulatorList(ejg, force = false) {
 
 /**
  * @param {{ ejg: any, root: HTMLElement, focus?: any, layout?: string, onExit?: () => any, onChange?: () => void,
- *   onGame?: (g: any) => void }} opts
+ *   onGame?: (g: any) => void, searchBox?: boolean }} opts
  *   onGame: abrir la ficha del tema de un juego de la biblioteca (sin él, se juega).
- * @returns {{ nav: (a: string) => boolean, hints: () => [string, string][], refresh: () => void, destroy: () => void }}
+ *   searchBox: false si el tema tiene su propio buscador (le pasa lo escrito con query()).
+ * @returns {{ nav: (a: string) => boolean, hints: () => [string, string][], query: (q: string) => void, refresh: () => void, destroy: () => void }}
  */
-export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "steam", onExit = () => {}, onChange = () => {}, onGame = null }) {
+export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "steam", onExit = () => {}, onChange = () => {}, onGame = null, searchBox = true }) {
   const layout = HOMEBREW_LAYOUTS.includes(wanted) ? wanted : "steam";
   const view = h("div", { class: `hb-view hb-layout-${layout}` });
   root.replaceChildren(view);
@@ -411,7 +413,7 @@ export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "
         h("h1", { class: "hb-title" }, "Homebrew"),
         h("p", { class: "hb-sub" }, h("span", null, all.length === 1 ? "1 juego" : tr("{n} juegos", { n: all.length })), h("span", null, emus === 1 ? "1 emulador" : tr("{n} emuladores", { n: emus }))),
       ),
-      h("label", { class: "hb-search" }, icon("search", "hb-search-ico"), input),
+      searchBox ? h("label", { class: "hb-search" }, icon("search", "hb-search-ico"), input) : null,
       h(
         "div",
         { class: "hb-top-actions" },
@@ -778,6 +780,11 @@ export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "
         return true;
       }
       return false;
+    },
+    /** Buscar desde el buscador del tema (con `searchBox: false`). */
+    query(q) {
+      input.value = q || "";
+      search(input.value);
     },
     hints() {
       if (s.sheet) return [["accept", "Elegir"], ["back", "Cerrar"]];

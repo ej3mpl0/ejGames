@@ -319,10 +319,13 @@ button.tile.is-focused { box-shadow: 0 0 0 2px var(--text); }
 .guide-txt small { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ─── guías (kit/guides.js) ─── */
-.guides-page { gap: 18px; }
-.guides-title { display: flex; flex-direction: column; }
-.guides-title .muted { font-size: 14px; }
-.guides-body { position: relative; height: calc(100vh - var(--top-h) - 120px); }
+/* En su ventana, como Trucos o Propiedades. */
+.dlg.guides-dlg { width: min(1180px, 94vw); height: 88vh; padding: 22px 24px 0; gap: 14px; }
+.guides-dlg-head { display: flex; align-items: center; gap: 14px; }
+.guides-dlg-head h2 { margin: 0; font-family: var(--display); font-size: 24px; font-weight: 800; letter-spacing: -0.03em; }
+.guides-dlg-head .muted { font-size: 14px; }
+.guides-ico { width: 44px; height: 44px; border-radius: 12px; object-fit: cover; background: var(--lift); display: grid; place-items: center; flex: none; }
+.guides-body { position: relative; flex: 1; min-height: 0; }
 .guides-body .g-view {
   --g-fg: var(--text);
   --g-muted: var(--muted);
@@ -423,7 +426,7 @@ button.tile.is-focused { box-shadow: 0 0 0 2px var(--text); }
 @media (max-width: 1100px) { .search-pill { width: 190px; } .search-pill kbd { display: none; } }
 
 /* ─── logros en su ventana ─── */
-.ach-dlg { width: min(760px, 92vw); height: min(760px, 86vh); padding: 26px 26px 18px; gap: 16px; }
+.dlg.ach-dlg { width: min(760px, 92vw); height: min(760px, 86vh); padding: 26px 26px 18px; gap: 16px; }
 .ach-dlg-head { display: flex; align-items: center; gap: 16px; }
 .ach-dlg-head h2 { margin: 0; font-family: var(--display); font-size: 26px; font-weight: 800; letter-spacing: -0.03em; }
 .ach-dlg-head .ring-box b { font-size: 12px; }

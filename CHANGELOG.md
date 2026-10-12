@@ -23,6 +23,9 @@ biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 - **Ajustes, rediseñados** a pantalla completa, con la barra lateral y una sección nueva, **Acerca de**: la versión, buscar
   actualizaciones, volver a una versión anterior, la documentación y quién lo hace. El resto de ventanas (Propiedades,
   diálogos…) siguen el mismo sistema: botones en pastilla, el rojo solo para Jugar y la ranura en la sección abierta.
+- **Homebrew rediseñado**: carátulas cuadradas sobre su panel, consolas en pastillas y la ficha de cada juego como una
+  página de la tienda (Descargar arriba, la carátula al lado). Busca con el buscador de arriba.
+- **Guías** en su ventana, como Trucos, Mapa o Propiedades.
 - **Logros** en su propia ventana, con filtros (todos, conseguidos y pendientes), en lugar de una lista que no acababa.
 - En la ficha de la tienda, **Descargar** está arriba, junto al título, sin tener que bajar. La **lista de deseados** es
   una rejilla de portadas con su botón y «quitar».

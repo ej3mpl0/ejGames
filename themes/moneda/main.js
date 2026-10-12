@@ -69,7 +69,7 @@ function ring(p, { size = 56, stroke = 8, live = false, label = "" } = {}) {
 // ─────────────── foco y mando ───────────────
 const focus = createFocus({ root: document.body });
 const isShop = () => state.page === "store" || state.page === "downloads";
-const inGuides = () => state.page === "guides" && guideView;
+const inGuides = () => !!guideModal && guideView;
 const gv = (action) => !!(inGuides() && guideView.nav(action));
 const inHomebrew = () => state.page === "homebrew" && hbView;
 const hv = (action) => !!(inHomebrew() && hbView.nav(action));
@@ -738,53 +738,58 @@ async function renderGame(id) {
 
 // ─────────────── guías de la comunidad ───────────────
 let guideView = null;
-let guideRoot = null;
+let guideModal = null;
 
+/** Las guías, en su ventana (como Trucos, Mapa o Propiedades). */
 function openGuides(gameId, guideId = null) {
-  pushPage("guides", { gameId, guideId });
-  render();
-}
-
-function renderGuides() {
-  if (guideView && guideRoot?.isConnected && guideRoot.dataset.game === String(state.gameId)) return;
-  dropGuides();
-  const g = ejg.library.byId(state.gameId);
-  if (!g) return back();
-  const art = heroArt(g);
-  guideRoot = h("div", { class: "guides-body", "data-game": g.id });
-  main.replaceChildren(
+  const g = ejg.library.byId(gameId);
+  if (!g) return;
+  closeGuides(true);
+  const prev = focus.current;
+  const root = h("div", { class: "guides-body" });
+  const box = h(
+    "div",
+    { class: "dlg guides-dlg", role: "dialog", "aria-label": "Guías" },
     h(
       "div",
-      { class: "page guides-page" },
-      art ? h("div", { class: "g-bg", style: { backgroundImage: `url("${art}")` } }) : null,
-      h(
-        "div",
-        { class: "head" },
-        h("button", { class: "round fill", "data-focus": "", title: "Atrás", onclick: () => back(), html: ICON.back }),
-        h("div", { class: "guides-title" }, h("span", { class: "muted" }, g.title), h("h1", null, "Guías")),
-      ),
-      guideRoot,
+      { class: "guides-dlg-head" },
+      g.media.icon ? img(g.media.icon, { class: "guides-ico" }) : h("span", { class: "guides-ico i", html: ICON.guide }),
+      h("div", { class: "grow" }, h("span", { class: "muted" }, g.title), h("h2", null, "Guías de la comunidad")),
+      h("button", { class: "round fill", "data-focus": "", title: "Cerrar", "aria-label": "Cerrar", onclick: () => closeGuides() }, h("span", { class: "i", html: '<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>' })),
     ),
+    root,
   );
-  main.scrollTop = 0;
+  const layer = h("div", { class: "dlg-layer", "data-focus-trap": "" }, box);
+  layer.addEventListener("mousedown", (e) => e.target === layer && closeGuides());
+  document.body.append(layer);
+  guideModal = { layer, prev };
+  ejg.sound.play("open");
   guideView = createGuideView({
     ejg,
-    root: guideRoot,
+    root,
     focus,
     gameId: g.id,
-    guide: state.guideId || null,
+    guide: guideId,
     labels: { title: "Guías de la comunidad", browser: "Ver en Steam" },
-    onExit: () => back(),
+    onExit: () => closeGuides(),
     onChange: () => updateHints(),
   });
-  state.guideId = null;
+  updateHints();
 }
 
-function dropGuides() {
+function closeGuides(silent) {
+  if (!guideModal) return false;
+  const { layer, prev } = guideModal;
+  guideModal = null;
   guideView?.destroy();
   guideView = null;
-  guideRoot = null;
+  layer.remove();
+  if (!silent) ejg.sound.play("back");
+  if (prev?.isConnected) focus.focus(prev, { silent: true, noScroll: true });
+  updateHints();
+  return true;
 }
+const dropGuides = () => closeGuides(true);
 
 async function loadGuidesCard(id, token, slot) {
   const [shelf, list] = await Promise.all([ejg.guides.shelf(id).catch(() => null), ejg.guides.list(id, {}).catch(() => null)]);
@@ -954,7 +959,8 @@ function renderHomebrew() {
   hbRoot = h("div", { class: "hb-page" });
   main.replaceChildren(h("div", { class: "page hb-wrap" }, hbRoot));
   main.scrollTop = 0;
-  hbView = createHomebrewView({ ejg, root: hbRoot, focus, layout: "steam", onExit: () => false, onChange: () => updateHints(), onGame: (g) => openGame(g.id) });
+  hbView = createHomebrewView({ ejg, root: hbRoot, focus, layout: "moneda", searchBox: false, onExit: () => false, onChange: () => updateHints(), onGame: (g) => openGame(g.id) });
+  if (searchBox.value.trim()) hbView.query(searchBox.value.trim());
 }
 function dropHomebrew() {
   hbView?.destroy();
@@ -1006,7 +1012,7 @@ function back() {
   if (closeMenu()) return true;
   if (closeAchievements()) return true;
   if (inHomebrew() && hbView.nav("back")) return true;
-  if (inGuides() && guideView.mode === "reader") return guideView.nav("back");
+  if (inGuides()) return (guideView.mode === "reader" && guideView.nav("back")) || closeGuides();
   if (isShop() && shop.back()) return true;
   if (state.page === "downloads") return goTab("store"), true;
   const p = state.prev.pop();
@@ -1066,7 +1072,7 @@ function switchTab(d) {
 
 function renderTabs() {
   const on = activeTab();
-  searchBox.placeholder = isShop() ? "Buscar en la tienda" : "Buscar en tu biblioteca";
+  searchBox.placeholder = isShop() ? "Buscar en la tienda" : activeTab() === "homebrew" ? "Buscar juegos de consola" : "Buscar en tu biblioteca";
   document.querySelectorAll(".tab[data-tab]").forEach((t) => {
     t.classList.toggle("on", t.dataset.tab === on);
     t.setAttribute("aria-selected", String(t.dataset.tab === on));
@@ -1080,7 +1086,6 @@ function render() {
   updateDownloadsUi();
   if (isShop()) return shop.render();
   if (state.page === "game") renderGame(state.gameId);
-  else if (state.page === "guides") renderGuides();
   else if (state.page === "homebrew") renderHomebrew();
   else if (state.page === "collections") renderCollections();
   else if (state.page === "collection") renderCollection();
@@ -1106,6 +1111,7 @@ function runSearch(now = false) {
     if (state.page === "downloads") goTab("store", true);
     return shop.query(q, now);
   }
+  if (state.page === "homebrew" && hbView) return hbView.query(q);
   state.filter = q;
   if (state.page !== "library") goTab("library", true);
   else render();
@@ -1115,7 +1121,7 @@ searchBox.addEventListener("input", searchSoon);
 searchBox.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     runSearch(true);
-    if (!isShop()) {
+    if (state.page === "library") {
       const first = filtered()[0];
       if (first) openGame(first.id);
     }
@@ -1212,7 +1218,7 @@ function renderWallpaper() {
 // ─────────────── eventos del host ───────────────
 const rerender = debounce(() => {
   if (isShop()) return updateDownloadsUi();
-  if (state.page === "guides" || state.page === "homebrew") return;
+  if (state.page === "homebrew") return;
   if (state.page === "game") {
     updatePlayButton();
     const g = ejg.library.byId(state.gameId);
@@ -1251,7 +1257,7 @@ function updateHints() {
         ? [["accept", "Elegir"], ["back", "Volver"], ["lb", "Pestañas"]]
         : state.page === "homebrew" && hbView
           ? hbView.hints()
-          : state.page === "guides" && guideView
+          : inGuides()
             ? guideView.hints()
             : state.page === "game"
               ? [["accept", "Elegir"], ["back", "Atrás"], ["y", "Favorito"], ["x", "Propiedades"]]

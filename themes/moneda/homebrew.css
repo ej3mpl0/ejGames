@@ -1,0 +1,380 @@
+/* Homebrew (kit/homebrew.js) con la maqueta «moneda»: sin cabecera en caja ni buscador
+   propio (se usa el de arriba), consolas en pastillas, carátulas cuadradas con la
+   ranura bajo la enfocada, emuladores en tarjetas y la ficha como en la tienda. */
+
+.hb-layout-moneda {
+  --hb-item: 186px;
+  --hb-card: var(--cover);
+  max-width: none;
+  padding: 4px var(--pad) 56px;
+}
+
+/* ─── cabecera ─── */
+.hb-layout-moneda .hb-top {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "main actions" "chips chips";
+  gap: 18px 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+}
+.hb-layout-moneda .hb-top-main {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.hb-layout-moneda .hb-title {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+.hb-layout-moneda .hb-sub {
+  margin: 0;
+  font-size: 15px;
+}
+.hb-layout-moneda .hb-top-actions .hb-btn {
+  height: 40px;
+  border-radius: 20px;
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+}
+.hb-layout-moneda .hb-top-actions .hb-btn:hover {
+  background: var(--lift);
+  filter: none;
+}
+.hb-layout-moneda .hb-chips {
+  margin: 0;
+  padding: 2px 2px 4px;
+}
+.hb-layout-moneda .hb-chip {
+  height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 19px;
+  background: var(--panel);
+  color: var(--soft-text);
+  font-size: 14px;
+}
+.hb-layout-moneda .hb-chip:hover {
+  background: var(--lift);
+  color: var(--text);
+}
+.hb-layout-moneda .hb-chip.is-on {
+  background: var(--text);
+  color: var(--bg);
+}
+.hb-layout-moneda .hb-chip small {
+  background: var(--lift-2);
+  color: var(--text);
+}
+.hb-layout-moneda .hb-chip.is-on small {
+  background: color-mix(in srgb, var(--bg) 16%, transparent);
+  color: var(--bg);
+}
+.hb-layout-moneda .hb-chip.is-focused,
+.hb-layout-moneda .hb-btn.is-focused,
+.hb-layout-moneda .hb-link.is-focused {
+  box-shadow: 0 0 0 2px var(--text);
+}
+
+/* ─── filas y secciones ─── */
+.hb-layout-moneda .hb-body {
+  margin-top: 28px;
+}
+.hb-layout-moneda .hb-row-head h2,
+.hb-layout-moneda .hb-sec .hb-row-head h2 {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+.hb-layout-moneda .hb-arrow {
+  width: 36px;
+  height: 36px;
+  padding: 9px;
+  background: var(--panel);
+}
+.hb-layout-moneda .hb-link {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+.hb-layout-moneda .hb-link:hover {
+  color: var(--text);
+  background: var(--panel);
+}
+
+/* Carátulas de los catálogos: cuadradas, la caja entera sobre su panel. */
+.hb-layout-moneda .hb-item {
+  gap: 9px;
+}
+.hb-layout-moneda .hb-item::after,
+.hb-layout-moneda .hb-game::after {
+  content: "";
+  width: 22px;
+  height: 5px;
+  border-radius: 1.5px;
+}
+.hb-layout-moneda .hb-shot {
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: none;
+}
+.hb-layout-moneda .hb-shot img {
+  inset: 12px;
+  width: calc(100% - 24px);
+  height: calc(100% - 24px);
+  object-fit: contain;
+}
+.hb-layout-moneda .hb-shot-title {
+  color: var(--text);
+  text-shadow: none;
+  font-family: var(--display);
+  font-weight: 700;
+}
+.hb-layout-moneda .hb-item:hover .hb-shot {
+  transform: translateY(-4px);
+}
+.hb-layout-moneda .hb-item.is-focused .hb-shot {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+}
+.hb-layout-moneda .hb-item.is-focused::after,
+.hb-layout-moneda .hb-game.is-focused::after {
+  background: var(--accent);
+}
+.hb-layout-moneda .hb-item-title {
+  font-weight: 600;
+}
+.hb-layout-moneda .hb-item-sub {
+  font-size: 13px;
+}
+.hb-layout-moneda .hb-got {
+  background: var(--text);
+  color: var(--bg);
+}
+.hb-layout-moneda .hb-bar i {
+  background: var(--accent);
+}
+
+/* Tus juegos: como las portadas de la biblioteca. */
+.hb-layout-moneda .hb-cover {
+  border-radius: 14px;
+  box-shadow: none;
+}
+.hb-layout-moneda .hb-game:hover .hb-cover {
+  transform: translateY(-4px);
+}
+.hb-layout-moneda .hb-game.is-focused .hb-cover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+}
+.hb-layout-moneda .hb-game-title {
+  font-weight: 600;
+}
+
+/* Descargando, emuladores, avisos y vacíos: tarjetas del sistema. */
+.hb-layout-moneda .hb-dl,
+.hb-layout-moneda .hb-emu,
+.hb-layout-moneda .hb-empty {
+  border: 0;
+  border-radius: 22px;
+  background: var(--panel);
+}
+.hb-layout-moneda .hb-emu:hover,
+.hb-layout-moneda .hb-emu.is-focused {
+  background: var(--lift);
+}
+.hb-layout-moneda .hb-emu.is-focused {
+  box-shadow: 0 0 0 2px var(--text);
+}
+.hb-layout-moneda .hb-emu-icon {
+  border-radius: 14px;
+}
+.hb-layout-moneda .hb-alert {
+  background: var(--panel);
+}
+.hb-layout-moneda .hb-btn {
+  border-radius: 20px;
+}
+
+/* ─── ficha de un juego de consola: una página, como la de la tienda ─── */
+.hb-sheet.hb-layout-moneda {
+  inset: var(--top-h) 0 0 0;
+  display: block;
+  padding: 8px var(--pad) 60px;
+  overflow-y: auto;
+  background: var(--bg);
+  backdrop-filter: none;
+  animation: none;
+}
+.hb-sheet.hb-layout-moneda .hb-sheet-bg {
+  position: fixed;
+  inset: var(--top-h) 0 auto 0;
+  height: 600px;
+  opacity: 0.16;
+  filter: blur(40px);
+  -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent);
+}
+.hb-layout-moneda .hb-sheet-box {
+  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-areas:
+    "sys sys"
+    "title acts"
+    "facts acts"
+    "note hero"
+    "desc hero"
+    "shots hero"
+    ". hero";
+  align-items: start;
+  gap: 14px 32px;
+  width: 100%;
+  max-width: 1240px;
+  max-height: none;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+  animation: none;
+}
+.hb-layout-moneda .hb-sheet-main {
+  display: contents;
+}
+.hb-layout-moneda .hb-sheet-main > .hb-facts:first-child {
+  grid-area: sys;
+  padding-right: 58px;
+  min-height: 44px;
+}
+.hb-layout-moneda .hb-sheet-title {
+  grid-area: title;
+  font-family: var(--display);
+  font-size: 44px;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+.hb-layout-moneda .hb-sheet-main > .hb-facts:not(:first-child) {
+  grid-area: facts;
+}
+.hb-layout-moneda .hb-sheet-actions {
+  grid-area: acts;
+  flex-direction: column;
+  align-items: stretch;
+  margin: 0;
+}
+.hb-layout-moneda .hb-sheet-actions .hb-btn-big {
+  width: 100%;
+}
+.hb-layout-moneda .hb-sheet-note,
+.hb-layout-moneda .hb-sheet-main > .hb-alert {
+  grid-area: note;
+  justify-self: start;
+}
+.hb-layout-moneda .hb-sheet-desc {
+  grid-area: desc;
+  margin: 0;
+  padding: 22px 24px;
+  border-radius: 22px;
+  background: var(--panel);
+  color: var(--soft-text);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.hb-layout-moneda .hb-shots {
+  grid-area: shots;
+}
+.hb-layout-moneda .hb-shots img {
+  border-radius: 14px;
+}
+.hb-layout-moneda .hb-sheet-hero {
+  grid-area: hero;
+  aspect-ratio: auto;
+  min-height: 320px;
+  padding: 22px;
+  border-radius: 22px;
+  background: var(--panel);
+}
+.hb-layout-moneda .hb-sheet-hero img {
+  height: auto;
+  max-height: 460px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+/* Cerrar: vuelve a Homebrew. */
+.hb-layout-moneda .hb-sheet-close {
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  padding: 12px;
+  background: var(--panel);
+}
+.hb-layout-moneda .hb-sheet-close:hover {
+  background: var(--lift);
+}
+.hb-layout-moneda .hb-sheet-close.is-focused {
+  box-shadow: 0 0 0 2px var(--text);
+}
+.hb-layout-moneda .hb-fact {
+  background: var(--lift);
+  font-size: 13px;
+}
+/* Jugar: el disco del logo. */
+.hb-layout-moneda [data-key="s-play"] {
+  height: 64px;
+  gap: 14px;
+  padding: 0 24px 0 0;
+  border-radius: 32px;
+  background: none;
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 20px;
+}
+.hb-layout-moneda [data-key="s-play"] .hb-btn-ico {
+  width: 64px;
+  height: 64px;
+  padding: 20px 18px 20px 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+}
+.hb-layout-moneda [data-key="s-play"] .hb-btn-ico svg {
+  fill: currentColor;
+  stroke: none;
+}
+.hb-layout-moneda [data-key="s-play"]:hover {
+  filter: none;
+}
+.hb-layout-moneda [data-key="s-play"].is-focused {
+  background: var(--lift);
+  box-shadow: none;
+}
+.hb-layout-moneda [data-key="s-play"].is-focused .hb-btn-ico {
+  box-shadow: 0 0 0 4px var(--panel), 0 0 0 7px var(--text);
+}
+.hb-layout-moneda [data-key="s-del"] {
+  background: color-mix(in srgb, #ff3a2d 14%, transparent);
+  color: #ff7b70;
+}
+.hb-layout-moneda .hb-mirror {
+  border-radius: 14px;
+  background: var(--bg);
+}
+
+:root[data-input="mouse"] .hb-layout-moneda .is-focused {
+  box-shadow: none !important;
+}
+:root[data-input="mouse"] .hb-layout-moneda .hb-item.is-focused::after,
+:root[data-input="mouse"] .hb-layout-moneda .hb-game.is-focused::after {
+  background: transparent;
+}

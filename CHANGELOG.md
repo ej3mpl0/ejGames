@@ -5,6 +5,11 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.6.1
+
+- **Icono nuevo**: la ficha, un disco rojo con una ranura sobre negro, en el ejecutable, la barra de tareas, la bandeja,
+  los accesos directos y el instalador. A 16 px queda solo la ficha, para que se lea bien en la bandeja.
+
 ## 1.6.0
 
 - **Idiomas**: ejGames habla español, inglés, alemán, francés, chino (simplificado), japonés y portugués de Brasil. El primer paso del asistente elige el idioma: por defecto el de Windows, y puedes cambiarlo cuando quieras en Ajustes → Sistema. Al cambiarlo, la ventana se recarga y la interfaz, los temas y el overlay se pintan en el idioma nuevo.

@@ -1,25 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- La ficha: disco rojo con ranura sobre tinta, con la trama de puntos del instalador. -->
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#7c3aed"/>
-      <stop offset="0.55" stop-color="#2563eb"/>
-      <stop offset="1" stop-color="#06b6d4"/>
+    <pattern id="trama" width="38" height="38" patternUnits="userSpaceOnUse" x="13" y="0">
+      <circle cx="19" cy="19" r="7.5" fill="#ff3a2d"/>
+    </pattern>
+    <linearGradient id="fundido" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0.2" stop-color="#fff"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
     </linearGradient>
-    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
-      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
+    <mask id="mascara"><rect x="0" y="595" width="1024" height="429" fill="url(#fundido)"/></mask>
+    <clipPath id="cuadro"><rect x="32" y="32" width="960" height="960" rx="200"/></clipPath>
   </defs>
-  <rect x="48" y="48" width="928" height="928" rx="220" fill="url(#bg)"/>
-  <rect x="48" y="48" width="928" height="928" rx="220" fill="url(#shine)"/>
-  <!-- Mando estilizado (centrado verticalmente) -->
-  <g transform="translate(0 -84)">
-  <path d="M300 380h424c88 0 150 62 168 150l30 150c14 70-36 132-104 132-40 0-74-22-94-56l-40-66H340l-40 66c-20 34-54 56-94 56-68 0-118-62-104-132l30-150c18-88 80-150 168-150z" fill="#0b1020" opacity="0.92"/>
-  <rect x="322" y="482" width="44" height="140" rx="14" fill="#e0e7ff"/>
-  <rect x="274" y="530" width="140" height="44" rx="14" fill="#e0e7ff"/>
-  <circle cx="680" cy="490" r="30" fill="#22d3ee"/>
-  <circle cx="752" cy="552" r="30" fill="#a78bfa"/>
-  <circle cx="608" cy="552" r="30" fill="#f472b6"/>
-  <circle cx="680" cy="614" r="30" fill="#34d399"/>
+  <g clip-path="url(#cuadro)">
+    <rect x="32" y="32" width="960" height="960" fill="#0e0e10"/>
+    <rect x="32" y="595" width="960" height="397" fill="url(#trama)" mask="url(#mascara)"/>
   </g>
+  <circle cx="512" cy="490" r="285" fill="#ff3a2d"/>
+  <circle cx="512" cy="490" r="217" fill="none" stroke="#0e0e10" stroke-width="19"/>
+  <rect x="381" y="460" width="262" height="60" fill="#0e0e10"/>
 </svg>

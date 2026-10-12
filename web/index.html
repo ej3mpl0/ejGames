@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ejGames — Your games, one tap away</title>
+  <meta name="description" content="A free, open-source game launcher: your PC games, emulators and ROMs in one place, with a store, downloads, achievements, guides and an in-game overlay." />
+  <meta name="theme-color" content="#141315" />
+  <meta property="og:title" content="ejGames — Your games, one tap away" />
+  <meta property="og:description" content="Your PC games, emulators and ROMs in one place. Free and open source." />
+  <meta property="og:image" content="https://ej3mpl0.github.io/ejGames/assets/og.png" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:creator" content="@ej3mplo" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="main.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <nav class="nav" aria-label="Main">
+    <a href="#top" class="nav-logo" aria-label="ejGames, back to top">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="50" fill="#ff3a2d" /><circle cx="50" cy="50" r="38" fill="none" stroke="#141315" stroke-width="4" /><rect x="27" y="44" width="46" height="12" fill="#141315" /></svg>
+    </a>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#ingame">In game</a>
+      <a href="https://ej3mplo.mintlify.site">Docs</a>
+    </div>
+    <div class="grow"></div>
+    <a class="pill ghost" href="https://github.com/ej3mpl0/ejGames">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21" /></svg>
+      <span>GitHub</span>
+    </a>
+    <a class="pill light" href="https://github.com/ej3mpl0/ejGames/releases/latest" data-download>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14" /></svg>
+      <span>Download</span>
+    </a>
+  </nav>
+
+  <main id="main">
+    <!-- hero: the wall of covers and the coin -->
+    <section class="hero" id="top">
+      <div class="glow" aria-hidden="true"></div>
+      <div class="wall" aria-hidden="true" data-wall></div>
+      <div class="wrap">
+        <div class="hero-in">
+          <span class="kicker in"><i></i>Game launcher · free</span>
+          <h1 class="big in d1">Your games,<br /><em>one tap away.</em></h1>
+          <p class="lead in d2">Your PC games, your emulators and your ROMs in one place. With a store, downloads, achievements, guides and an in-game overlay. And it barely weighs anything at rest.</p>
+          <div class="cta in d3">
+            <a class="pill light lg" href="https://github.com/ej3mpl0/ejGames/releases/latest" data-download>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14" /></svg>
+              <span>Download for Windows</span>
+            </a>
+            <a class="pill lg" href="#how">See how it works</a>
+          </div>
+          <p class="fine in d4"><span data-version>Free</span> · Open source (MIT) · Updates itself</p>
+        </div>
+      </div>
+      <div class="coin-stage" aria-hidden="true">
+        <div class="coin">
+          <div class="edge" style="--z: -11px"></div><div class="edge" style="--z: -9px"></div><div class="edge" style="--z: -7px"></div><div class="edge" style="--z: -5px"></div>
+          <div class="edge" style="--z: -3px"></div><div class="edge" style="--z: -1px"></div><div class="edge" style="--z: 1px"></div><div class="edge" style="--z: 3px"></div>
+          <div class="edge" style="--z: 5px"></div><div class="edge" style="--z: 7px"></div><div class="edge" style="--z: 9px"></div><div class="edge" style="--z: 11px"></div>
+          <div class="face front"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#ff3a2d" /><circle cx="50" cy="50" r="38" fill="none" stroke="#141315" stroke-width="3.5" /><rect x="27" y="44.5" width="46" height="11" fill="#141315" /></svg></div>
+          <div class="face back"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#ff3a2d" /><circle cx="50" cy="50" r="38" fill="none" stroke="#141315" stroke-width="3.5" /><rect x="27" y="44.5" width="46" height="11" fill="#141315" /></svg></div>
+        </div>
+        <div class="coin-shadow"></div>
+      </div>
+    </section>
+
+    <div class="ribbon" aria-label="What it brings">
+      <div class="ribbon-track">
+        <span>Your game library</span><span>Store with built-in downloads</span><span>Homebrew and emulators</span><span>Achievements and alerts</span><span>Guides, trainers and maps in game</span><span>Big Picture with a controller</span><span>Save backups</span><span>7 languages</span>
+      </div>
+      <div class="ribbon-track" aria-hidden="true">
+        <span>Your game library</span><span>Store with built-in downloads</span><span>Homebrew and emulators</span><span>Achievements and alerts</span><span>Guides, trainers and maps in game</span><span>Big Picture with a controller</span><span>Save backups</span><span>7 languages</span>
+      </div>
+    </div>
+
+    <!-- the app -->
+    <section class="sec">
+      <div class="wrap">
+        <div class="shot tilt" role="img" aria-label="The ejGames home screen: continue playing Elden Ring, with your recent games below">
+          <div class="app-top" aria-hidden="true">
+            <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#ff3a2d" /><circle cx="50" cy="50" r="38" fill="none" stroke="#141315" stroke-width="4" /><rect x="27" y="44" width="46" height="12" fill="#141315" /></svg>
+            <span class="tab on">Home</span><span class="tab">Library</span><span class="tab">Store</span><span class="tab">Homebrew</span>
+          </div>
+          <div class="app-hero" aria-hidden="true">
+            <img class="bg" src="https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/library_hero.jpg" alt="" loading="lazy" />
+            <div class="app-hero-in">
+              <span class="kicker soft">Continue</span>
+              <img class="app-logo" src="https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/logo.png" alt="" loading="lazy" />
+              <span class="app-meta">84 h played · yesterday</span>
+              <span class="disc-btn"><span class="disc"></span>Play</span>
+            </div>
+          </div>
+          <div class="app-row" aria-hidden="true" data-row></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- the three shapes -->
+    <section class="sec" id="how">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <span class="eyebrow">Simple, for real</span>
+          <h2 class="h2">Get the coin,<br />get the app.</h2>
+          <p class="p">The logo is a token. Three shapes come out of it, and each one always means the same thing, on every screen.</p>
+        </div>
+        <div class="shapes">
+          <article class="shape reveal">
+            <div class="demo"><span class="disc xl" aria-hidden="true"></span></div>
+            <h3>The disc is Play</h3>
+            <p class="p">Red and round, one per screen. You never hunt for the button.</p>
+          </article>
+          <article class="shape reveal">
+            <div class="demo"><span class="ring" aria-hidden="true"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="42" /><circle class="fg" cx="50" cy="50" r="42" pathLength="100" /></svg><b>31/42</b></span></div>
+            <h3>The ring is progress</h3>
+            <p class="p">Achievements, downloads, your controller battery. It’s the rim of the coin.</p>
+          </article>
+          <article class="shape reveal">
+            <div class="demo"><div class="tabs-demo" aria-hidden="true"><span>Home</span><span>Library</span><span>Store</span><i></i></div></div>
+            <h3>The slot is where you are</h3>
+            <p class="p">The little red bar sits under the open tab and under the game you pick with the controller.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- features -->
+    <section class="sec" id="features">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <span class="eyebrow">All in one place</span>
+          <h2 class="h2">What you own, what you download<br />and what you emulate.</h2>
+        </div>
+        <div class="bento">
+          <article class="card c4 tall reveal">
+            <h3>Your library, on its own</h3>
+            <p class="p narrow">It finds the games in your folders and the right .exe, adds cover, logo and backdrop, and counts your hours. It brings in Steam, Epic and GOG too.</p>
+            <div class="art" aria-hidden="true">
+              <img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1086940/library_600x900.jpg" alt="" loading="lazy" />
+              <img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1145350/library_600x900.jpg" alt="" loading="lazy" />
+              <img src="https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg" alt="" loading="lazy" />
+            </div>
+          </article>
+          <article class="card c2 reveal">
+            <h3>Lightweight</h3>
+            <p class="p">While you play it waits in the tray.</p>
+            <div class="mini-stat"><b>5</b><span class="muted">MB at rest</span></div>
+          </article>
+          <article class="card c3 reveal">
+            <h3>Store and downloads</h3>
+            <p class="p">Search, pick languages and extras, and download with the built-in torrent client. When it’s done, one button and you’re playing.</p>
+            <div class="dl" aria-hidden="true">
+              <span class="ring sm"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="42" /><circle class="fg" cx="50" cy="50" r="42" pathLength="100" /></svg><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1771300/library_600x900.jpg" alt="" loading="lazy" /></span>
+              <div><b>Kingdom Come: Deliverance II</b><div class="steps"><span class="on"><i></i>Download</span><span><i></i>Install</span><span><i></i>In your library</span></div></div>
+            </div>
+          </article>
+          <article class="card c3 reveal">
+            <h3>Homebrew</h3>
+            <p class="p">Your console games with their emulator: RetroArch, PCSX2, Dolphin, PPSSPP and more. Catalogs that download and unpack on their own.</p>
+            <div class="boxes" aria-hidden="true">
+              <img src="https://raw.githubusercontent.com/libretro-thumbnails/Sony_-_PlayStation_2/master/Named_Boxarts/Shadow%20of%20the%20Colossus%20(USA).png" alt="" loading="lazy" />
+              <img src="https://raw.githubusercontent.com/libretro-thumbnails/Sony_-_PlayStation/master/Named_Boxarts/Crash%20Bandicoot%20(USA).png" alt="" loading="lazy" />
+              <img src="https://raw.githubusercontent.com/libretro-thumbnails/Nintendo_-_GameCube/master/Named_Boxarts/Legend%20of%20Zelda%2C%20The%20-%20The%20Wind%20Waker%20(USA).png" alt="" loading="lazy" />
+              <img src="https://raw.githubusercontent.com/libretro-thumbnails/Nintendo_-_Nintendo_64/master/Named_Boxarts/Legend%20of%20Zelda%2C%20The%20-%20Ocarina%20of%20Time%20(USA).png" alt="" loading="lazy" />
+            </div>
+          </article>
+          <article class="card c2 reveal">
+            <h3>Big Picture</h3>
+            <p class="p">Everything works with a controller, on the TV or at your desk.</p>
+            <div class="chips"><span>A Play</span><span>Y Favorite</span><span>LB · RB</span></div>
+          </article>
+          <article class="card c2 reveal">
+            <h3>Your saves, safe</h3>
+            <p class="p">Save backups every time you close a game, and of your whole library to take it to another PC.</p>
+          </article>
+          <article class="card c2 reveal">
+            <h3>In your language</h3>
+            <div class="chips"><span>English</span><span>Español</span><span>Deutsch</span><span>Français</span><span>中文</span><span>日本語</span><span>Português</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- in game -->
+    <section class="sec" id="ingame">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <span class="eyebrow">Shift + Tab</span>
+          <h2 class="h2">Without leaving the game.</h2>
+          <p class="p">Community guides, interactive maps you can pin on top, trainers, screenshots, notes and your music. And every achievement, with its ring.</p>
+        </div>
+        <div class="ov reveal" role="img" aria-label="The in-game overlay: an achievement alert and a dock of round buttons">
+          <img class="ov-bg" src="https://cdn.cloudflare.steamstatic.com/steam/apps/1903340/library_hero.jpg" alt="" loading="lazy" />
+          <div class="toast" aria-hidden="true">
+            <span class="ring xs"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="42" /><circle class="fg" cx="50" cy="50" r="42" pathLength="100" /></svg></span>
+            <span><small>Achievement unlocked · 32 of 42</small><b>Lord of Ashes</b></span>
+          </div>
+          <div class="dock" aria-hidden="true">
+            <span class="act"><span><svg viewBox="0 0 24 24"><path d="M8 4.5h8v4.5a4 4 0 0 1-8 0Z" /><path d="M12 13v4M8.5 19.5h7" /></svg></span>Achievements</span>
+            <span class="act"><span><svg viewBox="0 0 24 24"><path d="M5 4.5h10.5L19 8v11.5H5z" /><path d="M9 11h6M9 15h4" /></svg></span>Guides</span>
+            <span class="act"><span><svg viewBox="0 0 24 24"><path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4" /><circle cx="12" cy="12" r="3" /></svg></span>Trainers</span>
+            <span class="act"><span><svg viewBox="0 0 24 24"><path d="m3.5 6.5 5.5-2 6 2 5.5-2v13l-5.5 2-6-2-5.5 2z" /><path d="M9 4.5v13M15 6.5v13" /></svg></span>Map</span>
+            <span class="act"><span><svg viewBox="0 0 24 24"><path d="M4.5 8h3l1.8-2.5h5.4L16.5 8h3v10.5h-15z" /><circle cx="12" cy="13" r="3.2" /></svg></span>Captures</span>
+            <span class="act"><span><svg viewBox="0 0 24 24"><path d="M9 17.5V6l10-2v11.5" /><circle cx="6.5" cy="17.5" r="2.5" /><circle cx="16.5" cy="15.5" r="2.5" /></svg></span>Music</span>
+            <i class="dock-slot"></i>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- final -->
+    <section class="final">
+      <div class="wrap">
+        <div class="slot-wrap" aria-hidden="true">
+          <div class="drop-clip"><div class="drop"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#ff3a2d" /><circle cx="50" cy="50" r="38" fill="none" stroke="#141315" stroke-width="3.5" /><rect x="27" y="44.5" width="46" height="11" fill="#141315" /></svg></div></div>
+          <div class="slot"></div>
+        </div>
+        <h2 class="big reveal">Insert coin.</h2>
+        <p class="lead center reveal">Free, no accounts, and everything stays on your computer.</p>
+        <div class="cta center reveal">
+          <a class="pill light lg" href="https://github.com/ej3mpl0/ejGames/releases/latest" data-download>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14" /></svg>
+            <span>Download for Windows</span>
+          </a>
+          <a class="pill lg" href="https://ej3mplo.mintlify.site">Read the docs</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="50" fill="#ff3a2d" /><rect x="25" y="44" width="50" height="12" fill="#141315" /></svg>
+    <span>Made by <a class="strong" href="https://x.com/ej3mplo">@ej3mplo</a></span>
+    <div class="grow"></div>
+    <a href="https://github.com/ej3mpl0/ejGames">GitHub</a>
+    <a href="https://ej3mplo.mintlify.site">Docs</a>
+    <a href="https://github.com/ej3mpl0/ejGames/blob/main/CHANGELOG.md">Changelog</a>
+    <span>MIT</span>
+  </footer>
+</body>
+</html>

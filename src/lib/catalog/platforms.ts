@@ -18,6 +18,7 @@ export interface PlatformDef {
 
 export const PLATFORMS: PlatformDef[] = [
   { id: "switch", name: "Nintendo Switch", short: "NSW", family: "nintendo", system: "switch", hue: 356 },
+  { id: "switch-2", name: "Switch 2", short: "NS2", family: "nintendo", system: null, hue: 330 },
   { id: "wii-u", name: "Wii U", short: "WiiU", family: "nintendo", system: "wiiu", hue: 195 },
   { id: "wii", name: "Wii", short: "Wii", family: "nintendo", system: "wii", hue: 200 },
   { id: "gamecube", name: "GameCube", short: "GC", family: "nintendo", system: "gc", hue: 262 },
@@ -39,6 +40,7 @@ export const PLATFORMS: PlatformDef[] = [
   { id: "xbox", name: "Xbox", short: "XB", family: "microsoft", system: "xbox", hue: 120 },
   { id: "xbox-360", name: "Xbox 360", short: "360", family: "microsoft", system: "xbox360", hue: 110 },
   { id: "xbox-one", name: "Xbox One", short: "One", family: "microsoft", system: null, hue: 130 },
+  { id: "xbox-series", name: "Xbox Series X/S", short: "XS", family: "microsoft", system: null, hue: 135 },
   { id: "genesis", name: "Mega Drive / Genesis", short: "MD", family: "sega", system: "genesis", hue: 10 },
   { id: "saturn", name: "Sega Saturn", short: "SAT", family: "sega", system: "saturn", hue: 30 },
   { id: "dreamcast", name: "Dreamcast", short: "DC", family: "sega", system: "dreamcast", hue: 25 },
@@ -50,6 +52,8 @@ export const PLATFORMS: PlatformDef[] = [
   { id: "pc-engine", name: "PC Engine", short: "PCE", family: "otros", system: "pce", hue: 60 },
   { id: "turbografx", name: "TurboGrafx-16", short: "TG16", family: "otros", system: "pce", hue: 65 },
   { id: "wonderswan", name: "WonderSwan", short: "WS", family: "otros", system: "wonderswan", hue: 170 },
+  { id: "atari-2600", name: "Atari 2600", short: "2600", family: "otros", system: null, hue: 35 },
+  { id: "steam-deck", name: "Steam Deck", short: "Deck", family: "pc", system: null, hue: 265 },
   { id: "pc", name: "PC", short: "PC", family: "pc", system: null, hue: 0 },
   { id: "dos", name: "MS-DOS", short: "DOS", family: "pc", system: null, hue: 0 },
   { id: "windows", name: "Windows", short: "WIN", family: "pc", system: null, hue: 0 },

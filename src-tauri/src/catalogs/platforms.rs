@@ -8,6 +8,7 @@ use std::collections::HashMap;
 /// (id del catálogo, id de ejGames si se puede emular, nombre).
 pub const ALL: &[(&str, Option<&str>, &str)] = &[
     ("switch", Some("switch"), "Nintendo Switch"),
+    ("switch-2", None, "Switch 2"),
     ("wii-u", Some("wiiu"), "Wii U"),
     ("wii", Some("wii"), "Wii"),
     ("gamecube", Some("gc"), "GameCube"),
@@ -29,6 +30,9 @@ pub const ALL: &[(&str, Option<&str>, &str)] = &[
     ("xbox", Some("xbox"), "Xbox"),
     ("xbox-360", Some("xbox360"), "Xbox 360"),
     ("xbox-one", None, "Xbox One"),
+    ("xbox-series", None, "Xbox Series X/S"),
+    ("steam-deck", None, "Steam Deck"),
+    ("atari-2600", None, "Atari 2600"),
     ("genesis", Some("genesis"), "Mega Drive / Genesis"),
     ("saturn", Some("saturn"), "Sega Saturn"),
     ("dreamcast", Some("dreamcast"), "Dreamcast"),
@@ -47,6 +51,8 @@ pub const ALL: &[(&str, Option<&str>, &str)] = &[
 
 /// Otros nombres con que las webs llaman a cada plataforma (en minúsculas, sin signos).
 const NAMES: &[(&str, &str)] = &[
+    ("nintendo switch 2", "switch-2"),
+    ("switch 2", "switch-2"),
     ("nintendo switch", "switch"),
     ("switch", "switch"),
     ("nsw", "switch"),
@@ -105,6 +111,10 @@ const NAMES: &[(&str, &str)] = &[
     ("xbox360", "xbox-360"),
     ("x360", "xbox-360"),
     ("xbox one", "xbox-one"),
+    ("xbox series x s", "xbox-series"),
+    ("xbox series", "xbox-series"),
+    ("steam deck", "steam-deck"),
+    ("atari 2600", "atari-2600"),
     ("xbox", "xbox"),
     ("sega genesis", "genesis"),
     ("mega drive", "genesis"),
@@ -270,6 +280,8 @@ mod tests {
         assert_eq!(detect("PS Vita", &none), Some("ps-vita"));
         assert_eq!(detect("Nintendo Switch", &none), Some("switch"));
         assert_eq!(detect("Xbox 360", &none), Some("xbox-360"));
+        assert_eq!(detect("Xbox Series X/S", &none), Some("xbox-series"));
+        assert_eq!(detect("Switch 2", &none), Some("switch-2"));
         assert_eq!(detect("Algo sin plataforma", &none), None);
     }
 

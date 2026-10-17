@@ -1089,13 +1089,14 @@ export interface SystemEmulator {
 
 /** Plataformas de los catálogos (ampliable: el núcleo reconoce las de `catalogs/platforms.rs`). */
 export type Platform =
-  | "switch" | "wii" | "wii-u" | "gamecube" | "n64" | "snes" | "nes" | "gba" | "gb" | "gbc" | "ds" | "3ds"
+  | "switch" | "switch-2" | "wii" | "wii-u" | "gamecube" | "n64" | "snes" | "nes" | "gba" | "gb" | "gbc" | "ds" | "3ds"
   | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "ps-vita"
-  | "xbox" | "xbox-360" | "xbox-one"
+  | "xbox" | "xbox-360" | "xbox-one" | "xbox-series"
   | "genesis" | "saturn" | "dreamcast" | "master-system" | "game-gear"
   | "neo-geo" | "arcade" | "mame"
   | "pc-engine" | "turbografx" | "wonderswan"
-  | "pc" | "dos" | "windows";
+  | "atari-2600"
+  | "pc" | "steam-deck" | "dos" | "windows";
 
 export type CatalogCategory = "game" | "dlc" | "update" | "homebrew" | "emulator";
 

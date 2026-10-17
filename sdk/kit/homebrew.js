@@ -27,12 +27,13 @@ const SYS = {
   switch: ["NSW", 356], wiiu: ["Wii U", 195], wii: ["Wii", 200], gc: ["GC", 262], n64: ["N64", 140], snes: ["SNES", 280], nes: ["NES", 0],
   "3ds": ["3DS", 350], nds: ["DS", 210], gba: ["GBA", 250], gbc: ["GBC", 50], gb: ["GB", 90],
   psx: ["PS1", 220], ps2: ["PS2", 225], ps3: ["PS3", 230], ps4: ["PS4", 235], ps5: ["PS5", 240], psp: ["PSP", 215], vita: ["Vita", 205],
-  xbox: ["Xbox", 120], xbox360: ["360", 110],
+  xbox: ["Xbox", 120], xbox360: ["360", 110], xboxone: ["One", 125], "xbox-series": ["XS", 130],
   genesis: ["MD", 10], saturn: ["SAT", 30], dreamcast: ["DC", 25], sms: ["SMS", 5], gg: ["GG", 15],
   arcade: ["ARC", 300], pce: ["PCE", 60], wonderswan: ["WS", 170],
+  "switch-2": ["NS2", 330], "steam-deck": ["Deck", 265], "atari-2600": ["2600", 35],
 };
-// Las de los catálogos que la biblioteca no emula (sin `system`).
-const CAT_SYS = { ps4: "ps4", ps5: "ps5", "xbox-one": "xbox" };
+// Las de los catálogos que la biblioteca no emula (sin `system`); las demás se quedan con su id.
+const CAT_SYS = { ps4: "ps4", ps5: "ps5", "xbox-one": "xboxone" };
 export const systemShort = (id) => (SYS[id] ? SYS[id][0] : String(id || "").toUpperCase());
 export const systemHue = (id) => (SYS[id] ? SYS[id][1] : hueOf(id));
 
@@ -739,6 +740,8 @@ export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "
     const top = sc?.scrollTop ?? 0;
     const tracks = new Map([...view.querySelectorAll(".hb-row[data-row]")].map((r) => [r.dataset.row, r.querySelector(".hb-track")?.scrollLeft || 0]));
     const typing = document.activeElement === input;
+    // Escribiendo en el buscador del tema (`searchBox: false`): el foco no se le quita.
+    const typingOutside = !typing && /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "") && !view.contains(document.activeElement);
     const body = s.view === "search" ? searchView() : s.view === "platform" ? platformView() : front();
     view.replaceChildren(header(), h("div", { class: "hb-body" }, ...body.filter(Boolean)));
     if (sheetEl) view.append(sheetEl);
@@ -751,7 +754,7 @@ export function createHomebrewView({ ejg, root, focus = null, layout: wanted = "
     if (sc) sc.scrollTop = top;
     watchLazy();
     jobSig = sigOf();
-    if (focus && !sheetEl) {
+    if (focus && !sheetEl && !typingOutside) {
       const again = had && view.querySelector(`[data-key="${CSS.escape(had)}"]`);
       if (again) focus.focus(again, { noScroll: true, silent: true });
       else if (!focus.current || !focus.current.isConnected || !view.contains(focus.current)) focus.first(view);

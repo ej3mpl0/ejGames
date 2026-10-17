@@ -5,6 +5,17 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.7.2
+
+- **Homebrew: el buscador ya no se cierra al escribir.** Antes, con cada letra perdía el foco y había que volver a
+  pulsarlo.
+- **Todas las consolas del catálogo en Homebrew**: de 7 a 27. Ahora también Xbox Series X/S, Xbox One (ya no se mezcla
+  con Xbox), Steam Deck, Nintendo 3DS, PS Vita, Nintendo DS, PSP, Game Boy Advance, GameCube, Xbox, Game Boy Color,
+  Nintendo 64, Dreamcast, Saturn, Super Nintendo, Mega Drive, NES, Atari 2600, Switch 2 y Wii U. Algunas tienen todavía
+  pocos juegos en el catálogo.
+- **Primer arranque nuevo**, con el diseño Moneda: idioma, perfil, tus juegos y descargas, con la moneda y los pasos a
+  la izquierda.
+
 ## 1.7.1
 
 - **El idioma en toda la app.** Lo elegido en Ajustes, o en el primer arranque, se aplica en Inicio, Biblioteca, Tienda

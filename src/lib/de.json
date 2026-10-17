@@ -1490,5 +1490,14 @@
  "Hecho por": "Gemacht von",
  "Lo que trae cada versión": "Was jede Version bringt",
  "Versión": "Version",
- "Volver (Esc)": "Zurück (Esc)"
+ "Volver (Esc)": "Zurück (Esc)",
+ "¿Dónde tienes tus juegos?": "Wo sind deine Spiele?",
+ "{n} libres": "{n} frei",
+ "Añadir otra carpeta": "Weiteren Ordner hinzufügen",
+ "Cada perfil tiene sus favoritos, sus horas y sus logros. Si jugáis varios en casa, podréis añadir más.": "Jedes Profil hat eigene Favoriten, Spielstunden und Erfolge. Wenn bei euch mehrere spielen, könnt ihr weitere hinzufügen.",
+ "Crea tu perfil": "Erstelle dein Profil",
+ "Hola. Vamos a dejarlo listo.": "Hallo. Richten wir alles ein.",
+ "Los juegos también se instalarán aquí": "Spiele werden auch hier installiert",
+ "Paso {n} de {total}": "Schritt {n} von {total}",
+ "Son cuatro pasos y todo se puede cambiar luego en Ajustes.": "Es sind vier Schritte, und alles lässt sich später in den Einstellungen ändern."
 }

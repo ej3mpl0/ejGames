@@ -1490,5 +1490,14 @@
  "Hecho por": "Made by",
  "Lo que trae cada versión": "What each version brings",
  "Versión": "Version",
- "Volver (Esc)": "Back (Esc)"
+ "Volver (Esc)": "Back (Esc)",
+ "¿Dónde tienes tus juegos?": "Where are your games?",
+ "{n} libres": "{n} free",
+ "Añadir otra carpeta": "Add another folder",
+ "Cada perfil tiene sus favoritos, sus horas y sus logros. Si jugáis varios en casa, podréis añadir más.": "Each profile has its own favorites, hours and achievements. If several of you play at home, you can add more.",
+ "Crea tu perfil": "Create your profile",
+ "Hola. Vamos a dejarlo listo.": "Hi. Let's get you set up.",
+ "Los juegos también se instalarán aquí": "Games will also be installed here",
+ "Paso {n} de {total}": "Step {n} of {total}",
+ "Son cuatro pasos y todo se puede cambiar luego en Ajustes.": "It's four steps, and you can change everything later in Settings."
 }

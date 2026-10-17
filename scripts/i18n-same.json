@@ -250,5 +250,10 @@
   "API": 1,
   "HTML": 1,
   "SYSTEM": 1,
-  " (el juego corre como administrador: Windows no deja leer el teclado)": 1
+  " (el juego corre como administrador: Windows no deja leer el teclado)": 1,
+  "Deck": 1,
+  "Steam Deck": 1,
+  "Atari 2600": 1,
+  "Switch 2": 1,
+  "Xbox Series X/S": 1
 }

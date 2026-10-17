@@ -1490,5 +1490,14 @@
  "Hecho por": "制作",
  "Lo que trae cada versión": "各バージョンの変更点",
  "Versión": "バージョン",
- "Volver (Esc)": "戻る（Esc）"
+ "Volver (Esc)": "戻る（Esc）",
+ "¿Dónde tienes tus juegos?": "ゲームはどこにありますか?",
+ "{n} libres": "空き {n}",
+ "Añadir otra carpeta": "別のフォルダーを追加",
+ "Cada perfil tiene sus favoritos, sus horas y sus logros. Si jugáis varios en casa, podréis añadir más.": "プロフィールごとにお気に入り、プレイ時間、実績が分かれます。家族で遊ぶなら、あとで追加できます。",
+ "Crea tu perfil": "プロフィールを作成",
+ "Hola. Vamos a dejarlo listo.": "こんにちは。準備を始めましょう。",
+ "Los juegos también se instalarán aquí": "ゲームもここにインストールされます",
+ "Paso {n} de {total}": "ステップ {n}/{total}",
+ "Son cuatro pasos y todo se puede cambiar luego en Ajustes.": "4 ステップだけです。すべてあとで設定から変更できます。"
 }

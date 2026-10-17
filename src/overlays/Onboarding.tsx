@@ -1,35 +1,74 @@
-// Primer arranque: perfil → tema → biblioteca → descargas.
+// Primer arranque: idioma → perfil → biblioteca → descargas. A la izquierda la moneda y
+// los pasos (la ranura marca dónde estás); a la derecha, el paso.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { ArrowLeft, ArrowRight, Compass, FolderOpen, FolderPlus, Gamepad2, HardDrive, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import { ArrowRight, Compass, FolderOpen, HardDrive, Minus, Plus, ShieldCheck, Sparkles, Square, Trophy, X } from "lucide-react";
 import { api, errMsg } from "../api/tauri";
 import type { FolderInspection } from "../api/types";
 import { Button, TextInput, Toggle, cx } from "../components/ui";
-import { ThemeCard } from "../components/ThemeCard";
+import { Toasts } from "../components/Chrome";
 import { useOverlayNav } from "../input/nav";
 import { PROFILE_COLORS, bytes } from "../lib/format";
 import { DEFAULT_THEME, useApp } from "../store/app";
 import { Hints } from "../components/Hints";
-import { getLang, isLang, LANG_LABELS, steamLanguageFor, t, UI_LANGS, type Lang } from "../lib/i18n";
+import { getLang, isLang, LANG_LABELS, steamLanguageFor, t, tn, UI_LANGS, type Lang } from "../lib/i18n";
 import { restoreBackup } from "./settings/BackupSection";
 
 const ONBOARD_STEP = "ejg.onboard.step";
+const STEPS = ["Idioma", "Tu perfil", "Tus juegos", "Descargas"];
 
 function initialStep() {
   const n = Number(sessionStorage.getItem(ONBOARD_STEP) || "0");
-  return n >= 1 && n <= 4 ? n : 0;
+  return n >= 1 && n < STEPS.length ? n : 0;
 }
 
+const drag = (e: React.MouseEvent) => {
+  if (e.button === 0 && e.target === e.currentTarget) void api.windowAction(e.detail === 2 ? "toggle-maximize" : "drag");
+};
+
+/** El logo: disco rojo con su anillo y la ranura, recortados con el color del fondo. */
+function Coin({ size, cut, ring = 4, className, style }: { size: number | string; cut: string; ring?: number; className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg viewBox="0 0 100 100" aria-hidden="true" className={className} style={{ width: size, height: size, ...style }}>
+      <circle cx="50" cy="50" r="50" fill="#ff3a2d" />
+      <circle cx="50" cy="50" r="38" fill="none" stroke={cut} strokeWidth={ring} />
+      <rect x="27" y="44.5" width="46" height="11" fill={cut} />
+    </svg>
+  );
+}
+
+/** Fila de lista: fondo al elegirla y la ranura roja a la izquierda. */
+function Choice({ on, onClick, children, autofocus }: { on: boolean; onClick: () => void; children: ReactNode; autofocus?: boolean }) {
+  return (
+    <button
+      data-nav
+      {...(autofocus ? { "data-autofocus": true } : {})}
+      onClick={onClick}
+      className={cx(
+        "relative flex h-16 w-full items-center gap-4 rounded-[18px] px-5 text-left transition-colors cursor-pointer",
+        on ? "bg-surface-3" : "bg-surface-2 hover:bg-surface-3/70",
+      )}
+    >
+      <i className={cx("absolute left-0 top-1/2 h-[22px] w-[5px] -translate-y-1/2 rounded-[1.5px] bg-accent transition-opacity", on ? "opacity-100" : "opacity-0")} />
+      {children}
+      <span className={cx("grid h-5 w-5 shrink-0 place-items-center rounded-full transition-colors", on ? "bg-fg" : "ring-2 ring-inset ring-muted/40")}>
+        {on && <span className="h-2 w-2 rounded-full bg-surface" />}
+      </span>
+    </button>
+  );
+}
+
+const round = "grid h-11 w-11 shrink-0 place-items-center rounded-full";
+
 export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) {
-  const themes = useApp((s) => s.themes);
   const toast = useApp((s) => s.toast);
+  const source = useApp((s) => s.inputSource);
   const [step, setStep] = useState(initialStep);
   const [picked, setPicked] = useState<Lang>(getLang());
   const [systemLang, setSystemLang] = useState<Lang | null>(null);
   const [name, setName] = useState("");
   const [color, setColor] = useState(PROFILE_COLORS[0]);
-  const [theme, setTheme] = useState(DEFAULT_THEME);
   const [folders, setFolders] = useState<FolderInspection[]>([]);
   const [busy, setBusy] = useState(false);
   // Descargas: carpeta (por defecto la primera carpeta de juegos) y Explorar.
@@ -58,7 +97,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
     void api.systemUiLanguage().then((l) => { if (isLang(l)) setSystemLang(l); });
   }, []);
   useEffect(() => {
-    if (step !== 4 || dlDir) return;
+    if (step !== 3 || dlDir) return;
     const lib = folders.find((f) => f.suggestedMode !== "single");
     if (lib) setDlDir(lib.path);
   }, [step]);
@@ -116,7 +155,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
   async function finish() {
     setBusy(true);
     try {
-      const p = await api.createProfile(name.trim() || "Jugador", color, theme);
+      const p = await api.createProfile(name.trim() || "Jugador", color, DEFAULT_THEME);
       await api.login(p.id);
       await api.updateSettings({
         firstRunDone: true,
@@ -133,238 +172,291 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
     }
   }
 
-  const steps = ["Idioma", "Tu perfil", "Tu estilo", "Tus juegos", "Descargas"];
-  const last = step === steps.length - 1;
+  const last = step === STEPS.length - 1;
+  const canNext = step !== 1 || !!name.trim();
+  const next = () => {
+    if (!canNext) return;
+    if (step === 0) void confirmLanguage();
+    else setStep(step + 1);
+  };
+  const win = "grid h-12 w-[46px] place-items-center text-muted hover:bg-surface-3 hover:text-fg cursor-pointer";
+
   return (
-    <div ref={ref} className="season-scene relative flex h-full flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,#1d2a4a,#090c12_60%)]">
-      <div
-        className="h-10 shrink-0"
-        onMouseDown={(e) => e.button === 0 && void api.windowAction(e.detail === 2 ? "toggle-maximize" : "drag")}
-      />
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-10 pb-10">
-        <div className="mb-8 flex flex-wrap items-center gap-3 text-sm text-muted">
-          <Gamepad2 className="text-accent" size={22} />
-          <span className="font-semibold text-fg">ejGames</span>
-          <span className="mx-2 opacity-40">·</span>
-          {steps.map((s, i) => (
-            <span key={s} className={cx("flex items-center gap-2", i === step && "text-fg")}>
-              <span className={cx("grid h-6 w-6 place-items-center rounded-full text-xs", i <= step ? "bg-accent text-accent-contrast" : "bg-surface-3")}>
-                {i + 1}
+    <div ref={ref} className="relative flex h-full overflow-hidden bg-surface text-fg">
+      {/* Izquierda: la marca, el saludo y los pasos. La moneda grande gira un poco con cada paso. */}
+      <aside className="relative flex w-[clamp(320px,34vw,500px)] shrink-0 flex-col overflow-hidden bg-surface-2 px-[clamp(36px,4vw,56px)] pb-10 pt-12" onMouseDown={drag}>
+        <Coin size={34} cut="var(--h-surface-2)" className="pointer-events-none" />
+        <h1 className="pointer-events-none mt-[clamp(28px,7vh,64px)] text-[clamp(34px,3.6vw,52px)] font-extrabold leading-[1.04] tracking-[-0.045em]">
+          {t("Hola. Vamos a dejarlo listo.")}
+        </h1>
+        <p className="pointer-events-none mt-3 max-w-[340px] text-[15px] leading-relaxed text-muted">{t("Son cuatro pasos y todo se puede cambiar luego en Ajustes.")}</p>
+        <ol className="pointer-events-none mt-[clamp(24px,5vh,44px)] flex flex-col gap-[18px]">
+          {STEPS.map((s, i) => (
+            <li
+              key={s}
+              className={cx("flex items-center gap-4 text-[15px] font-semibold transition-colors duration-300", i === step ? "text-fg" : i < step ? "text-muted" : "text-muted/45")}
+            >
+              <span className="grid w-[22px] place-items-center">
+                <i
+                  className={cx(
+                    "block transition-all duration-300",
+                    i === step ? "h-[5px] w-[22px] rounded-[1.5px] bg-accent" : "h-2.5 w-2.5 rounded-full",
+                    i < step ? "bg-muted" : i > step && "bg-surface-3",
+                  )}
+                />
               </span>
               {s}
-              {i < steps.length - 1 && <span className="mx-2 h-px w-8 bg-line" />}
-            </span>
+            </li>
           ))}
-        </div>
+        </ol>
+        <Coin
+          size="min(470px, 92%)"
+          cut="var(--h-surface-2)"
+          ring={2.5}
+          className="pointer-events-none absolute -bottom-[150px] -right-[34%] transition-transform duration-[900ms] ease-[cubic-bezier(.6,0,.2,1)]"
+          style={{ transform: `rotate(${step * -22}deg)` }}
+        />
+      </aside>
 
-        <div className="panel-enter min-h-0 flex-1" key={step}>
-          {step === 0 && (
-            <div className="max-w-xl">
-              <h1 className="text-4xl font-semibold tracking-tight">{t("Elige tu idioma")}</h1>
-              <p className="mt-3 text-muted">
-                {t("ejGames usará el idioma de Windows. Puedes cambiarlo ahora o más tarde en Ajustes → Sistema.")}
-              </p>
-              <div className="mt-8 flex max-w-md flex-col gap-2">
-                {UI_LANGS.map((id) => (
-                  <button
-                    key={id}
-                    data-nav
-                    {...(id === picked ? { "data-autofocus": true } : {})}
-                    onClick={() => void chooseLanguage(id)}
-                    className={cx(
-                      "flex items-center justify-between rounded-[var(--h-radius)] bg-surface-2/70 px-4 py-3 text-left ring-1 ring-line cursor-pointer hover:bg-surface-3/60",
-                      picked === id && "ring-2 ring-accent",
-                    )}
-                  >
-                    <span data-no-t className="text-base font-medium">{LANG_LABELS[id]}</span>
-                    {systemLang === id && <span className="text-xs text-muted">{t("El de Windows")}</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Derecha: el paso. */}
+      <main className="relative flex min-w-0 flex-1 flex-col">
+        <header className="flex h-12 shrink-0" onMouseDown={drag}>
+          <div className="flex-1" onMouseDown={drag} />
+          <button className={win} title={t("Minimizar")} onClick={() => api.windowAction("minimize")}>
+            <Minus size={15} />
+          </button>
+          <button className={win} title={t("Maximizar")} onClick={() => api.windowAction("toggle-maximize")}>
+            <Square size={12} />
+          </button>
+          <button className="grid h-12 w-[46px] place-items-center text-muted hover:bg-red-600 hover:text-white cursor-pointer" title={t("Cerrar")} onClick={() => api.windowAction("close")}>
+            <X size={16} />
+          </button>
+        </header>
 
-          {step === 1 && (
-            <div className="max-w-xl">
-              <h1 className="text-4xl font-semibold tracking-tight">Bienvenido a tu biblioteca</h1>
-              <p className="mt-3 text-muted">
-                Todos tus juegos en un solo sitio, con el aspecto que tú quieras. Empieza creando tu perfil: cada perfil
-                tiene su tema, sus favoritos y sus horas.
-              </p>
-              <div className="mt-8 flex items-center gap-5">
-                <div
-                  className="grid h-20 w-20 shrink-0 place-items-center rounded-full text-3xl font-semibold text-white shadow-lg"
-                  style={{ background: color }}
-                >
-                  {(name.trim()[0] || "?").toUpperCase()}
-                </div>
-                <TextInput
-                  data-autofocus
-                  autoFocus
-                  placeholder="¿Cómo te llamas?"
-                  value={name}
-                  maxLength={32}
-                  onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && name.trim() && setStep(2)}
-                  className="h-12 text-lg"
-                />
-              </div>
-              <div className="mt-6 flex flex-wrap gap-2">
-                <Button size="sm" variant="ghost" onClick={() => void restoreFromFile()}>
-                  {t("¿Vienes de otro PC? Restaurar una copia")}
-                </Button>
-              </div>
-              <div className="mt-5 flex flex-wrap gap-2.5">
-                {PROFILE_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    data-nav
-                    aria-label={c}
-                    onClick={() => setColor(c)}
-                    className={cx("h-9 w-9 rounded-full cursor-pointer", c === color && "ring-2 ring-white ring-offset-2 ring-offset-[#0d1220]")}
-                    style={{ background: c }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="flex min-h-0 flex-1 flex-col px-[clamp(32px,5vw,72px)] pb-9 pt-[clamp(4px,3vh,28px)]">
+          <div key={step} className="panel-enter flex min-h-0 flex-1 flex-col">
+            <span className="text-[15px] text-muted">{t("Paso {n} de {total}", { n: step + 1, total: STEPS.length })}</span>
 
-          {step === 2 && (
-            <div className="flex h-full flex-col">
-              <h1 className="text-3xl font-semibold tracking-tight">Elige un estilo</h1>
-              <p className="mt-2 text-muted">Podrás cambiarlo, retocar cada detalle o crear el tuyo desde Ajustes → Apariencia.</p>
-              <div className="mt-6 grid min-h-0 grid-cols-3 gap-4 overflow-auto pb-2 pr-1">
-                {themes.map((t) => (
-                  <ThemeCard key={t.id} theme={t} active={t.id === theme} onClick={() => setTheme(t.id)} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="grid h-full grid-cols-2 gap-8">
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight">Encuentra tus juegos</h1>
-                <p className="mt-2 text-muted">
-                  Dinos dónde tienes tus juegos y ejGames se encarga del resto. Si más adelante instalas otro en esas carpetas, aparecerá solo.
+            {step === 0 && (
+              <>
+                <h2 className="mt-2 text-[clamp(30px,3vw,40px)] font-extrabold tracking-[-0.04em]">{t("Elige tu idioma")}</h2>
+                <p className="mt-2.5 max-w-[620px] text-base leading-relaxed text-muted">
+                  {t("ejGames usará el idioma de Windows. Puedes cambiarlo ahora o más tarde en Ajustes → Sistema.")}
                 </p>
-                <ul className="mt-6 space-y-3 rounded-[var(--h-radius)] bg-surface-2/70 p-4 text-sm ring-1 ring-line">
-                  <li className="flex gap-3">
-                    <Gamepad2 size={18} className="mt-0.5 shrink-0 text-accent" />
-                    <span>Cada subcarpeta es un juego: se detecta su .exe, aunque esté en lo más hondo.</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <Sparkles size={18} className="mt-0.5 shrink-0 text-accent" />
-                    <span>Portadas, fondos, descripción y tráileres se descargan solos.</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <ShieldCheck size={18} className="mt-0.5 shrink-0 text-accent" />
-                    <span>Si el juego guarda logros en su carpeta o en la de su emulador, se leen y te avisan en el overlay.</span>
-                  </li>
-                </ul>
-                <p className="mt-3 text-xs text-muted">¿Un juego suelto fuera de estas carpetas? Añádelo luego en Ajustes → Biblioteca.</p>
-              </div>
-              <div className="flex min-h-0 flex-col">
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Carpetas de juegos</h2>
-                  <Button icon={<FolderPlus size={16} />} onClick={addFolder} data-autofocus>
-                    Añadir carpeta
-                  </Button>
+                <div className="-mx-2 mt-8 min-h-0 flex-1 overflow-auto px-2 pb-2">
+                  <div className="grid max-w-[680px] grid-cols-2 gap-2.5" data-focus-group>
+                    {UI_LANGS.map((id) => (
+                      <Choice key={id} on={picked === id} autofocus={id === picked} onClick={() => void chooseLanguage(id)}>
+                        <span data-no-t className="flex-1 text-base font-semibold">{LANG_LABELS[id]}</span>
+                        {systemLang === id && <span className="text-xs text-muted">{t("El de Windows")}</span>}
+                      </Choice>
+                    ))}
+                  </div>
                 </div>
-                <div className="min-h-0 flex-1 overflow-auto rounded-[var(--h-radius)] bg-surface-2/70 p-2 ring-1 ring-line">
-                  {folders.length === 0 && (
-                    <p className="p-6 text-center text-sm text-muted">
-                      Añade las carpetas donde tienes juegos (por ejemplo <span className="text-fg">D:\Juegos</span>). Cada
-                      subcarpeta se trata como un juego y se detecta su .exe automáticamente.
+              </>
+            )}
+
+            {step === 1 && (
+              <>
+                <h2 className="mt-2 text-[clamp(30px,3vw,40px)] font-extrabold tracking-[-0.04em]">{t("Crea tu perfil")}</h2>
+                <p className="mt-2.5 max-w-[620px] text-base leading-relaxed text-muted">
+                  {t("Cada perfil tiene sus favoritos, sus horas y sus logros. Si jugáis varios en casa, podréis añadir más.")}
+                </p>
+                <div className="-mx-2 mt-9 min-h-0 flex-1 overflow-auto px-2 pb-2">
+                  <div className="flex max-w-[640px] items-center gap-6">
+                    <div
+                      className="grid h-[104px] w-[104px] shrink-0 place-items-center rounded-full text-[42px] font-bold text-white transition-colors duration-300"
+                      style={{ background: color }}
+                    >
+                      {(name.trim()[0] || "?").toUpperCase()}
+                    </div>
+                    <TextInput
+                      data-autofocus
+                      autoFocus
+                      placeholder={t("¿Cómo te llamas?")}
+                      value={name}
+                      maxLength={32}
+                      onChange={(e) => setName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && next()}
+                      className="h-16 rounded-[18px] bg-surface-2 px-6 text-xl font-semibold ring-0"
+                    />
+                  </div>
+                  <div className="mt-8 flex flex-wrap gap-3 pl-[2px]" data-focus-group>
+                    {PROFILE_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        data-nav
+                        aria-label={c}
+                        onClick={() => setColor(c)}
+                        className={cx(
+                          "h-10 w-10 rounded-full transition-transform cursor-pointer hover:scale-110",
+                          c === color && "ring-2 ring-fg ring-offset-4 ring-offset-surface",
+                        )}
+                        style={{ background: c }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <h2 className="mt-2 text-[clamp(30px,3vw,40px)] font-extrabold tracking-[-0.04em]">{t("¿Dónde tienes tus juegos?")}</h2>
+                <p className="mt-2.5 max-w-[620px] text-base leading-relaxed text-muted">
+                  {t("Dinos dónde tienes tus juegos y ejGames se encarga del resto. Si más adelante instalas otro en esas carpetas, aparecerá solo.")}
+                </p>
+                <div className="-mx-2 mt-8 min-h-0 flex-1 overflow-auto px-2 pb-2">
+                  <div className="flex max-w-[760px] flex-col gap-1 rounded-[22px] bg-surface-2 p-2">
+                    {folders.map((f) => (
+                      <div key={f.path} className="flex items-center gap-4 rounded-[16px] px-3 py-2.5">
+                        <span className={cx(round, "bg-surface-3")}>
+                          <FolderOpen size={19} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div data-no-t className="truncate text-[15px] font-semibold">{f.path}</div>
+                          <div className="mt-0.5 truncate text-[13px] text-muted">
+                            <span>{f.suggestedMode === "single" ? t("Un juego") : tn(f.preview.length, "{n} posible juego", "{n} posibles juegos")}</span>
+                            {f.preview.length > 0 && (
+                              <span data-no-t>{` · ${f.preview.slice(0, 4).join(", ")}${f.preview.length > 4 ? "…" : ""}`}</span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          data-nav
+                          aria-label={t("Quitar")}
+                          title={t("Quitar")}
+                          className={cx(round, "text-muted hover:bg-surface-3 hover:text-fg cursor-pointer")}
+                          onClick={() => setFolders((x) => x.filter((y) => y !== f))}
+                        >
+                          <X size={17} />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      data-nav
+                      data-autofocus
+                      onClick={() => void addFolder()}
+                      className="flex items-center gap-4 rounded-[16px] px-3 py-2.5 text-left text-muted hover:bg-surface-3/60 hover:text-fg cursor-pointer"
+                    >
+                      <span className={cx(round, "border-[1.5px] border-dashed border-muted/50")}>
+                        <Plus size={19} />
+                      </span>
+                      <span className="text-[15px] font-semibold">{folders.length ? t("Añadir otra carpeta") : t("Añadir carpeta")}</span>
+                    </button>
+                  </div>
+                  <div className="mt-5 grid max-w-[760px] grid-cols-3 gap-2.5">
+                    {[
+                      [<FolderOpen size={17} />, "Cada subcarpeta es un juego: se detecta su .exe, aunque esté en lo más hondo."],
+                      [<Sparkles size={17} />, "Portadas, fondos, descripción y tráileres se descargan solos."],
+                      [<Trophy size={17} />, "Si el juego guarda logros en su carpeta o en la de su emulador, se leen y te avisan en el overlay."],
+                    ].map(([icon, text], i) => (
+                      <div key={i} className="rounded-[18px] bg-surface-2/60 p-4 text-[13px] leading-snug text-muted">
+                        <span className="mb-2.5 block text-fg">{icon}</span>
+                        {t(text as string)}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-4 text-[13px] text-muted">{t("¿Un juego suelto fuera de estas carpetas? Añádelo luego en Ajustes → Biblioteca.")}</p>
+                </div>
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                <h2 className="mt-2 text-[clamp(30px,3vw,40px)] font-extrabold tracking-[-0.04em]">{t("¿Dónde guardamos las descargas?")}</h2>
+                <p className="mt-2.5 max-w-[620px] text-base leading-relaxed text-muted">
+                  En <span className="text-fg">Explorar</span> buscas un juego y ejGames lo descarga con su torrent integrado. Al terminar,
+                  pulsas Instalar y el juego aparece en tu biblioteca.
+                </p>
+                <div className="-mx-2 mt-8 min-h-0 flex-1 overflow-auto px-2 pb-2">
+                  <div className="flex max-w-[760px] flex-col gap-1 rounded-[22px] bg-surface-2 p-2">
+                    <Toggle
+                      label={
+                        <span className="flex items-center gap-2">
+                          <Compass size={16} /> Usar Explorar y Descargas
+                        </span>
+                      }
+                      hint="Puedes cambiarlo cuando quieras en Ajustes → Descargas."
+                      checked={explore}
+                      onChange={setExplore}
+                    />
+                    {explore && (
+                      <div className="flex items-center gap-4 rounded-[16px] px-3 py-2.5">
+                        <span className={cx(round, "bg-surface-3")}>
+                          <HardDrive size={19} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div data-no-t={dlDir ? "" : undefined} className="truncate text-[15px] font-semibold">
+                            {dlDir || t("Aún no has elegido carpeta")}
+                          </div>
+                          <div className="mt-0.5 text-[13px] text-muted">
+                            {dlDir ? (
+                              <>
+                                {dlFree != null && <span>{t("{n} libres", { n: bytes(dlFree) })} · </span>}
+                                <span>{t("Los juegos también se instalarán aquí")}</span>
+                              </>
+                            ) : (
+                              t("Elige una carpeta en un disco con espacio (los repacks ocupan decenas de GB).")
+                            )}
+                          </div>
+                        </div>
+                        <Button icon={<FolderOpen size={16} />} onClick={pickDownloads} data-autofocus>
+                          {dlDir ? "Cambiar" : "Elegir carpeta"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {explore && (
+                    <p className="mt-4 flex max-w-[760px] items-start gap-2.5 text-[13px] leading-snug text-muted">
+                      <ShieldCheck size={16} className="mt-px shrink-0" />
+                      La primera vez que descargues, Windows te pedirá permiso en el firewall: acéptalo para que otros usuarios puedan
+                      conectarse contigo y la descarga vaya más rápida.
                     </p>
                   )}
-                  {folders.map((f) => (
-                    <div key={f.path} className="flex items-start gap-3 rounded-lg px-3 py-2.5 hover:bg-surface-3/50">
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm">{f.path}</div>
-                        <div className="mt-0.5 text-xs text-muted">
-                          {f.suggestedMode === "single" ? "Un juego" : `${f.preview.length} posibles juegos`}
-                          {f.preview.length > 0 && ` · ${f.preview.slice(0, 4).join(", ")}${f.preview.length > 4 ? "…" : ""}`}
-                        </div>
-                      </div>
-                      <button data-nav className="text-muted hover:text-red-300 cursor-pointer" onClick={() => setFolders((x) => x.filter((y) => y !== f))}>
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
                 </div>
-              </div>
-            </div>
-          )}
+              </>
+            )}
+          </div>
 
-          {step === 4 && (
-            <div className="max-w-2xl">
-              <h1 className="text-3xl font-semibold tracking-tight">¿Dónde guardamos las descargas?</h1>
-              <p className="mt-2 text-muted">
-                En <span className="text-fg">Explorar</span> buscas un juego y ejGames lo descarga con su torrent integrado. Al terminar,
-                pulsas Instalar y el juego aparece en tu biblioteca.
-              </p>
-              <div className="mt-6 rounded-[var(--h-radius)] bg-surface-2/70 p-2 ring-1 ring-line">
-                <Toggle
-                  label={
-                    <span className="flex items-center gap-2">
-                      <Compass size={16} className="text-accent" /> Usar Explorar y Descargas
-                    </span>
-                  }
-                  hint="Puedes cambiarlo cuando quieras en Ajustes → Descargas."
-                  checked={explore}
-                  onChange={setExplore}
-                />
-              </div>
-              {explore && (
-                <>
-                  <div className="mt-3 flex items-center gap-4 rounded-[var(--h-radius)] bg-surface-2/70 p-4 ring-1 ring-line">
-                    <HardDrive size={22} className="shrink-0 text-muted" />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm">{dlDir || "Aún no has elegido carpeta"}</div>
-                      <div className="text-xs text-muted">
-                        {dlDir
-                          ? `${dlFree != null ? `${bytes(dlFree)} libres · ` : ""}Los juegos también se instalarán aquí`
-                          : "Elige una carpeta en un disco con espacio (los repacks ocupan decenas de GB)."}
-                      </div>
-                    </div>
-                    <Button icon={<FolderOpen size={16} />} onClick={pickDownloads} data-autofocus>
-                      {dlDir ? "Cambiar" : "Elegir carpeta"}
-                    </Button>
-                  </div>
-                  <p className="mt-4 flex items-start gap-2 text-xs text-muted">
-                    <ShieldCheck size={15} className="mt-0.5 shrink-0" />
-                    La primera vez que descargues, Windows te pedirá permiso en el firewall: acéptalo para que otros usuarios puedan
-                    conectarse contigo y la descarga vaya más rápida.
-                  </p>
-                </>
-              )}
-            </div>
-          )}
+          <footer className="mt-6 flex items-center gap-3">
+            {step <= 1 && (
+              <button
+                data-nav
+                onClick={() => void restoreFromFile()}
+                className="rounded-full px-1 text-sm font-semibold text-muted underline underline-offset-4 hover:text-fg cursor-pointer"
+              >
+                {t("¿Vienes de otro PC? Restaurar una copia")}
+              </button>
+            )}
+            <div className="flex-1" />
+            {source !== "mouse" && (
+              <Hints
+                className="mr-3"
+                items={[
+                  ["accept", "Elegir"],
+                  ["back", "Atrás"],
+                ]}
+              />
+            )}
+            {step > 0 && (
+              <Button variant="ghost" size="lg" onClick={() => setStep(step - 1)}>
+                Atrás
+              </Button>
+            )}
+            {!last ? (
+              <Button variant="primary" size="lg" onClick={next} disabled={!canNext}>
+                Siguiente <ArrowRight size={18} />
+              </Button>
+            ) : (
+              <Button variant="primary" size="lg" onClick={() => void finish()} disabled={busy || (explore && !dlDir)}>
+                {busy ? "Preparando…" : "Empezar"} {!busy && <ArrowRight size={18} />}
+              </Button>
+            )}
+          </footer>
         </div>
-
-        <div className="mt-8 flex items-center justify-between gap-6">
-          <Button variant="ghost" icon={<ArrowLeft size={16} />} onClick={() => setStep(step - 1)} disabled={step === 0}>
-            Atrás
-          </Button>
-          <Hints
-            className="flex-1 justify-center"
-            items={[
-              ["accept", "Elegir"],
-              ["back", "Atrás"],
-            ]}
-          />
-          {!last ? (
-            <Button variant="primary" size="lg" onClick={() => void (step === 0 ? confirmLanguage() : setStep(step + 1))} disabled={step === 1 && !name.trim()}>
-              Siguiente <ArrowRight size={18} />
-            </Button>
-          ) : (
-            <Button variant="primary" size="lg" icon={<Sparkles size={18} />} onClick={finish} disabled={busy || (explore && !dlDir)}>
-              {busy ? "Preparando…" : "Empezar"}
-            </Button>
-          )}
-        </div>
-      </div>
+      </main>
+      <Toasts />
     </div>
   );
 }

@@ -1490,5 +1490,14 @@
  "Hecho por": "Feito por",
  "Lo que trae cada versión": "O que cada versão traz",
  "Versión": "Versão",
- "Volver (Esc)": "Voltar (Esc)"
+ "Volver (Esc)": "Voltar (Esc)",
+ "¿Dónde tienes tus juegos?": "Onde estão os seus jogos?",
+ "{n} libres": "{n} livres",
+ "Añadir otra carpeta": "Adicionar outra pasta",
+ "Cada perfil tiene sus favoritos, sus horas y sus logros. Si jugáis varios en casa, podréis añadir más.": "Cada perfil tem os seus favoritos, horas e conquistas. Se jogam vários em casa, podem adicionar mais.",
+ "Crea tu perfil": "Crie o seu perfil",
+ "Hola. Vamos a dejarlo listo.": "Olá. Vamos deixar tudo pronto.",
+ "Los juegos también se instalarán aquí": "Os jogos também serão instalados aqui",
+ "Paso {n} de {total}": "Passo {n} de {total}",
+ "Son cuatro pasos y todo se puede cambiar luego en Ajustes.": "São quatro passos e tudo pode ser alterado depois em Definições."
 }

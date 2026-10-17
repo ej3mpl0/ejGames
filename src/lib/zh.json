@@ -1490,5 +1490,14 @@
  "Hecho por": "作者",
  "Lo que trae cada versión": "每个版本的更新内容",
  "Versión": "版本",
- "Volver (Esc)": "返回（Esc）"
+ "Volver (Esc)": "返回（Esc）",
+ "¿Dónde tienes tus juegos?": "你的游戏在哪里？",
+ "{n} libres": "可用 {n}",
+ "Añadir otra carpeta": "添加其他文件夹",
+ "Cada perfil tiene sus favoritos, sus horas y sus logros. Si jugáis varios en casa, podréis añadir más.": "每个档案都有自己的收藏、时长和成就。家里有多人玩的话，可以再添加。",
+ "Crea tu perfil": "创建你的档案",
+ "Hola. Vamos a dejarlo listo.": "你好，我们来完成设置。",
+ "Los juegos también se instalarán aquí": "游戏也会安装在这里",
+ "Paso {n} de {total}": "第 {n} 步，共 {total} 步",
+ "Son cuatro pasos y todo se puede cambiar luego en Ajustes.": "只有四步，之后都可以在设置中更改。"
 }

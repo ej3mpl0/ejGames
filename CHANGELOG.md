@@ -7,8 +7,8 @@ biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
 ## 1.7.4
 
-- **Discord más limpio**: la tarjeta muestra «Jugando a <juego>» con su portada y el tiempo de partida, sin la línea
-  «Jugando desde ejGames» debajo.
+- **Discord más limpio**: la tarjeta muestra «Jugando a» y el nombre del juego, con su portada y el tiempo de partida,
+  sin la línea «Jugando desde ejGames» debajo.
 
 ## 1.7.3
 

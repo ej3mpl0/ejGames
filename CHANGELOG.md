@@ -5,6 +5,11 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.7.4
+
+- **Discord más limpio**: la tarjeta muestra «Jugando a <juego>» con su portada y el tiempo de partida, sin la línea
+  «Jugando desde ejGames» debajo.
+
 ## 1.7.3
 
 - **Botón para volver en la ficha de la tienda.** Arriba a la izquierda, con el nombre de la lista de la que vienes

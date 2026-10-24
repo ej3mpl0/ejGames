@@ -9,8 +9,10 @@ biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
 - **Botón para volver en la ficha de la tienda.** Arriba a la izquierda, con el nombre de la lista de la que vienes
   («‹ Novedades», «‹ Tu tienda»…): vuelve justo a donde estabas, con ese juego marcado, aunque hubieras bajado mucho. Si
-  abres otro juego desde «Más como este», el botón vuelve primero al anterior. El enlace de la barra de esa lista
-  también te devuelve a tu sitio en vez de empezar arriba, y el botón lateral «atrás» del ratón hace lo mismo que Esc.
+  abres otro juego desde «Más como este», el botón vuelve primero al anterior. El botón lateral «atrás» del ratón hace
+  lo mismo que Esc.
+- **Ficha de la tienda más limpia**: sin la barra de la tienda (Tu tienda, Novedades, Explorar…) encima; el juego
+  empieza arriba.
 - **Al volver de un juego a la Biblioteca** ya no se ve la lista desplazarse desde arriba: aparece directamente donde
   estabas.
 

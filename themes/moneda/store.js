@@ -147,9 +147,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     if (!shell) {
       // Un solo buscador: el de la barra de arriba (main.js le manda lo que se escribe con query()).
       navInput = searchBox;
-      // Desde una ficha, el enlace de la lista de la que vienes vuelve a ella por donde ibas.
-      const go = (id, fn) => () => (view.name === "detail" && section() === id ? leaveDetail() : fn());
-      const link = (id, label, fn) => (links[id] = h("button", { class: "sn-link", "data-focus": "", onclick: go(id, fn) }, label));
+      const link = (id, label, fn) => (links[id] = h("button", { class: "sn-link", "data-focus": "", onclick: fn }, label));
       const nav = h(
         "div",
         { class: "store-nav" },
@@ -164,13 +162,14 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
         ),
       );
       // Como en Steam: «Lista de deseados (N)» encima de la barra, a la derecha.
-      links.wish = h("button", { class: "sn-wish", "data-focus": "", onclick: go("wish", () => openWish()) }, "Lista de deseados", h("span", { class: "sn-wish-n" }));
+      links.wish = h("button", { class: "sn-wish", "data-focus": "", onclick: () => openWish() }, "Lista de deseados", h("span", { class: "sn-wish-n" }));
       content = h("div", { class: "store-content" });
       shell = h("div", { class: "store" }, h("div", { class: "store-top" }, h("div", { class: "store-over" }, links.wish), nav), content);
     }
     wishCount();
     const ev = season();
-    shell.className = "store" + (ev ? ` ev ev-${ev.id}` : "");
+    // En la ficha no va la barra de la tienda: para volver está «‹ Novedades».
+    shell.className = "store" + (ev ? ` ev ev-${ev.id}` : "") + (view.name === "detail" ? " in-detail" : "");
     if (main.firstChild !== shell || main.childNodes.length !== 1) main.replaceChildren(shell);
     const on = section();
     for (const [id, el] of Object.entries(links)) el.classList.toggle("on", id === on);

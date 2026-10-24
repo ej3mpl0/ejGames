@@ -1025,7 +1025,7 @@ function back() {
   stopMedia();
   Object.assign(state, { page: p.page, from: p.from, gameId: p.gameId, collection: p.collection });
   render();
-  main.scrollTop = p.scroll || 0;
+  main.scrollTo({ top: p.scroll || 0, behavior: "instant" });
   const el = last && main.querySelector(`[data-game-id="${last}"]`);
   if (el) focus.focus(el, { silent: true });
   else focus.first(main);
@@ -1137,6 +1137,12 @@ window.addEventListener("keydown", (e) => {
   if (e.key !== "/" || /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "")) return;
   e.preventDefault();
   searchBox.focus();
+});
+// El botón lateral «atrás» del ratón, como Esc.
+window.addEventListener("mouseup", (e) => {
+  if (e.button !== 3) return;
+  e.preventDefault();
+  back();
 });
 
 // ─────────────── descargas: el anillo de la barra ───────────────

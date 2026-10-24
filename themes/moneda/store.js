@@ -76,7 +76,9 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
   const store = createExplore(ejg, () => {
     if (active() === "store" && view.name !== "detail") paint(true);
   });
-  const view = { name: "front", slug: null, detail: null, detailError: "", scroll: 0 };
+  // `prev`, `scroll` y `from`: la lista de la que se abrió la ficha, por dónde ibas y el juego que abriste.
+  // `trail`: las fichas abiertas desde otra ficha («Más como este»), para volver a cada una.
+  const view = { name: "front", slug: null, detail: null, detailError: "", scroll: 0, from: null, trail: [] };
   // Catálogo: menú «Ordenar por» abierto y géneros desplegados («Mostrar todos»).
   let sortOpen = false;
   const expanded = new Set();
@@ -145,7 +147,9 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     if (!shell) {
       // Un solo buscador: el de la barra de arriba (main.js le manda lo que se escribe con query()).
       navInput = searchBox;
-      const link = (id, label, fn) => (links[id] = h("button", { class: "sn-link", "data-focus": "", onclick: fn }, label));
+      // Desde una ficha, el enlace de la lista de la que vienes vuelve a ella por donde ibas.
+      const go = (id, fn) => () => (view.name === "detail" && section() === id ? leaveDetail() : fn());
+      const link = (id, label, fn) => (links[id] = h("button", { class: "sn-link", "data-focus": "", onclick: go(id, fn) }, label));
       const nav = h(
         "div",
         { class: "store-nav" },
@@ -160,7 +164,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
         ),
       );
       // Como en Steam: «Lista de deseados (N)» encima de la barra, a la derecha.
-      links.wish = h("button", { class: "sn-wish", "data-focus": "", onclick: () => openWish() }, "Lista de deseados", h("span", { class: "sn-wish-n" }));
+      links.wish = h("button", { class: "sn-wish", "data-focus": "", onclick: go("wish", () => openWish()) }, "Lista de deseados", h("span", { class: "sn-wish-n" }));
       content = h("div", { class: "store-content" });
       shell = h("div", { class: "store" }, h("div", { class: "store-top" }, h("div", { class: "store-over" }, links.wish), nav), content);
     }
@@ -168,11 +172,17 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     const ev = season();
     shell.className = "store" + (ev ? ` ev ev-${ev.id}` : "");
     if (main.firstChild !== shell || main.childNodes.length !== 1) main.replaceChildren(shell);
-    const base = view.name === "detail" ? view.prev : view.name;
-    const on = base === "list" ? view.list : base === "catalog" ? view.link || "catalog" : base;
+    const on = section();
     for (const [id, el] of Object.entries(links)) el.classList.toggle("on", id === on);
     if (document.activeElement !== navInput) navInput.value = view.name === "catalog" || view.prev === "catalog" ? store.state.catalog.filters.query || "" : "";
   }
+
+  /** El enlace de la barra de la vista actual (en una ficha, el de la lista de la que vienes). */
+  function section() {
+    const base = view.name === "detail" ? view.prev || "front" : view.name;
+    return base === "list" ? view.list : base === "catalog" ? view.link || "catalog" : base;
+  }
+  const SECTION_LABEL = { front: "Tu tienda", latest: "Novedades", catalog: "Explorar", week: "Populares", month: "Top del mes", wish: "Lista de deseados" };
 
   /** El número de la lista en el botón de la barra. */
   function wishCount() {
@@ -676,15 +686,23 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
   );
 
   // ─────────────── página de producto ───────────────
-  async function openRepack(slug) {
-    view.scroll = main.scrollTop;
-    view.prev = view.name === "detail" ? view.prev : view.name;
+  /** `again`: volver a una ficha de `trail` (no se apunta la actual). */
+  async function openRepack(slug, again = false) {
+    if (view.name !== "detail") {
+      view.scroll = main.scrollTop;
+      view.prev = view.name;
+      view.from = slug;
+      view.trail = [];
+    } else if (!again && slug !== view.slug) {
+      view.trail.push({ slug: view.slug, title: view.detail?.title || "" });
+      if (view.trail.length > 20) view.trail.shift();
+    }
     view.name = "detail";
     view.slug = slug;
     view.detail = null;
     view.detailError = "";
     paint();
-    main.scrollTop = 0;
+    main.scrollTo({ top: 0, behavior: "instant" });
     try {
       view.detail = await store.details(slug);
     } catch (e) {
@@ -785,10 +803,22 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     );
   }
 
+  /** «‹ Novedades»: vuelve a la lista de la que vienes (o a la ficha anterior). */
+  function backButton() {
+    const prev = view.trail[view.trail.length - 1];
+    return h(
+      "button",
+      { class: "app-back", "data-focus": "", "data-key": "back", title: "Atrás", "aria-label": "Atrás", onclick: () => back() },
+      icon("left"),
+      h("span", null, prev ? prev.title || "Atrás" : SECTION_LABEL[section()] || "Atrás"),
+    );
+  }
+
   function detailPage() {
-    if (view.detailError) return h("div", { class: "store-empty" }, h("h2", null, "No se pudo abrir la ficha"), h("p", null, view.detailError));
+    const waiting = (...body) => h("div", { class: "app-page" }, h("div", { class: "app-inner" }, h("div", { class: "crumbs" }, backButton()), h("div", { class: "store-empty" }, ...body)));
+    if (view.detailError) return waiting(h("h2", null, "No se pudo abrir la ficha"), h("p", null, view.detailError));
     const d = view.detail;
-    if (!d) return h("div", { class: "store-empty" }, h("div", { class: "spinner" }));
+    if (!d) return waiting(h("div", { class: "spinner" }));
     let shot = 0;
     const big = h("div", { class: "pv-big" }, d.screenshots[0] ? img(d.screenshots[0].full, { loading: "eager" }) : d.hero ? img(d.hero) : null);
     const strip = h(
@@ -844,6 +874,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
         h(
           "div",
           { class: "crumbs" },
+          backButton(),
           h("button", { class: "crumb", "data-focus": "", onclick: () => openCatalog({}) }, "Todos los juegos"),
           h("span", null, " > "),
           main1
@@ -1317,6 +1348,25 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     onNavigate();
   }
 
+  /** De la ficha a la lista de la que se abrió, por donde ibas y con el foco en ese juego. */
+  function leaveDetail() {
+    view.name = view.prev || "front";
+    view.trail = [];
+    paint();
+    // Sin la animación de #main (scroll-behavior: smooth): se vuelve justo a donde estabas.
+    main.scrollTo({ top: view.scroll, behavior: "instant" });
+    // El que se ve (en la portada un juego puede salir en varias filas); si no está, lo primero que se vea.
+    const box = main.getBoundingClientRect();
+    const seen = (n) => {
+      const r = n?.getBoundingClientRect();
+      return !!r && r.bottom > box.top && r.top < box.bottom;
+    };
+    const mine = Array.from(view.from ? content.querySelectorAll(`[data-slug="${CSS.escape(view.from)}"]`) : []).map((n) => (n.matches("[data-focus]") ? n : n.querySelector("[data-focus]")));
+    const el = mine.find(seen) || Array.from(content.querySelectorAll("[data-focus]")).find(seen);
+    if (el) focus.focus(el, { silent: true, noScroll: true });
+    else focus.first(main);
+  }
+
   function back() {
     if (askOpen) return askOpen(), true;
     if (closeDialog()) return true;
@@ -1327,12 +1377,9 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
       return true;
     }
     if (active() === "store" && view.name === "detail") {
-      view.name = view.prev || "front";
-      paint();
-      main.scrollTop = view.scroll;
-      const el = view.slug && main.querySelector(`[data-slug="${view.slug}"]`);
-      if (el) focus.focus(el, { silent: true });
-      else focus.first(main);
+      const prev = view.trail.pop();
+      if (prev) openRepack(prev.slug, true);
+      else leaveDetail();
       return true;
     }
     if (active() === "store" && view.name !== "front") {

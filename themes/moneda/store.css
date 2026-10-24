@@ -185,6 +185,11 @@ img.img-error { visibility: hidden; }
 .crumb { font-size: 13px; font-weight: 600; color: var(--muted); border-radius: 8px; padding: 2px 4px; }
 .crumb:hover, .crumb.is-focused { color: var(--text); }
 .crumb.is-focused { box-shadow: 0 0 0 2px var(--text); }
+.app-back { display: inline-flex; align-items: center; gap: 4px; height: 36px; max-width: 320px; margin-right: 10px; padding: 0 16px 0 8px; border-radius: 18px; background: var(--panel); color: var(--text); font-size: 14px; font-weight: 600; white-space: nowrap; }
+.app-back span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.app-back .ico svg { width: 20px; height: 20px; }
+.app-back:hover { background: var(--lift); }
+.app-back.is-focused { box-shadow: 0 0 0 2px var(--text); }
 .app-head { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
 .app-title { flex: 1 1 420px; min-width: 0; font-family: var(--display); font-size: 44px; font-weight: 800; letter-spacing: -0.045em; line-height: 1.05; margin: 0; }
 .app-head-acts { display: flex; align-items: center; gap: 12px; margin-left: auto; }

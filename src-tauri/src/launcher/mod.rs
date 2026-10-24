@@ -284,7 +284,6 @@ impl Track {
                     &d.id,
                     Presence {
                         title: if d.hide { crate::i18n::t("Un juego").into() } else { self.game.title.clone() },
-                        details: Some(crate::i18n::t("Jugando desde ejGames").into()),
                         state: None,
                         start: started,
                         image_url: if d.hide { None } else { d.cover_url.clone() },

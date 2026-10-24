@@ -175,7 +175,7 @@ export function SystemTab() {
       <Section title="Discord Rich Presence">
         <Toggle
           label="Mostrar en Discord a qué estoy jugando"
-          hint="Tus amigos verán «Jugando a <juego>» con su portada y «Jugando desde ejGames». También se puede quitar por perfil (Ajustes → Perfil) y por juego."
+          hint="Tus amigos verán «Jugando a <juego>» con su portada. También se puede quitar por perfil (Ajustes → Perfil) y por juego."
           checked={settings.discordEnabled}
           onChange={(v) => save({ discordEnabled: v })}
         />

@@ -1,6 +1,6 @@
 //! Discord Rich Presence en un hilo propio: reconexión con backoff si Discord no
 //! está abierto. Con `name` + StatusDisplayType::Name se ve "Jugando a <juego>";
-//! dentro de la tarjeta, "Jugando desde ejGames" y el icono de la aplicación.
+//! dentro de la tarjeta, la portada y el icono de la aplicación.
 //! Si Discord conoce el juego, se usa su Application ID para que el icono del
 //! canal de voz sea el del juego.
 
@@ -12,7 +12,6 @@ use std::time::Duration;
 #[derive(Debug, Clone)]
 pub struct Presence {
     pub title: String,
-    pub details: Option<String>,
     pub state: Option<String>,
     pub start: i64,
     pub image_url: Option<String>,
@@ -195,9 +194,6 @@ fn apply(client: &mut DiscordIpcClient, p: &Presence) -> Result<(), Box<dyn std:
         .name(p.title.as_str())
         .status_display_type(StatusDisplayType::Name)
         .timestamps(Timestamps::new().start(p.start));
-    if let Some(d) = &p.details {
-        a = a.details(d.as_str());
-    }
     if let Some(s) = &p.state {
         a = a.state(s.as_str());
     }

@@ -109,7 +109,6 @@
  "Imagen no válida.": "無効な画像です。",
  "Instalación cancelada": "インストールをキャンセルしました",
  "Instalador no encontrado": "インストーラーが見つかりません",
- "Jugando desde ejGames": "ejGames からプレイ中",
  "La carpeta del juego es también una carpeta de tu biblioteca o del sistema: no se borra.": "ゲームのフォルダーは、ライブラリまたはシステムのフォルダーでもあります。削除しません。",
  "La carpeta del juego ya no existe. Puedes quitarlo de la biblioteca en Editar.": "ゲームのフォルダーはもうありません。編集からライブラリから外せます。",
  "La carpeta no existe: {0}": "フォルダーがありません: {0}",

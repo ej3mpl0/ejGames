@@ -161,6 +161,14 @@ export function activeTheme(s: Pick<State, "themes" | "profile" | "themeOverride
   return s.themes.find((t) => t.id === id) ?? s.themes.find((t) => t.id === DEFAULT_THEME) ?? s.themes[0];
 }
 
+/**
+ * ¿Está activo Telón? Sus pantallas del host (Ajustes, diálogos) no llevan cajas
+ * ni pastillas: los componentes de ui.tsx pintan su variante plana.
+ */
+export function useTelon(): boolean {
+  return useApp((s) => activeTheme(s)?.id === "telon");
+}
+
 /** Los juegos de consola de la biblioteca (ROMs propias y homebrew), por sistema. */
 export function romLibrary(s: Pick<State, "games">): Map<string, LibGame[]> {
   const out = new Map<string, LibGame[]>();

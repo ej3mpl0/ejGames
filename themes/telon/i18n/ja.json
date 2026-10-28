@@ -151,5 +151,10 @@
  "› Guías": "› ガイド",
  "Una sola cosa por pantalla: el arte del juego a sangre, negro puro y nada de cajas": "1 画面に 1 つだけ。ゲームのアートを全面に、背景は真っ黒、ボックスはなし",
  "Fondo con el arte del juego señalado": "選択中のゲームのアートを背景に",
- "Mostrar «Jugado hace poco» en Inicio": "ホームに「最近プレイ」を表示"
+ "Mostrar «Jugado hace poco» en Inicio": "ホームに「最近プレイ」を表示",
+ "Descarga selectiva: puedes dejar fuera los idiomas que no uses.": "選択ダウンロード：使わない言語は省けます。",
+ "En disco": "ディスク上",
+ "instalado ocupará": "インストール後のサイズ",
+ "Original": "元のサイズ",
+ "Repack de": "Repack サイズ"
 }

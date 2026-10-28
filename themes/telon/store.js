@@ -818,45 +818,52 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     if (view.detailError) return waiting(h("h2", null, "No se pudo abrir la ficha"), h("p", null, view.detailError));
     const d = view.detail;
     if (!d) return waiting(h("div", { class: "spinner" }));
-    let shot = 0;
-    const big = h("div", { class: "pv-big" }, d.screenshots[0] ? img(d.screenshots[0].full, { loading: "eager" }) : d.hero ? img(d.hero) : null);
-    const strip = h(
-      "div",
-      { class: "pv-strip", "data-focus-group": "shots" },
-      ...d.screenshots.map((s, k) =>
-        h(
-          "button",
-          {
-            class: "pv-thumb" + (k === 0 ? " on" : ""),
-            "data-focus": "",
-            onclick: () => {
-              shot = k;
-              big.replaceChildren(img(s.full, { loading: "eager" }));
-              strip.querySelectorAll(".pv-thumb").forEach((t, j) => t.classList.toggle("on", j === shot));
-            },
-          },
-          img(s.thumb, { loading: "lazy" }),
-        ),
-      ),
-    );
+    // Telón: el arte a sangre arriba, con el título, una frase y el disco blanco;
+    // debajo, el texto en una columna y las capturas y los datos en otra.
     const act = repackAction(d);
-    const short = (d.description || "").replace(/\s+/g, " ").trim();
     const doAction = () => runAction(d);
-    const glance = [
-      ["Publicado", date(d.date)],
-      ["Compañías", d.companies],
-      ["Repack", d.number ? `#${d.number}` : null],
-    ].filter((r) => r[1]);
+    const art = d.hero || d.screenshots[0]?.full || "";
+    const stage = h("div", { class: "t-stage" }, art ? img(art, { class: "t-stage-art", loading: "eager" }) : null, h("div", { class: "t-stage-shade" }));
+    const known = (d.tags || []).map((t) => store.state.genres.find((g) => g.id === t)).filter(Boolean);
+    const genreNames = (known.length ? known.map((g) => g.name) : d.genres.map(genreLabel)).slice(0, 3);
+    const who = [d.companies, d.date ? String(new Date(d.date).getFullYear()) : null].filter(Boolean).join(", ");
+    const sizes = sizeText(d.repackSize)
+      ? sizeText(d.installSize)
+        ? h("span", null, h("span", null, "Repack de"), " ", sizeText(d.repackSize), "; ", h("span", null, "instalado ocupará"), " ", sizeText(d.installSize), ".")
+        : h("span", null, h("span", null, "Repack de"), " ", sizeText(d.repackSize), ".")
+      : null;
     const langs = (d.languages || "")
       .split(/[,/]/)
       .map((x) => x.trim())
       .filter(Boolean);
-    // Géneros conocidos: botones que abren el catálogo filtrado por ellos.
-    const known = (d.tags || []).map((t) => store.state.genres.find((g) => g.id === t)).filter(Boolean);
-    const tags = known.length
-      ? known.slice(0, 8).map((g) => h("button", { class: "app-tag", "data-focus": "", onclick: () => openCatalog({ genres: [g.id] }) }, g.name))
-      : d.genres.slice(0, 8).map((g) => h("span", null, genreLabel(g)));
-    const main1 = known.find((g) => g.group === "genre");
+    const info = [
+      ["Publicado", date(d.date)],
+      ["Repack", d.number ? `#${d.number}` : null],
+      ["Original", sizeText(d.originalSize)],
+      ["Descarga", sizeText(d.repackSize)],
+      ["En disco", sizeText(d.installSize)],
+      ["Idiomas", langs.slice(0, 8).join(", ") || null],
+    ].filter((r) => r[1]);
+    const shots = h(
+      "div",
+      { class: "t-shots", "data-focus-group": "shots" },
+      ...d.screenshots.slice(0, 8).map((sc) =>
+        h(
+          "button",
+          {
+            class: "t-shot",
+            "data-focus": "",
+            onclick: () => {
+              // Las capturas cambian el arte de arriba.
+              const im = stage.querySelector(".t-stage-art");
+              if (im) im.src = sc.full;
+              main.scrollTo({ top: 0, behavior: "smooth" });
+            },
+          },
+          img(sc.thumb, { loading: "lazy" }),
+        ),
+      ),
+    );
     const similar = h("div", { class: "pg-items similar" });
     store.similar(d, 8).then((list) => {
       if (view.slug !== d.slug) return;
@@ -865,89 +872,52 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     });
     return h(
       "div",
-      { class: "app-page" },
-      h("div", { class: "app-bg", style: d.hero ? { backgroundImage: `url("${d.hero}")` } : {} }),
+      { class: "app-page t-detail" },
+      stage,
       h(
         "div",
-        { class: "app-inner" },
+        { class: "t-head" },
+        h("div", { class: "crumbs" }, backButton()),
+        repackName(d, "h1", { class: "app-title" }),
+        who || genreNames.length ? h("p", { class: "t-say" }, who ? h("span", { "data-no-t": "" }, who + ". ") : null, genreNames.length ? h("span", null, genreNames.join(", ")) : null) : null,
+        sizes ? h("p", { class: "t-say" }, sizes) : null,
         h(
           "div",
-          { class: "crumbs" },
-          backButton(),
-          h("button", { class: "crumb", "data-focus": "", onclick: () => openCatalog({}) }, "Todos los juegos"),
-          h("span", null, " > "),
-          main1
-            ? h("button", { class: "crumb", "data-focus": "", onclick: () => openCatalog({ genres: [main1.id] }) }, main1.name)
-            : h("span", null, d.genres[0] ? genreLabel(d.genres[0]) : "Juegos"),
-          h("span", null, " > "),
-          h("span", null, d.title),
+          { class: "t-acts" },
+          act.id === "play"
+            ? h("button", { class: "play", "data-focus": "", "data-key": "act", onclick: doAction }, h("i", { class: "disc" }), act.label)
+            : h("button", { class: "soft light lg act-main", "data-focus": "", "data-key": "act", onclick: doAction }, act.label),
+          act.hint ? h("span", { class: "act-hint" }, act.hint) : null,
+          wishButton(d),
         ),
-        h(
-          "div",
-          { class: "app-head" },
-          repackName(d, "h1", { class: "app-title" }),
-          h(
-            "div",
-            { class: "app-head-acts" },
-            act.id === "play"
-              ? h("button", { class: "play", "data-focus": "", "data-key": "act", onclick: doAction }, h("i", { class: "disc" }), act.label)
-              : h("button", { class: "soft light lg act-main", "data-focus": "", "data-key": "act", onclick: doAction }, icon("down"), act.label),
-            act.hint ? h("span", { class: "act-hint" }, act.hint) : sizeText(d.repackSize) ? h("span", { class: "act-hint" }, sizeText(d.repackSize)) : null,
-            wishButton(d),
-          ),
-        ),
-        h(
-          "div",
-          { class: "app-top" },
-          h("div", { class: "pv" }, big, strip),
-          h(
-            "div",
-            { class: "app-side" },
-            wide(d, "app-cap"),
-            short ? h("p", { class: "app-short" }, short.length > 260 ? short.slice(0, 257).trimEnd() + "…" : short) : null,
-            ...glance.map(([k, v]) => h("div", { class: "app-row" }, h("span", null, k + ":"), h("span", null, v))),
-            h("div", { class: "app-tags-h" }, "Etiquetas populares de este producto:"),
-            h("div", { class: "app-tags" }, ...tags),
-          ),
-        ),
-        h(
-          "div",
-          { class: "app-body" },
-          h(
-            "div",
-            null,
-            // Como el aviso de «Acceso anticipado» de Steam: antes de la compra.
-            hypervisorInfo(ejg, d),
-            d.description ? h("div", { class: "app-sec" }, h("h3", null, "Acerca de este juego"), h("div", { class: "app-desc" }, d.description)) : null,
-            d.features.length ? h("div", { class: "app-sec" }, h("h3", null, "Características del repack"), h("ul", { class: "feat" }, ...d.features.map((f) => h("li", null, f)))) : null,
-          ),
-          h(
-            "div",
-            { class: "app-right" },
-            h(
-              "div",
-              { class: "side-box cats" },
-              h("div", { class: "cat" }, icon("win"), h("span", null, "Windows")),
-              d.selective ? h("div", { class: "cat" }, icon("check"), h("span", null, "Descarga selectiva")) : null,
-              d.hypervisor ? h("div", { class: "cat hv-cat", title: HYPERVISOR.tip }, icon("shield"), h("span", null, HYPERVISOR.title)) : null,
-              h("div", { class: "cat" }, icon("down"), h("span", null, "Torrent integrado")),
-            ),
-            d.url ? h("button", { class: "soft", "data-focus": "", onclick: () => ejg.explore.openPage(d.slug) }, icon("ext"), "Ver la ficha en FitGirl") : null,
-            h(
-              "div",
-              { class: "side-box" },
-              h("h4", null, "Tamaño"),
-              h("div", { class: "app-row" }, h("span", null, "Original:"), h("span", null, sizeText(d.originalSize) || "—")),
-              h("div", { class: "app-row" }, h("span", null, "Descarga:"), h("span", null, sizeText(d.repackSize) || "—")),
-              h("div", { class: "app-row" }, h("span", null, "En disco:"), h("span", null, sizeText(d.installSize) || "—")),
-            ),
-            langs.length
-              ? h("div", { class: "side-box" }, h("h4", null, "Idiomas"), h("div", { class: "langs" }, ...langs.slice(0, 16).map((l) => h("div", { class: "lang" }, icon("globe"), h("span", null, l)))))
-              : null,
-          ),
-        ),
-        h("div", { class: "app-sec similar-sec" }, h("h3", null, "Más como este"), similar),
       ),
+      h(
+        "div",
+        { class: "t-body" },
+        h(
+          "div",
+          { class: "t-main" },
+          hypervisorInfo(ejg, d),
+          d.description ? h("section", null, h("h3", { class: "t-lab" }, "Acerca de este juego"), h("div", { class: "app-desc" }, d.description)) : null,
+          d.features.length ? h("section", null, h("h3", { class: "t-lab" }, "Características del repack"), h("ul", { class: "feat" }, ...d.features.map((f) => h("li", null, f)))) : null,
+        ),
+        h(
+          "div",
+          { class: "t-side" },
+          d.screenshots.length ? h("section", null, h("h3", { class: "t-lab" }, "Capturas"), shots) : null,
+          h(
+            "section",
+            null,
+            h("h3", { class: "t-lab" }, "Información"),
+            ...info.map(([k, v]) => h("div", { class: "t-row" }, h("span", null, k), h("span", null, v))),
+            d.selective ? h("p", { class: "t-note" }, "Descarga selectiva: puedes dejar fuera los idiomas que no uses.") : null,
+            d.hypervisor ? h("p", { class: "t-note hv-cat", title: HYPERVISOR.tip }, HYPERVISOR.title) : null,
+            d.url ? h("button", { class: "txt", "data-focus": "", onclick: () => ejg.explore.openPage(d.slug) }, "Ver la ficha en FitGirl") : null,
+          ),
+          known.length ? h("section", null, h("h3", { class: "t-lab" }, "Géneros"), h("div", { class: "app-tags" }, ...known.slice(0, 8).map((g) => h("button", { class: "app-tag", "data-focus": "", onclick: () => openCatalog({ genres: [g.id] }) }, g.name)))) : null,
+        ),
+      ),
+      h("div", { class: "app-sec similar-sec" }, h("h3", { class: "t-lab" }, "Más como este"), similar),
     );
   }
 
@@ -1221,26 +1191,33 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
     const top = h(
       "div",
       { class: "dl-top" },
-      h("button", { class: "round fill", "data-focus": "", title: "Atrás", onclick: () => goTab("store") }, icon("left")),
+      h("button", { class: "txt", "data-focus": "", onclick: () => goTab("store") }, icon("left"), "Tienda"),
       h("h1", null, "Descargas"),
       h("span", { class: "muted", id: "rate-now" }, total ? speed(total) : ""),
       h("div", { class: "grow" }),
       pauseAll,
     );
+    // Telón: el arte del juego, en gris, se destapa en color según avanza (--p, de 0 a 100).
+    const art = current && (current.hero || current.capsule || current.cover);
     const head = current
       ? h(
           "section",
-          { class: "dl-hero" },
-          h("span", { class: "dl-ring", id: "dl-now-ring", style: `--p: ${Math.round(current.progress * 1000) / 10}` }, current.cover || current.capsule ? img(current.cover || current.capsule) : null),
+          { class: "t-dl", id: "dl-now-ring", style: `--p: ${Math.round(current.progress * 1000) / 10}` },
+          art ? img(art, { class: "t-dl-art gray", loading: "eager" }) : null,
+          art ? img(art, { class: "t-dl-art color", loading: "eager" }) : null,
+          h("i", { class: "t-dl-edge" }),
+          h("div", { class: "t-dl-shade" }),
           h(
             "div",
-            { class: "dl-hero-main" },
-            h("div", { class: "dl-hero-title" }, h("b", null, current.title), h("span", { class: "dl-hero-pct", id: "dl-now-pct" }, percent(current.progress))),
-            h("span", { class: "muted", id: "dl-now-sub" }, downloadLabel(current)),
+            { class: "t-dl-in" },
+            h("p", { class: "t-lab" }, current.state === "installing" ? "Instalando" : "Descargando"),
+            h("h2", { class: "t-dl-title" }, current.title),
+            h("div", { class: "t-dl-now" }, h("span", { class: "t-dl-pct", id: "dl-now-pct" }, percent(current.progress)), h("span", { class: "t-say", id: "dl-now-sub" }, downloadLabel(current))),
             steps(current),
           ),
+          h("i", { class: "t-dl-line" }),
         )
-      : h("section", { class: "dl-hero idle" }, h("span", { class: "dl-ring" }), h("div", { class: "dl-hero-main" }, h("div", { class: "dl-hero-title" }, h("b", null, all.length ? "Nada descargándose ahora" : "No hay descargas"))));
+      : h("section", { class: "t-dl idle" }, h("div", { class: "t-dl-in" }, h("h2", { class: "t-dl-title" }, all.length ? "Nada descargándose ahora" : "No hay descargas")));
     rows.clear();
     const section = (label, list, group) => {
       if (!list.length) return null;
@@ -1268,7 +1245,7 @@ export function createStore({ ejg, main, focus, openGame, goTab, onChange, onNav
           )
         : null,
     );
-    return h("div", { class: "dl-page" }, top, head, body);
+    return h("div", { class: "dl-page" + (current ? " has-now" : "") }, head, top, body);
   }
 
   let dlSig = "";

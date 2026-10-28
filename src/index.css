@@ -218,3 +218,36 @@ body[data-input="mouse"] [data-nav]:focus-visible:not(input):not(textarea) {
     var(--season-wallpaper, none) center / cover no-repeat,
     #0d0a15;
 }
+
+/* Telón: la barra de los deslizadores, una línea de 2 px con un punto blanco. */
+.telon-range {
+  height: 2px;
+  appearance: none;
+  border-radius: 0;
+  outline: none;
+}
+.telon-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--h-text);
+}
+
+/* Telón: dentro de Ajustes, las filas propias de cada apartado sin sangría ni cajas. */
+:root[data-host-theme="telon"] .telon-settings :not(button):not(button *).px-3,
+:root[data-host-theme="telon"] .telon-settings :not(button):not(button *).px-4 {
+  padding-left: 0;
+  padding-right: 0;
+}
+:root[data-host-theme="telon"] .telon-settings .mx-3 {
+  margin-left: 0;
+  margin-right: 0;
+}
+:root[data-host-theme="telon"] .telon-settings .bg-surface-2,
+:root[data-host-theme="telon"] .telon-settings .bg-surface-3\/60,
+:root[data-host-theme="telon"] .telon-settings .bg-surface-3\/70,
+:root[data-host-theme="telon"] .telon-settings .bg-black\/25,
+:root[data-host-theme="telon"] .telon-settings .bg-black\/30 {
+  background: transparent;
+}

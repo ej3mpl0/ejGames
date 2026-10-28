@@ -240,9 +240,8 @@ button.tile.is-focused { box-shadow: none; text-decoration: underline; text-unde
 .sn-link, .sn-wish, .tab-head, .wish-sort, .cat-sort-btn, .crumb, .app-back, .cat-more, .cat-clear, .hv-more, .hv-guide { height: auto; min-width: 0; padding: 4px 0; border-radius: 0; background: none !important; font-size: 14.5px; font-weight: 400; color: var(--muted); }
 .sn-link:hover, .sn-link.on, .sn-wish:hover, .sn-wish.on, .tab-head:hover, .tab-head.on, .wish-sort.on, .wish-sort:hover, .cat-sort-btn:hover, .app-back:hover, .crumb:hover { color: var(--text); }
 .sn-link.is-focused, .sn-wish.is-focused, .tab-head.is-focused, .wish-sort.is-focused, .cat-sort-btn.is-focused, .crumb.is-focused, .app-back.is-focused, .cat-more.is-focused, .hv-more.is-focused, .hv-guide.is-focused { box-shadow: none; color: var(--text); text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
-.sn-wish-n:not(:empty) { min-width: 0; height: auto; padding: 0; margin-left: 6px; border-radius: 0; background: none; color: inherit; font-size: inherit; font-weight: 400; }
-.sn-wish-n:not(:empty)::before { content: "("; }
-.sn-wish-n:not(:empty)::after { content: ")"; }
+.sn-wish { white-space: nowrap; }
+.sn-wish-n:not(:empty) { display: inline; min-width: 0; height: auto; padding: 0; margin-left: 8px; border-radius: 0; background: none; color: var(--muted); font-size: inherit; font-weight: 400; }
 .store-front, .store-results { gap: 40px; }
 .store-h { font-family: var(--font); font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
 .store-empty h2, .wish-head h1, .dl-top h1, .app-title, .s-hero-title, .tab-preview h4, .dlg-head, .hv-title, .similar-sec h3, .buy h2 { font-weight: 300; letter-spacing: -0.02em; }
@@ -350,3 +349,103 @@ button.tile.is-focused { box-shadow: none; text-decoration: underline; text-unde
 .ev-acts .soft.ev-go { padding: 10px 18px; border-radius: 4px; background: var(--accent) !important; color: #1d0c02; font-weight: 600; }
 .ev-acts .soft.glass { padding: 10px 14px; border-radius: 4px; background: color-mix(in srgb, var(--bg) 78%, transparent) !important; }
 .ev-hero { box-shadow: none; }
+
+/* ═════ Ficha de la tienda (Telón): arte a sangre, texto en columnas ═════ */
+.store.in-detail { padding-top: 0; }
+.t-detail { position: relative; padding-bottom: 70px; }
+.t-stage { position: relative; height: 66vh; min-height: 460px; overflow: hidden; background: var(--bg); }
+.t-stage-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 25%; }
+.t-stage-shade { position: absolute; inset: 0; background:
+  linear-gradient(90deg, color-mix(in srgb, var(--bg) 88%, transparent) 0, color-mix(in srgb, var(--bg) 45%, transparent) 36%, transparent 62%),
+  linear-gradient(0deg, var(--bg) 0, transparent 46%),
+  linear-gradient(180deg, color-mix(in srgb, var(--bg) 60%, transparent) 0, transparent 18%); }
+.t-head { position: absolute; left: var(--pad); right: var(--pad); top: 0; height: 66vh; min-height: 460px; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 12px; padding-bottom: 44px; }
+.t-head .crumbs { position: absolute; left: -4px; top: calc(var(--top-h) + 16px); }
+.t-head .app-title { max-width: 900px; font-size: 64px; font-weight: 300; line-height: 1; letter-spacing: -0.03em; margin: 0 0 6px; }
+.t-say { margin: 0; max-width: 680px; font-family: var(--display); font-size: 18px; font-weight: 300; line-height: 1.45; color: var(--soft-text); }
+.t-acts { display: flex; align-items: center; gap: 30px; margin-top: 14px; }
+.t-acts .act-hint { font-size: 14px; color: var(--muted); }
+.t-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 420px); gap: 72px; padding: 30px var(--pad) 0; }
+.t-main, .t-side { display: flex; flex-direction: column; gap: 34px; min-width: 0; }
+.t-lab { margin: 0 0 12px; font-family: var(--font); font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.t-detail .app-desc { max-width: 70ch; line-height: 1.6; color: var(--soft-text); }
+.t-detail .feat { font-size: 15px; line-height: 1.7; }
+.t-shots { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.t-shot { aspect-ratio: 16 / 9; border-radius: var(--r); overflow: hidden; background: var(--lift); }
+.t-shot img { width: 100%; height: 100%; object-fit: cover; }
+.t-shot.is-focused { outline: 2px solid var(--text); outline-offset: 3px; }
+.t-row { display: flex; justify-content: space-between; gap: 20px; padding: 5px 0; font-size: 14.5px; }
+.t-row span:first-child { color: var(--muted); }
+.t-row span:last-child { text-align: right; }
+.t-note { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+.t-detail .similar-sec { padding: 46px var(--pad) 0; }
+.t-head .app-title { flex: none; }
+.t-detail .similar-sec .t-lab { margin: 0 0 12px; font-size: 13px; font-weight: 400; }
+
+/* Lista de deseados: las acciones solo en la portada señalada. */
+.wish-head h1 { font-size: 52px; line-height: 1; }
+.wish-sorts { gap: 24px; }
+.wgrid { gap: 34px 30px; }
+.wcard .scard .t, .wcard .scard .m { visibility: hidden; }
+.wcard:hover .scard .t, .wcard:hover .scard .m, .wcard:has(.is-focused) .scard .t, .wcard:has(.is-focused) .scard .m { visibility: visible; }
+.wcard-acts { gap: 18px; opacity: 0; transition: opacity 0.15s; }
+.wcard:hover .wcard-acts, .wcard:has(.is-focused) .wcard-acts { opacity: 1; }
+.wcard-acts .soft.sm { flex: none; color: var(--text); }
+.wcard-acts .round.sm { width: 28px; height: 28px; }
+
+/* ═════ Descargas (Telón): el arte se destapa en color según avanza ═════ */
+.dl-page { max-width: none; padding: 0 var(--pad) 60px; gap: 26px; }
+.dl-page:not(.has-now) { padding-top: calc(var(--top-h) + 20px); }
+.dl-top { order: 0; gap: 22px; }
+.dl-page.has-now .dl-top { position: absolute; left: var(--pad); right: var(--pad); top: calc(var(--top-h) + 14px); z-index: 2; }
+.dl-page.has-now .dl-top h1 { display: none; }
+.dl-top h1 { font-size: 52px; font-weight: 300; line-height: 1; }
+.dl-top .txt .ico svg { width: 16px; height: 16px; }
+.t-dl { position: relative; margin: 0 calc(var(--pad) * -1); height: 470px; overflow: hidden; background: var(--bg); }
+.t-dl.idle { height: auto; margin: 0; overflow: visible; }
+.t-dl.idle .t-dl-in { position: static; padding: 0; }
+.t-dl-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+.t-dl-art.gray { filter: grayscale(1) brightness(0.55); }
+.t-dl-art.color { clip-path: inset(0 calc(100% - var(--p, 0) * 1%) 0 0); transition: clip-path 0.9s linear; }
+.t-dl-edge { position: absolute; top: 0; bottom: 0; left: calc(var(--p, 0) * 1%); width: 1px; background: color-mix(in srgb, var(--text) 35%, transparent); transition: left 0.9s linear; }
+.t-dl-shade { position: absolute; inset: 0; background:
+  linear-gradient(90deg, color-mix(in srgb, var(--bg) 86%, transparent) 0, color-mix(in srgb, var(--bg) 35%, transparent) 36%, transparent 58%),
+  linear-gradient(0deg, color-mix(in srgb, var(--bg) 70%, transparent) 0, transparent 40%),
+  linear-gradient(180deg, color-mix(in srgb, var(--bg) 60%, transparent) 0, transparent 18%); }
+.t-dl-in { position: absolute; left: var(--pad); right: var(--pad); bottom: 36px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.t-dl-in .t-lab { margin: 0; }
+.t-dl-title { margin: 0; font-family: var(--display); font-size: 48px; font-weight: 300; letter-spacing: -0.02em; line-height: 1.05; }
+.t-dl-now { display: flex; align-items: baseline; gap: 22px; }
+.t-dl-pct { font-family: var(--display); font-size: 64px; font-weight: 300; letter-spacing: -0.03em; line-height: 1; }
+.t-dl-line { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, var(--text) calc(var(--p, 0) * 1%), color-mix(in srgb, var(--text) 16%, transparent) 0); }
+.dl-h span:first-child { font-family: var(--font); font-size: 13px; font-weight: 400; color: var(--muted); }
+
+/* ═════ Homebrew (Telón): alineado con el resto, solo la caja señalada lleva nombre ═════ */
+.page.hb-wrap { padding: calc(var(--top-h) + 30px) 0 60px; }
+.hb-page .hb-view { max-width: none; margin: 0; padding: 0 var(--pad) 56px; }
+.hb-page .hb-chips { gap: 6px 24px; }
+.hb-page .hb-chip { font-size: 15px; }
+.hb-page .hb-cover { background: transparent; box-shadow: none; transition: none; }
+.hb-page .hb-game:hover .hb-cover, .hb-page .hb-game.is-focused .hb-cover { transform: none; }
+.hb-page .hb-game.is-focused .hb-cover { box-shadow: none; outline: 2px solid var(--text); outline-offset: 3px; }
+.hb-page .hb-game-title { font-weight: 400; font-size: 14px; }
+.hb-page .hb-game .hb-game-info { visibility: hidden; }
+.hb-page .hb-game:hover .hb-game-info, .hb-page .hb-game.is-focused .hb-game-info { visibility: visible; }
+.hb-page .hb-btn:not(.hb-btn-ghost) { border-radius: 4px; }
+.hb-page .hb-btn-ghost { background: none; box-shadow: none; padding: 0 4px; font-weight: 400; color: color-mix(in srgb, var(--text) 66%, var(--bg)); }
+.hb-page .hb-btn-ghost:hover, .hb-page .hb-btn-ghost.is-focused { color: var(--text); text-decoration: underline; text-underline-offset: 6px; box-shadow: none; }
+:root[data-input="mouse"] .hb-page .hb-game.is-focused:not(:hover) .hb-cover { outline: none; }
+:root[data-input="mouse"] .hb-page .hb-game.is-focused:not(:hover) .hb-game-info { visibility: hidden; }
+/* Tarjetas del catálogo de Homebrew (.hb-item): la caja sobre negro, sin fondo difuminado. */
+.hb-page .hb-shot { border-radius: var(--r); box-shadow: none; transition: none; }
+.hb-page .hb-view .hb-shot.is-fit { background-image: none !important; background-color: transparent; }
+.hb-page .hb-view .hb-shot.is-fit::before { display: none; }
+.hb-page .hb-view .hb-shot.is-fit > img { padding: 0; }
+.hb-page .hb-item:hover .hb-shot, .hb-page .hb-item.is-focused .hb-shot { transform: none; }
+.hb-page .hb-item.is-focused .hb-shot { box-shadow: none; outline: 2px solid var(--text); outline-offset: 3px; }
+.hb-page .hb-item .hb-item-info { visibility: hidden; }
+.hb-page .hb-item:hover .hb-item-info, .hb-page .hb-item.is-focused .hb-item-info { visibility: visible; }
+:root[data-input="mouse"] .hb-page .hb-item.is-focused:not(:hover) .hb-shot { outline: none; }
+:root[data-input="mouse"] .hb-page .hb-item.is-focused:not(:hover) .hb-item-info { visibility: hidden; }
+.hb-page .hb-item::after, .hb-page .hb-game::after { display: none; }
+.hb-page .hb-shot > .hb-sys { z-index: 2; }

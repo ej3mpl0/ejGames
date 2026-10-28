@@ -12,7 +12,7 @@ import {
 } from "react";
 import { X } from "lucide-react";
 import type { NavAction } from "../api/types";
-import { useApp } from "../store/app";
+import { useApp, useTelon } from "../store/app";
 import { Hints } from "./Hints";
 
 export function cx(...c: (string | false | null | undefined)[]) {
@@ -25,20 +25,26 @@ export const Button = forwardRef<
   HTMLButtonElement,
   ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; icon?: ReactNode; size?: "sm" | "md" | "lg" }
 >(function Button({ variant = "soft", icon, size = "md", className, children, ...rest }, ref) {
+  const telon = useTelon();
+  // Telón: el principal es un bloque blanco de esquinas pequeñas; los demás, solo texto.
+  const flat = telon && variant !== "primary";
   return (
     <button
       ref={ref}
       data-nav
       {...rest}
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap disabled:opacity-40 disabled:pointer-events-none cursor-pointer",
-        size === "sm" && "h-8 px-3 text-[13px]",
-        size === "md" && "h-10 px-4 text-sm",
-        size === "lg" && "h-12 px-6 text-base",
-        variant === "primary" && "bg-fg text-surface hover:brightness-95",
-        variant === "soft" && "bg-surface-3 text-fg hover:brightness-125",
-        variant === "ghost" && "text-fg hover:bg-surface-3",
-        variant === "danger" && "bg-red-500/15 text-red-300 hover:bg-red-500/25",
+        "inline-flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-40 disabled:pointer-events-none cursor-pointer",
+        telon ? "rounded-[4px] font-normal" : "rounded-full font-semibold",
+        size === "sm" && (flat ? "h-8 px-1.5 text-[13.5px]" : "h-8 px-3 text-[13px]"),
+        size === "md" && (flat ? "h-10 px-1.5 text-[15px]" : "h-10 px-4 text-sm"),
+        size === "lg" && (flat ? "h-12 px-2 text-base" : "h-12 px-6 text-base"),
+        variant === "primary" && (telon ? "bg-fg text-surface font-semibold hover:brightness-95" : "bg-fg text-surface hover:brightness-95"),
+        flat && variant !== "danger" && "text-fg/70 hover:text-fg hover:underline underline-offset-[6px]",
+        flat && variant === "danger" && "text-red-300 hover:underline underline-offset-[6px]",
+        !telon && variant === "soft" && "bg-surface-3 text-fg hover:brightness-125",
+        !telon && variant === "ghost" && "text-fg hover:bg-surface-3",
+        !telon && variant === "danger" && "bg-red-500/15 text-red-300 hover:bg-red-500/25",
         className,
       )}
     >
@@ -54,13 +60,14 @@ export function IconButton({
   className,
   ...rest
 }: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
+  const telon = useTelon();
   return (
     <button
       data-nav
       aria-label={label}
       title={label}
       {...rest}
-      className={cx("grid h-9 w-9 place-items-center rounded-full text-muted hover:bg-surface-3 hover:text-fg cursor-pointer", className)}
+      className={cx("grid h-9 w-9 place-items-center rounded-full text-muted hover:text-fg cursor-pointer", !telon && "hover:bg-surface-3", className)}
     >
       {children}
     </button>
@@ -80,6 +87,32 @@ export function Toggle({
   hint?: ReactNode;
   disabled?: boolean;
 }) {
+  const telon = useTelon();
+  if (telon)
+    return (
+      <button
+        data-nav
+        role="switch"
+        aria-checked={checked}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+        className="flex min-h-[56px] w-full items-center gap-8 rounded-[4px] px-0 py-2.5 text-left cursor-pointer disabled:opacity-40"
+      >
+        <span className="flex-1">
+          <span className="block text-[15.5px] font-normal">{label}</span>
+          {hint && <span className="mt-0.5 block max-w-[560px] text-[13.5px] leading-snug text-muted">{hint}</span>}
+        </span>
+        {/* Interruptor de contorno: blanco y relleno cuando está encendido. */}
+        <span className={cx("relative h-[22px] w-10 shrink-0 rounded-full transition-colors", checked ? "bg-fg" : "ring-[1.5px] ring-inset ring-fg/35")}>
+          <span
+            className={cx(
+              "absolute top-1 h-[14px] w-[14px] rounded-full transition-transform",
+              checked ? "translate-x-[22px] bg-surface" : "translate-x-1 bg-fg/55",
+            )}
+          />
+        </span>
+      </button>
+    );
   return (
     <button
       data-nav
@@ -112,9 +145,10 @@ export function Toggle({
 }
 
 export function Field({ label, hint, children }: { label: ReactNode; hint?: ReactNode; children: ReactNode }) {
+  const telon = useTelon();
   return (
-    <label className="block px-3 py-2">
-      <span className="mb-1.5 block text-[13px] font-semibold text-muted">{label}</span>
+    <label className={cx("block py-2", telon ? "px-0" : "px-3")}>
+      <span className={cx("mb-1.5 block text-[13px] text-muted", telon ? "font-normal" : "font-semibold")}>{label}</span>
       {children}
       {hint && <span className="mt-1 block text-xs text-muted">{hint}</span>}
     </label>
@@ -125,13 +159,16 @@ export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLIn
   { className, ...rest },
   ref,
 ) {
+  const telon = useTelon();
   return (
     <input
       ref={ref}
       data-nav
       {...rest}
       className={cx(
-        "h-10 w-full rounded-[calc(var(--h-radius)*0.6)] bg-surface-3/70 px-3 text-sm text-fg outline-none ring-1 ring-line placeholder:text-muted/70 focus:ring-2 focus:ring-fg",
+        telon
+          ? "h-10 w-full rounded-none border-b border-fg/25 bg-transparent px-0 text-[15px] text-fg outline-none placeholder:text-muted/70 focus:border-fg"
+          : "h-10 w-full rounded-[calc(var(--h-radius)*0.6)] bg-surface-3/70 px-3 text-sm text-fg outline-none ring-1 ring-line placeholder:text-muted/70 focus:ring-2 focus:ring-fg",
         className,
       )}
     />
@@ -156,6 +193,25 @@ export function Slider({
   format?: (v: number) => string;
 }) {
   const pct = ((value - min) / (max - min || 1)) * 100;
+  const telon = useTelon();
+  if (telon)
+    return (
+      <div className="flex min-h-[52px] items-center gap-8 py-2">
+        <span className="flex-1 text-[15.5px]">{label}</span>
+        <input
+          data-nav
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="telon-range w-[220px] cursor-pointer"
+          style={{ background: `linear-gradient(to right, var(--h-text) ${pct}%, color-mix(in srgb, var(--h-text) 20%, transparent) ${pct}%)` }}
+        />
+        <span className="w-16 text-right text-sm tabular-nums text-muted">{format ? format(value) : value}</span>
+      </div>
+    );
   return (
     <div className="px-3 py-2">
       <div className="mb-1.5 flex justify-between text-sm">
@@ -203,20 +259,31 @@ export function Cycle<T extends string>({
     el.addEventListener("cycle", fn);
     return () => el.removeEventListener("cycle", fn);
   }, [idx, options, onChange]);
+  const telon = useTelon();
   return (
-    <div className="relative flex items-center gap-4 px-3 py-2">
-      <span className="flex-1 text-sm">{label}</span>
-      <button
-        ref={ref}
-        data-nav
-        data-cycle
-        onClick={() => setOpen((o) => !o)}
-        className="flex h-9 min-w-60 items-center justify-between gap-3 rounded-[calc(var(--h-radius)*0.6)] bg-surface-3/70 px-3 text-sm ring-1 ring-line cursor-pointer"
-      >
-        <span className="text-muted">‹</span>
-        <span className="truncate">{options[idx]?.label ?? "—"}</span>
-        <span className="text-muted">›</span>
-      </button>
+    <div className={cx("relative flex items-center gap-4 py-2", telon ? "min-h-[52px] px-0" : "px-3")}>
+      <span className={cx("flex-1", telon ? "text-[15.5px]" : "text-sm")}>{label}</span>
+      {telon ? (
+        // Telón: el valor escrito y una flecha, sin caja.
+        <button ref={ref} data-nav data-cycle onClick={() => setOpen((o) => !o)} className="flex h-9 items-center gap-2 rounded-[4px] px-1 text-[15px] text-fg/85 hover:text-fg cursor-pointer">
+          <span className="truncate">{options[idx]?.label ?? "—"}</span>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" className="opacity-60" aria-hidden="true">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+      ) : (
+        <button
+          ref={ref}
+          data-nav
+          data-cycle
+          onClick={() => setOpen((o) => !o)}
+          className="flex h-9 min-w-60 items-center justify-between gap-3 rounded-[calc(var(--h-radius)*0.6)] bg-surface-3/70 px-3 text-sm ring-1 ring-line cursor-pointer"
+        >
+          <span className="text-muted">‹</span>
+          <span className="truncate">{options[idx]?.label ?? "—"}</span>
+          <span className="text-muted">›</span>
+        </button>
+      )}
       {open && (
         <div
           className="absolute right-3 top-12 z-30 max-h-72 min-w-52 overflow-auto rounded-[calc(var(--h-radius)*0.7)] p-1 glass shadow-2xl"
@@ -271,6 +338,20 @@ export function ColorInput({ value, onChange, label }: { value: string; onChange
 }
 
 export function Section({ title, children, actions }: { title?: ReactNode; children: ReactNode; actions?: ReactNode }) {
+  const telon = useTelon();
+  // Telón: sin caja; el título es una etiqueta pequeña y las filas van sueltas.
+  if (telon)
+    return (
+      <section className="mb-9">
+        {(title || actions) && (
+          <header className="mb-1 flex min-h-8 items-center justify-between gap-3">
+            <h3 className="telon-label text-[13px] font-normal tracking-normal text-muted">{title}</h3>
+            <div className="flex gap-4">{actions}</div>
+          </header>
+        )}
+        <div>{children}</div>
+      </section>
+    );
   return (
     <section className="mb-8">
       {(title || actions) && (
@@ -293,6 +374,26 @@ export function Tabs<T extends string>({
   value: T;
   onChange: (v: T) => void;
 }) {
+  const telon = useTelon();
+  if (telon)
+    return (
+      // Telón: los apartados como texto, sin iconos ni fondo.
+      <nav className="flex flex-col">
+        {tabs.map((t) => (
+          <button
+            key={t.value}
+            data-nav
+            data-tab
+            data-autofocus={t.value === value || undefined}
+            aria-selected={t.value === value}
+            onClick={() => onChange(t.value)}
+            className={cx("flex h-10 items-center rounded-[4px] text-left text-[16px] font-normal cursor-pointer", t.value === value ? "text-fg" : "text-muted hover:text-fg")}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
+    );
   return (
     <nav className="flex flex-col gap-1">
       {tabs.map((t) => (
@@ -334,6 +435,7 @@ export const Modal = forwardRef<
   }
 >(function Modal({ title, onClose, children, width = "min(1100px, 94vw)", height = "min(760px, 90vh)", className, hideClose, headerExtra, hints }, ref) {
   const source = useApp((s) => s.inputSource);
+  const telon = useTelon();
   const footer = hints ?? [
     ["accept", "Elegir"],
     ["back", "Cerrar"],
@@ -350,12 +452,12 @@ export const Modal = forwardRef<
       <div
         ref={ref}
         data-focus-trap
-        className={cx("panel-enter glass flex flex-col overflow-hidden rounded-[calc(var(--h-radius)*1.4)] shadow-2xl", className)}
+        className={cx("panel-enter glass flex flex-col overflow-hidden shadow-2xl", telon ? "rounded-[6px]" : "rounded-[calc(var(--h-radius)*1.4)]", className)}
         style={{ width, height }}
       >
         {(title || !hideClose) && (
-          <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line px-5">
-            <h2 className="flex-1 truncate text-base font-semibold">{title}</h2>
+          <header className={cx("flex shrink-0 items-center gap-3", telon ? "h-16 px-7" : "h-14 border-b border-line px-5")}>
+            <h2 className={cx("flex-1 truncate", telon ? "text-[24px] font-light tracking-tight" : "text-base font-semibold")}>{title}</h2>
             {headerExtra}
             {!hideClose && (
               <IconButton label="Cerrar (Esc)" onClick={onClose}>

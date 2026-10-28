@@ -4,7 +4,7 @@ import { api } from "../../api/tauri";
 import { Hints } from "../../components/Hints";
 import { Tabs } from "../../components/ui";
 import { useOverlayNav } from "../../input/nav";
-import { useApp } from "../../store/app";
+import { useApp, useTelon } from "../../store/app";
 import { AboutTab } from "./AboutTab";
 import { AppearanceTab } from "./AppearanceTab";
 import { DownloadsTab } from "./DownloadsTab";
@@ -35,6 +35,7 @@ export function SettingsOverlay({ args, onClose }: { args?: Record<string, unkno
   const settings = useApp((s) => s.settings);
   const source = useApp((s) => s.inputSource);
   const mode = useApp((s) => s.mode);
+  const telon = useTelon();
   if (!settings) return null;
   const win = "grid h-16 w-[46px] place-items-center text-muted hover:bg-surface-3 hover:text-fg cursor-pointer";
   return (
@@ -45,10 +46,19 @@ export function SettingsOverlay({ args, onClose }: { args?: Record<string, unkno
           if (e.button === 0 && e.target === e.currentTarget) void api.windowAction(e.detail === 2 ? "toggle-maximize" : "drag");
         }}
       >
-        <button data-nav aria-label="Volver (Esc)" title="Volver (Esc)" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full bg-surface-2 text-fg hover:bg-surface-3 cursor-pointer">
-          <ArrowLeft size={19} />
-        </button>
-        <h1 className="pointer-events-none text-[22px] font-bold tracking-tight">Ajustes</h1>
+        {telon ? (
+          <button data-nav title="Volver (Esc)" onClick={onClose} className="flex h-10 items-center gap-2 rounded-[4px] px-2 text-[14.5px] text-muted hover:text-fg cursor-pointer">
+            <ArrowLeft size={16} />
+            Volver
+          </button>
+        ) : (
+          <>
+            <button data-nav aria-label="Volver (Esc)" title="Volver (Esc)" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full bg-surface-2 text-fg hover:bg-surface-3 cursor-pointer">
+              <ArrowLeft size={19} />
+            </button>
+            <h1 className="pointer-events-none text-[22px] font-bold tracking-tight">Ajustes</h1>
+          </>
+        )}
         <div className="flex-1 self-stretch" onMouseDown={(e) => e.button === 0 && void api.windowAction(e.detail === 2 ? "toggle-maximize" : "drag")} />
         {source !== "mouse" && (
           <Hints
@@ -73,12 +83,14 @@ export function SettingsOverlay({ args, onClose }: { args?: Record<string, unkno
           </div>
         )}
       </header>
-      <div className="flex min-h-0 flex-1 gap-8 px-8 pb-6">
-        <aside className="w-60 shrink-0 overflow-y-auto pt-2">
+      <div className={telon ? "flex min-h-0 flex-1 gap-16 pb-6 pl-[72px] pr-8" : "flex min-h-0 flex-1 gap-8 px-8 pb-6"}>
+        <aside className={telon ? "w-56 shrink-0 overflow-y-auto pt-6" : "w-60 shrink-0 overflow-y-auto pt-2"}>
+          {telon && <p className="mb-3 text-[13px] text-muted">Ajustes</p>}
           <Tabs tabs={TABS} value={tab} onChange={setTab} />
         </aside>
-        <main className="min-w-0 flex-1 overflow-y-auto pr-2 pt-2" key={tab}>
-          <div className="panel-enter mx-auto max-w-[980px] pb-10">
+        <main className={telon ? "min-w-0 flex-1 overflow-y-auto pr-8 pt-4" : "min-w-0 flex-1 overflow-y-auto pr-2 pt-2"} key={tab}>
+          <div className={telon ? "telon-settings panel-enter max-w-[860px] pb-10" : "panel-enter mx-auto max-w-[980px] pb-10"}>
+            {telon && <h1 className="mb-6 text-[44px] font-light leading-none tracking-tight">{TABS.find((t) => t.value === tab)?.label}</h1>}
             {tab === "library" && <LibraryTab autoAdd={!!args?.addFolder} />}
             {tab === "metadata" && <MetadataTab />}
             {tab === "appearance" && <AppearanceTab />}

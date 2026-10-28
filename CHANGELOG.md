@@ -5,6 +5,19 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.8.1
+
+- **Telón de verdad en más sitios.** En la 1.8.0 varias pantallas solo cambiaban de color; ahora siguen el diseño:
+  - **Ajustes**: los apartados como texto, sin iconos; el nombre del apartado en grande; las opciones sueltas, sin
+    cajas; interruptores de contorno, desplegables escritos y barras finas. Los diálogos de la app, igual.
+  - **Ficha de la tienda**: el arte a sangre con el título, una frase con el estudio, los géneros y los tamaños, y el
+    disco blanco de Descargar. Debajo, la descripción a un lado y las capturas y los datos al otro; al pulsar una
+    captura cambia el arte de arriba.
+  - **Descargas**: el arte del juego, en gris, se va destapando en color a la vez que la descarga avanza.
+  - **Lista de deseados**: «Descargar» y «Quitar» solo bajo la portada señalada.
+  - **Homebrew**: alineado con el resto, sin fondos detrás de las cajas y con el nombre solo en la señalada.
+- **Arreglado** el contador de la lista de deseados, que salía partido entre paréntesis.
+
 ## 1.8.0
 
 - **Tema nuevo: Telón.** Una sola cosa por pantalla: el arte del juego a sangre, negro puro, títulos finos y nada de

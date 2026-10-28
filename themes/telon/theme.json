@@ -7,7 +7,7 @@
   "sdk": 1,
   "entry": "index.html",
   "modes": ["desktop", "tv"],
-  "palette": ["#000000", "#f7f7f5", "#ff3a2d", "#8f8f8c"],
+  "palette": ["#000000", "#141414", "#ff3a2d", "#f7f7f5"],
   "host": { "accent": "#ff3a2d", "surface": "#000000", "text": "#f7f7f5", "radius": "8px" },
   "sounds": { "preset": "soft" },
   "overlay": { "style": "moneda" },

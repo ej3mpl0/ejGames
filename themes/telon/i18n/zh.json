@@ -151,5 +151,10 @@
  "› Guías": "› 指南",
  "Una sola cosa por pantalla: el arte del juego a sangre, negro puro y nada de cajas": "每个画面只放一样东西：游戏美术铺满全屏，纯黑背景，没有方框",
  "Fondo con el arte del juego señalado": "以选中游戏的美术作背景",
- "Mostrar «Jugado hace poco» en Inicio": "在首页显示“最近玩过”"
+ "Mostrar «Jugado hace poco» en Inicio": "在首页显示“最近玩过”",
+ "Descarga selectiva: puedes dejar fuera los idiomas que no uses.": "可选择下载：不用的语言可以不下载。",
+ "En disco": "占用空间",
+ "instalado ocupará": "安装后占用",
+ "Original": "原始大小",
+ "Repack de": "Repack 大小"
 }

@@ -158,6 +158,8 @@ pub fn run() {
             commands::get_games,
             commands::get_game_details,
             commands::get_game_full,
+            commands::search_discord_games,
+            commands::discord_detected,
             commands::update_game,
             commands::delete_game,
             commands::uninstall_plan,

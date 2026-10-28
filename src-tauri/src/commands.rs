@@ -345,6 +345,21 @@ pub async fn get_game_full(st: St<'_>, id: i64) -> CmdResult<GameFull> {
 }
 
 #[tauri::command]
+pub async fn search_discord_games(st: St<'_>, query: String) -> CmdResult<crate::discord::DiscordGameSearch> {
+    let cache = st.paths.root.join("discord-games.json");
+    Ok(crate::discord::search_games(&st.http, &cache, &query).await)
+}
+
+/// Qué juego pondría Discord solo, para enseñarlo en los ajustes.
+#[tauri::command]
+pub async fn discord_detected(st: St<'_>, id: i64) -> CmdResult<crate::discord::DiscordDetection> {
+    let s = st.inner().clone();
+    let game = blocking(move || s.db.with(|c| repo::get_game(c, id))).await?;
+    let cache = st.paths.root.join("discord-games.json");
+    Ok(crate::discord::detected_game(&st.http, &cache, &game).await)
+}
+
+#[tauri::command]
 pub async fn update_game(st: St<'_>, id: i64, patch: GamePatch) -> CmdResult<()> {
     let s = st.inner().clone();
     blocking(move || s.db.with(|c| repo::update_game(c, id, &patch))).await?;

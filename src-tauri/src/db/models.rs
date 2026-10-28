@@ -8,6 +8,16 @@ fn some_or_null<'de, D: Deserializer<'de>, T: Deserialize<'de>>(d: D) -> Result<
 
 pub const MEDIA_ORIGIN: &str = "http://ejg-media.localhost";
 
+/// Application ID de Discord (snowflake). Vacío o raro: None.
+pub fn discord_app_id_ok(s: &str) -> Option<String> {
+    let s = s.trim();
+    if (15..=22).contains(&s.len()) && s.bytes().all(|b| b.is_ascii_digit()) {
+        Some(s.to_string())
+    } else {
+        None
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LibraryFolder {
@@ -81,6 +91,9 @@ pub struct Game {
     pub platform: Option<String>,
     pub rom_path: Option<String>,
     pub rom_meta: Option<String>,
+    /// Juego de Discord elegido a mano. None: se detecta solo.
+    pub discord_app_id: Option<String>,
+    pub discord_app_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -267,6 +280,11 @@ pub struct GamePatch {
     pub release_date: Option<String>,
     pub genres: Option<Vec<String>>,
     pub discord_enabled: Option<bool>,
+    /// Some(None) lo quita y vuelve a la detección automática.
+    #[serde(deserialize_with = "some_or_null")]
+    pub discord_app_id: Option<Option<String>>,
+    #[serde(deserialize_with = "some_or_null")]
+    pub discord_app_name: Option<Option<String>>,
     pub process_hints: Option<Vec<String>>,
 }
 

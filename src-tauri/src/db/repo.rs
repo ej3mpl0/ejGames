@@ -216,7 +216,7 @@ const GAME_COLS: &str = "id, title, sort_title, source, source_id, folder_id, in
   working_dir, launch_uri, run_as_admin, process_hints, engine, steam_appid, sgdb_id, igdb_id,
   description, short_description, developer, publisher, release_date, genres, tags, rating,
   meta_status, match_confidence, meta_locked, discord_enabled, missing, added_at, updated_at,
-  installed, platform, rom_path, rom_meta";
+  installed, platform, rom_path, rom_meta, discord_app_id, discord_app_name";
 
 fn row_game(r: &Row) -> rusqlite::Result<Game> {
     Ok(Game {
@@ -256,6 +256,8 @@ fn row_game(r: &Row) -> rusqlite::Result<Game> {
         platform: r.get(33)?,
         rom_path: r.get(34)?,
         rom_meta: r.get(35)?,
+        discord_app_id: r.get(36)?,
+        discord_app_name: r.get(37)?,
     })
 }
 
@@ -329,6 +331,12 @@ pub fn apply_metadata(c: &Connection, id: i64, m: &crate::metadata::Metadata) ->
     Ok(())
 }
 
+fn clean_discord_name(s: &str) -> Option<String> {
+    let s: String = s.split_whitespace().collect::<Vec<_>>().join(" ");
+    let s: String = s.chars().take(120).collect();
+    if s.is_empty() { None } else { Some(s) }
+}
+
 pub fn update_game(c: &Connection, id: i64, p: &GamePatch) -> rusqlite::Result<()> {
     let g = get_game(c, id)?;
     let mut locked = g.meta_locked.clone();
@@ -395,6 +403,17 @@ pub fn update_game(c: &Connection, id: i64, p: &GamePatch) -> rusqlite::Result<(
     }
     if let Some(v) = p.discord_enabled {
         set!("discord_enabled", v);
+    }
+    if let Some(v) = &p.discord_app_id {
+        let id = v.as_deref().and_then(crate::db::models::discord_app_id_ok);
+        set!("discord_app_id", id.clone());
+        if id.is_none() {
+            set!("discord_app_name", None::<String>);
+        } else if let Some(n) = &p.discord_app_name {
+            set!("discord_app_name", n.as_deref().and_then(clean_discord_name));
+        }
+    } else if let Some(n) = &p.discord_app_name {
+        set!("discord_app_name", n.as_deref().and_then(clean_discord_name));
     }
     if let Some(v) = &p.process_hints {
         set!("process_hints", serde_json::to_string(v).unwrap());
@@ -1615,6 +1634,48 @@ mod tests {
             let g = get_game(c, id)?;
             assert_eq!(g.title, "Mi Juego");
             assert!(g.meta_locked.contains(&"title".to_string()));
+            Ok(())
+        })
+        .unwrap();
+    }
+
+    #[test]
+    fn discord_app_override_roundtrip() {
+        let db = Db::memory().unwrap();
+        db.with(|c| {
+            let (id, _) = upsert_game(
+                c,
+                &NewGame { title: "Port".into(), source: "manual".into(), source_id: "1".into(), ..Default::default() },
+            )?
+            .unwrap();
+            update_game(
+                c,
+                id,
+                &GamePatch {
+                    discord_app_id: Some(Some("111111111111111111".into())),
+                    discord_app_name: Some(Some("  ELDEN   RING  ".into())),
+                    ..Default::default()
+                },
+            )?;
+            let g = get_game(c, id)?;
+            assert_eq!(g.discord_app_id.as_deref(), Some("111111111111111111"));
+            assert_eq!(g.discord_app_name.as_deref(), Some("ELDEN RING"));
+            update_game(c, id, &GamePatch { discord_app_id: Some(Some("no".into())), ..Default::default() })?;
+            let g = get_game(c, id)?;
+            assert_eq!(g.discord_app_id, None);
+            assert_eq!(g.discord_app_name, None);
+            update_game(
+                c,
+                id,
+                &GamePatch {
+                    discord_app_id: Some(Some("222222222222222222".into())),
+                    discord_app_name: Some(Some("Hades".into())),
+                    ..Default::default()
+                },
+            )?;
+            update_game(c, id, &GamePatch { discord_app_id: Some(None), ..Default::default() })?;
+            let g = get_game(c, id)?;
+            assert_eq!((g.discord_app_id, g.discord_app_name), (None, None));
             Ok(())
         })
         .unwrap();

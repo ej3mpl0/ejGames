@@ -266,6 +266,9 @@ export interface Game {
   matchConfidence?: number | null;
   metaLocked: string[];
   discordEnabled: boolean;
+  /** Juego de Discord elegido a mano. Null: se detecta solo. */
+  discordAppId?: string | null;
+  discordAppName?: string | null;
   missing: boolean;
   addedAt: number;
   updatedAt: number;
@@ -294,7 +297,26 @@ export interface GamePatch {
   releaseDate?: string;
   genres?: string[];
   discordEnabled?: boolean;
+  /** Null vuelve a la detección automática. */
+  discordAppId?: string | null;
+  discordAppName?: string | null;
   processHints?: string[];
+}
+
+export interface DiscordGameHit {
+  id: string;
+  name: string;
+}
+
+export interface DiscordGameSearch {
+  ready: boolean;
+  games: DiscordGameHit[];
+}
+
+export interface DiscordDetection {
+  status: "match" | "unknown" | "unavailable";
+  id?: string | null;
+  name?: string | null;
 }
 
 export interface Profile {
@@ -560,6 +582,7 @@ export interface Settings {
   screenshotDir: string;
   achievementDirs: string[];
   firstRunDone: boolean;
+  telonOffered: boolean;
   exploreEnabled: boolean;
   exploreHideAdult: boolean;
   downloadDir: string;

@@ -5,6 +5,10 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.7.5
+
+- **Elegir el juego de Discord.** En los ajustes del juego, si un port no se reconoce, se puede buscar el juego de Discord que debe salir. Vacío: se detecta solo. El icono del canal de voz es el de ese juego; el texto sigue siendo el nombre de tu biblioteca.
+
 ## 1.7.4
 
 - **Discord más limpio**: la tarjeta muestra «Jugando a» y el nombre del juego, con su portada y el tiempo de partida,

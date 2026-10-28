@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { FolderOpen, ImagePlus, Search, Star, Trash2, EyeOff, Play, Check, Wand2 } from "lucide-react";
 import { api, errMsg } from "../api/tauri";
-import type { ArtItem, Candidate, GameFull, GamePatch } from "../api/types";
+import type { ArtItem, Candidate, DiscordDetection, DiscordGameHit, GameFull, GamePatch } from "../api/types";
 import { Button, Field, Modal, Section, Spinner, Tabs, TextInput, Toggle, cx } from "../components/ui";
 import { useOverlayNav } from "../input/nav";
 import { playtime, SOURCE_LABEL } from "../lib/format";
@@ -103,6 +103,133 @@ export function GameEditor({ id, onClose }: { id: number; onClose: () => void })
   );
 }
 
+function DiscordGameField({
+  id,
+  appId,
+  appName,
+  save,
+  reload,
+}: {
+  id: number;
+  appId?: string | null;
+  appName?: string | null;
+  save: (patch: GamePatch) => Promise<void>;
+  reload: () => void;
+}) {
+  const toast = useApp((s) => s.toast);
+  const [q, setQ] = useState("");
+  const [hits, setHits] = useState<DiscordGameHit[] | null>(null);
+  const [ready, setReady] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [detected, setDetected] = useState<DiscordDetection | null>(null);
+
+  useEffect(() => {
+    let stop = false;
+    api
+      .discordDetected(id)
+      .then((d) => {
+        if (!stop) setDetected(d);
+      })
+      .catch(() => {
+        if (!stop) setDetected({ status: "unavailable" });
+      });
+    return () => {
+      stop = true;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    const query = q.trim();
+    if (query.length < 2) {
+      setHits(null);
+      setBusy(false);
+      return;
+    }
+    let stop = false;
+    const timer = setTimeout(() => {
+      setBusy(true);
+      api
+        .searchDiscordGames(query)
+        .then((r) => {
+          if (stop) return;
+          setReady(r.ready);
+          setHits(r.games);
+        })
+        .catch((e) => {
+          if (!stop) toast("error", errMsg(e));
+        })
+        .finally(() => {
+          if (!stop) setBusy(false);
+        });
+    }, 220);
+    return () => {
+      stop = true;
+      clearTimeout(timer);
+    };
+  }, [q]);
+
+  function choose(hit: DiscordGameHit | null) {
+    void save(hit ? { discordAppId: hit.id, discordAppName: hit.name } : { discordAppId: null, discordAppName: null }).then(reload);
+    setQ("");
+    setHits(null);
+  }
+
+  const chosen = appId ? appName || appId : null;
+
+  return (
+    <Field
+      label={t("Juego en Discord")}
+      hint={t("Para un port que Discord no reconoce: elige el juego y saldrá su icono. Vacío: se detecta solo.")}
+    >
+      {chosen ? (
+        <div className="mb-2 flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate text-sm">{chosen}</span>
+          <Button size="sm" variant="ghost" onClick={() => choose(null)}>
+            {t("Detectar solo")}
+          </Button>
+        </div>
+      ) : detected?.status === "match" && detected.name ? (
+        <p className="mb-2 text-xs text-muted">{t("Ahora mismo Discord vería {name}", { name: detected.name })}</p>
+      ) : detected?.status === "unknown" ? (
+        <p className="mb-2 text-xs text-muted">{t("Ahora mismo Discord no lo reconoce y saldría ejGames")}</p>
+      ) : detected?.status === "unavailable" ? (
+        <p className="mb-2 text-xs text-muted">{t("No se ha podido cargar la lista de juegos de Discord")}</p>
+      ) : null}
+      <div className="flex items-center gap-2">
+        <TextInput
+          value={q}
+          placeholder={t("Buscar en los juegos de Discord…")}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && hits?.length) {
+              e.preventDefault();
+              choose(hits[0]);
+            }
+          }}
+        />
+        {busy && <Spinner size={16} />}
+      </div>
+      {hits && !ready && <p className="px-1 pt-2 text-sm text-muted">{t("No se ha podido cargar la lista de juegos de Discord")}</p>}
+      {ready && hits?.length === 0 && <p className="px-1 pt-2 text-sm text-muted">{t("Sin resultados en Discord")}</p>}
+      {!!hits?.length && (
+        <div className="mt-1 flex max-h-56 flex-col gap-1 overflow-y-auto">
+          {hits.map((h) => (
+            <button
+              key={h.id}
+              data-nav
+              onClick={() => choose(h)}
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-surface-3 cursor-pointer"
+            >
+              {appId === h.id ? <Check size={13} className="text-accent" /> : <span className="w-[13px]" />}
+              <span className="min-w-0 flex-1 truncate">{h.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </Field>
+  );
+}
+
 function useSaver(id: number) {
   const toast = useApp((s) => s.toast);
   return async (patch: GamePatch, ok?: string) => {
@@ -158,6 +285,7 @@ function GeneralTab({ data, reload, onClose }: { data: GameFull; reload: () => v
         <Toggle label="Favorito" checked={lib.favorite} onChange={(v) => api.setFavorite(g.id, v)} />
         <Toggle label="Ocultar de la biblioteca" checked={lib.hidden} onChange={(v) => api.setHidden(g.id, v)} />
         <Toggle label="Mostrar en Discord" checked={g.discordEnabled} onChange={(v) => save({ discordEnabled: v }).then(reload)} />
+        <DiscordGameField id={g.id} appId={g.discordAppId} appName={g.discordAppName} save={save} reload={reload} />
       </Section>
 
       <Section title={t("Lanzar desde fuera de ejGames")}>

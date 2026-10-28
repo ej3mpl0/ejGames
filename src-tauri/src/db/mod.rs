@@ -44,6 +44,8 @@ const MIGRATIONS: &[Migration] = &[
     Migration::Sql(include_str!("../../migrations/019_roms.sql")),
     // 1.7.0: el tema de la casa para todos.
     Migration::Sql(include_str!("../../migrations/020_default_theme.sql")),
+    // Juego de Discord elegido a mano (ports que no se reconocen solos).
+    Migration::Sql(include_str!("../../migrations/021_discord_app.sql")),
 ];
 
 pub struct Db {

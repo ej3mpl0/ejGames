@@ -159,6 +159,7 @@ export function Onboarding({ onDone }: { onDone: (profileId: number) => void }) 
       await api.login(p.id);
       await api.updateSettings({
         firstRunDone: true,
+        telonOffered: true,
         exploreEnabled: explore,
         downloadDir: explore ? dlDir ?? "" : "",
         language: steamLanguageFor(getLang()),

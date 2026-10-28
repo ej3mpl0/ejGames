@@ -5,6 +5,23 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.8.0
+
+- **Tema nuevo: Telón.** Una sola cosa por pantalla: el arte del juego a sangre, negro puro, títulos finos y nada de
+  cajas ni pastillas. Es el tema de los perfiles nuevos; Moneda sigue disponible en Ajustes → Apariencia.
+  - **Inicio**: solo el juego que toca, con Jugar, tus horas, la última partida y tus logros en una frase, y cinco
+    portadas pequeñas de «Jugado hace poco».
+  - **Biblioteca**: los filtros son una línea de texto y Colecciones es uno más (una franja por colección). Solo la
+    portada señalada lleva su nombre, y detrás se ve el arte de ese juego, apagado (se puede quitar en los ajustes
+    del tema).
+  - **Ficha del juego, Tienda, Descargas y Homebrew** con el mismo estilo: el disco rojo es Jugar y el blanco,
+    Descargar. El progreso es blanco.
+  - **Estadísticas y Ajustes** pasan al menú de tu avatar, y la barra de arriba se queda en lo justo.
+  - **Ajustes y diálogos** se visten también de Telón mientras lo usas.
+  - **Halloween** funciona igual que en Moneda: color calabaza, fondo encantado y la cabecera del evento en la tienda.
+- **¿Probar Telón?** Al abrir esta versión con Moneda, ejGames pregunta una vez si quieres probarlo. Si no te
+  convence, vuelves a Moneda desde Ajustes → Apariencia.
+
 ## 1.7.5
 
 - **Elegir el juego de Discord.** En los ajustes del juego, si un port no se reconoce, se puede buscar el juego de Discord que debe salir. Vacío: se detecta solo. El icono del canal de voz es el de ese juego; el texto sigue siendo el nombre de tu biblioteca.

@@ -1,0 +1,23 @@
+{
+  "id": "telon",
+  "name": "Telón",
+  "version": "1.0.0",
+  "author": "ejGames",
+  "description": "Una sola cosa por pantalla: el arte del juego a sangre, negro puro y nada de cajas",
+  "sdk": 1,
+  "entry": "index.html",
+  "modes": ["desktop", "tv"],
+  "palette": ["#000000", "#f7f7f5", "#ff3a2d", "#8f8f8c"],
+  "host": { "accent": "#ff3a2d", "surface": "#000000", "text": "#f7f7f5", "radius": "8px" },
+  "sounds": { "preset": "soft" },
+  "overlay": { "style": "moneda" },
+  "features": { "explore": true, "guides": true },
+  "windowControls": "theme",
+  "settings": [
+    { "key": "wallpaper", "type": "image", "label": "Fondo personalizado (imagen o vídeo)" },
+    { "key": "backdrop", "type": "toggle", "label": "Fondo con el arte del juego señalado", "default": true },
+    { "key": "coverSize", "type": "range", "label": "Tamaño de las portadas", "min": 130, "max": 260, "step": 5, "unit": "px", "default": 164, "group": "Biblioteca" },
+    { "key": "showRecent", "type": "toggle", "label": "Mostrar «Jugado hace poco» en Inicio", "default": true, "group": "Biblioteca" },
+    { "key": "autoTrailer", "type": "toggle", "label": "Reproducir el tráiler al abrir un juego", "default": false, "group": "Página de juego" }
+  ]
+}

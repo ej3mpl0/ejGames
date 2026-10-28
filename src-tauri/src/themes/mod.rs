@@ -14,7 +14,8 @@ use std::path::{Path, PathBuf};
 pub const SDK_VERSION: u32 = 1;
 
 /// El tema de la casa: el de todos los perfiles nuevos y el de reserva.
-pub const DEFAULT_THEME: &str = "moneda";
+/// Moneda, el anterior, sigue disponible (y a quien lo usa se le ofrece Telón una vez).
+pub const DEFAULT_THEME: &str = "telon";
 
 /// Temas de serie apagados por ahora: siguen en la carpeta, pero no se listan
 /// ni se cargan (los perfiles que los usaban pasaron a `DEFAULT_THEME`).
@@ -195,7 +196,7 @@ pub fn list(paths: &Paths) -> Vec<ThemeInfo> {
     for t in &mut out {
         localize(paths, t);
     }
-    let order = [DEFAULT_THEME];
+    let order = [DEFAULT_THEME, "moneda"];
     out.sort_by_key(|t| {
         (
             !t.builtin,

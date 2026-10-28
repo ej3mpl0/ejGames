@@ -139,6 +139,34 @@ body[data-input="mouse"] [data-nav]:focus-visible:not(input):not(textarea) {
   background: transparent;
 }
 
+/* ─────────── tema Telón: Ajustes y diálogos sin cajas ───────────
+   Negro puro, esquinas pequeñas, sin cristal. Va antes que Halloween para que
+   el evento mande mientras dura. */
+:root[data-host-theme="telon"] {
+  --h-surface: #000000;
+  --h-surface-2: #0b0b0b;
+  --h-surface-3: #1c1c1c;
+  --h-text: #f7f7f5;
+  --h-muted: #8f8f8c;
+  --h-border: rgba(247, 247, 245, 0.1);
+  --h-font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+:root[data-host-theme="telon"],
+:root[data-host-theme="telon"] body,
+:root[data-host-theme="telon"] #root {
+  background: #000;
+}
+:root[data-host-theme="telon"] .glass {
+  background: #000;
+  backdrop-filter: none;
+}
+:root[data-host-theme="telon"] h1,
+:root[data-host-theme="telon"] h2 {
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
 /* ─────────── evento de temporada: ejGames Scream (Halloween) ───────────
    Lo activa src/host/season.ts (<html data-season>). Noche violeta, acento
    calabaza, telarañas en los diálogos y el cementerio de fondo en las

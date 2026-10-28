@@ -1506,5 +1506,10 @@
  "Hola. Vamos a dejarlo listo.": "こんにちは。準備を始めましょう。",
  "Los juegos también se instalarán aquí": "ゲームもここにインストールされます",
  "Paso {n} de {total}": "ステップ {n}/{total}",
- "Son cuatro pasos y todo se puede cambiar luego en Ajustes.": "4 ステップだけです。すべてあとで設定から変更できます。"
+ "Son cuatro pasos y todo se puede cambiar luego en Ajustes.": "4 ステップだけです。すべてあとで設定から変更できます。",
+ "Ahora no": "今はしない",
+ "Hay un tema nuevo: Telón": "新しいテーマ「Telón」が登場",
+ "Menos cosas por pantalla: el arte del juego a sangre, negro puro y nada de cajas. Tu biblioteca, tus colecciones y tus ajustes no cambian.": "画面ごとの情報を減らしました。ゲームのアートを全面に、背景は真っ黒、ボックスはなし。ライブラリ、コレクション、設定はそのままです。",
+ "Probar Telón": "Telón を試す",
+ "Si no te convence, vuelves a Moneda en Ajustes → Apariencia.": "気に入らなければ、設定 → 外観 で Moneda に戻せます。"
 }

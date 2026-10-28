@@ -14,6 +14,7 @@ import { DownloadsOverlay } from "./overlays/explore/Downloads";
 import { ExploreOverlay } from "./overlays/explore/Explore";
 import { KeyboardOverlay } from "./overlays/Keyboard";
 import { UpdateAvailable } from "./overlays/UpdateAvailable";
+import { TryTelon } from "./overlays/TryTelon";
 import { UninstallDialog } from "./overlays/Uninstall";
 import { checkOnLaunch } from "./host/update";
 import { GameEditor } from "./overlays/GameEditor";
@@ -30,7 +31,7 @@ import { YearReviewOverlay } from "./overlays/YearReview";
 import { SoftwareStore } from "./overlays/SoftwareStore";
 import { Catalogs } from "./overlays/Catalogs";
 import { RomImport } from "./overlays/RomImport";
-import { activeTheme, DEFAULT_THEME, useApp } from "./store/app";
+import { activeTheme, DEFAULT_THEME, PREVIOUS_THEME, useApp } from "./store/app";
 import { useHostSeason } from "./host/season";
 import { restoreBackup } from "./overlays/settings/BackupSection";
 import { t } from "./lib/i18n";
@@ -54,6 +55,8 @@ function useHostStyle() {
     if (h.font) root.setProperty("--h-font", h.font);
     else root.removeProperty("--h-font");
     document.documentElement.dataset.hostLight = h.dark === false && !season ? "true" : "false";
+    // Para que un tema de la casa vista también Ajustes y los diálogos (index.css → [data-host-theme]).
+    document.documentElement.dataset.hostTheme = theme?.id ?? "";
   }, [theme, profile?.color, season]);
 }
 
@@ -76,6 +79,14 @@ function offerYearReview() {
   if (!year || (st.settings?.yearReviewSeen ?? 0) >= year) return;
   void api.updateSettings({ yearReviewSeen: year }).then((s) => useApp.getState().set({ settings: s }));
   st.toast("info", t("Tu año en ejGames ya está listo"), { label: t("Verlo"), run: () => useApp.getState().open("year-review", { year }) });
+}
+
+/** 1.8: a quien sigue con Moneda se le ofrece probar Telón, una sola vez. */
+function offerTelon(p: Profile) {
+  const st = useApp.getState();
+  if (!st.settings || st.settings.telonOffered) return;
+  void api.updateSettings({ telonOffered: true }).then((s) => useApp.getState().set({ settings: s }));
+  if (p.themeId === PREVIOUS_THEME && st.themes.some((t) => t.id === DEFAULT_THEME)) st.open("try-telon");
 }
 
 async function loadLibrary() {
@@ -101,6 +112,7 @@ export default function App() {
     checkOnLaunch();
     void offerNewerBackup();
     offerYearReview();
+    offerTelon(p);
   }
 
   // Arranque.
@@ -270,6 +282,8 @@ export default function App() {
             return <KeyboardOverlay key={key} args={o.args} onClose={close} />;
           case "update":
             return <UpdateAvailable key={key} onClose={onClose} />;
+          case "try-telon":
+            return <TryTelon key={key} onClose={onClose} />;
           case "uninstall":
             return <UninstallDialog key={key} id={Number(o.args?.id)} onClose={onClose} />;
           case "guides":

@@ -1,0 +1,352 @@
+/* Telón: la piel sobre Moneda (style.css, store.css y homebrew.css van antes).
+   Una sola cosa por pantalla: negro puro, el arte del juego a sangre y el texto
+   encima, sin cajas ni pastillas. Títulos finos (Segoe UI Variable Display 300).
+   Un disco por pantalla: rojo para Jugar, blanco para descargar o instalar.
+   El progreso y los interruptores encendidos son blancos.
+   Halloween: el SDK manda su paleta en --ejg-season-*; aquí se recoge. */
+:root {
+  --accent: var(--ejg-season-accent, #ff3a2d);
+  --bg: var(--ejg-season-bg, #000000);
+  --panel: var(--ejg-season-panel, #0e0e0e);
+  --text: var(--ejg-season-text, #f7f7f5);
+  --lift: color-mix(in srgb, var(--text) 9%, var(--bg));
+  --lift-2: color-mix(in srgb, var(--text) 15%, var(--bg));
+  --muted: color-mix(in srgb, var(--text) 56%, var(--bg));
+  --soft-text: color-mix(in srgb, var(--text) 80%, var(--bg));
+  --dim: color-mix(in srgb, var(--text) 36%, var(--bg));
+  --line: color-mix(in srgb, var(--text) 12%, transparent);
+  --cover: var(--ejg-cover-size, 164px);
+  --top-h: 60px;
+  --pad: 72px;
+  --r: 3px;
+}
+
+h1, h2, h3 { font-weight: 300; }
+
+/* ─── el telón de fondo (biblioteca y colecciones) ─── */
+#backdrop { position: fixed; inset: 0 0 auto 0; height: 78vh; z-index: -1; pointer-events: none; }
+.bd-layer { position: absolute; inset: 0; background: center 25% / cover no-repeat; opacity: 0; transition: opacity 0.6s ease; filter: saturate(0.85); -webkit-mask-image: linear-gradient(180deg, #000 20%, transparent 100%); mask-image: linear-gradient(180deg, #000 20%, transparent 100%); }
+.bd-layer.on { opacity: 0.3; }
+.bd-layer::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 70%, transparent), transparent 60%); }
+
+/* ─── barra de arriba: encima del contenido, sin fondo ─── */
+.top { position: absolute; left: 0; right: 0; top: 0; height: var(--top-h); padding-left: 40px; gap: 6px; background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 78%, transparent), transparent); }
+.brand { width: 40px; height: 40px; margin: 0 22px 0 -5px; }
+.brand-ico { width: 30px; height: 30px; }
+.brand:hover { transform: none; }
+.brand.is-focused { box-shadow: 0 0 0 2px var(--text); }
+.tabs { gap: 28px; }
+.tab { padding: 0; gap: 0; font-family: var(--font); font-size: 15px; font-weight: 400; color: var(--muted); }
+.tab::after { display: none; }
+.tab.on, .tab:hover { color: var(--text); }
+.tab.is-focused { color: var(--text); text-decoration: underline; text-underline-offset: 8px; text-decoration-thickness: 1px; }
+.search-pill { width: 230px; height: 34px; padding: 0 4px; border-radius: 0; background: none; color: var(--muted); box-shadow: inset 0 -1px 0 transparent; }
+.search-pill:hover { background: none; color: var(--text); }
+.search-pill:focus-within, .search-pill:has(.is-focused) { background: none; box-shadow: inset 0 -1px 0 var(--text); color: var(--text); }
+.search-pill input { font-size: 14.5px; }
+.search-pill kbd { background: none; padding: 0; }
+.round, .round.fill, .round.glass { background: none; }
+.round:hover, .round.is-focused, .round.fill:hover, .round.fill.is-focused, .round.glass:hover, .round.glass.is-focused { background: none; color: var(--text); }
+.round.is-focused { box-shadow: 0 0 0 2px var(--text); }
+#dl-btn .ring-on, #dl-btn.ready .ring-on { stroke: var(--text); stroke-width: 6; }
+#dl-btn .ring-bg { stroke-width: 6; }
+#dl-btn.busy .ring-bg, #dl-btn.ready .ring-bg { stroke: var(--lift-2); }
+#dl-btn.on { background: none; }
+.avatar { width: 30px; height: 30px; font-size: 13px; background-color: #45433f; }
+.wins button:hover { background: var(--lift); }
+
+/* ─── contenido: pasa por debajo de la barra ─── */
+#main { top: 0; scroll-behavior: auto; }
+.page { gap: 34px; padding: calc(var(--top-h) + 36px) var(--pad) 72px; }
+.head { gap: 22px; align-items: baseline; }
+.head h1 { font-size: 52px; font-weight: 300; letter-spacing: -0.02em; line-height: 1; }
+.count { margin: 0; font-size: 15px; color: var(--muted); }
+.sec-head h2 { font-family: var(--font); font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.link { font-size: 15px; font-weight: 400; color: var(--muted); }
+
+/* Botones de texto: sin pastilla ni caja. */
+.txt, .chip, .soft, .link, .btn-more { display: inline-flex; align-items: center; gap: 8px; height: auto; padding: 4px 0; border-radius: 0; background: none !important; font-size: 15.5px; font-weight: 400; color: color-mix(in srgb, var(--text) 66%, var(--bg)); white-space: nowrap; }
+.txt:hover, .chip:hover, .soft:hover, .link:hover, .btn-more:hover { color: var(--text); }
+.txt.is-focused, .chip.is-focused, .soft.is-focused, .link.is-focused, .btn-more.is-focused { color: var(--text); box-shadow: none; text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
+.txt svg, .chip svg, .soft svg { width: 15px; height: 15px; }
+.chip.on, .soft.light { color: var(--text); }
+.soft.light.lg { font-size: 17px; }
+.soft.danger { color: #ff8a80; }
+.txt.drop svg { width: 14px; height: 14px; opacity: 0.7; }
+.grow { flex: 1; }
+
+/* El disco: Jugar. */
+.play { height: auto; gap: 16px; padding: 0; border-radius: 0; font-size: 21px; font-weight: 600; }
+.play.is-focused { background: none; }
+.play .disc { width: 60px; height: 60px; }
+.play .disc::before { margin-left: 6px; border-left-width: 18px; border-top-width: 10.5px; border-bottom-width: 10.5px; }
+.play.sm { height: auto; padding: 0; font-size: 21px; }
+.play.sm .disc { width: 60px; height: 60px; }
+.play.sm .disc::before { margin-left: 6px; border-left-width: 18px; border-top-width: 10.5px; border-bottom-width: 10.5px; }
+.play:hover .disc { transform: none; }
+.play.is-focused .disc { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--text); }
+:root[data-season="halloween"] .play .disc::before { border-left-color: #1d0c02; }
+.ring-box .rf, .ring-box.live .rf { stroke: var(--text); }
+
+/* ─── portadas: solo la señalada lleva nombre ─── */
+.card { gap: 12px; }
+.card .cover { border-radius: var(--r); background: var(--lift); transition: none; }
+.card .t { font-size: 15px; font-weight: 400; visibility: hidden; }
+.card .m { margin-top: -10px; font-size: 13.5px; visibility: hidden; }
+.card::after { display: none; }
+.card:hover .cover { transform: none; }
+.card.is-focused .cover { transform: none; box-shadow: none; outline: 2px solid var(--text); outline-offset: 4px; }
+.card.is-focused .t, .card.is-focused .m, .card:hover .t, .card:hover .m { visibility: visible; }
+.ejg-art-portrait { border-radius: inherit; }
+.tag { border-radius: 2px; background: color-mix(in srgb, var(--bg) 80%, transparent); font-weight: 600; }
+.tag.live::before { background: var(--accent); }
+.grid { gap: 26px 30px; grid-template-columns: repeat(auto-fill, minmax(var(--cover), 1fr)); }
+.row-items { gap: 14px; }
+.row-arrow { background: color-mix(in srgb, var(--bg) 70%, transparent); box-shadow: none; }
+
+.empty h2 { font-weight: 300; font-size: 36px; }
+.empty .soft.light.lg { color: var(--text); font-size: 18px; }
+
+/* ─── Inicio: un juego a sangre y cinco portadas pequeñas ─── */
+.page.home { padding: 0; gap: 0; min-height: 100%; }
+.hero { position: relative; min-height: 100vh; border-radius: 0; background: var(--bg); display: block; }
+.hero-art { object-position: 66% 30%; }
+.hero-scrim { background:
+  linear-gradient(90deg, color-mix(in srgb, var(--bg) 88%, transparent) 0, color-mix(in srgb, var(--bg) 52%, transparent) 32%, transparent 58%),
+  linear-gradient(0deg, color-mix(in srgb, var(--bg) 92%, transparent) 0, transparent 44%),
+  linear-gradient(180deg, color-mix(in srgb, var(--bg) 60%, transparent) 0, transparent 16%); }
+.hero-in { position: absolute; left: var(--pad); bottom: 12vh; width: min(620px, 50vw); min-height: 0; padding: 0; gap: 22px; }
+.hero-logo { max-width: 380px; max-height: 150px; margin: 0; }
+.hero-title { font-weight: 300; font-size: 72px; letter-spacing: -0.03em; line-height: 0.95; margin: 0; }
+.hero-meta { font-family: var(--display); font-size: 19px; font-weight: 300; line-height: 1.45; color: var(--soft-text); }
+.hero-acts { gap: 32px; margin-top: 6px; }
+.hero-recent { position: absolute; right: 48px; bottom: 48px; display: grid; gap: 12px; }
+.lab { margin: 0; font-size: 13px; color: var(--muted); }
+.hero-strip { display: flex; gap: 10px; }
+.hero-strip .card { width: 84px; gap: 0; }
+.hero-strip .card .t, .hero-strip .card .m { display: none; }
+
+/* ─── Biblioteca: filtros en una línea de texto ─── */
+.filters { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 26px; margin-top: -16px; }
+.flt { padding: 4px 0; font-size: 15px; color: var(--muted); }
+.flt:hover, .flt.on { color: var(--text); }
+.flt.is-focused { color: var(--text); text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
+.filters .txt { font-size: 15px; }
+.chips { display: none; }
+
+/* Colecciones: una franja por colección; las que no señalas se apagan. */
+.bands { display: grid; gap: 30px; margin-right: calc(var(--pad) * -1); }
+.band { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; align-items: center; gap: 30px; text-align: left; opacity: 0.5; transition: opacity 0.25s; }
+.band:hover, .band.is-focused, .bands:not(:has(.is-focused)) .band { opacity: 1; }
+.band-name { display: flex; flex-direction: column; gap: 8px; }
+.band-name b { font-family: var(--display); font-size: 34px; font-weight: 300; letter-spacing: -0.015em; line-height: 1.05; }
+.band-name small { font-size: 14px; color: var(--muted); }
+.band-covers { display: flex; gap: 12px; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, #000 70%, transparent); mask-image: linear-gradient(90deg, #000 70%, transparent); }
+.band-c { width: 100px; aspect-ratio: 2 / 3; flex: none; border-radius: var(--r); overflow: hidden; background: var(--lift); }
+.band.is-focused .band-name b { text-decoration: underline; text-underline-offset: 8px; text-decoration-thickness: 1px; }
+.txt.back { font-size: 14px; }
+.txt.back .i svg { width: 16px; height: 16px; }
+
+/* ─── página de juego: el arte a sangre y el texto encima ─── */
+.game { padding-top: 0; }
+.g-bg { display: none; }
+.g-band { height: 560px; margin: 0 calc(var(--pad) * -1); border-radius: 0; background: var(--bg); }
+.g-band-img { object-position: 50% 20%; }
+.g-band::after { content: ""; position: absolute; inset: 0; background:
+  linear-gradient(90deg, color-mix(in srgb, var(--bg) 86%, transparent) 0, color-mix(in srgb, var(--bg) 40%, transparent) 36%, transparent 62%),
+  linear-gradient(0deg, var(--bg) 0, transparent 44%),
+  linear-gradient(180deg, color-mix(in srgb, var(--bg) 60%, transparent) 0, transparent 18%); }
+.g-back { top: calc(var(--top-h) + 14px); left: calc(var(--pad) - 12px); z-index: 1; }
+.g-head { margin-top: -300px; padding: 0; gap: 22px 34px; align-items: flex-end; z-index: 1; }
+.g-cover { display: none; }
+.g-title { flex: 1 1 100%; gap: 12px; padding: 0; }
+.g-title h1 { font-size: 72px; font-weight: 300; letter-spacing: -0.03em; line-height: 0.98; text-shadow: none; }
+.g-meta { font-family: var(--display); font-size: 18px; font-weight: 300; color: var(--soft-text); }
+.g-acts { gap: 26px; padding: 0; }
+.g-acts .round { width: 44px; height: 44px; }
+.g-nav { gap: 26px; margin: 26px 0 0; }
+.g-nav .tab { height: auto; font-size: 15.5px; color: var(--muted); }
+.g-nav .tab.on { color: var(--text); }
+.g-tiles { gap: 40px; margin-top: 34px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.tile, .g-tiles .ejg-hl { min-height: 0; padding: 0; border-radius: 0; background: none; }
+button.tile:hover { background: none; }
+button.tile.is-focused { box-shadow: none; text-decoration: underline; text-underline-offset: 6px; }
+.big { font-size: 26px; font-weight: 300; }
+.g-tiles .ejg-hl-row em { font-weight: 300; }
+.g-tiles .ejg-hl-bar { height: 2px; }
+.note, .page .ejg-upd, .page .ejg-emu { border-radius: 0; background: none; padding: 0; box-shadow: inset 2px 0 0 var(--text); padding-left: 16px; }
+.page .ejg-upd-btn, .page .ejg-emu-go { border-radius: 4px; }
+.g-body { gap: 64px; margin-top: 44px; }
+.card-box { padding: 0; border-radius: 0; background: none; gap: 14px; }
+.card-box h3 { font-family: var(--font); font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.desc { font-family: var(--display); font-size: 17px; font-weight: 300; line-height: 1.6; color: var(--soft-text); max-width: 70ch; }
+.trailer-box, .shot { border-radius: var(--r); }
+.shot.is-focused { box-shadow: none; outline: 2px solid var(--text); outline-offset: 3px; }
+.info-row + .info-row { box-shadow: none; }
+.tag-pill { padding: 0; border-radius: 0; background: none; font-size: 14px; color: var(--soft-text); }
+.tags { gap: 4px 16px; }
+.ach-tile, .ach-row img, .ach-ph, .guide-row img, .guide-ph { border-radius: var(--r); }
+.ach-row, .guide-row { border-radius: 4px; }
+.guide-row.is-focused { box-shadow: inset 2px 0 0 var(--text); }
+.skel { border-radius: 2px; }
+
+/* ─── menús, pistas y ventanas: negro, esquinas pequeñas ─── */
+.menu { border-radius: 6px; background: #0b0b0b; box-shadow: 0 0 0 1px var(--line), 0 20px 50px rgba(0, 0, 0, 0.7); }
+.menu-item { border-radius: 3px; font-weight: 400; font-size: 14.5px; }
+.menu-item.is-focused::after { width: 2px; background: var(--text); }
+.hints { border-radius: 4px; background: color-mix(in srgb, var(--bg) 88%, transparent); box-shadow: 0 0 0 1px var(--line); }
+#lightbox img, #lightbox video { border-radius: 4px; }
+.guides-body .g-view { --g-radius: 4px; }
+.guides-body .g-chip, .guides-body .g-item, .guides-body .g-rbtn { border-radius: 4px; }
+.guides-body .g-readerview { border-radius: 4px; background: #0b0b0b; }
+.guides-dlg-head h2, .ach-dlg-head h2 { font-weight: 300; }
+
+/* ─── Homebrew (kit/homebrew.js): sin cajas ─── */
+.page.hb-wrap { padding: calc(var(--top-h) + 30px) var(--pad) 60px; }
+.hb-page .hb-view { --hb-radius: 3px; --hb-surface: transparent; --hb-surface-2: var(--lift); --hb-sheet: #0b0b0b; --hb-input: transparent; --hb-hero: transparent; --hb-focus: 0 0 0 2px var(--text); }
+.hb-page .hb-title { font-size: 52px; font-weight: 300; letter-spacing: -0.02em; }
+.hb-page .hb-top { border-radius: 0; background: none; }
+.hb-page .hb-chip { border-radius: 0; background: none; padding: 4px 0; font-weight: 400; color: var(--muted); }
+.hb-page .hb-chip.is-on, .hb-page .hb-chip.on { background: none; color: var(--text); }
+.hb-page .hb-sheet { border-radius: 4px; }
+.hb-page .hb-btn { border-radius: 4px; }
+.hb-page .hb-row-head h2 { font-family: var(--font); font-size: 13px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+
+/* ─── TV / Big Picture ─── */
+:root[data-mode="tv"] { --top-h: 84px; --pad: 88px; }
+:root[data-mode="tv"] .tab { font-size: 22px; padding: 0; }
+:root[data-mode="tv"] .hero { min-height: 100vh; }
+:root[data-mode="tv"] .hero-title, :root[data-mode="tv"] .g-title h1 { font-size: 96px; }
+:root[data-mode="tv"] .play { height: auto; font-size: 28px; }
+:root[data-mode="tv"] .play .disc { width: 84px; height: 84px; }
+
+/* ─── Halloween: el SDK pone la paleta y el ambiente; sin telón de fondo,
+   manda el fondo del evento. ─── */
+:root[data-season="halloween"] #backdrop { display: none; }
+:root[data-season="halloween"] .hero-scrim { background:
+  linear-gradient(90deg, color-mix(in srgb, var(--bg) 90%, transparent) 0, color-mix(in srgb, var(--bg) 55%, transparent) 34%, transparent 60%),
+  linear-gradient(0deg, var(--bg) 0, transparent 46%); }
+
+/* Con ratón no se pintan los anillos de foco: basta el :hover. */
+:root[data-input="mouse"] .card.is-focused:not(:hover) .cover { outline: none; }
+:root[data-input="mouse"] .card.is-focused:not(:hover) .t, :root[data-input="mouse"] .card.is-focused:not(:hover) .m { visibility: hidden; }
+:root[data-input="mouse"] .txt.is-focused:not(:hover), :root[data-input="mouse"] .flt.is-focused:not(:hover), :root[data-input="mouse"] .tab.is-focused:not(:hover) { text-decoration: none; }
+:root[data-input="mouse"] .play.is-focused .disc { box-shadow: none; }
+
+/* ═════ Tienda (store.css): mismas reglas, sin cajas ═════ */
+.store { padding-top: var(--top-h); }
+.store-top { top: 0; padding: 18px var(--pad) 18px; background: linear-gradient(180deg, var(--bg) 60%, transparent); }
+.sn-links { gap: 24px; }
+.sn-link, .sn-wish, .tab-head, .wish-sort, .cat-sort-btn, .crumb, .app-back, .cat-more, .cat-clear, .hv-more, .hv-guide { height: auto; min-width: 0; padding: 4px 0; border-radius: 0; background: none !important; font-size: 14.5px; font-weight: 400; color: var(--muted); }
+.sn-link:hover, .sn-link.on, .sn-wish:hover, .sn-wish.on, .tab-head:hover, .tab-head.on, .wish-sort.on, .wish-sort:hover, .cat-sort-btn:hover, .app-back:hover, .crumb:hover { color: var(--text); }
+.sn-link.is-focused, .sn-wish.is-focused, .tab-head.is-focused, .wish-sort.is-focused, .cat-sort-btn.is-focused, .crumb.is-focused, .app-back.is-focused, .cat-more.is-focused, .hv-more.is-focused, .hv-guide.is-focused { box-shadow: none; color: var(--text); text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
+.sn-wish-n:not(:empty) { min-width: 0; height: auto; padding: 0; margin-left: 6px; border-radius: 0; background: none; color: inherit; font-size: inherit; font-weight: 400; }
+.sn-wish-n:not(:empty)::before { content: "("; }
+.sn-wish-n:not(:empty)::after { content: ")"; }
+.store-front, .store-results { gap: 40px; }
+.store-h { font-family: var(--font); font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.store-empty h2, .wish-head h1, .dl-top h1, .app-title, .s-hero-title, .tab-preview h4, .dlg-head, .hv-title, .similar-sec h3, .buy h2 { font-weight: 300; letter-spacing: -0.02em; }
+.owned { border-radius: 2px; text-transform: none; font-weight: 600; }
+
+/* destacado: a sangre, como Inicio */
+.s-hero { min-height: 70vh; margin: -18px calc(var(--pad) * -1) 0; border-radius: 0; background: var(--bg); }
+.s-hero-scrim { background:
+  linear-gradient(90deg, color-mix(in srgb, var(--bg) 88%, transparent) 0, color-mix(in srgb, var(--bg) 50%, transparent) 34%, transparent 60%),
+  linear-gradient(0deg, var(--bg) 0, transparent 40%); }
+.s-hero-in { min-height: 70vh; padding: 40px var(--pad) 56px; justify-content: flex-end; gap: 18px; }
+.s-hero-title { font-size: 64px; line-height: 0.98; }
+.s-hero-meta { font-family: var(--display); font-size: 18px; font-weight: 300; }
+.s-hero-acts { margin-top: 6px; gap: 28px; }
+.s-hero-nav { right: var(--pad); bottom: 56px; }
+.slots i.on, .car-dots i.on { width: 18px; height: 2px; border-radius: 0; }
+
+/* portadas de la tienda: solo la señalada lleva nombre */
+.scard-art, .st-art, .app-cap, .pv-big, .pv-thumb, .tp-shot, .trow-cap.wide, .srow-cap.wide, .dl-cap.wide, .cat-tile { border-radius: var(--r); }
+.scard .t, .scard .m { visibility: hidden; }
+.scard.is-focused .t, .scard.is-focused .m, .scard:hover .t, .scard:hover .m { visibility: visible; }
+.scard .t { font-weight: 400; }
+.scard::after { display: none; }
+.scard:hover .scard-art { transform: none; }
+.scard.is-focused .scard-art { transform: none; box-shadow: none; outline: 2px solid var(--text); outline-offset: 4px; }
+:root[data-input="mouse"] .scard.is-focused:not(:hover) .scard-art { outline: none; }
+:root[data-input="mouse"] .scard.is-focused:not(:hover) .t, :root[data-input="mouse"] .scard.is-focused:not(:hover) .m { visibility: hidden; }
+.car-wrap > .car-arrow { background: color-mix(in srgb, var(--bg) 70%, transparent); box-shadow: none; }
+
+/* listas y paneles: sin fondo */
+.srows, .tab-rows, .tab-preview, .cat-box, .app-side, .app-sec, .side-box, .buy, .dl-list, .dl-hero { padding-left: 0; padding-right: 0; border-radius: 0; background: none; }
+.srow, .trow, .chk, .cat { border-radius: 3px; }
+.srow:hover, .srow.is-focused, .trow:hover, .trow.is-focused, .chk:hover, .chk.is-focused { background: var(--lift); }
+.srow.is-focused::after, .trow.is-focused::after { right: auto; left: -12px; width: 2px; background: var(--text); }
+.chk { background: none; }
+.chk.is-focused { box-shadow: none; }
+.chk i { border-radius: 3px; }
+.cat { background: none; padding: 0; min-height: 30px; }
+.tp-tags span, .app-tags span, .app-tags .app-tag { padding: 0; border-radius: 0; background: none; font-size: 14px; }
+.app-tags .app-tag:hover, .app-tags .app-tag.is-focused { background: none; color: var(--text); text-decoration: underline; }
+.app-tags, .tp-tags { gap: 4px 16px; }
+.cat-chip { height: auto; padding: 2px 0; border-radius: 0; background: none; color: var(--text); text-decoration: underline; text-underline-offset: 5px; }
+.cat-sort-menu { border-radius: 6px; background: #0b0b0b; box-shadow: 0 0 0 1px var(--line), 0 20px 50px rgba(0, 0, 0, 0.7); }
+.cat-sort-opt { border-radius: 3px; font-weight: 400; }
+.cat-tile-name { font-weight: 300; }
+.cat-tile.is-focused { box-shadow: none; outline: 2px solid var(--text); outline-offset: 3px; }
+
+/* ficha de la tienda: el arte arriba, el disco blanco para descargar */
+.app-bg { inset: calc(var(--top-h) * -1) calc(var(--pad) * -1) auto; height: 620px; opacity: 0.4; filter: none; }
+.app-title { font-size: 60px; line-height: 1; }
+.buy { padding-top: 0; padding-bottom: 0; }
+.buy-btn { display: inline-flex; align-items: center; gap: 14px; height: 56px; padding: 0 22px 0 0; border-radius: 28px; background: none; color: var(--text); font-size: 19px; font-weight: 600; }
+.buy-btn::before { content: ""; width: 56px; height: 56px; flex: none; border-radius: 50%; background: var(--text) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v13m0 0-5-5m5 5 5-5'/%3E%3C/svg%3E") center / 24px no-repeat; }
+.buy-btn.blue { background: none; }
+.buy-btn.blue::before { background-color: var(--lift-2); }
+.buy-btn:hover { filter: none; }
+.buy-btn.is-focused { box-shadow: none; }
+.buy-btn.is-focused::before { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--text); }
+.btn-wish, .s-hero .btn-wish { height: auto; padding: 4px 0; border-radius: 0; background: none; font-weight: 400; color: color-mix(in srgb, var(--text) 66%, var(--bg)); }
+.btn-wish:hover, .btn-wish.on { background: none; color: var(--text); }
+.btn-wish.is-focused { box-shadow: none; text-decoration: underline; text-underline-offset: 6px; }
+.app-desc { font-family: var(--display); font-size: 17px; font-weight: 300; }
+
+/* diálogos */
+.dlg-layer { background: color-mix(in srgb, #000 78%, transparent); }
+.dlg { border-radius: 6px; background: #0b0b0b; box-shadow: 0 0 0 1px var(--line), 0 30px 80px rgba(0, 0, 0, 0.7); }
+.dlg-space > div, .dlg-loc, .dlg .chk { border-radius: 3px; background: var(--lift); }
+.dlg-space b { font-weight: 300; }
+
+/* descargas: el progreso es blanco */
+.dl-page { padding-top: calc(var(--top-h) + 20px); }
+.dl-ring { --accent: var(--text); }
+.dl-hero-pct { color: var(--text); font-weight: 300; }
+.dl-hero-title b { font-weight: 300; }
+.dl-step.on i { width: 18px; height: 2px; border-radius: 0; background: var(--text); }
+.dl-row { padding-left: 0; padding-right: 0; }
+.dl-row:has(.is-focused) { background: none; box-shadow: inset 2px 0 0 var(--text); padding-left: 14px; }
+.dl-bar { height: 2px; border-radius: 0; }
+.dl-bar i { background: var(--text); }
+.dl-btn { background: none; }
+.dl-btn:hover { background: var(--lift); }
+.dl-btns .play.sm { height: auto; padding: 0; }
+.wish-page { padding-top: 10px; }
+.wcard-acts .soft.sm { height: auto; padding: 4px 0; }
+.hv, .hv-warn { border-radius: 4px; }
+.band-smart::before { content: ". "; }
+:root[data-input="gamepad"] .hero-recent, :root[data-input="keyboard"] .hero-recent { bottom: 84px; }
+.band-c { position: relative; }
+.top { transition: background-color 0.25s; }
+.top.solid { background: color-mix(in srgb, var(--bg) 94%, transparent); }
+.soft.lg { height: auto; padding: 4px 0; }
+.pill { padding: 0; border-radius: 0; background: none; font-size: 13px; font-weight: 400; color: var(--muted); }
+/* «Descargar» en la ficha de la tienda: el disco blanco. */
+.soft.act-main { gap: 14px; padding: 0; color: var(--text) !important; font-size: 19px; font-weight: 600; }
+.soft.act-main > .ico, .soft.act-main > svg, .soft.act-main > span.i { display: none; }
+.soft.act-main::before { content: ""; width: 52px; height: 52px; flex: none; border-radius: 50%; background: var(--text) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v13m0 0-5-5m5 5 5-5'/%3E%3C/svg%3E") center / 22px no-repeat; }
+.soft.act-main.is-focused { text-decoration: none; }
+.soft.act-main.is-focused::before { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--text); }
+.app-head { align-items: flex-end; }
+.hb-page .hb-empty { border-radius: 0; background: none; }
+.soft.light.act-main.is-focused { box-shadow: none; }
+.hb-page .hb-view .hb-row-head h2 { font-family: var(--font); font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.hb-page .hb-view .hb-empty b { font-weight: 400; font-size: 17px; }
+/* Halloween: el botón de la cabecera del evento, legible sobre el arte. */
+.ev-acts .soft.ev-go { padding: 10px 18px; border-radius: 4px; background: var(--accent) !important; color: #1d0c02; font-weight: 600; }
+.ev-acts .soft.glass { padding: 10px 14px; border-radius: 4px; background: color-mix(in srgb, var(--bg) 78%, transparent) !important; }
+.ev-hero { box-shadow: none; }

@@ -1,0 +1,344 @@
+/* Homebrew (kit/homebrew.js) con la maqueta «moneda»: sin cabecera en caja ni buscador
+   propio (se usa el de arriba), consolas en pastillas, carátulas cuadradas con la
+   ranura bajo la enfocada, emuladores en tarjetas y la ficha como en la tienda. */
+
+.hb-layout-moneda {
+  --hb-item: 186px;
+  --hb-card: var(--cover);
+  max-width: none;
+  padding: 4px var(--pad) 56px;
+}
+
+/* ─── cabecera ─── */
+.hb-layout-moneda .hb-top {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "main actions" "chips chips";
+  gap: 18px 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+}
+.hb-layout-moneda .hb-top-main {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.hb-layout-moneda .hb-title {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+.hb-layout-moneda .hb-sub {
+  margin: 0;
+  font-size: 15px;
+}
+.hb-layout-moneda .hb-top-actions .hb-btn {
+  height: 40px;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+}
+.hb-layout-moneda .hb-top-actions .hb-btn:hover {
+  background: var(--lift);
+  filter: none;
+}
+.hb-layout-moneda .hb-chips {
+  margin: 0;
+  padding: 2px 2px 4px;
+}
+.hb-layout-moneda .hb-chip {
+  height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--soft-text);
+  font-size: 14px;
+}
+.hb-layout-moneda .hb-chip:hover {
+  background: var(--lift);
+  color: var(--text);
+}
+.hb-layout-moneda .hb-chip.is-on {
+  background: var(--text);
+  color: var(--bg);
+}
+.hb-layout-moneda .hb-chip small {
+  background: var(--lift-2);
+  color: var(--text);
+}
+.hb-layout-moneda .hb-chip.is-on small {
+  background: color-mix(in srgb, var(--bg) 16%, transparent);
+  color: var(--bg);
+}
+.hb-layout-moneda .hb-chip.is-focused,
+.hb-layout-moneda .hb-btn.is-focused,
+.hb-layout-moneda .hb-link.is-focused {
+  box-shadow: 0 0 0 2px var(--text);
+}
+
+/* ─── filas y secciones ─── */
+.hb-layout-moneda .hb-body {
+  margin-top: 28px;
+}
+.hb-layout-moneda .hb-row-head h2,
+.hb-layout-moneda .hb-sec .hb-row-head h2 {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+.hb-layout-moneda .hb-arrow {
+  width: 36px;
+  height: 36px;
+  padding: 9px;
+  background: transparent;
+}
+.hb-layout-moneda .hb-link {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+.hb-layout-moneda .hb-link:hover {
+  color: var(--text);
+  background: transparent;
+}
+
+/* Carátulas de los catálogos: cuadradas, la caja entera sobre su panel. */
+.hb-layout-moneda .hb-item {
+  gap: 9px;
+}
+.hb-layout-moneda .hb-item::after,
+.hb-layout-moneda .hb-game::after {
+  content: "";
+  width: 22px;
+  height: 5px;
+  border-radius: 1.5px;
+}
+.hb-layout-moneda .hb-shot {
+  aspect-ratio: 1 / 1;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+}
+/* La foto va en línea (background-image). Aquí solo el encuadre, para no pisarla. */
+.hb-layout-moneda .hb-shot.is-fit {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+.hb-layout-moneda .hb-shot img,
+.hb-layout-moneda .hb-shot.is-fit > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 10px;
+}
+.hb-layout-moneda .hb-shot-title {
+  color: var(--text);
+  text-shadow: none;
+  font-family: var(--display);
+  font-weight: 700;
+}
+.hb-layout-moneda .hb-item:hover .hb-shot {
+  transform: translateY(-4px);
+}
+.hb-layout-moneda .hb-item.is-focused .hb-shot {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+}
+.hb-layout-moneda .hb-item.is-focused::after,
+.hb-layout-moneda .hb-game.is-focused::after {
+  background: var(--accent);
+}
+.hb-layout-moneda .hb-item-title {
+  font-weight: 600;
+}
+.hb-layout-moneda .hb-item-sub {
+  font-size: 13px;
+}
+.hb-layout-moneda .hb-got {
+  background: var(--text);
+  color: var(--bg);
+}
+.hb-layout-moneda .hb-bar i {
+  background: var(--accent);
+}
+
+/* Tus juegos: como las portadas de la biblioteca. */
+.hb-layout-moneda .hb-cover {
+  border-radius: 4px;
+  box-shadow: none;
+}
+.hb-layout-moneda .hb-game:hover .hb-cover {
+  transform: translateY(-4px);
+}
+.hb-layout-moneda .hb-game.is-focused .hb-cover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+}
+.hb-layout-moneda .hb-game-title {
+  font-weight: 600;
+}
+
+/* Descargando, emuladores, avisos y vacíos: tarjetas del sistema. */
+.hb-layout-moneda .hb-dl,
+.hb-layout-moneda .hb-emu,
+.hb-layout-moneda .hb-empty {
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+}
+.hb-layout-moneda .hb-emu:hover,
+.hb-layout-moneda .hb-emu.is-focused {
+  background: var(--lift);
+}
+.hb-layout-moneda .hb-emu.is-focused {
+  box-shadow: 0 0 0 2px var(--text);
+}
+.hb-layout-moneda .hb-emu-icon {
+  border-radius: 4px;
+}
+.hb-layout-moneda .hb-alert {
+  background: transparent;
+}
+.hb-layout-moneda .hb-btn {
+  border-radius: 4px;
+}
+
+/* ─── ficha de un juego de consola: una página como la de la tienda (kit: .hb-pg) ─── */
+.hb-sheet.hb-layout-moneda.is-page {
+  inset: var(--top-h) 0 0 0;
+  display: block;
+  padding: 8px var(--pad) 70px;
+  overflow-y: auto;
+  background: var(--bg);
+  backdrop-filter: none;
+  animation: none;
+}
+.hb-sheet.hb-layout-moneda.is-page .hb-sheet-bg {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 700px;
+  opacity: 0.16;
+  filter: blur(30px);
+  -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent);
+}
+.hb-layout-moneda .hb-sheet-box.hb-pg {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+  animation: none;
+}
+.hb-pg-crumbs { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.hb-pg-back { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px 0 10px; border-radius: 4px; background: transparent; color: var(--text); font-size: 13px; font-weight: 600; }
+.hb-pg-back:hover { background: var(--lift); }
+.hb-pg-back.is-focused { box-shadow: 0 0 0 2px var(--text); }
+.hb-pg-back-ico { display: block; width: 16px; height: 16px; }
+.hb-pg-sep { color: var(--dim); }
+.hb-pg-head { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
+.hb-pg-title { flex: 1 1 420px; min-width: 0; margin: 0; font-family: var(--display); font-size: 44px; font-weight: 800; letter-spacing: -0.045em; line-height: 1.05; }
+.hb-pg-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-left: auto; }
+.hb-pg-acts .hb-btn-big { height: 52px; padding: 0 24px; border-radius: 4px; font-size: 16px; }
+.hb-pg-acts .hb-btn-big small { margin-left: 4px; }
+.hb-pg-acts .hb-sheet-job { min-width: 260px; }
+.hb-pg-top { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+.hb-pg-media { min-width: 0; }
+.hb-pg-big { position: relative; display: grid; place-items: center; aspect-ratio: 16 / 9; border-radius: 4px; overflow: hidden; background: #000; }
+.hb-pg-big > img { position: relative; width: 100%; height: 100%; object-fit: cover; }
+/* Solo la carátula (sin capturas): entera, sobre un fondo hecho con ella misma. */
+.hb-pg-big.is-cover::before { content: ""; position: absolute; inset: -30px; background: var(--hb-pg-bg) center / cover no-repeat; filter: blur(26px) brightness(0.55); }
+.hb-pg-big.is-cover > img { object-fit: contain; padding: 18px; }
+.hb-pg-strip { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; padding: 4px; }
+.hb-pg-thumb { flex: none; width: 128px; aspect-ratio: 16 / 9; border-radius: 4px; overflow: hidden; opacity: 0.55; transition: opacity 0.15s; }
+.hb-pg-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.hb-pg-thumb.is-on, .hb-pg-thumb:hover { opacity: 1; }
+.hb-pg-thumb.is-focused { opacity: 1; box-shadow: 0 0 0 2px var(--text); }
+.hb-pg-side { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 4px; background: transparent; }
+.hb-pg-cap { position: relative; display: grid; place-items: center; min-height: 160px; padding: 14px; border-radius: 4px; overflow: hidden; background: var(--bg) center / cover no-repeat; }
+.hb-pg-cap.is-fit::before { content: ""; position: absolute; inset: -20px; background: inherit; filter: blur(16px) brightness(0.45); }
+.hb-pg-cap img { position: relative; z-index: 1; display: block; width: auto; max-width: 100%; height: auto; max-height: 420px; object-fit: contain; }
+.hb-pg-rows { display: flex; flex-direction: column; margin: 0; }
+.hb-pg-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 36px; font-size: 14px; }
+.hb-pg-row + .hb-pg-row { box-shadow: inset 0 1px 0 var(--line); }
+.hb-pg-row dt { color: var(--muted); }
+.hb-pg-row dd { margin: 0; min-width: 0; }
+.hb-pg-sys { display: inline-flex; align-items: center; gap: 8px; }
+.hb-pg-side .hb-sheet-note { margin: 0; font-size: 14px; color: var(--muted); }
+.hb-pg-side .hb-sheet-note b { color: var(--text); }
+.hb-pg-side .hb-alert { align-self: flex-start; }
+.hb-pg-side .hb-mirrors { margin: 0; }
+.hb-pg-side .hb-mirrors > small { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: none; letter-spacing: 0; }
+.hb-pg-sec { display: flex; flex-direction: column; gap: 10px; max-width: calc(100% - 376px); padding: 22px 24px; border-radius: 4px; background: transparent; }
+.hb-pg-sec h3 { margin: 0; font-family: var(--display); font-size: 18px; font-weight: 700; }
+.hb-pg-sec p { margin: 0; font-size: 15px; line-height: 1.65; color: var(--soft-text); user-select: text; }
+@media (max-width: 1100px) {
+  .hb-pg-top { grid-template-columns: minmax(0, 1fr); }
+  .hb-pg-sec { max-width: none; }
+}
+/* Jugar: el disco del logo. */
+.hb-layout-moneda .hb-play {
+  height: 64px;
+  gap: 14px;
+  padding: 0 24px 0 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 20px;
+}
+.hb-layout-moneda .hb-play .hb-btn-ico {
+  width: 64px;
+  height: 64px;
+  padding: 20px 18px 20px 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+}
+.hb-layout-moneda .hb-play .hb-btn-ico svg {
+  fill: currentColor;
+  stroke: none;
+}
+.hb-layout-moneda .hb-play:hover {
+  filter: none;
+}
+.hb-layout-moneda .hb-play.is-focused {
+  background: var(--lift);
+  box-shadow: none;
+}
+.hb-layout-moneda .hb-play.is-focused .hb-btn-ico {
+  box-shadow: 0 0 0 4px var(--panel), 0 0 0 7px var(--text);
+}
+.hb-layout-moneda [data-key="s-del"] {
+  background: color-mix(in srgb, #ff3a2d 14%, transparent);
+  color: #ff7b70;
+}
+.hb-layout-moneda .hb-mirror {
+  border-radius: 4px;
+  background: var(--bg);
+}
+
+:root[data-input="mouse"] .hb-layout-moneda .is-focused {
+  box-shadow: none !important;
+}
+:root[data-input="mouse"] .hb-layout-moneda .hb-item.is-focused::after,
+:root[data-input="mouse"] .hb-layout-moneda .hb-game.is-focused::after {
+  background: transparent;
+}

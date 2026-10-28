@@ -1506,5 +1506,10 @@
  "Hola. Vamos a dejarlo listo.": "Hi. Let's get you set up.",
  "Los juegos también se instalarán aquí": "Games will also be installed here",
  "Paso {n} de {total}": "Step {n} of {total}",
- "Son cuatro pasos y todo se puede cambiar luego en Ajustes.": "It's four steps, and you can change everything later in Settings."
+ "Son cuatro pasos y todo se puede cambiar luego en Ajustes.": "It's four steps, and you can change everything later in Settings.",
+ "Ahora no": "Not now",
+ "Hay un tema nuevo: Telón": "There's a new theme: Telón",
+ "Menos cosas por pantalla: el arte del juego a sangre, negro puro y nada de cajas. Tu biblioteca, tus colecciones y tus ajustes no cambian.": "Less on every screen: full-bleed game art, pure black and no boxes. Your library, collections and settings stay the same.",
+ "Probar Telón": "Try Telón",
+ "Si no te convence, vuelves a Moneda en Ajustes → Apariencia.": "If you don't like it, switch back to Moneda in Settings → Appearance."
 }

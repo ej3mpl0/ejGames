@@ -17,12 +17,15 @@ import type {
 } from "../api/types";
 
 /** El tema de la casa: el de los perfiles nuevos y el de reserva. */
-export const DEFAULT_THEME = "moneda";
+export const DEFAULT_THEME = "telon";
+/** El tema anterior de la casa: a quien lo usa se le ofrece probar Telón una vez. */
+export const PREVIOUS_THEME = "moneda";
 
 export type PadType = "xbox" | "playstation" | "nintendo" | "generic";
 
 export type OverlayName =
   | "settings"
+  | "try-telon"
   | "game"
   | "profiles"
   | "search"

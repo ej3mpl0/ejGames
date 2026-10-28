@@ -84,6 +84,8 @@ pub struct Settings {
     /// Carpetas extra donde buscar `<appid>chievements.*` de emuladores.
     pub achievement_dirs: Vec<String>,
     pub first_run_done: bool,
+    /// Ya se ofreció probar el tema Telón (una sola vez, al abrir la 1.8).
+    pub telon_offered: bool,
 
     // ── Explorar y descargas ──
     pub explore_enabled: bool,
@@ -189,6 +191,7 @@ impl Default for Settings {
             screenshot_dir: String::new(),
             achievement_dirs: vec![],
             first_run_done: false,
+            telon_offered: false,
             explore_enabled: true,
             explore_hide_adult: true,
             download_dir: String::new(),

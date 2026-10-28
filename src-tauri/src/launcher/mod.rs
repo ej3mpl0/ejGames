@@ -186,10 +186,17 @@ async fn play_inner(st: &Arc<AppState>, game_id: i64, profile_id: i64) -> anyhow
         } else {
             crate::discord::game_app_id(&st.http, &cache, &game).await
         };
+        // Sin portada en internet (ports, arte puesto a mano), la imagen grande
+        // de la tarjeta es el icono del juego en Discord, no el de ejGames.
+        let cover_url = st.db.with(|c| repo::selected_remote_url(c, game_id, "cover")).ok().flatten();
+        let cover_url = match (&cover_url, &game_app) {
+            (None, Some(app)) => crate::discord::app_icon(&st.http, app).await,
+            _ => cover_url,
+        };
         let id = game_app.unwrap_or_else(|| own.to_string());
         Some(DiscordCtx {
             small_icon: crate::discord::app_icon(&st.http, own).await,
-            cover_url: st.db.with(|c| repo::selected_remote_url(c, game_id, "cover")).ok().flatten(),
+            cover_url,
             hide: profile.discord_hide_names,
             id,
         })

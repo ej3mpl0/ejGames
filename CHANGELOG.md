@@ -21,6 +21,8 @@ biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
   - **Halloween** funciona igual que en Moneda: color calabaza, fondo encantado y la cabecera del evento en la tienda.
 - **¿Probar Telón?** Al abrir esta versión con Moneda, ejGames pregunta una vez si quieres probarlo. Si no te
   convence, vuelves a Moneda desde Ajustes → Apariencia.
+- **Discord: la imagen del juego al abrir tu tarjeta.** Si el juego no tiene portada de internet (ports, arte puesto a
+  mano) y has elegido su juego de Discord, la imagen grande es el icono de ese juego y no el logo de ejGames.
 
 ## 1.7.5
 

@@ -19,24 +19,24 @@ pub struct Presence {
     pub small_image_url: Option<String>,
 }
 
-/// Icono de la aplicación de Discord (el que se sube en el Developer Portal),
-/// para la imagen pequeña. Se consulta una vez por Application ID.
+/// Icono de una aplicación de Discord (el que se sube en el Developer Portal):
+/// el de ejGames para la imagen pequeña y el del propio juego cuando no hay
+/// portada. Se consulta una vez por Application ID.
 pub async fn app_icon(http: &reqwest::Client, client_id: &str) -> Option<String> {
     use parking_lot::Mutex;
-    static CACHE: Mutex<Option<(String, Option<String>)>> = Mutex::new(None);
-    if let Some((id, icon)) = CACHE.lock().as_ref() {
-        if id == client_id {
-            return icon.clone();
-        }
+    use std::collections::HashMap;
+    static CACHE: Mutex<Option<HashMap<String, Option<String>>>> = Mutex::new(None);
+    if let Some(icon) = CACHE.lock().as_ref().and_then(|m| m.get(client_id)) {
+        return icon.clone();
     }
     let url = format!("https://discord.com/api/v10/applications/{client_id}/rpc");
     let icon = async {
         let v: serde_json::Value = http.get(&url).send().await.ok()?.error_for_status().ok()?.json().await.ok()?;
         let hash = v.get("icon")?.as_str()?.to_string();
-        Some(format!("https://cdn.discordapp.com/app-icons/{client_id}/{hash}.png?size=256"))
+        Some(format!("https://cdn.discordapp.com/app-icons/{client_id}/{hash}.png?size=512"))
     };
     let icon = tokio::time::timeout(Duration::from_secs(4), icon).await.ok().flatten();
-    *CACHE.lock() = Some((client_id.to_string(), icon.clone()));
+    CACHE.lock().get_or_insert_with(HashMap::new).insert(client_id.to_string(), icon.clone());
     icon
 }
 

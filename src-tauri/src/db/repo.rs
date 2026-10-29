@@ -1398,6 +1398,16 @@ pub fn download_by_hash(c: &Connection, info_hash: &str) -> rusqlite::Result<Opt
         .optional()
 }
 
+/// Portada y fondo de la ficha de la que salió un juego (su última descarga).
+pub fn download_art(c: &Connection, source_id: &str) -> rusqlite::Result<Option<(Option<String>, Option<String>)>> {
+    c.query_row(
+        "SELECT cover_url, hero_url FROM downloads WHERE source_id = ?1 ORDER BY id DESC LIMIT 1",
+        [source_id],
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )
+    .optional()
+}
+
 pub fn download_torrent(c: &Connection, id: i64) -> rusqlite::Result<Vec<u8>> {
     c.query_row("SELECT torrent FROM downloads WHERE id = ?1", [id], |r| r.get(0))
 }

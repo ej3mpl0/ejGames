@@ -72,8 +72,10 @@ const MIN_APPLY: f64 = 0.82;
 /// Nombres con los que buscar un juego (título, ProductName, stem, carpeta).
 /// Puede salir vacía (p. ej. un "Game.exe" genérico): quien la use lo comprueba.
 pub fn search_names(g: &Game) -> Vec<String> {
-    let mut v = vec![g.title.clone()];
-    if g.source == "folder" {
+    // Los nombres de las tiendas llevan ediciones y extras («… – Deluxe Edition»,
+    // «: Game & Soundtrack Bundle») con los que Steam no encuentra nada.
+    let mut v = vec![g.title.clone(), crate::explore::steamart::search_term(&g.title)];
+    if matches!(g.source.as_str(), "folder" | "repack") {
         if let Some(exe) = &g.exe_path {
             let p = Path::new(exe);
             if let Some(pn) = pe_info::read(p).and_then(|i| i.product_name).filter(|n| !is_generic_name(n)) {
@@ -170,6 +172,13 @@ pub async fn process_batch(st: &Arc<AppState>, ids: &[i64], forced: &HashMap<i64
             resolved.push(Resolved { game: g, appid: Some(a), confidence: 1.0 });
             continue;
         }
+        // Repacks: el juego de Steam que ya encontró la tienda para su ficha.
+        if g.source == "repack" {
+            if let Some(a) = crate::explore::steamart::cached(st, &g.title).and_then(|art| art.appid()) {
+                resolved.push(Resolved { game: g, appid: Some(a), confidence: 1.0 });
+                continue;
+            }
+        }
         let names = {
             let g2 = g.clone();
             tauri::async_runtime::spawn_blocking(move || search_names(&g2)).await?
@@ -244,6 +253,10 @@ pub async fn process_batch(st: &Arc<AppState>, ids: &[i64], forced: &HashMap<i64
         if r.game.platform.is_some() && !meta.art.iter().any(|a| a.kind == "cover") && libretro::fill(&st.http, &r.game, &mut meta).await && status == "failed" {
             status = "matched";
         }
+        // Repacks que no están en Steam (o sin clave para lo demás): el arte de su ficha.
+        if r.game.source == "repack" {
+            store_fill(st, &r.game, &mut meta);
+        }
         if forced.contains_key(&gid) {
             status = "manual";
         }
@@ -310,6 +323,31 @@ async fn sgdb_fill(st: &AppState, g: &Game, m: &mut Metadata) -> anyhow::Result<
         m.art.extend(arts);
     }
     Ok(())
+}
+
+/// Completa con la ficha de la tienda (portada y primera captura como fondo)
+/// lo que no haya dado nadie más: un juego descargado nunca se queda sin carátula.
+fn store_fill(st: &AppState, g: &Game, m: &mut Metadata) {
+    use crate::explore::images;
+    let need = |k: &str| !m.art.iter().any(|a| a.kind == k);
+    let (need_cover, need_hero) = (need("cover"), need("hero"));
+    if !need_cover && !need_hero {
+        return;
+    }
+    let Ok(Some((cover, hero))) = st.db.with(|c| repo::download_art(c, &g.source_id)) else { return };
+    let item = |kind: &str, url: String, alt: Option<String>| {
+        let mut it = ArtItem::new(kind, url.clone(), "store");
+        it.extra = alt.filter(|a| *a != url).map(|a| serde_json::json!({ "alts": [a] }));
+        it
+    };
+    // La miniatura guardada es de 320 px: la grande, y si falla, la original.
+    if let Some(c) = cover.filter(|_| need_cover).filter(|u| !u.is_empty()) {
+        m.art.push(item("cover", images::large(&c), Some(images::original(&c))));
+    }
+    if let Some(h) = hero.filter(|_| need_hero).filter(|u| !u.is_empty()) {
+        let alt = images::sized_base(&h).map(str::to_string);
+        m.art.push(item("hero", h, alt));
+    }
 }
 
 /// Guarda metadatos + filas de media y descarga el arte seleccionado.
@@ -424,4 +462,17 @@ pub async fn art_options(st: &AppState, game_id: i64, kind: &str) -> anyhow::Res
         }
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn store_titles_also_search_the_bare_name() {
+        let g = Game { title: "TOEM 2: Game & Soundtrack Bundle".into(), source: "repack".into(), ..Default::default() };
+        assert_eq!(search_names(&g), vec!["TOEM 2: Game & Soundtrack Bundle", "TOEM 2"]);
+        let g = Game { title: "Hades II".into(), source: "folder".into(), ..Default::default() };
+        assert_eq!(search_names(&g), vec!["Hades II"]);
+    }
 }

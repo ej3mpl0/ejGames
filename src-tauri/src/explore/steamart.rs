@@ -34,6 +34,14 @@ pub struct Art {
     pub library: Option<String>,
 }
 
+impl Art {
+    /// El appid de Steam del juego (va en las rutas de su arte).
+    pub fn appid(&self) -> Option<i64> {
+        static ID: LazyLock<regex::Regex> = LazyLock::new(|| regex::Regex::new(r"/apps/(\d+)/").unwrap());
+        [&self.library, &self.header, &self.main].into_iter().flatten().find_map(|u| ID.captures(u)?.get(1)?.as_str().parse().ok())
+    }
+}
+
 static PENDING: LazyLock<Mutex<HashSet<String>>> = LazyLock::new(Default::default);
 /// Lo ya leído de la caché, en memoria (las descargas lo piden en cada tic).
 static MEM: LazyLock<Mutex<HashMap<String, Art>>> = LazyLock::new(Default::default);
@@ -74,7 +82,7 @@ pub fn proxied(art: &Art) -> (Option<String>, Option<String>, Option<String>) {
 /// Título para buscar en Steam: sin nombres alternativos, ediciones, extras ni DLCs.
 pub fn search_term(title: &str) -> String {
     static CUT: LazyLock<regex::Regex> = LazyLock::new(|| {
-        regex::Regex::new(r"(?i)\s*(?:[–—-]|\+|:)\s*(?:(?:[\w'’]+\s+){0,3}edition\b.*|(?:the\s+)?(?:digital\s+)?(?:deluxe|ultimate|complete|definitive|gold|goty|game of the year|premium|enhanced|special|collector'?s?|anniversary|director'?s\s+cut)\b.*|\d+\s+dlcs?\b.*|bonus\b.*|soundtrack\b.*|all\s+dlcs?\b.*)$").unwrap()
+        regex::Regex::new(r"(?i)\s*(?:[–—-]|\+|:)\s*(?:(?:[\w'’]+\s+){0,3}edition\b.*|(?:the\s+)?(?:digital\s+)?(?:deluxe|ultimate|complete|definitive|gold|goty|game of the year|premium|enhanced|special|collector'?s?|anniversary|director'?s\s+cut)\b.*|(?:[\w'’&]+\s+){0,3}bundle\b.*|\d+\s+dlcs?\b.*|bonus\b.*|soundtrack\b.*|all\s+dlcs?\b.*)$").unwrap()
     });
     let t = title.split(" / ").next().unwrap_or(title);
     let t = CUT.replace(t.trim(), "");
@@ -237,6 +245,8 @@ mod tests {
         assert_eq!(search_term("Assassin's Creed: Black Flag Resynced – Deluxe Edition"), "Assassin's Creed: Black Flag Resynced");
         assert_eq!(search_term("Onimusha: Way of the Sword – Premium Deluxe Edition"), "Onimusha: Way of the Sword");
         assert_eq!(search_term("Hollowbody + Soundtrack Bundle"), "Hollowbody");
+        assert_eq!(search_term("TOEM 2: Game & Soundtrack Bundle"), "TOEM 2");
+        assert_eq!(search_term("Bloodborne: Game of the Year Edition"), "Bloodborne");
         assert_eq!(search_term("Cyberpunk 2077: Ultimate Edition"), "Cyberpunk 2077");
         assert_eq!(search_term("Portal 2"), "Portal 2");
     }
@@ -254,5 +264,12 @@ mod tests {
         // Parecido no basta: «Hollow Cocoon» no es «Hollow Knight».
         assert_eq!(pick("Hollow Cocoon", &[(367520, "Hollow Knight".to_string())]), None);
         assert_eq!(pick("Grand Theft Auto V / GTA 5", &[(3240220, "Grand Theft Auto V Enhanced".to_string())]), Some(3240220));
+    }
+
+    #[test]
+    fn appid_from_art() {
+        let art = Art { library: Some(format!("{ASSETS_CDN}steam/apps/2900640/abc/library_600x900_2x.jpg?t=1")), ..Default::default() };
+        assert_eq!(art.appid(), Some(2900640));
+        assert_eq!(Art::default().appid(), None);
     }
 }

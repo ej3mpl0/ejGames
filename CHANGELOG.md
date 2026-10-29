@@ -5,6 +5,17 @@ Cada versión tiene su instalador en `installer/ejGames_<versión>_Setup.exe`
 anterior). Al instalar una versión nueva encima de otra se conservan la
 biblioteca, las horas y los ajustes; la base de datos se actualiza sola.
 
+## 1.8.2
+
+- **Los juegos descargados ya salen con su carátula sin poner ninguna clave.** Hasta ahora, si el nombre de la ficha
+  traía la edición o extras («: Game & Soundtrack Bundle», «Game of the Year Edition»), Steam no lo encontraba y, sin
+  clave de SteamGridDB, el juego se quedaba sin arte. Ahora:
+  - Se usa el mismo juego de Steam que ya enseñaba la tienda en su ficha.
+  - Si no, se busca en Steam por el nombre sin ediciones, bundles ni DLC.
+  - Y si el juego no está en Steam, se pone la portada de la ficha y su primera captura de fondo.
+  La clave de SteamGridDB sigue siendo opcional: sirve para elegir otras portadas en el editor del juego. Los juegos
+  que ya tenías sin carátula se arreglan con Ajustes → Info y arte → «Completar juegos sin info».
+
 ## 1.8.1
 
 - **Telón de verdad en más sitios.** En la 1.8.0 varias pantallas solo cambiaban de color; ahora siguen el diseño:

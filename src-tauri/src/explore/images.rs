@@ -186,7 +186,7 @@ pub async fn serve(st: &Arc<AppState>, id: &str) -> anyhow::Result<PathBuf> {
 }
 
 /// "…/x.jpg.720p.jpg" → "…/x.jpg".
-fn sized_base(url: &str) -> Option<&str> {
+pub fn sized_base(url: &str) -> Option<&str> {
     let (base, suffix) = url.rsplit_once(".jpg.")?;
     let ok = suffix.ends_with("p.jpg") && suffix[..suffix.len() - 5].bytes().all(|b| b.is_ascii_digit());
     ok.then(|| &url[..base.len() + 4])
